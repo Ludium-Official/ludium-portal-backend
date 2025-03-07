@@ -1,0 +1,12 @@
+.git
+.vscode
+.idea
+.eslintrc
+.eslintignore
+.prettierrc
+.env*
+build
+pgdata
+node_modules
+docker-compose.yml
+README.md

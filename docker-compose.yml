@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16.3-alpine
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_INITDB_ARGS: --locale-provider=icu --icu-locale=en-US
+      LANG: en_US.utf8
+    volumes:
+      - ./.pgdata:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
