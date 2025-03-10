@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "files": {
     "include": ["src/**/*.ts"],
-    "ignore": ["src/scripts/*", "src/graphql/nexus-typegen.ts", "src/graphql/schema.graphql"]
+    "ignore": ["src/graphql/schema.graphql"]
   },
   "organizeImports": {
     "enabled": true

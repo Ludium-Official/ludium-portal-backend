@@ -1,4 +1,4 @@
-import type { NewUser } from '../schemas/users';
+import type { NewUser } from '@/db/schemas/users';
 
 export const users: NewUser[] = [
   {

@@ -11,8 +11,3 @@ export const envSchema = {
     DATABASE_URL: { type: 'string' },
   },
 };
-
-export const transactionConfig = {
-  maxWait: 32000, // default: 2000
-  timeout: 80000, // default: 5000
-};

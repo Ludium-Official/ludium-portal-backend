@@ -14,7 +14,6 @@ builder.objectType(User, {
 builder.queryType({
   fields: (t) => ({
     users: t.field({
-      authScopes: { public: true },
       type: [User],
       resolve: getUsersResolver,
     }),
