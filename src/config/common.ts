@@ -9,5 +9,6 @@ export const envSchema = {
     },
     JWT_SECRET: { type: 'string' },
     DATABASE_URL: { type: 'string' },
+    STORAGE_BUCKET: { type: 'string' },
   },
 };

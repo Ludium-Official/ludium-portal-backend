@@ -1,12 +1,71 @@
+"""
+A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
+"""
+scalar DateTime
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
+type Link {
+  title: String
+  url: String
+}
+
+input LinkInput {
+  title: String
+  url: String
+}
+
 type Mutation {
-  createUser(email: String!, password: String!): User
+  createUser(input: UserInput!): User
+  deleteUser(id: ID!): User
+  updateUser(input: UserUpdateInput!): User
 }
 
 type Query {
+  roles: [Role!]
+  user(id: ID!): User
   users: [User!]
 }
 
-type User {
-  email: String
+type Role {
+  description: String
   id: ID
+  name: String
+}
+
+type User {
+  about: String
+  createdAt: DateTime
+  email: String
+  firstName: String
+  id: ID
+  image: String
+  lastName: String
+  links: [Link!]
+  organizationName: String
+  updatedAt: DateTime
+}
+
+input UserInput {
+  about: String
+  email: String!
+  firstName: String
+  image: String
+  lastName: String
+  links: [LinkInput!]
+  organizationName: String
+  password: String!
+}
+
+input UserUpdateInput {
+  about: String
+  firstName: String
+  id: ID!
+  image: String
+  lastName: String
+  links: [LinkInput!]
+  organizationName: String
 }
