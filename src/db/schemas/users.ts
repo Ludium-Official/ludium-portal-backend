@@ -1,6 +1,8 @@
 import { relations, sql } from 'drizzle-orm';
 import { jsonb, pgTable, primaryKey, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { applicationsTable } from './applications';
 import { filesTable } from './files';
+import { programsTable } from './programs';
 
 export const rolesTable = pgTable('roles', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -42,15 +44,21 @@ export const usersToRolesTable = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.roleId] })],
 );
 
+// Отношения для пользователей
 export const userRelations = relations(usersTable, ({ many }) => ({
   roles: many(usersToRolesTable),
   files: many(filesTable),
+  createdPrograms: many(programsTable, { relationName: 'program_creator' }),
+  validatedPrograms: many(programsTable, { relationName: 'program_validator' }),
+  applications: many(applicationsTable),
 }));
 
+// Отношения для ролей
 export const roleRelations = relations(rolesTable, ({ many }) => ({
   users: many(usersToRolesTable),
 }));
 
+// Отношения для связи пользователей с ролями
 export const usersToRolesRelations = relations(usersToRolesTable, ({ one }) => ({
   user: one(usersTable, {
     fields: [usersToRolesTable.userId],

@@ -30,6 +30,7 @@ const registerPlugins = (server: FastifyInstance) => {
           reply,
           server,
           db: server.db,
+          user: request.user,
         };
       },
       graphiql: false,

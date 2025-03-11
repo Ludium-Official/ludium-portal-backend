@@ -73,13 +73,9 @@ export const UserInput = builder.inputType('UserInput', {
     lastName: t.string(),
     email: t.string({ required: true, validate: { email: true } }),
     password: t.string({ required: true, validate: { minLength: 8 } }),
-
-    // Поля организации
     organizationName: t.string(),
     image: t.string(),
     about: t.string(),
-
-    // Ссылки
     links: t.field({ type: [LinkInput] }),
   }),
 });
