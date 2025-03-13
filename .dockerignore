@@ -4,9 +4,12 @@
 .eslintrc
 .eslintignore
 .prettierrc
-.env*
+.pgdata
+.husky
+.gitignore
+biome.json
 build
-pgdata
+ci
 node_modules
 docker-compose.yml
 README.md

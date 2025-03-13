@@ -1,5 +1,10 @@
-import { applicationsTable } from '@/db/schemas';
-import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/types/applications';
+import { applicationsTable, milestonesTable } from '@/db/schemas';
+import type {
+  CreateApplicationInput,
+  CreateMilestoneInput,
+  UpdateApplicationInput,
+  UpdateMilestoneInput,
+} from '@/graphql/types/applications';
 import type { Args, Context, Root } from '@/types';
 import { eq } from 'drizzle-orm';
 
@@ -9,6 +14,55 @@ export async function getApplicationsResolver(_root: Root, _args: Args, ctx: Con
 
 export async function getApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
   return ctx.db.select().from(applicationsTable).where(eq(applicationsTable.id, args.id));
+}
+
+export async function getMilestoneResolver(_root: Root, args: { id: string }, ctx: Context) {
+  const [milestone] = await ctx.db
+    .select()
+    .from(milestonesTable)
+    .where(eq(milestonesTable.id, args.id));
+  return milestone;
+}
+
+export async function getMilestonesResolver(
+  _root: Root,
+  args: { applicationId: string },
+  ctx: Context,
+) {
+  return ctx.db
+    .select()
+    .from(milestonesTable)
+    .where(eq(milestonesTable.applicationId, args.applicationId));
+}
+
+export async function createMilestoneResolver(
+  _root: Root,
+  args: { input: typeof CreateMilestoneInput.$inferInput },
+  ctx: Context,
+) {
+  const [milestone] = await ctx.db.insert(milestonesTable).values(args.input).returning();
+  return milestone;
+}
+
+export async function updateMilestoneResolver(
+  _root: Root,
+  args: { input: typeof UpdateMilestoneInput.$inferInput },
+  ctx: Context,
+) {
+  const { id, ...updateData } = args.input;
+
+  // Filter out null values
+  const filteredData = Object.fromEntries(
+    Object.entries(updateData).filter(([_, v]) => v !== null),
+  );
+
+  const [milestone] = await ctx.db
+    .update(milestonesTable)
+    .set(filteredData)
+    .where(eq(milestonesTable.id, id))
+    .returning();
+
+  return milestone;
 }
 
 export async function createApplicationResolver(

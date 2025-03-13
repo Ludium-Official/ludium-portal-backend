@@ -2,7 +2,7 @@ import type { Context } from '@/types';
 import SchemaBuilder from '@pothos/core';
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth';
 import ValidationPlugin from '@pothos/plugin-validation';
-import { DateTimeResolver, JSONResolver } from 'graphql-scalars';
+import { DateResolver, DateTimeResolver, JSONResolver } from 'graphql-scalars';
 
 const builder = new SchemaBuilder<{
   Context: Context;
@@ -12,6 +12,10 @@ const builder = new SchemaBuilder<{
   };
   Scalars: {
     DateTime: {
+      Input: Date;
+      Output: Date;
+    };
+    Date: {
       Input: Date;
       Output: Date;
     };
@@ -37,6 +41,7 @@ const builder = new SchemaBuilder<{
 });
 
 builder.addScalarType('DateTime', DateTimeResolver);
+builder.addScalarType('Date', DateResolver);
 builder.addScalarType('JSON', JSONResolver);
 
 builder.queryType({});

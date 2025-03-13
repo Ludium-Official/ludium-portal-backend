@@ -33,26 +33,13 @@ export const User = builder.objectRef<DBUser>('User').implement({
     firstName: t.exposeString('firstName', { nullable: true }),
     lastName: t.exposeString('lastName', { nullable: true }),
     email: t.exposeString('email'),
-
-    // Поля организации
     organizationName: t.exposeString('organizationName', { nullable: true }),
     image: t.exposeString('image', { nullable: true }),
     about: t.exposeString('about', { nullable: true }),
-
-    // Ссылки
     links: t.field({
       type: [Link],
       nullable: true,
       resolve: (user) => user.links || [],
-    }),
-
-    createdAt: t.field({
-      type: 'DateTime',
-      resolve: (user) => user.createdAt,
-    }),
-    updatedAt: t.field({
-      type: 'DateTime',
-      resolve: (user) => user.updatedAt,
     }),
   }),
 });

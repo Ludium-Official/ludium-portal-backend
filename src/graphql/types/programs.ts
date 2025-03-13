@@ -19,11 +19,17 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
-    summary: t.exposeString('summary', { nullable: true }),
-    description: t.exposeString('description', { nullable: true }),
-    price: t.exposeString('price', { nullable: true }),
-    currency: t.exposeString('currency', { nullable: true }),
-    deadline: t.exposeString('deadline', { nullable: true }),
+    summary: t.exposeString('summary'),
+    description: t.exposeString('description'),
+    price: t.field({
+      type: 'String',
+      resolve: (program) => program.price?.toString() ?? '',
+    }),
+    currency: t.exposeString('currency'),
+    deadline: t.field({
+      type: 'Date',
+      resolve: (program) => (program.deadline ? new Date(program.deadline) : null),
+    }),
     keywords: t.field({
       type: [ProgramKeywordType],
       args: {

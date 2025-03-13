@@ -1,5 +1,6 @@
 import { relations, sql } from 'drizzle-orm';
 import { jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { milestonesTable } from './milestones';
 import { programsTable } from './programs';
 import { usersTable } from './users';
 
@@ -43,7 +44,7 @@ export const applicationsTable = pgTable('applications', {
 });
 
 // Application relations
-export const applicationRelations = relations(applicationsTable, ({ one }) => ({
+export const applicationRelations = relations(applicationsTable, ({ one, many }) => ({
   program: one(programsTable, {
     fields: [applicationsTable.programId],
     references: [programsTable.id],
@@ -52,6 +53,7 @@ export const applicationRelations = relations(applicationsTable, ({ one }) => ({
     fields: [applicationsTable.applicantId],
     references: [usersTable.id],
   }),
+  milestones: many(milestonesTable),
 }));
 
 // Types for use in code
