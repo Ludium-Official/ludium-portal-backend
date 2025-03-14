@@ -7,6 +7,7 @@
 .pgdata
 .husky
 .gitignore
+.env*
 biome.json
 build
 ci

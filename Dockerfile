@@ -4,6 +4,7 @@ WORKDIR /usr/app
 
 ARG DB
 ENV DATABASE_URL=${DB}
+RUN echo "DATABASE_URL: ${DATABASE_URL}"
 
 COPY package*.json ./
 
