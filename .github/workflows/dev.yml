@@ -13,6 +13,7 @@ env:
 
 jobs:
   deploy:
+    environment: "development"
     runs-on: "ubuntu-24.04"
 
     permissions:
