@@ -56,9 +56,9 @@ CREATE TABLE "programs" (
 	"name" varchar(256) NOT NULL,
 	"summary" text,
 	"description" text,
-	"price" numeric(38, 18),
-	"currency" varchar(10) DEFAULT 'ETH',
-	"deadline" date,
+	"price" numeric(38, 18) NOT NULL,
+	"currency" varchar(10) DEFAULT 'ETH' NOT NULL,
+	"deadline" date NOT NULL,
 	"creator_id" uuid NOT NULL,
 	"validator_id" uuid,
 	"links" jsonb,
@@ -81,6 +81,18 @@ CREATE TABLE "keywords" (
 	CONSTRAINT "keywords_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
+CREATE TABLE "milestones" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"application_id" uuid NOT NULL,
+	"title" varchar(256) NOT NULL,
+	"description" text,
+	"price" numeric(38, 18),
+	"currency" varchar(10) DEFAULT 'ETH',
+	"completed" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 ALTER TABLE "applications" ADD CONSTRAINT "applications_program_id_programs_id_fk" FOREIGN KEY ("program_id") REFERENCES "public"."programs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "applications" ADD CONSTRAINT "applications_applicant_id_users_id_fk" FOREIGN KEY ("applicant_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "files" ADD CONSTRAINT "files_uploaded_by_id_users_id_fk" FOREIGN KEY ("uploaded_by_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
@@ -89,4 +101,5 @@ ALTER TABLE "users_to_roles" ADD CONSTRAINT "users_to_roles_role_id_roles_id_fk"
 ALTER TABLE "programs" ADD CONSTRAINT "programs_creator_id_users_id_fk" FOREIGN KEY ("creator_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "programs" ADD CONSTRAINT "programs_validator_id_users_id_fk" FOREIGN KEY ("validator_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "programs_to_keywords" ADD CONSTRAINT "programs_to_keywords_program_id_programs_id_fk" FOREIGN KEY ("program_id") REFERENCES "public"."programs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "programs_to_keywords" ADD CONSTRAINT "programs_to_keywords_keyword_id_keywords_id_fk" FOREIGN KEY ("keyword_id") REFERENCES "public"."keywords"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "programs_to_keywords" ADD CONSTRAINT "programs_to_keywords_keyword_id_keywords_id_fk" FOREIGN KEY ("keyword_id") REFERENCES "public"."keywords"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "milestones" ADD CONSTRAINT "milestones_application_id_applications_id_fk" FOREIGN KEY ("application_id") REFERENCES "public"."applications"("id") ON DELETE cascade ON UPDATE no action;

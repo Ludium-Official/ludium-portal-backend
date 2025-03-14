@@ -1,3 +1,51 @@
+type Application {
+  applicant: User
+  content: String
+  id: ID
+  metadata: JSON
+  milestones: [Milestone!]
+  program: Program
+  status: ApplicationStatus
+}
+
+enum ApplicationStatus {
+  approved
+  completed
+  pending
+  rejected
+  withdrawn
+}
+
+input CreateApplicationInput {
+  content: String!
+  metadata: JSON
+  programId: String!
+}
+
+input CreateMilestoneInput {
+  applicationId: String!
+  currency: String! = "ETH"
+  description: String
+  price: String!
+  title: String!
+}
+
+input CreateProgramInput {
+  currency: String
+  deadline: String
+  description: String
+  keywords: [ID!]
+  links: [LinkInput!]
+  name: String!
+  price: String
+  summary: String
+}
+
+"""
+A date string, such as 2007-12-03, compliant with the `full-date` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
+"""
+scalar Date
+
 """
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
@@ -18,13 +66,55 @@ input LinkInput {
   url: String
 }
 
+type Milestone {
+  completed: Boolean
+  currency: String
+  description: String
+  id: ID
+  price: String
+  title: String
+}
+
 type Mutation {
+  createApplication(input: CreateApplicationInput!): Application
+  createMilestone(input: CreateMilestoneInput!): Milestone
+  createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
+  deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
+  updateApplication(id: String!, input: UpdateApplicationInput!): Application
+  updateMilestone(input: UpdateMilestoneInput!): Milestone
+  updateProgram(input: UpdateProgramInput!): Program
   updateUser(input: UserUpdateInput!): User
 }
 
+type Program {
+  creator: User
+  currency: String
+  deadline: Date
+  description: String
+  id: ID
+  keywords(id: String!): [ProgramKeyword!]
+  links: [Link!]
+  name: String
+  price: String
+  status: String
+  summary: String
+  validator: User
+}
+
+type ProgramKeyword {
+  id: ID
+  name: String
+}
+
 type Query {
+  application(id: ID!): [Application!]
+  applications(programId: ID): [Application!]
+  milestone(id: ID!): Milestone
+  milestones(applicationId: ID!): [Milestone!]
+  program(id: ID!): Program
+  programs: [Program!]
   roles: [Role!]
   user(id: ID!): User
   users: [User!]
@@ -36,9 +126,37 @@ type Role {
   name: String
 }
 
+input UpdateApplicationInput {
+  content: String
+  id: String!
+  metadata: JSON
+  status: String
+}
+
+input UpdateMilestoneInput {
+  completed: Boolean
+  currency: String
+  description: String
+  id: String!
+  price: String
+  title: String
+}
+
+input UpdateProgramInput {
+  currency: String
+  deadline: String
+  description: String
+  id: ID!
+  keywords: [ID!]
+  links: [LinkInput!]
+  name: String
+  price: String
+  status: String
+  summary: String
+}
+
 type User {
   about: String
-  createdAt: DateTime
   email: String
   firstName: String
   id: ID
@@ -46,7 +164,6 @@ type User {
   lastName: String
   links: [Link!]
   organizationName: String
-  updatedAt: DateTime
 }
 
 input UserInput {

@@ -131,7 +131,7 @@ builder.mutationFields((t) => ({
     resolve: updateProgramResolver,
   }),
   deleteProgram: t.field({
-    type: Boolean,
+    type: 'Boolean',
     authScopes: { user: true },
     args: {
       id: t.arg.id({ required: true }),
