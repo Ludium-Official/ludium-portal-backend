@@ -1,4 +1,10 @@
-import { type Program, keywordsTable, programsTable, programsToKeywordsTable } from '@/db/schemas';
+import {
+  type NewProgram,
+  type Program,
+  keywordsTable,
+  programsTable,
+  programsToKeywordsTable,
+} from '@/db/schemas';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
 import { eq, inArray } from 'drizzle-orm';
@@ -38,22 +44,29 @@ export async function createProgramResolver(
   args: { input: typeof CreateProgramInput.$inferInput },
   ctx: Context,
 ) {
-  const { keywords, links, ...programData } = args.input;
+  const { keywords, links, ...inputData } = args.input;
 
-  // Transform links to ensure required properties
-  const formattedLinks = links?.map((link) => ({
-    url: link.url || '',
-    title: link.title || '',
-  }));
+  // Create a properly typed object for the database insert
+  const insertData: NewProgram = {
+    name: inputData.name,
+    summary: inputData.summary || null,
+    description: inputData.description || null,
+    price: inputData.price || '0',
+    currency: inputData.currency || 'ETH',
+    deadline: inputData.deadline
+      ? new Date(inputData.deadline).toISOString()
+      : new Date().toISOString(),
+    creatorId: ctx.user.id,
+    links:
+      links?.map((link) => ({
+        url: link.url || '',
+        title: link.title || '',
+      })) || null,
+    status: 'draft',
+  };
 
-  const [program] = await ctx.db
-    .insert(programsTable)
-    .values({
-      ...programData,
-      links: formattedLinks,
-      creatorId: ctx.user.id,
-    })
-    .returning();
+  // Now insert with proper typing
+  const [program] = await ctx.db.insert(programsTable).values(insertData).returning();
 
   // Handle keywords
   if (keywords?.length) {

@@ -25,32 +25,21 @@ export const programStatusEnum = pgEnum('program_status', [
 
 export const programsTable = pgTable('programs', {
   id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 256 }).notNull(),
+  name: varchar('name', { length: 256 }).notNull().notNull(),
   summary: text('summary'),
   description: text('description'),
 
   /* 38 total digits provides sufficient range for any cryptocurrency value
      18 decimal places matches common ERC-20 token precision */
-  price: decimal('price', { precision: 38, scale: 18 }),
-  currency: varchar('currency', { length: 10 }).default('ETH'),
-
-  deadline: date('deadline'),
-
-  // Relationship with creator (sponsor)
+  price: decimal('price', { precision: 38, scale: 18 }).notNull(),
+  currency: varchar('currency', { length: 10 }).default('ETH').notNull(),
+  deadline: date('deadline').notNull(),
   creatorId: uuid('creator_id')
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
-
-  // Relationship with validator
   validatorId: uuid('validator_id').references(() => usersTable.id, { onDelete: 'set null' }),
-
-  // Additional links
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
-
-  // Program status
   status: programStatusEnum('status').default('draft'),
-
-  // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
