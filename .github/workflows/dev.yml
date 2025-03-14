@@ -9,6 +9,7 @@ env:
   PROJECT_ID: "ludium-development"
   REGION: "asia-northeast3"
   SERVICE: "api-dev-service"
+  DOCKER_REGISTRY: "api-dev-repo"
 
 jobs:
   deploy:
@@ -46,7 +47,7 @@ jobs:
         with:
           service: "${{ env.SERVICE }}"
           region: "${{ env.REGION }}"
-          image: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}"
+          image: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.DOCKER_REGISTRY }}/${{ env.SERVICE }}:${{ github.sha }}"
 
       - name: "Show output"
         run: |2-
