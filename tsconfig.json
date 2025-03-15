@@ -1,13 +1,15 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
-    "module": "ES2022",
+    "lib": [
+      "ES2022"
+    ],
+    "module": "CommonJS",
     "moduleResolution": "node",
-    "rootDir": "./src",
     "resolveJsonModule": true,
     "allowJs": false,
     "sourceMap": true,
+    "rootDir": "./src",
     "outDir": "./build",
     "removeComments": true,
     "esModuleInterop": true,
@@ -17,12 +19,28 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ],
+    },
+    "inlineSources": true,
+    "sourceRoot": "/"
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "build"],
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "build"
+  ],
   "tsx": {
     "esm": true
+  },
+  "tsc-alias": {
+    "replacers": {
+      "base-url": {
+        "enabled": false
+      }
+    }
   }
 }
