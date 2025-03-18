@@ -43,6 +43,15 @@ const registerPlugins = (server: FastifyInstance) => {
           };
         },
       },
+      // TODO: Uncomment when we have a production environment
+      // queryDepth: 5,
+      // ...(server.config.NODE_ENV !== 'local' && {
+      //   additionalRouteOptions: {
+      //     onRequest: authMiddleware,
+      //   },
+      // }),
+      // validationRules:
+      //   server.config.NODE_ENV === 'local' ? undefined : [NoSchemaIntrospectionCustomRule],
     })
     .ready((err) => {
       if (err) server.log.error(err);
