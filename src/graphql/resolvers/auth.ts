@@ -32,5 +32,5 @@ export async function loginResolver(
     },
   );
 
-  return { token };
+  return token;
 }

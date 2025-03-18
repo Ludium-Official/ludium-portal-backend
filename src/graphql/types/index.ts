@@ -5,6 +5,7 @@ import { lexicographicSortSchema, printSchema } from 'graphql';
 import './users';
 import './programs';
 import './applications';
+import './auth';
 
 export const schema = builder.toSchema();
 const schemaAsString = printSchema(lexicographicSortSchema(schema));
