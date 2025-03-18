@@ -40,6 +40,7 @@ CREATE TABLE "users" (
 	"image" varchar(512),
 	"about" text,
 	"links" jsonb,
+	"external_id" varchar(256),
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")

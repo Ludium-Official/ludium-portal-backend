@@ -46,6 +46,11 @@ export async function createProgramResolver(
 ) {
   const { keywords, links, ...inputData } = args.input;
 
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
   // Create a properly typed object for the database insert
   const insertData: NewProgram = {
     name: inputData.name,
@@ -56,7 +61,7 @@ export async function createProgramResolver(
     deadline: inputData.deadline
       ? new Date(inputData.deadline).toISOString()
       : new Date().toISOString(),
-    creatorId: ctx.user.id,
+    creatorId: user.id,
     links:
       links?.map((link) => ({
         url: link.url || '',

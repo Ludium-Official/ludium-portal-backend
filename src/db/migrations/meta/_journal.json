@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1741935407765,
-      "tag": "0000_orange_quasimodo",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1742282086000,
-      "tag": "0001_messy_scarlet_spider",
+      "when": 1742288867067,
+      "tag": "0000_spotty_scrambler",
       "breakpoints": true
     }
   ]

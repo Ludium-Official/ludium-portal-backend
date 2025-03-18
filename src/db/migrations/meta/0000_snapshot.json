@@ -1,5 +1,5 @@
 {
-  "id": "36fe2de8-c978-431f-b7bb-5cd77ec7b42a",
+  "id": "62293373-a516-45bb-83f3-671350ba5abb",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -279,6 +279,12 @@
         "links": {
           "name": "links",
           "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "varchar(256)",
           "primaryKey": false,
           "notNull": false
         },
