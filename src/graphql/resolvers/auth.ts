@@ -24,8 +24,10 @@ export async function loginResolver(
 
   const token = ctx.server.jwt.sign(
     {
-      id: user.id,
-      email: user.email,
+      payload: {
+        id: user.id,
+        email: user.email,
+      },
     },
     {
       expiresIn: '7d', // TODO: Change to 1h when we have a production environment

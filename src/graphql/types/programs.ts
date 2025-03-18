@@ -104,7 +104,6 @@ builder.queryFields((t) => ({
     resolve: getProgramsResolver,
   }),
   program: t.field({
-    authScopes: { user: true },
     type: ProgramType,
     args: {
       id: t.arg.id({ required: true }),
