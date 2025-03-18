@@ -9,6 +9,9 @@ const builder = new SchemaBuilder<{
   AuthScopes: {
     user: boolean;
     admin: boolean;
+    sponsor: boolean;
+    validator: boolean;
+    builder: boolean;
   };
   Scalars: {
     DateTime: {
@@ -31,6 +34,9 @@ const builder = new SchemaBuilder<{
     authScopes: async (context) => ({
       user: context.server.auth.isUser(context.request),
       admin: context.server.auth.isAdmin(context.request),
+      sponsor: context.server.auth.isSponsor(context.request),
+      validator: context.server.auth.isValidator(context.request),
+      builder: context.server.auth.isBuilder(context.request),
     }),
   },
   validationOptions: {

@@ -35,6 +35,18 @@ export class AuthHandler {
     return Boolean(this.isUser(request) && request.auth?.user?.roles?.includes('admin'));
   }
 
+  isSponsor(request: FastifyRequest) {
+    return Boolean(this.isUser(request) && request.auth?.user?.roles?.includes('sponsor'));
+  }
+
+  isValidator(request: FastifyRequest) {
+    return Boolean(this.isUser(request) && request.auth?.user?.roles?.includes('validator'));
+  }
+
+  isBuilder(request: FastifyRequest) {
+    return Boolean(this.isUser(request) && request.auth?.user?.roles?.includes('builder'));
+  }
+
   getUser(request: FastifyRequest) {
     if (!request.auth?.user) {
       return null;

@@ -115,7 +115,7 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   createProgram: t.field({
     type: ProgramType,
-    authScopes: { user: true },
+    authScopes: { sponsor: true },
     args: {
       input: t.arg({ type: CreateProgramInput, required: true }),
     },
@@ -123,7 +123,7 @@ builder.mutationFields((t) => ({
   }),
   updateProgram: t.field({
     type: ProgramType,
-    authScopes: { user: true },
+    authScopes: { sponsor: true },
     args: {
       input: t.arg({ type: UpdateProgramInput, required: true }),
     },
@@ -131,7 +131,7 @@ builder.mutationFields((t) => ({
   }),
   deleteProgram: t.field({
     type: 'Boolean',
-    authScopes: { user: true },
+    authScopes: { sponsor: true },
     args: {
       id: t.arg.id({ required: true }),
     },
