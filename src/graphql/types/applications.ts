@@ -6,6 +6,7 @@ import {
   getApplicationResolver,
   getApplicationsResolver,
   getMilestoneResolver,
+  getMilestonesByApplicationIdResolver,
   getMilestonesResolver,
   updateApplicationResolver,
   updateMilestoneResolver,
@@ -50,10 +51,25 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
     milestones: t.field({
       type: [MilestoneType],
       resolve: async (application) =>
-        getMilestonesResolver({}, { applicationId: application.id }, {} as Context),
+        getMilestonesByApplicationIdResolver({}, { applicationId: application.id }, {} as Context),
     }),
   }),
 });
+
+export const PaginatedApplicationsType = builder
+  .objectRef<{ data: DBApplication[]; count: number }>('PaginatedApplications')
+  .implement({
+    fields: (t) => ({
+      data: t.field({
+        type: [ApplicationType],
+        resolve: (parent) => parent.data,
+      }),
+      count: t.field({
+        type: 'Int',
+        resolve: (parent) => parent.count,
+      }),
+    }),
+  });
 
 export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').implement({
   fields: (t) => ({
@@ -65,6 +81,15 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
     completed: t.exposeBoolean('completed'),
   }),
 });
+
+export const PaginatedMilestonesType = builder
+  .objectRef<{ data: DBMilestone[]; count: number }>('PaginatedMilestones')
+  .implement({
+    fields: (t) => ({
+      data: t.field({ type: [MilestoneType], resolve: (parent) => parent.data }),
+      count: t.field({ type: 'Int', resolve: (parent) => parent.count }),
+    }),
+  });
 
 /* -------------------------------------------------------------------------- */
 /*                                   Inputs                                   */
@@ -112,7 +137,7 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
 /* -------------------------------------------------------------------------- */
 builder.queryFields((t) => ({
   applications: t.field({
-    type: [ApplicationType],
+    type: PaginatedApplicationsType,
     args: {
       pagination: t.arg({ type: PaginationInput, required: false }),
     },
@@ -133,7 +158,7 @@ builder.queryFields((t) => ({
     resolve: getMilestoneResolver,
   }),
   milestones: t.field({
-    type: [MilestoneType],
+    type: PaginatedMilestonesType,
     args: {
       applicationId: t.arg.id({ required: true }),
       pagination: t.arg({ type: PaginationInput, required: false }),

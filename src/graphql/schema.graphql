@@ -89,6 +89,21 @@ type Mutation {
   updateUser(input: UserUpdateInput!): User
 }
 
+type PaginatedApplications {
+  count: Int
+  data: [Application!]
+}
+
+type PaginatedMilestones {
+  count: Int
+  data: [Milestone!]
+}
+
+type PaginatedPrograms {
+  count: Int
+  data: [Program!]
+}
+
 input PaginationInput {
   limit: Int
   offset: Int
@@ -116,11 +131,11 @@ type ProgramKeyword {
 
 type Query {
   application(id: ID!): [Application!]
-  applications(pagination: PaginationInput): [Application!]
+  applications(pagination: PaginationInput): PaginatedApplications
   milestone(id: ID!): Milestone
-  milestones(applicationId: ID!, pagination: PaginationInput): [Milestone!]
+  milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
   program(id: ID!): Program
-  programs(pagination: PaginationInput): [Program!]
+  programs(pagination: PaginationInput): PaginatedPrograms
   roles: [Role!]
   user(id: ID!): User
   users: [User!]

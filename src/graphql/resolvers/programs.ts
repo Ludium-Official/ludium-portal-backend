@@ -8,7 +8,8 @@ import {
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Context, Root } from '@/types';
-import { eq, inArray } from 'drizzle-orm';
+import { validAndNotEmptyArray } from '@/utils/common';
+import { count, eq, inArray } from 'drizzle-orm';
 
 export async function getProgramsResolver(
   _root: Root,
@@ -18,7 +19,17 @@ export async function getProgramsResolver(
   const limit = args.pagination?.limit || 10;
   const offset = args.pagination?.offset || 0;
 
-  return ctx.db.select().from(programsTable).limit(limit).offset(offset);
+  const data = await ctx.db.select().from(programsTable).limit(limit).offset(offset);
+  const totalCount = await ctx.db.select({ count: count() }).from(programsTable);
+
+  if (!validAndNotEmptyArray(data) || !validAndNotEmptyArray(totalCount)) {
+    throw new Error('No programs found');
+  }
+
+  return {
+    data,
+    count: totalCount[0].count,
+  };
 }
 
 export async function getProgramResolver(_root: Root, args: { id: string }, ctx: Context) {

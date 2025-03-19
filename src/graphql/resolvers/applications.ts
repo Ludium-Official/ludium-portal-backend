@@ -7,7 +7,8 @@ import type {
 } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
-import { eq } from 'drizzle-orm';
+import { validAndNotEmptyArray } from '@/utils/common';
+import { count, eq } from 'drizzle-orm';
 
 export async function getApplicationsResolver(
   _root: Root,
@@ -17,7 +18,17 @@ export async function getApplicationsResolver(
   const limit = args.pagination?.limit || 10;
   const offset = args.pagination?.offset || 0;
 
-  return ctx.db.select().from(applicationsTable).limit(limit).offset(offset);
+  const data = await ctx.db.select().from(applicationsTable).limit(limit).offset(offset);
+  const totalCount = await ctx.db.select({ count: count() }).from(applicationsTable);
+
+  if (!validAndNotEmptyArray(data) || !validAndNotEmptyArray(totalCount)) {
+    throw new Error('No applications found');
+  }
+
+  return {
+    data,
+    count: totalCount[0].count,
+  };
 }
 
 export async function getApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
@@ -40,12 +51,37 @@ export async function getMilestonesResolver(
   const limit = args.pagination?.limit || 10;
   const offset = args.pagination?.offset || 0;
 
-  return ctx.db
+  const data = await ctx.db
     .select()
     .from(milestonesTable)
     .where(eq(milestonesTable.applicationId, args.applicationId))
     .limit(limit)
     .offset(offset);
+
+  const totalCount = await ctx.db
+    .select({ count: count() })
+    .from(milestonesTable)
+    .where(eq(milestonesTable.applicationId, args.applicationId));
+
+  if (!validAndNotEmptyArray(data) || !validAndNotEmptyArray(totalCount)) {
+    throw new Error('No milestones found');
+  }
+
+  return {
+    data,
+    count: totalCount[0].count,
+  };
+}
+
+export async function getMilestonesByApplicationIdResolver(
+  _root: Root,
+  args: { applicationId: string },
+  ctx: Context,
+) {
+  return ctx.db
+    .select()
+    .from(milestonesTable)
+    .where(eq(milestonesTable.applicationId, args.applicationId));
 }
 
 export async function createMilestoneResolver(

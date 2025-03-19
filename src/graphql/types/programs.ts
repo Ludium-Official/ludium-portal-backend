@@ -57,6 +57,21 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
   }),
 });
 
+export const PaginatedProgramsType = builder
+  .objectRef<{ data: DBProgram[]; count: number }>('PaginatedPrograms')
+  .implement({
+    fields: (t) => ({
+      data: t.field({
+        type: [ProgramType],
+        resolve: (parent) => parent.data,
+      }),
+      count: t.field({
+        type: 'Int',
+        resolve: (parent) => parent.count,
+      }),
+    }),
+  });
+
 export const ProgramKeywordType = builder.objectRef<DBProgramKeyword>('ProgramKeyword').implement({
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -100,7 +115,7 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
 /* -------------------------------------------------------------------------- */
 builder.queryFields((t) => ({
   programs: t.field({
-    type: [ProgramType],
+    type: PaginatedProgramsType,
     args: {
       pagination: t.arg({ type: PaginationInput, required: false }),
     },
