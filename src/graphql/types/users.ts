@@ -104,7 +104,7 @@ builder.queryFields((t) => ({
     resolve: getRolesResolver,
   }),
   usersByRole: t.field({
-    authScopes: { admin: true },
+    authScopes: { sponsor: true },
     type: [User],
     args: {
       role: t.arg.string({ required: true }),
