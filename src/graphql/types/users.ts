@@ -5,6 +5,7 @@ import {
   deleteUserResolver,
   getRolesResolver,
   getUserResolver,
+  getUsersByRoleResolver,
   getUsersResolver,
   updateUserResolver,
 } from '@/graphql/resolvers/users';
@@ -101,6 +102,14 @@ builder.queryFields((t) => ({
     authScopes: { admin: true },
     type: [Role],
     resolve: getRolesResolver,
+  }),
+  usersByRole: t.field({
+    authScopes: { admin: true },
+    type: [User],
+    args: {
+      role: t.arg.string({ required: true }),
+    },
+    resolve: getUsersByRoleResolver,
   }),
 }));
 

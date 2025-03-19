@@ -3,6 +3,7 @@ import builder from '@/graphql/builder';
 import {
   createProgramResolver,
   deleteProgramResolver,
+  getProgramKeywordsByProgramIdResolver,
   getProgramKeywordsResolver,
   getProgramResolver,
   getProgramsResolver,
@@ -34,9 +35,9 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
     keywords: t.field({
       type: [ProgramKeywordType],
       args: {
-        id: t.arg.string({ required: true }),
+        programId: t.arg.id({ required: true }),
       },
-      resolve: getProgramKeywordsResolver,
+      resolve: getProgramKeywordsByProgramIdResolver,
     }),
     status: t.exposeString('status'),
     creator: t.field({
@@ -127,6 +128,11 @@ builder.queryFields((t) => ({
       id: t.arg.id({ required: true }),
     },
     resolve: getProgramResolver,
+  }),
+  keywords: t.field({
+    type: [ProgramKeywordType],
+    authScopes: { sponsor: true },
+    resolve: getProgramKeywordsResolver,
   }),
 }));
 

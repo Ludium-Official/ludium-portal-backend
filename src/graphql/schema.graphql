@@ -115,7 +115,7 @@ type Program {
   deadline: Date
   description: String
   id: ID
-  keywords(id: String!): [ProgramKeyword!]
+  keywords(programId: ID!): [ProgramKeyword!]
   links: [Link!]
   name: String
   price: String
@@ -132,6 +132,7 @@ type ProgramKeyword {
 type Query {
   application(id: ID!): [Application!]
   applications(pagination: PaginationInput): PaginatedApplications
+  keywords: [ProgramKeyword!]
   milestone(id: ID!): Milestone
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
   program(id: ID!): Program
@@ -139,6 +140,7 @@ type Query {
   roles: [Role!]
   user(id: ID!): User
   users: [User!]
+  usersByRole(role: String!): [User!]
 }
 
 type Role {

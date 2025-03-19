@@ -7,7 +7,7 @@ import {
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
-import type { Context, Root } from '@/types';
+import type { Args, Context, Root } from '@/types';
 import { validAndNotEmptyArray } from '@/utils/common';
 import { count, eq, inArray } from 'drizzle-orm';
 
@@ -37,12 +37,16 @@ export async function getProgramResolver(_root: Root, args: { id: string }, ctx:
   return program;
 }
 
-export async function getProgramKeywordsResolver(_root: Root, args: { id: string }, ctx: Context) {
+export async function getProgramKeywordsByProgramIdResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
   // First get the junction records
   const keywordRelations = await ctx.db
     .select()
     .from(programsToKeywordsTable)
-    .where(eq(programsToKeywordsTable.programId, args.id));
+    .where(eq(programsToKeywordsTable.programId, args.programId));
 
   if (!keywordRelations.length) return [];
 
@@ -56,6 +60,10 @@ export async function getProgramKeywordsResolver(_root: Root, args: { id: string
         keywordRelations.map((rel) => rel.keywordId),
       ),
     );
+}
+
+export async function getProgramKeywordsResolver(_root: Root, _args: Args, ctx: Context) {
+  return ctx.db.select().from(keywordsTable);
 }
 
 export async function createProgramResolver(

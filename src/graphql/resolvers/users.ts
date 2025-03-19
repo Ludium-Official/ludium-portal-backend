@@ -1,7 +1,7 @@
-import { rolesTable, usersTable } from '@/db/schemas/users';
+import { rolesTable, usersTable, usersToRolesTable } from '@/db/schemas/users';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root } from '@/types';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
 export async function getUsersResolver(_root: Root, _args: Args, ctx: Context) {
   return ctx.db.select().from(usersTable);
@@ -15,6 +15,29 @@ export async function getUserResolver(_root: Root, args: { id: string }, ctx: Co
 
 export async function getRolesResolver(_root: Root, _args: Args, ctx: Context) {
   return ctx.db.select().from(rolesTable);
+}
+
+export async function getUsersByRoleResolver(_root: Root, args: { role: string }, ctx: Context) {
+  const [role] = await ctx.db.select().from(rolesTable).where(eq(rolesTable.name, args.role));
+
+  if (!role) return [];
+
+  const userRoles = await ctx.db
+    .select({ userId: usersToRolesTable.userId })
+    .from(usersToRolesTable)
+    .where(eq(usersToRolesTable.roleId, role.id));
+
+  if (!userRoles.length) return [];
+
+  return ctx.db
+    .select()
+    .from(usersTable)
+    .where(
+      inArray(
+        usersTable.id,
+        userRoles.map((ur) => ur.userId),
+      ),
+    );
 }
 
 export async function createUserResolver(
