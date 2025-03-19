@@ -11,6 +11,7 @@ import {
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { Link, LinkInput, User } from '@/graphql/types/users';
 import type { Context } from '@/types';
+import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -99,8 +100,10 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
 /* -------------------------------------------------------------------------- */
 builder.queryFields((t) => ({
   programs: t.field({
-    authScopes: { user: true },
     type: [ProgramType],
+    args: {
+      pagination: t.arg({ type: PaginationInput, required: false }),
+    },
     resolve: getProgramsResolver,
   }),
   program: t.field({

@@ -5,11 +5,19 @@ import type {
   UpdateApplicationInput,
   UpdateMilestoneInput,
 } from '@/graphql/types/applications';
-import type { Args, Context, Root } from '@/types';
+import type { PaginationInput } from '@/graphql/types/common';
+import type { Context, Root } from '@/types';
 import { eq } from 'drizzle-orm';
 
-export async function getApplicationsResolver(_root: Root, _args: Args, ctx: Context) {
-  return ctx.db.select().from(applicationsTable);
+export async function getApplicationsResolver(
+  _root: Root,
+  args: { pagination?: typeof PaginationInput.$inferInput | null },
+  ctx: Context,
+) {
+  const limit = args.pagination?.limit || 10;
+  const offset = args.pagination?.offset || 0;
+
+  return ctx.db.select().from(applicationsTable).limit(limit).offset(offset);
 }
 
 export async function getApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
@@ -26,13 +34,18 @@ export async function getMilestoneResolver(_root: Root, args: { id: string }, ct
 
 export async function getMilestonesResolver(
   _root: Root,
-  args: { applicationId: string },
+  args: { applicationId: string; pagination?: typeof PaginationInput.$inferInput | null },
   ctx: Context,
 ) {
+  const limit = args.pagination?.limit || 10;
+  const offset = args.pagination?.offset || 0;
+
   return ctx.db
     .select()
     .from(milestonesTable)
-    .where(eq(milestonesTable.applicationId, args.applicationId));
+    .where(eq(milestonesTable.applicationId, args.applicationId))
+    .limit(limit)
+    .offset(offset);
 }
 
 export async function createMilestoneResolver(

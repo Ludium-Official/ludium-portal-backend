@@ -89,6 +89,11 @@ type Mutation {
   updateUser(input: UserUpdateInput!): User
 }
 
+input PaginationInput {
+  limit: Int
+  offset: Int
+}
+
 type Program {
   creator: User
   currency: String
@@ -111,11 +116,11 @@ type ProgramKeyword {
 
 type Query {
   application(id: ID!): [Application!]
-  applications(programId: ID): [Application!]
+  applications(pagination: PaginationInput): [Application!]
   milestone(id: ID!): Milestone
-  milestones(applicationId: ID!): [Milestone!]
+  milestones(applicationId: ID!, pagination: PaginationInput): [Milestone!]
   program(id: ID!): Program
-  programs: [Program!]
+  programs(pagination: PaginationInput): [Program!]
   roles: [Role!]
   user(id: ID!): User
   users: [User!]

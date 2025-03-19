@@ -84,10 +84,12 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
 /* -------------------------------------------------------------------------- */
 builder.queryFields((t) => ({
   users: t.field({
+    authScopes: { admin: true },
     type: [User],
     resolve: getUsersResolver,
   }),
   user: t.field({
+    authScopes: { admin: true },
     type: User,
     nullable: true,
     args: {
@@ -96,6 +98,7 @@ builder.queryFields((t) => ({
     resolve: getUserResolver,
   }),
   roles: t.field({
+    authScopes: { admin: true },
     type: [Role],
     resolve: getRolesResolver,
   }),

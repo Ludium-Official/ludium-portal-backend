@@ -5,12 +5,20 @@ import {
   programsTable,
   programsToKeywordsTable,
 } from '@/db/schemas';
+import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
-import type { Args, Context, Root } from '@/types';
+import type { Context, Root } from '@/types';
 import { eq, inArray } from 'drizzle-orm';
 
-export async function getProgramsResolver(_root: Root, _args: Args, ctx: Context) {
-  return ctx.db.select().from(programsTable);
+export async function getProgramsResolver(
+  _root: Root,
+  args: { pagination?: typeof PaginationInput.$inferInput | null },
+  ctx: Context,
+) {
+  const limit = args.pagination?.limit || 10;
+  const offset = args.pagination?.offset || 0;
+
+  return ctx.db.select().from(programsTable).limit(limit).offset(offset);
 }
 
 export async function getProgramResolver(_root: Root, args: { id: string }, ctx: Context) {

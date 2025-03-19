@@ -15,6 +15,7 @@ import { getUserResolver } from '@/graphql/resolvers/users';
 import { ProgramType } from '@/graphql/types/programs';
 import { User } from '@/graphql/types/users';
 import type { Context } from '@/types';
+import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -111,15 +112,13 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
 /* -------------------------------------------------------------------------- */
 builder.queryFields((t) => ({
   applications: t.field({
-    authScopes: { user: true },
     type: [ApplicationType],
     args: {
-      programId: t.arg.id(),
+      pagination: t.arg({ type: PaginationInput, required: false }),
     },
     resolve: getApplicationsResolver,
   }),
   application: t.field({
-    authScopes: { user: true },
     type: [ApplicationType],
     args: {
       id: t.arg.id({ required: true }),
@@ -127,7 +126,6 @@ builder.queryFields((t) => ({
     resolve: getApplicationResolver,
   }),
   milestone: t.field({
-    authScopes: { user: true },
     type: MilestoneType,
     args: {
       id: t.arg.id({ required: true }),
@@ -135,10 +133,10 @@ builder.queryFields((t) => ({
     resolve: getMilestoneResolver,
   }),
   milestones: t.field({
-    authScopes: { user: true },
     type: [MilestoneType],
     args: {
       applicationId: t.arg.id({ required: true }),
+      pagination: t.arg({ type: PaginationInput, required: false }),
     },
     resolve: getMilestonesResolver,
   }),
@@ -147,6 +145,7 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   createApplication: t.field({
     type: ApplicationType,
+    authScopes: { sponsor: true },
     args: {
       input: t.arg({ type: CreateApplicationInput, required: true }),
     },
@@ -154,6 +153,7 @@ builder.mutationFields((t) => ({
   }),
   updateApplication: t.field({
     type: ApplicationType,
+    authScopes: { sponsor: true },
     args: {
       id: t.arg.string({ required: true }),
       input: t.arg({ type: UpdateApplicationInput, required: true }),
@@ -162,6 +162,7 @@ builder.mutationFields((t) => ({
   }),
   createMilestone: t.field({
     type: MilestoneType,
+    authScopes: { validator: true },
     args: {
       input: t.arg({ type: CreateMilestoneInput, required: true }),
     },
@@ -169,6 +170,7 @@ builder.mutationFields((t) => ({
   }),
   updateMilestone: t.field({
     type: MilestoneType,
+    authScopes: { validator: true, builder: true },
     args: {
       input: t.arg({ type: UpdateMilestoneInput, required: true }),
     },
