@@ -90,7 +90,7 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
     deadline: t.string(),
     keywords: t.idList(),
     links: t.field({ type: [LinkInput] }),
-    validatorId: t.id({ required: false }),
+    validatorId: t.id({ required: true }),
   }),
 });
 
@@ -106,6 +106,7 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     keywords: t.idList(),
     links: t.field({ type: [LinkInput] }),
     status: t.string(),
+    validatorId: t.id(),
   }),
 });
 

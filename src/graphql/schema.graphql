@@ -39,7 +39,7 @@ input CreateProgramInput {
   name: String!
   price: String
   summary: String
-  validatorId: ID
+  validatorId: ID!
 }
 
 """
@@ -177,6 +177,7 @@ input UpdateProgramInput {
   price: String
   status: String
   summary: String
+  validatorId: ID
 }
 
 type User {
