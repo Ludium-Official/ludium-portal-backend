@@ -115,7 +115,7 @@ type Program {
   deadline: Date
   description: String
   id: ID
-  keywords(programId: ID!): [ProgramKeyword!]
+  keywords: [ProgramKeyword!]
   links: [Link!]
   name: String
   price: String

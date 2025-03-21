@@ -11,7 +11,6 @@ import {
 } from '@/graphql/resolvers/programs';
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { Link, LinkInput, User } from '@/graphql/types/users';
-import type { Context } from '@/types';
 import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
@@ -34,21 +33,19 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
     }),
     keywords: t.field({
       type: [ProgramKeywordType],
-      args: {
-        programId: t.arg.id({ required: true }),
-      },
-      resolve: getProgramKeywordsByProgramIdResolver,
+      resolve: async (program, _args, ctx) =>
+        getProgramKeywordsByProgramIdResolver({}, { programId: program.id }, ctx),
     }),
     status: t.exposeString('status'),
     creator: t.field({
       type: User,
-      resolve: async (program) => getUserResolver({}, { id: program.creatorId }, {} as Context),
+      resolve: async (program, _args, ctx) => getUserResolver({}, { id: program.creatorId }, ctx),
     }),
     validator: t.field({
       type: User,
       nullable: true,
-      resolve: async (program) =>
-        getUserResolver({}, { id: program.validatorId ?? '' }, {} as Context),
+      resolve: async (program, _args, ctx) =>
+        getUserResolver({}, { id: program.validatorId ?? '' }, ctx),
     }),
     links: t.field({
       type: [Link],
