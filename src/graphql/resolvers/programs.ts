@@ -94,6 +94,7 @@ export async function createProgramResolver(
         url: link.url || '',
         title: link.title || '',
       })) || null,
+    validatorId: inputData.validatorId || null,
     status: 'draft',
   };
 

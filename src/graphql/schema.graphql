@@ -39,6 +39,7 @@ input CreateProgramInput {
   name: String!
   price: String
   summary: String
+  validatorId: ID
 }
 
 """
