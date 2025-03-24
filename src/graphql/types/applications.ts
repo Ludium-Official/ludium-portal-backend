@@ -186,7 +186,7 @@ builder.mutationFields((t) => ({
   }),
   createMilestones: t.field({
     type: [MilestoneType],
-    authScopes: { validator: true },
+    authScopes: { builder: true },
     args: {
       input: t.arg({ type: [CreateMilestoneInput], required: true }),
     },
