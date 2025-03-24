@@ -134,11 +134,16 @@ export async function createApplicationResolver(
   args: { input: typeof CreateApplicationInput.$inferInput },
   ctx: Context,
 ) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
   const [application] = await ctx.db
     .insert(applicationsTable)
     .values({
       ...args.input,
-      applicantId: ctx.user.id,
+      applicantId: user.id,
       status: 'pending',
     })
     .returning();
