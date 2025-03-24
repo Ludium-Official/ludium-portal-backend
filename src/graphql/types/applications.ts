@@ -11,9 +11,7 @@ import {
   updateApplicationResolver,
   updateMilestoneResolver,
 } from '@/graphql/resolvers/applications';
-import { getProgramResolver } from '@/graphql/resolvers/programs';
 import { getUserResolver } from '@/graphql/resolvers/users';
-import { ProgramType } from '@/graphql/types/programs';
 import { User } from '@/graphql/types/users';
 import type { Context } from '@/types';
 import { PaginationInput } from './common';
@@ -37,11 +35,6 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
       type: 'JSON',
       nullable: true,
       resolve: (application) => application.metadata as JSON,
-    }),
-    program: t.field({
-      type: ProgramType,
-      resolve: async (application) =>
-        getProgramResolver({}, { id: application.programId }, {} as Context),
     }),
     applicant: t.field({
       type: User,
@@ -151,7 +144,7 @@ builder.queryFields((t) => ({
     resolve: getApplicationsResolver,
   }),
   application: t.field({
-    type: [ApplicationType],
+    type: ApplicationType,
     args: {
       id: t.arg.id({ required: true }),
     },
@@ -177,7 +170,7 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   createApplication: t.field({
     type: ApplicationType,
-    authScopes: { sponsor: true },
+    authScopes: { builder: true },
     args: {
       input: t.arg({ type: CreateApplicationInput, required: true }),
     },
@@ -185,9 +178,8 @@ builder.mutationFields((t) => ({
   }),
   updateApplication: t.field({
     type: ApplicationType,
-    authScopes: { sponsor: true },
+    authScopes: { sponsor: true, validator: true, builder: true },
     args: {
-      id: t.arg.string({ required: true }),
       input: t.arg({ type: UpdateApplicationInput, required: true }),
     },
     resolve: updateApplicationResolver,

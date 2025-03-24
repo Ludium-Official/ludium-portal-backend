@@ -1,6 +1,6 @@
-import { usersTable } from '@/db/schemas';
+import { rolesTable, usersTable, usersToRolesTable } from '@/db/schemas';
 import type { Context, Root } from '@/types';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
 export async function loginResolver(
   _root: Root,
@@ -22,6 +22,23 @@ export async function loginResolver(
     user = newUser;
   }
 
+  const userToRoles = await ctx.db
+    .select()
+    .from(usersToRolesTable)
+    .where(eq(usersToRolesTable.userId, user.id));
+
+  const userRoles = await ctx.db
+    .select()
+    .from(rolesTable)
+    .where(
+      inArray(
+        rolesTable.id,
+        userToRoles.map((role) => role.roleId),
+      ),
+    );
+
+  const userRoleNames = userRoles.map((role) => role.name);
+
   const token = ctx.server.jwt.sign(
     {
       payload: {
@@ -34,5 +51,8 @@ export async function loginResolver(
     },
   );
 
-  return token;
+  return {
+    token,
+    userRoles: userRoleNames,
+  };
 }

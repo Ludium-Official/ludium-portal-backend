@@ -32,7 +32,22 @@ export async function getApplicationsResolver(
 }
 
 export async function getApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
-  return ctx.db.select().from(applicationsTable).where(eq(applicationsTable.id, args.id));
+  const [application] = await ctx.db
+    .select()
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, args.id));
+  return application;
+}
+
+export async function getApplicationsByProgramIdResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  return ctx.db
+    .select()
+    .from(applicationsTable)
+    .where(eq(applicationsTable.programId, args.programId));
 }
 
 export async function getMilestoneResolver(_root: Root, args: { id: string }, ctx: Context) {

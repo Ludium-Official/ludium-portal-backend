@@ -1,5 +1,6 @@
 import type { Program as DBProgram, Keyword as DBProgramKeyword } from '@/db/schemas';
 import builder from '@/graphql/builder';
+import { getApplicationsByProgramIdResolver } from '@/graphql/resolvers/applications';
 import {
   createProgramResolver,
   deleteProgramResolver,
@@ -10,8 +11,9 @@ import {
   updateProgramResolver,
 } from '@/graphql/resolvers/programs';
 import { getUserResolver } from '@/graphql/resolvers/users';
+import { ApplicationType } from '@/graphql/types/applications';
+import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput, User } from '@/graphql/types/users';
-import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -51,6 +53,11 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       type: [Link],
       nullable: true,
       resolve: (program) => program.links || [],
+    }),
+    applications: t.field({
+      type: [ApplicationType],
+      resolve: async (program, _args, ctx) =>
+        getApplicationsByProgramIdResolver({}, { programId: program.id }, ctx),
     }),
   }),
 });
