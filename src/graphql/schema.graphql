@@ -68,17 +68,24 @@ input LinkInput {
 }
 
 type Milestone {
-  completed: Boolean
   currency: String
   description: String
   id: ID
   price: String
+  status: MilestoneStatus
   title: String
+}
+
+enum MilestoneStatus {
+  completed
+  failed
+  pending
+  revision_requested
 }
 
 type Mutation {
   createApplication(input: CreateApplicationInput!): Application
-  createMilestone(input: CreateMilestoneInput!): Milestone
+  createMilestones(input: [CreateMilestoneInput!]!): [Milestone!]
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
   deleteProgram(id: ID!): Boolean
@@ -158,11 +165,11 @@ input UpdateApplicationInput {
 }
 
 input UpdateMilestoneInput {
-  completed: Boolean
   currency: String
   description: String
   id: String!
   price: String
+  status: String
   title: String
 }
 

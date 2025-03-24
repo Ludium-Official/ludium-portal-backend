@@ -1,6 +1,13 @@
 import { relations, sql } from 'drizzle-orm';
-import { boolean, decimal, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { decimal, pgEnum, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
+
+export const milestoneStatusEnum = pgEnum('milestone_status', [
+  'pending', // Initial state when created
+  'completed', // Milestone completed
+  'failed', // Milestone failed
+  'revision_requested', // Validator requested changes to the submission
+]);
 
 // Milestones table
 export const milestonesTable = pgTable('milestones', {
@@ -16,7 +23,7 @@ export const milestonesTable = pgTable('milestones', {
   description: text('description'),
   price: decimal('price', { precision: 38, scale: 18 }),
   currency: varchar('currency', { length: 10 }).default('ETH'),
-  completed: boolean('completed').default(false).notNull(),
+  status: milestoneStatusEnum('status').default('pending').notNull(),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

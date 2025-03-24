@@ -2,7 +2,7 @@ import type { Application as DBApplication, Milestone as DBMilestone } from '@/d
 import builder from '@/graphql/builder';
 import {
   createApplicationResolver,
-  createMilestoneResolver,
+  createMilestonesResolver,
   getApplicationResolver,
   getApplicationsResolver,
   getMilestoneResolver,
@@ -71,6 +71,10 @@ export const PaginatedApplicationsType = builder
     }),
   });
 
+export const MilestoneStatusEnum = builder.enumType('MilestoneStatus', {
+  values: ['pending', 'completed', 'failed', 'revision_requested'] as const,
+});
+
 export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').implement({
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -78,7 +82,10 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
     description: t.exposeString('description', { nullable: true }),
     price: t.exposeString('price'),
     currency: t.exposeString('currency'),
-    completed: t.exposeBoolean('completed'),
+    status: t.field({
+      type: MilestoneStatusEnum,
+      resolve: (milestone) => milestone.status,
+    }),
   }),
 });
 
@@ -128,7 +135,7 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
     description: t.string(),
     price: t.string(),
     currency: t.string(),
-    completed: t.boolean(),
+    status: t.string(),
   }),
 });
 
@@ -185,13 +192,13 @@ builder.mutationFields((t) => ({
     },
     resolve: updateApplicationResolver,
   }),
-  createMilestone: t.field({
-    type: MilestoneType,
+  createMilestones: t.field({
+    type: [MilestoneType],
     authScopes: { validator: true },
     args: {
-      input: t.arg({ type: CreateMilestoneInput, required: true }),
+      input: t.arg({ type: [CreateMilestoneInput], required: true }),
     },
-    resolve: createMilestoneResolver,
+    resolve: createMilestonesResolver,
   }),
   updateMilestone: t.field({
     type: MilestoneType,

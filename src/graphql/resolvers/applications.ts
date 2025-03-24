@@ -84,13 +84,13 @@ export async function getMilestonesByApplicationIdResolver(
     .where(eq(milestonesTable.applicationId, args.applicationId));
 }
 
-export async function createMilestoneResolver(
+export async function createMilestonesResolver(
   _root: Root,
-  args: { input: typeof CreateMilestoneInput.$inferInput },
+  args: { input: (typeof CreateMilestoneInput.$inferInput)[] },
   ctx: Context,
 ) {
-  const [milestone] = await ctx.db.insert(milestonesTable).values(args.input).returning();
-  return milestone;
+  const milestones = await ctx.db.insert(milestonesTable).values(args.input).returning();
+  return milestones;
 }
 
 export async function updateMilestoneResolver(
