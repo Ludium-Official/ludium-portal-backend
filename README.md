@@ -24,8 +24,8 @@ A modern GraphQL API built with Fastify, PostgreSQL, and TypeScript for the Ludi
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/habsida/ludium-backend.git
-   cd ludium-backend
+   git clone https://github.com/Ludium-Official/ludium-portal-backend.git
+   cd ludium-portal-backend
    ```
 
 2. Install dependencies:
@@ -136,11 +136,11 @@ The system supports four user roles:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
 ## 👥 Team
 
-- [Alex Han] - Backend & DevOps - [GitHub Profile](https://github.com/habsida)
+- [Alex Han] - Backend & DevOps - [GitHub Profile](https://github.com/lxhan)
 
 ## 🙏 Acknowledgments
 
@@ -150,7 +150,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Mercurius](https://mercurius.dev/)
 
 
-## Naming convention
+## 📝 Naming convention
 
 ### Types, interfaces and classes - Pascal case
 
