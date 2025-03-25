@@ -4,6 +4,7 @@ import { applicationsTable } from './applications';
 
 export const milestoneStatusEnum = pgEnum('milestone_status', [
   'pending', // Initial state when created
+  'approved', // Milestone approved
   'completed', // Milestone completed
   'failed', // Milestone failed
   'revision_requested', // Validator requested changes to the submission
