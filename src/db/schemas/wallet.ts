@@ -6,8 +6,8 @@ export const walletTable = pgTable('wallet', {
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
   walletId: varchar('wallet_id', { length: 256 }).notNull().unique(),
-  address: varchar('address', { length: 256 }).notNull().unique(),
-  balance: varchar('balance', { length: 256 }).default('0'),
+  network: varchar('network', { length: 256 }).default('Ethereum'),
+  address: varchar('address', { length: 256 }).unique(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()

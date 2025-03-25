@@ -4,22 +4,44 @@ import { eq, inArray } from 'drizzle-orm';
 
 export async function loginResolver(
   _root: Root,
-  args: { email: string; userId: string; walletId: string },
+  args: {
+    email: string;
+    userId: string;
+    walletId?: string | null;
+    network?: string | null;
+    symbol?: string | null;
+    address?: string | null;
+  },
   ctx: Context,
 ) {
-  const { email, userId, walletId } = args;
-  let [user] = await ctx.db.select().from(usersTable).where(eq(usersTable.email, email));
+  const { email, userId } = args;
+  const [user] = await ctx.db.select().from(usersTable).where(eq(usersTable.email, email));
 
   if (!user) {
-    const [newUser] = await ctx.db
-      .insert(usersTable)
-      .values({
-        externalId: userId,
-        email,
-      })
-      .returning();
+    throw new Error('User not found');
+  }
 
-    user = newUser;
+  await ctx.db
+    .update(usersTable)
+    .set({
+      externalId: userId,
+    })
+    .where(eq(usersTable.id, user.id));
+
+  if (args.walletId) {
+    const [wallet] = await ctx.db
+      .select()
+      .from(walletTable)
+      .where(eq(walletTable.walletId, args.walletId));
+
+    if (!wallet) {
+      await ctx.db.insert(walletTable).values({
+        userId: user.id,
+        walletId: args.walletId,
+        network: args.network,
+        address: args.address,
+      });
+    }
   }
 
   const userToRoles = await ctx.db
@@ -36,16 +58,6 @@ export async function loginResolver(
         userToRoles.map((role) => role.roleId),
       ),
     );
-
-  const [wallet] = await ctx.db.select().from(walletTable).where(eq(walletTable.userId, user.id));
-
-  if (!wallet) {
-    await ctx.db.insert(walletTable).values({
-      userId: user.id,
-      walletId,
-      address: walletId,
-    });
-  }
 
   const userRoleNames = userRoles.map((role) => role.name);
 
