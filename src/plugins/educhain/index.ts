@@ -1,0 +1,296 @@
+import { ethers } from 'ethers';
+import type { FastifyError, FastifyInstance, FastifyPluginOptions } from 'fastify';
+import fp from 'fastify-plugin';
+import eduProgram from './abi/LdEduProgram.json';
+
+export class Educhain {
+  private contract: ethers.Contract;
+  private provider: ethers.providers.JsonRpcProvider;
+
+  constructor(private server: FastifyInstance) {
+    const contractABI = eduProgram.abi;
+    this.provider = new ethers.providers.JsonRpcProvider(this.server.config.EDUCHAIN_RPC_URL);
+    const wallet = new ethers.Wallet(this.server.config.EDUCHAIN_PRIVATE_KEY, this.provider);
+    this.contract = new ethers.Contract(
+      this.server.config.EDUCHAIN_CONTRACT_ADDRESS,
+      contractABI,
+      wallet,
+    );
+  }
+
+  /**
+   * Retrieves program information from the smart contract
+   * @param programId The unique identifier of the program to retrieve
+   * @returns The program data from the smart contract
+   * @throws Error if the program is not found
+   */
+  async getProgram(programId: string) {
+    try {
+      if (!programId || (!ethers.utils.isHexString(programId) && Number.isNaN(Number(programId)))) {
+        throw new Error('Invalid program ID format');
+      }
+
+      const program = await this.contract.eduPrograms(programId);
+
+      if (!program || !program.id) {
+        throw new Error('Program not found');
+      }
+
+      return program;
+    } catch (error) {
+      this.server.log.error({ error, programId }, 'Failed to retrieve program from blockchain');
+      throw new Error('Program not found or blockchain error occurred');
+    }
+  }
+
+  /**
+   * Creates a new educational program on the blockchain
+   * @param params Program parameters including name, price, start and end times
+   * @returns The ID of the newly created program
+   * @throws Error if program creation fails
+   */
+  async createProgram(params: {
+    name: string;
+    price: string;
+    startTime: Date;
+    endTime: Date;
+    validatorId?: string;
+  }) {
+    try {
+      // Parameter validation
+      if (!params.name || params.name.trim() === '') {
+        throw new Error('Program name is required');
+      }
+
+      if (!params.price || Number.isNaN(Number(params.price)) || Number(params.price) <= 0) {
+        throw new Error('Valid positive price is required');
+      }
+
+      if (!params.startTime || !(params.startTime instanceof Date)) {
+        throw new Error('Valid start time is required');
+      }
+
+      if (!params.endTime || !(params.endTime instanceof Date)) {
+        throw new Error('Valid end time is required');
+      }
+
+      if (params.startTime >= params.endTime) {
+        throw new Error('Start time must be earlier than end time');
+      }
+
+      // Current time validation
+      const now = new Date();
+      if (params.startTime < now) {
+        throw new Error('Start time cannot be in the past');
+      }
+
+      // Convert price from ETH string to wei
+      const price = ethers.utils.parseEther(params.price);
+
+      // Convert dates to Unix timestamps (seconds)
+      const startTimestamp = Math.floor(params.startTime.getTime() / 1000);
+      const endTimestamp = Math.floor(params.endTime.getTime() / 1000);
+
+      // Ensure validator address is available
+      if (!this.server.config.EDUCHAIN_VALIDATOR_ADDRESS) {
+        throw new Error('Validator address not configured');
+      }
+
+      // Call the smart contract function with proper parameters
+      const tx = await this.contract.createEduProgram(
+        params.name,
+        price,
+        startTimestamp,
+        endTimestamp,
+        this.server.config.EDUCHAIN_VALIDATOR_ADDRESS,
+        { value: price },
+      );
+
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+
+      // Find the ProgramCreated event
+      const event = receipt.events.find((e: { event: string }) => e.event === 'ProgramCreated');
+
+      if (!event || !event.args || !event.args[0]) {
+        throw new Error('Program creation event not found in transaction receipt');
+      }
+
+      // Extract the program ID from the event args
+      const programId = event.args[0].toString();
+      return programId;
+    } catch (error) {
+      this.server.log.error({ error, params }, 'Failed to create program on blockchain');
+
+      // Provide more descriptive error messages based on error type
+      if (error instanceof Error) {
+        if (error.message.includes('insufficient funds')) {
+          throw new Error('Insufficient funds to create program');
+        }
+
+        if (error.message.includes('execution reverted')) {
+          throw new Error(`Smart contract rejected program creation: ${error.message}`);
+        }
+
+        throw error;
+      }
+
+      throw new Error('Program not created due to blockchain error');
+    }
+  }
+
+  /**
+   * Approves a program and assigns a builder
+   * @param programId The ID of the program to approve
+   * @returns Transaction receipt
+   * @throws Error if program approval fails
+   */
+  async approveProgram(programId: string) {
+    try {
+      if (!programId || (!ethers.utils.isHexString(programId) && Number.isNaN(Number(programId)))) {
+        throw new Error('Invalid program ID format');
+      }
+
+      if (!this.server.config.EDUCHAIN_BUILDER_ADDRESS) {
+        throw new Error('Builder address not configured');
+      }
+
+      // Verify the program exists before approving
+      const program = await this.getProgram(programId);
+
+      if (program.approve) {
+        throw new Error('Program is already approved');
+      }
+
+      if (program.claimed) {
+        throw new Error('Program is already claimed or reclaimed');
+      }
+
+      // Current time validation
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (currentTime > program.endTime.toNumber()) {
+        throw new Error(
+          `Program has already ended (End time: ${new Date(program.endTime.toNumber() * 1000).toLocaleString()})`,
+        );
+      }
+
+      const tx = await this.contract.approveProgram(
+        programId,
+        this.server.config.EDUCHAIN_BUILDER_ADDRESS,
+      );
+      const receipt = await tx.wait();
+
+      // Verify that the event was emitted
+      const event = receipt.events.find((e: { event: string }) => e.event === 'ProgramApproved');
+      if (!event) {
+        throw new Error('Program approval event not found in transaction receipt');
+      }
+
+      return receipt;
+    } catch (error) {
+      this.server.log.error({ error, programId }, 'Failed to approve program on blockchain');
+
+      if (error instanceof Error) {
+        // Pass through custom error messages
+        if (error.message.includes("You don't have approval permissions")) {
+          throw new Error('You do not have permission to approve this program');
+        }
+
+        throw error;
+      }
+
+      throw new Error('Program not approved due to blockchain error');
+    }
+  }
+
+  /**
+   * Claims grants for an approved program
+   * @param programId The ID of the program to claim grants for
+   * @returns Transaction receipt
+   * @throws Error if grant claiming fails
+   */
+  async claimGrants(programId: string) {
+    try {
+      if (!programId || (!ethers.utils.isHexString(programId) && Number.isNaN(Number(programId)))) {
+        throw new Error('Invalid program ID format');
+      }
+
+      if (!this.server.config.EDUCHAIN_BUILDER_PRIVATE_KEY) {
+        throw new Error('Builder private key not configured');
+      }
+
+      const builderWallet = new ethers.Wallet(
+        this.server.config.EDUCHAIN_BUILDER_PRIVATE_KEY,
+        this.provider,
+      );
+      const builderContract = new ethers.Contract(
+        this.server.config.EDUCHAIN_CONTRACT_ADDRESS,
+        eduProgram.abi,
+        builderWallet,
+      );
+      const program = await builderContract.eduPrograms(programId);
+
+      if (builderWallet.address.toLowerCase() !== program.builder.toLowerCase()) {
+        throw new Error(
+          `The current wallet address (${builderWallet.address}) does not match the builder address registered for the program (${program.builder})`,
+        );
+      }
+
+      if (!program.approve) {
+        throw new Error('This program has not been approved yet');
+      }
+
+      if (program.claimed) {
+        throw new Error('This program has already been claimed');
+      }
+
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (currentTime < program.startTime.toNumber()) {
+        throw new Error(
+          `The program has not started yet. (Start time: ${new Date(program.startTime.toNumber() * 1000).toLocaleString()})`,
+        );
+      }
+
+      if (currentTime > program.endTime.toNumber()) {
+        throw new Error(
+          `The program claim period has passed. (End time: ${new Date(program.endTime.toNumber() * 1000).toLocaleString()})`,
+        );
+      }
+
+      const tx = await builderContract.claimGrants(programId);
+      const receipt = await tx.wait();
+
+      // Verify that the event was emitted
+      const event = receipt.events.find((e: { event: string }) => e.event === 'ProgramClaimed');
+      if (!event) {
+        throw new Error('Program claim event not found in transaction receipt');
+      }
+
+      return receipt;
+    } catch (error) {
+      this.server.log.error({ error, programId }, 'Failed to claim program grants on blockchain');
+
+      if (error instanceof Error) {
+        throw error; // Pass through detailed error messages
+      }
+
+      throw new Error('Program grants not claimed due to blockchain error');
+    }
+  }
+}
+
+/**
+ * Fastify plugin that registers the Educhain functionality
+ */
+const educhainPlugin = (
+  server: FastifyInstance,
+  _: FastifyPluginOptions,
+  done: (error?: FastifyError) => void,
+): void => {
+  const educhain = new Educhain(server);
+  server.decorate('educhain', educhain);
+
+  done();
+};
+
+export default fp(educhainPlugin);

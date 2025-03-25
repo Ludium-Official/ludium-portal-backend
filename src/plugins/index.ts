@@ -2,6 +2,7 @@ import { schema as graphqlSchema } from '@/graphql/types';
 import argon2Plugin from '@/plugins/argon2';
 import authPlugin from '@/plugins/auth';
 import dbPlugin from '@/plugins/db';
+import educhainPlugin from '@/plugins/educhain';
 import corsPlugin from '@fastify/cors';
 import jwtPlugin from '@fastify/jwt';
 import type { FastifyInstance } from 'fastify';
@@ -22,6 +23,12 @@ const registerPlugins = (server: FastifyInstance) => {
     server.log.info('DB plugin is ready');
   });
 
+  void server.register(educhainPlugin).ready((err) => {
+    if (err) server.log.error(err);
+    server.log.info('Educhain plugin is ready');
+  });
+
+  // TODO: narrow down the origin
   void server.register(corsPlugin, {
     origin: '*',
   });

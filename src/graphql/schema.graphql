@@ -4,6 +4,7 @@ type Application {
   id: ID
   metadata: JSON
   milestones: [Milestone!]
+  program: Program
   status: ApplicationStatus
 }
 
@@ -38,7 +39,6 @@ input CreateProgramInput {
   name: String!
   price: String
   summary: String
-  validatorId: ID!
 }
 
 """
@@ -66,69 +66,35 @@ input LinkInput {
   url: String
 }
 
-type LoginResponse {
-  token: String
-  userRoles: [String!]
-}
-
 type Milestone {
+  completed: Boolean
   currency: String
   description: String
   id: ID
   price: String
-  status: MilestoneStatus
   title: String
-}
-
-enum MilestoneStatus {
-  completed
-  failed
-  pending
-  revision_requested
 }
 
 type Mutation {
   createApplication(input: CreateApplicationInput!): Application
-  createMilestones(input: [CreateMilestoneInput!]!): [Milestone!]
+  createMilestone(input: CreateMilestoneInput!): Milestone
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
-  login(email: String!, userId: String!): LoginResponse
-  updateApplication(input: UpdateApplicationInput!): Application
+  updateApplication(id: String!, input: UpdateApplicationInput!): Application
   updateMilestone(input: UpdateMilestoneInput!): Milestone
   updateProgram(input: UpdateProgramInput!): Program
   updateUser(input: UserUpdateInput!): User
 }
 
-type PaginatedApplications {
-  count: Int
-  data: [Application!]
-}
-
-type PaginatedMilestones {
-  count: Int
-  data: [Milestone!]
-}
-
-type PaginatedPrograms {
-  count: Int
-  data: [Program!]
-}
-
-input PaginationInput {
-  limit: Int
-  offset: Int
-}
-
 type Program {
-  applications: [Application!]
   creator: User
   currency: String
   deadline: Date
   description: String
   id: ID
-  keywords: [ProgramKeyword!]
+  keywords(id: String!): [ProgramKeyword!]
   links: [Link!]
   name: String
   price: String
@@ -143,17 +109,15 @@ type ProgramKeyword {
 }
 
 type Query {
-  application(id: ID!): Application
-  applications(pagination: PaginationInput): PaginatedApplications
-  keywords: [ProgramKeyword!]
+  application(id: ID!): [Application!]
+  applications(programId: ID): [Application!]
   milestone(id: ID!): Milestone
-  milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
+  milestones(applicationId: ID!): [Milestone!]
   program(id: ID!): Program
-  programs(pagination: PaginationInput): PaginatedPrograms
+  programs: [Program!]
   roles: [Role!]
   user(id: ID!): User
   users: [User!]
-  usersByRole(role: String!): [User!]
 }
 
 type Role {
@@ -170,11 +134,11 @@ input UpdateApplicationInput {
 }
 
 input UpdateMilestoneInput {
+  completed: Boolean
   currency: String
   description: String
   id: String!
   price: String
-  status: String
   title: String
 }
 
@@ -189,7 +153,6 @@ input UpdateProgramInput {
   price: String
   status: String
   summary: String
-  validatorId: ID
 }
 
 type User {
