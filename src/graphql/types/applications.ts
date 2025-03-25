@@ -13,7 +13,6 @@ import {
 } from '@/graphql/resolvers/applications';
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { User } from '@/graphql/types/users';
-import type { Context } from '@/types';
 import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
@@ -38,13 +37,13 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
     }),
     applicant: t.field({
       type: User,
-      resolve: async (application) =>
-        getUserResolver({}, { id: application.applicantId }, {} as Context),
+      resolve: async (application, _args, ctx) =>
+        getUserResolver({}, { id: application.applicantId }, ctx),
     }),
     milestones: t.field({
       type: [MilestoneType],
-      resolve: async (application) =>
-        getMilestonesByApplicationIdResolver({}, { applicationId: application.id }, {} as Context),
+      resolve: async (application, _args, ctx) =>
+        getMilestonesByApplicationIdResolver({}, { applicationId: application.id }, ctx),
     }),
   }),
 });
