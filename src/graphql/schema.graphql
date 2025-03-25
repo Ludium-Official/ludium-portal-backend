@@ -166,7 +166,7 @@ input UpdateApplicationInput {
   content: String
   id: String!
   metadata: JSON
-  status: String
+  status: ApplicationStatus
 }
 
 input UpdateMilestoneInput {
@@ -174,7 +174,7 @@ input UpdateMilestoneInput {
   description: String
   id: String!
   price: String
-  status: String
+  status: MilestoneStatus
   title: String
 }
 

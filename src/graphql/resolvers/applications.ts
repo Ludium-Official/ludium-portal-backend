@@ -1,4 +1,9 @@
-import { applicationsTable, milestonesTable } from '@/db/schemas';
+import {
+  type ApplicationUpdate,
+  type MilestoneUpdate,
+  applicationsTable,
+  milestonesTable,
+} from '@/db/schemas';
 import type {
   CreateApplicationInput,
   CreateMilestoneInput,
@@ -7,7 +12,7 @@ import type {
 } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
-import { validAndNotEmptyArray } from '@/utils/common';
+import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
 import { count, eq } from 'drizzle-orm';
 
 export async function getApplicationsResolver(
@@ -115,10 +120,7 @@ export async function updateMilestoneResolver(
 ) {
   const { id, ...updateData } = args.input;
 
-  // Filter out null values
-  const filteredData = Object.fromEntries(
-    Object.entries(updateData).filter(([_, v]) => v !== null),
-  );
+  const filteredData = filterEmptyValues<MilestoneUpdate>(updateData);
 
   const [milestone] = await ctx.db
     .update(milestonesTable)
@@ -158,10 +160,7 @@ export async function updateApplicationResolver(
 ) {
   const { id, ...updateData } = args.input;
 
-  // Remove null values and ensure status is a valid enum value
-  const filteredData = Object.fromEntries(
-    Object.entries(updateData).filter(([_, v]) => v !== null),
-  );
+  const filteredData = filterEmptyValues<ApplicationUpdate>(updateData);
 
   const [application] = await ctx.db
     .update(applicationsTable)

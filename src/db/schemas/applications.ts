@@ -59,3 +59,7 @@ export const applicationRelations = relations(applicationsTable, ({ one, many })
 // Types for use in code
 export type Application = typeof applicationsTable.$inferSelect;
 export type NewApplication = typeof applicationsTable.$inferInsert;
+export type ApplicationUpdate = Omit<
+  Application,
+  'id' | 'createdAt' | 'updatedAt' | 'programId' | 'applicantId'
+>;

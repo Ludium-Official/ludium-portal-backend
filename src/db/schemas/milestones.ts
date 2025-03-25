@@ -44,3 +44,4 @@ export const milestoneRelations = relations(milestonesTable, ({ one }) => ({
 // Types for use in code
 export type Milestone = typeof milestonesTable.$inferSelect;
 export type NewMilestone = typeof milestonesTable.$inferInsert;
+export type MilestoneUpdate = Omit<Milestone, 'id' | 'createdAt' | 'updatedAt' | 'applicationId'>;

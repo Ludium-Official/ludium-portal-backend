@@ -106,7 +106,7 @@ export const UpdateApplicationInput = builder.inputType('UpdateApplicationInput'
     id: t.string({ required: true }),
     content: t.string(),
     metadata: t.field({ type: 'JSON' }),
-    status: t.string(),
+    status: t.field({ type: ApplicationStatusEnum }),
   }),
 });
 
@@ -127,7 +127,7 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
     description: t.string(),
     price: t.string(),
     currency: t.string(),
-    status: t.string(),
+    status: t.field({ type: MilestoneStatusEnum }),
   }),
 });
 

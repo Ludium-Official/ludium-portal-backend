@@ -8,7 +8,7 @@ import {
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
-import { validAndNotEmptyArray } from '@/utils/common';
+import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
 import { count, eq, inArray } from 'drizzle-orm';
 
 export async function getProgramsResolver(
@@ -127,7 +127,7 @@ export async function updateProgramResolver(
   const { keywords, links, ...inputData } = args.input;
 
   // Remove null values and prepare data
-  const programData = Object.fromEntries(Object.entries(inputData).filter(([_, v]) => v !== null));
+  const programData = filterEmptyValues<Program>(inputData);
 
   // Transform links if present
   const updateData: Partial<Program> = { ...programData };
