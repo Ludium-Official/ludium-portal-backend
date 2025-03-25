@@ -1,4 +1,4 @@
-import { relations, sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { usersTable } from './users';
 
@@ -13,7 +13,7 @@ export const filesTable = pgTable('files', {
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
     .notNull()
-    .$onUpdateFn(() => sql`now()`),
+    .$onUpdateFn(() => new Date()),
 });
 
 export const fileRelations = relations(filesTable, ({ one }) => ({

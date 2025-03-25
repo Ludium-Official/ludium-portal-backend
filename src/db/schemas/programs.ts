@@ -1,4 +1,4 @@
-import { relations, sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 import {
   date,
   decimal,
@@ -44,7 +44,7 @@ export const programsTable = pgTable('programs', {
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
     .notNull()
-    .$onUpdateFn(() => sql`now()`),
+    .$onUpdateFn(() => new Date()),
 });
 
 // Program relations

@@ -118,14 +118,12 @@ export async function updateMilestoneResolver(
   args: { input: typeof UpdateMilestoneInput.$inferInput },
   ctx: Context,
 ) {
-  const { id, ...updateData } = args.input;
-
-  const filteredData = filterEmptyValues<MilestoneUpdate>(updateData);
+  const filteredData = filterEmptyValues<MilestoneUpdate>(args.input);
 
   const [milestone] = await ctx.db
     .update(milestonesTable)
     .set(filteredData)
-    .where(eq(milestonesTable.id, id))
+    .where(eq(milestonesTable.id, args.input.id))
     .returning();
 
   return milestone;
@@ -158,14 +156,12 @@ export async function updateApplicationResolver(
   args: { input: typeof UpdateApplicationInput.$inferInput },
   ctx: Context,
 ) {
-  const { id, ...updateData } = args.input;
-
-  const filteredData = filterEmptyValues<ApplicationUpdate>(updateData);
+  const filteredData = filterEmptyValues<ApplicationUpdate>(args.input);
 
   const [application] = await ctx.db
     .update(applicationsTable)
     .set(filteredData)
-    .where(eq(applicationsTable.id, id))
+    .where(eq(applicationsTable.id, args.input.id))
     .returning();
 
   return application;

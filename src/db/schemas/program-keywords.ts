@@ -1,4 +1,4 @@
-import { relations, sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { programsToKeywordsTable } from './programs';
 
@@ -12,7 +12,7 @@ export const keywordsTable = pgTable('keywords', {
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
     .notNull()
-    .$onUpdateFn(() => sql`now()`),
+    .$onUpdateFn(() => new Date()),
 });
 
 // Keyword relations

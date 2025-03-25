@@ -64,7 +64,7 @@ export const PaginatedApplicationsType = builder
   });
 
 export const MilestoneStatusEnum = builder.enumType('MilestoneStatus', {
-  values: ['pending', 'approved', 'completed', 'failed', 'revision_requested'] as const,
+  values: ['pending', 'completed', 'failed', 'revision_requested'] as const,
 });
 
 export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').implement({

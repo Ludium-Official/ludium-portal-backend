@@ -81,7 +81,6 @@ type Milestone {
 }
 
 enum MilestoneStatus {
-  approved
   completed
   failed
   pending

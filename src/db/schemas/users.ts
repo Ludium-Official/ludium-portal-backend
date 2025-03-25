@@ -1,4 +1,4 @@
-import { relations, sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 import { jsonb, pgTable, primaryKey, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
 import { filesTable } from './files';
@@ -12,7 +12,7 @@ export const rolesTable = pgTable('roles', {
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
     .notNull()
-    .$onUpdateFn(() => sql`now()`),
+    .$onUpdateFn(() => new Date()),
 });
 
 export const usersTable = pgTable('users', {
@@ -29,7 +29,7 @@ export const usersTable = pgTable('users', {
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
     .notNull()
-    .$onUpdateFn(() => sql`now()`),
+    .$onUpdateFn(() => new Date()),
 });
 
 export const usersToRolesTable = pgTable(

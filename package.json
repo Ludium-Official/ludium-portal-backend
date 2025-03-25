@@ -7,7 +7,7 @@
   "scripts": {
     "build": "rm -rf build && tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
     "start": "node build/main.js",
-    "dev": "NODE_ENV=local tsx watch ./src/main.ts",
+    "dev": "NODE_ENV=local tsx watch ./src/main.ts --inspect-brk",
     "check": "biome check --write",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
