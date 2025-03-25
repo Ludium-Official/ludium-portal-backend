@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1742288867067,
-      "tag": "0000_spotty_scrambler",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1742792473934,
-      "tag": "0001_even_vermin",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1742875907707,
-      "tag": "0002_wakeful_stellaris",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1742884671453,
-      "tag": "0003_loose_dark_beast",
+      "when": 1742889343722,
+      "tag": "0000_kind_alex_power",
       "breakpoints": true
     }
   ]

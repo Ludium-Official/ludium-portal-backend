@@ -3,6 +3,7 @@ import { jsonb, pgTable, primaryKey, text, timestamp, uuid, varchar } from 'driz
 import { applicationsTable } from './applications';
 import { filesTable } from './files';
 import { programsTable } from './programs';
+import { walletTable } from './wallet';
 
 export const rolesTable = pgTable('roles', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -46,12 +47,16 @@ export const usersToRolesTable = pgTable(
 );
 
 // Отношения для пользователей
-export const userRelations = relations(usersTable, ({ many }) => ({
+export const userRelations = relations(usersTable, ({ many, one }) => ({
   roles: many(usersToRolesTable),
   files: many(filesTable),
   createdPrograms: many(programsTable, { relationName: 'program_creator' }),
   validatedPrograms: many(programsTable, { relationName: 'program_validator' }),
   applications: many(applicationsTable),
+  wallet: one(walletTable, {
+    fields: [usersTable.id],
+    references: [walletTable.userId],
+  }),
 }));
 
 // Отношения для ролей

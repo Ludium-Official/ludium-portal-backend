@@ -94,7 +94,7 @@ type Mutation {
   createUser(input: UserInput!): User
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
-  login(email: String!, userId: String!): LoginResponse
+  login(email: String!, userId: ID!, walletId: String!): LoginResponse
   updateApplication(input: UpdateApplicationInput!): Application
   updateMilestone(input: UpdateMilestoneInput!): Milestone
   updateProgram(input: UpdateProgramInput!): Program

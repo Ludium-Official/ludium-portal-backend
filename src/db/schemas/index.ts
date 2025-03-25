@@ -4,3 +4,4 @@ export * from './programs';
 export * from './applications';
 export * from './program-keywords';
 export * from './milestones';
+export * from './wallet';

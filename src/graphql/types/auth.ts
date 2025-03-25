@@ -20,7 +20,8 @@ builder.mutationFields((t) => ({
     type: LoginResponseType,
     args: {
       email: t.arg.string({ required: true }),
-      userId: t.arg.string({ required: true }),
+      userId: t.arg.id({ required: true }),
+      walletId: t.arg.string({ required: true }),
     },
     resolve: loginResolver,
   }),

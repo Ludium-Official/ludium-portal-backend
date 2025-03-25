@@ -1,13 +1,13 @@
-import { rolesTable, usersTable, usersToRolesTable } from '@/db/schemas';
+import { rolesTable, usersTable, usersToRolesTable, walletTable } from '@/db/schemas';
 import type { Context, Root } from '@/types';
 import { eq, inArray } from 'drizzle-orm';
 
 export async function loginResolver(
   _root: Root,
-  args: { email: string; userId: string },
+  args: { email: string; userId: string; walletId: string },
   ctx: Context,
 ) {
-  const { email, userId } = args;
+  const { email, userId, walletId } = args;
   let [user] = await ctx.db.select().from(usersTable).where(eq(usersTable.email, email));
 
   if (!user) {
@@ -36,6 +36,16 @@ export async function loginResolver(
         userToRoles.map((role) => role.roleId),
       ),
     );
+
+  const [wallet] = await ctx.db.select().from(walletTable).where(eq(walletTable.userId, user.id));
+
+  if (!wallet) {
+    await ctx.db.insert(walletTable).values({
+      userId: user.id,
+      walletId,
+      address: walletId,
+    });
+  }
 
   const userRoleNames = userRoles.map((role) => role.name);
 

@@ -1,1 +1,0 @@
-ALTER TYPE "public"."milestone_status" ADD VALUE 'approved' BEFORE 'completed';
