@@ -1,5 +1,6 @@
 import type { Role as DBRole, User as DBUser } from '@/db/schemas/users';
 import builder from '@/graphql/builder';
+import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
   createUserResolver,
   deleteUserResolver,
@@ -9,16 +10,11 @@ import {
   getUsersResolver,
   updateUserResolver,
 } from '@/graphql/resolvers/users';
+import { Link, LinkInput } from '@/graphql/types/links';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
-export const Link = builder.objectRef<{ url: string; title: string }>('Link').implement({
-  fields: (t) => ({
-    url: t.exposeString('url'),
-    title: t.exposeString('title'),
-  }),
-});
 
 export const Role = builder.objectRef<DBRole>('Role').implement({
   fields: (t) => ({
@@ -40,7 +36,7 @@ export const User = builder.objectRef<DBUser>('User').implement({
     links: t.field({
       type: [Link],
       nullable: true,
-      resolve: (user) => user.links || [],
+      resolve: async (user, _args, ctx) => getLinksByUserIdResolver({}, { userId: user.id }, ctx),
     }),
   }),
 });
@@ -48,13 +44,6 @@ export const User = builder.objectRef<DBUser>('User').implement({
 /* -------------------------------------------------------------------------- */
 /*                                   Inputs                                   */
 /* -------------------------------------------------------------------------- */
-export const LinkInput = builder.inputType('LinkInput', {
-  fields: (t) => ({
-    url: t.string(),
-    title: t.string(),
-  }),
-});
-
 export const UserInput = builder.inputType('UserInput', {
   fields: (t) => ({
     firstName: t.string(),

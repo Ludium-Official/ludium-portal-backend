@@ -23,15 +23,6 @@ CREATE TABLE "files" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "roles" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"name" varchar(50) NOT NULL,
-	"description" text,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "roles_name_unique" UNIQUE("name")
-);
---> statement-breakpoint
 CREATE TABLE "users" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"first_name" varchar(256),
@@ -45,6 +36,12 @@ CREATE TABLE "users" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
+CREATE TABLE "users_to_links" (
+	"user_id" uuid NOT NULL,
+	"link_id" uuid NOT NULL,
+	CONSTRAINT "users_to_links_user_id_link_id_pk" PRIMARY KEY("user_id","link_id")
 );
 --> statement-breakpoint
 CREATE TABLE "users_to_roles" (
@@ -63,7 +60,6 @@ CREATE TABLE "programs" (
 	"deadline" date NOT NULL,
 	"creator_id" uuid NOT NULL,
 	"validator_id" uuid,
-	"links" jsonb,
 	"status" "program_status" DEFAULT 'draft',
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
@@ -73,6 +69,12 @@ CREATE TABLE "programs_to_keywords" (
 	"program_id" uuid NOT NULL,
 	"keyword_id" uuid NOT NULL,
 	CONSTRAINT "programs_to_keywords_program_id_keyword_id_pk" PRIMARY KEY("program_id","keyword_id")
+);
+--> statement-breakpoint
+CREATE TABLE "programs_to_links" (
+	"program_id" uuid NOT NULL,
+	"link_id" uuid NOT NULL,
+	CONSTRAINT "programs_to_links_program_id_link_id_pk" PRIMARY KEY("program_id","link_id")
 );
 --> statement-breakpoint
 CREATE TABLE "keywords" (
@@ -91,30 +93,60 @@ CREATE TABLE "milestones" (
 	"price" numeric(38, 18),
 	"currency" varchar(10) DEFAULT 'ETH',
 	"status" "milestone_status" DEFAULT 'pending' NOT NULL,
+	"links" jsonb,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "milestones_to_links" (
+	"milestone_id" uuid NOT NULL,
+	"link_id" uuid NOT NULL,
+	CONSTRAINT "milestones_to_links_milestone_id_link_id_pk" PRIMARY KEY("milestone_id","link_id")
 );
 --> statement-breakpoint
 CREATE TABLE "wallet" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
 	"wallet_id" varchar(256) NOT NULL,
-	"address" varchar(256) NOT NULL,
-	"balance" varchar(256) DEFAULT '0',
+	"network" varchar(256) DEFAULT 'Ethereum',
+	"address" varchar(256),
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "wallet_wallet_id_unique" UNIQUE("wallet_id"),
 	CONSTRAINT "wallet_address_unique" UNIQUE("address")
 );
 --> statement-breakpoint
+CREATE TABLE "links" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"url" text NOT NULL,
+	"title" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "roles" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" text NOT NULL,
+	"description" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "roles_name_unique" UNIQUE("name")
+);
+--> statement-breakpoint
 ALTER TABLE "applications" ADD CONSTRAINT "applications_program_id_programs_id_fk" FOREIGN KEY ("program_id") REFERENCES "public"."programs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "applications" ADD CONSTRAINT "applications_applicant_id_users_id_fk" FOREIGN KEY ("applicant_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "files" ADD CONSTRAINT "files_uploaded_by_id_users_id_fk" FOREIGN KEY ("uploaded_by_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "users_to_links" ADD CONSTRAINT "users_to_links_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "users_to_links" ADD CONSTRAINT "users_to_links_link_id_links_id_fk" FOREIGN KEY ("link_id") REFERENCES "public"."links"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "users_to_roles" ADD CONSTRAINT "users_to_roles_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "users_to_roles" ADD CONSTRAINT "users_to_roles_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "programs" ADD CONSTRAINT "programs_creator_id_users_id_fk" FOREIGN KEY ("creator_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "programs" ADD CONSTRAINT "programs_validator_id_users_id_fk" FOREIGN KEY ("validator_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "programs_to_keywords" ADD CONSTRAINT "programs_to_keywords_program_id_programs_id_fk" FOREIGN KEY ("program_id") REFERENCES "public"."programs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "programs_to_keywords" ADD CONSTRAINT "programs_to_keywords_keyword_id_keywords_id_fk" FOREIGN KEY ("keyword_id") REFERENCES "public"."keywords"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "programs_to_links" ADD CONSTRAINT "programs_to_links_program_id_programs_id_fk" FOREIGN KEY ("program_id") REFERENCES "public"."programs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "programs_to_links" ADD CONSTRAINT "programs_to_links_link_id_links_id_fk" FOREIGN KEY ("link_id") REFERENCES "public"."links"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "milestones" ADD CONSTRAINT "milestones_application_id_applications_id_fk" FOREIGN KEY ("application_id") REFERENCES "public"."applications"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "milestones_to_links" ADD CONSTRAINT "milestones_to_links_milestone_id_milestones_id_fk" FOREIGN KEY ("milestone_id") REFERENCES "public"."milestones"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "milestones_to_links" ADD CONSTRAINT "milestones_to_links_link_id_links_id_fk" FOREIGN KEY ("link_id") REFERENCES "public"."links"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "wallet" ADD CONSTRAINT "wallet_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;

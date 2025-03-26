@@ -1,6 +1,17 @@
 import { relations } from 'drizzle-orm';
-import { decimal, pgEnum, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  decimal,
+  jsonb,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
+import { linksTable } from './links';
 
 export const milestoneStatusEnum = pgEnum('milestone_status', [
   'pending', // Initial state when created
@@ -25,6 +36,8 @@ export const milestonesTable = pgTable('milestones', {
   currency: varchar('currency', { length: 10 }).default('ETH'),
   status: milestoneStatusEnum('status').default('pending').notNull(),
 
+  links: jsonb('links').$type<{ url: string; title: string }[]>(),
+
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
@@ -38,6 +51,31 @@ export const milestoneRelations = relations(milestonesTable, ({ one }) => ({
   application: one(applicationsTable, {
     fields: [milestonesTable.applicationId],
     references: [applicationsTable.id],
+  }),
+}));
+
+// Links
+export const milestonesToLinksTable = pgTable(
+  'milestones_to_links',
+  {
+    milestoneId: uuid('milestone_id')
+      .notNull()
+      .references(() => milestonesTable.id, { onDelete: 'cascade' }),
+    linkId: uuid('link_id')
+      .notNull()
+      .references(() => linksTable.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.milestoneId, t.linkId] })],
+);
+
+export const milestonesToLinksRelations = relations(milestonesToLinksTable, ({ one }) => ({
+  milestone: one(milestonesTable, {
+    fields: [milestonesToLinksTable.milestoneId],
+    references: [milestonesTable.id],
+  }),
+  link: one(linksTable, {
+    fields: [milestonesToLinksTable.linkId],
+    references: [linksTable.id],
   }),
 }));
 

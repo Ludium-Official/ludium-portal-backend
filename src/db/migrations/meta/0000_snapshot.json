@@ -1,5 +1,5 @@
 {
-  "id": "f8e7e0ac-f4b2-44db-a285-1c7987969426",
+  "id": "0e291709-3c17-4de7-b135-5e7a778a6ab2",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -175,60 +175,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.roles": {
-      "name": "roles",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "roles_name_unique": {
-          "name": "roles_name_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.users": {
       "name": "users",
       "schema": "",
@@ -315,6 +261,66 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users_to_links": {
+      "name": "users_to_links",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "link_id": {
+          "name": "link_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "users_to_links_user_id_users_id_fk": {
+          "name": "users_to_links_user_id_users_id_fk",
+          "tableFrom": "users_to_links",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "users_to_links_link_id_links_id_fk": {
+          "name": "users_to_links_link_id_links_id_fk",
+          "tableFrom": "users_to_links",
+          "tableTo": "links",
+          "columnsFrom": [
+            "link_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "users_to_links_user_id_link_id_pk": {
+          "name": "users_to_links_user_id_link_id_pk",
+          "columns": [
+            "user_id",
+            "link_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -439,12 +445,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "links": {
-          "name": "links",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "status": {
           "name": "status",
           "type": "program_status",
@@ -563,6 +563,66 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.programs_to_links": {
+      "name": "programs_to_links",
+      "schema": "",
+      "columns": {
+        "program_id": {
+          "name": "program_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "link_id": {
+          "name": "link_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "programs_to_links_program_id_programs_id_fk": {
+          "name": "programs_to_links_program_id_programs_id_fk",
+          "tableFrom": "programs_to_links",
+          "tableTo": "programs",
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "programs_to_links_link_id_links_id_fk": {
+          "name": "programs_to_links_link_id_links_id_fk",
+          "tableFrom": "programs_to_links",
+          "tableTo": "links",
+          "columnsFrom": [
+            "link_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "programs_to_links_program_id_link_id_pk": {
+          "name": "programs_to_links_program_id_link_id_pk",
+          "columns": [
+            "program_id",
+            "link_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.keywords": {
       "name": "keywords",
       "schema": "",
@@ -661,6 +721,12 @@
           "notNull": true,
           "default": "'pending'"
         },
+        "links": {
+          "name": "links",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -698,6 +764,66 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.milestones_to_links": {
+      "name": "milestones_to_links",
+      "schema": "",
+      "columns": {
+        "milestone_id": {
+          "name": "milestone_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "link_id": {
+          "name": "link_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "milestones_to_links_milestone_id_milestones_id_fk": {
+          "name": "milestones_to_links_milestone_id_milestones_id_fk",
+          "tableFrom": "milestones_to_links",
+          "tableTo": "milestones",
+          "columnsFrom": [
+            "milestone_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "milestones_to_links_link_id_links_id_fk": {
+          "name": "milestones_to_links_link_id_links_id_fk",
+          "tableFrom": "milestones_to_links",
+          "tableTo": "links",
+          "columnsFrom": [
+            "link_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "milestones_to_links_milestone_id_link_id_pk": {
+          "name": "milestones_to_links_milestone_id_link_id_pk",
+          "columns": [
+            "milestone_id",
+            "link_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.wallet": {
       "name": "wallet",
       "schema": "",
@@ -721,18 +847,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "network": {
+          "name": "network",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'Ethereum'"
+        },
         "address": {
           "name": "address",
           "type": "varchar(256)",
           "primaryKey": false,
-          "notNull": true
-        },
-        "balance": {
-          "name": "balance",
-          "type": "varchar(256)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -779,6 +905,106 @@
           "nullsNotDistinct": false,
           "columns": [
             "address"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.links": {
+      "name": "links",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.roles": {
+      "name": "roles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "roles_name_unique": {
+          "name": "roles_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
           ]
         }
       },

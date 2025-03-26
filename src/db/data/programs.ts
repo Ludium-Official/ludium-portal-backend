@@ -9,10 +9,6 @@ export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
     price: '5',
     currency: 'ETH',
     deadline: '2023-12-31',
-    links: [
-      { url: 'https://example.com/grant1', title: 'Detailed Information' },
-      { url: 'https://github.com/example/grant1', title: 'GitHub Repository' },
-    ],
     status: 'published',
   },
   {
@@ -23,7 +19,6 @@ export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
     price: '2.5',
     currency: 'ETH',
     deadline: '2023-11-15',
-    links: [{ url: 'https://example.com/challenge1', title: 'Contest Rules' }],
     status: 'published',
   },
   {
@@ -34,10 +29,6 @@ export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
     price: '10',
     currency: 'ETH',
     deadline: '2024-01-31',
-    links: [
-      { url: 'https://example.com/defi-program', title: 'About the Program' },
-      { url: 'https://docs.example.com/defi-program', title: 'Documentation' },
-    ],
     status: 'draft',
   },
   {
@@ -48,7 +39,6 @@ export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
     price: '7.5',
     currency: 'ETH',
     deadline: '2023-12-15',
-    links: [{ url: 'https://example.com/nft-project', title: 'Project Description' }],
     status: 'published',
   },
   {
@@ -59,10 +49,6 @@ export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
     price: '15',
     currency: 'ETH',
     deadline: '2024-02-28',
-    links: [
-      { url: 'https://example.com/edu-platform', title: 'Platform Concept' },
-      { url: 'https://github.com/example/edu-platform', title: 'GitHub Repository' },
-    ],
     status: 'draft',
   },
 ];

@@ -25,6 +25,7 @@ input CreateMilestoneInput {
   applicationId: String!
   currency: String! = "ETH"
   description: String
+  links: [LinkInput!]
   price: String!
   title: String!
 }
@@ -75,6 +76,7 @@ type Milestone {
   currency: String
   description: String
   id: ID
+  links: [Link!]
   price: String
   status: MilestoneStatus
   title: String
@@ -173,6 +175,7 @@ input UpdateMilestoneInput {
   currency: String
   description: String
   id: String!
+  links: [LinkInput!]
   price: String
   status: MilestoneStatus
   title: String

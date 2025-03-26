@@ -7,6 +7,7 @@ import './users';
 import './programs';
 import './applications';
 import './auth';
+import './links';
 
 export const schema = builder.toSchema();
 const schemaAsString = printSchema(lexicographicSortSchema(schema));

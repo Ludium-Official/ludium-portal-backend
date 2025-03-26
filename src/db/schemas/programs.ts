@@ -2,7 +2,6 @@ import { relations } from 'drizzle-orm';
 import {
   date,
   decimal,
-  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -12,7 +11,8 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
-import { keywordsTable } from './program-keywords';
+import { keywordsTable } from './keywords';
+import { linksTable } from './links';
 import { usersTable } from './users';
 
 export const programStatusEnum = pgEnum('program_status', [
@@ -38,7 +38,6 @@ export const programsTable = pgTable('programs', {
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
   validatorId: uuid('validator_id').references(() => usersTable.id, { onDelete: 'set null' }),
-  links: jsonb('links').$type<{ url: string; title: string }[]>(),
   status: programStatusEnum('status').default('draft'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
@@ -63,7 +62,7 @@ export const programRelations = relations(programsTable, ({ one, many }) => ({
   programsToKeywords: many(programsToKeywordsTable),
 }));
 
-// Junction table for programs to keywords (many-to-many)
+// Keywords
 export const programsToKeywordsTable = pgTable(
   'programs_to_keywords',
   {
@@ -85,6 +84,31 @@ export const programsToKeywordsRelations = relations(programsToKeywordsTable, ({
   keyword: one(keywordsTable, {
     fields: [programsToKeywordsTable.keywordId],
     references: [keywordsTable.id],
+  }),
+}));
+
+// Links
+export const programsToLinksTable = pgTable(
+  'programs_to_links',
+  {
+    programId: uuid('program_id')
+      .notNull()
+      .references(() => programsTable.id, { onDelete: 'cascade' }),
+    linkId: uuid('link_id')
+      .notNull()
+      .references(() => linksTable.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.programId, t.linkId] })],
+);
+
+export const programsToLinksRelations = relations(programsToLinksTable, ({ one }) => ({
+  program: one(programsTable, {
+    fields: [programsToLinksTable.programId],
+    references: [programsTable.id],
+  }),
+  link: one(linksTable, {
+    fields: [programsToLinksTable.linkId],
+    references: [linksTable.id],
   }),
 }));
 

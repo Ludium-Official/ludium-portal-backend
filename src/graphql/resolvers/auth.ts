@@ -9,7 +9,6 @@ export async function loginResolver(
     userId: string;
     walletId?: string | null;
     network?: string | null;
-    symbol?: string | null;
     address?: string | null;
   },
   ctx: Context,

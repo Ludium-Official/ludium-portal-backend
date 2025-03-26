@@ -1,4 +1,10 @@
-import { rolesTable, usersTable, usersToRolesTable } from '@/db/schemas/users';
+import {
+  linksTable,
+  rolesTable,
+  usersTable,
+  usersToLinksTable,
+  usersToRolesTable,
+} from '@/db/schemas';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root } from '@/types';
 import { eq, inArray } from 'drizzle-orm';
@@ -47,20 +53,37 @@ export async function createUserResolver(
 ) {
   const { links, ...userData } = args.input;
 
-  const [user] = await ctx.db
-    .insert(usersTable)
-    .values({
-      ...userData,
-      links: links
-        ? links.map((link) => ({
-            url: link.url || '',
-            title: link.title || '',
-          }))
-        : undefined,
-    })
-    .returning();
+  return ctx.db.transaction(async (t) => {
+    const [user] = await t
+      .insert(usersTable)
+      .values({
+        ...userData,
+      })
+      .returning();
 
-  return user;
+    if (links) {
+      // insert links to links table and map to user
+      const filteredLinks = links.filter((link) => link.url);
+      const newLinks = await t
+        .insert(linksTable)
+        .values(
+          filteredLinks.map((link) => ({
+            url: link.url as string,
+            title: link.title as string,
+          })),
+        )
+        .returning();
+
+      await t.insert(usersToLinksTable).values(
+        newLinks.map((link) => ({
+          userId: user.id,
+          linkId: link.id,
+        })),
+      );
+    }
+
+    return user;
+  });
 }
 
 export async function updateUserResolver(
@@ -69,24 +92,54 @@ export async function updateUserResolver(
   ctx: Context,
 ) {
   const { links, ...userData } = args.input;
-  const [user] = await ctx.db
-    .update(usersTable)
-    .set({
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      organizationName: userData.organizationName,
-      image: userData.image,
-      about: userData.about,
-      links: links as { url: string; title: string }[],
-    })
-    .where(eq(usersTable.id, args.input.id))
-    .returning();
 
-  return user;
+  return ctx.db.transaction(async (t) => {
+    const [user] = await t
+      .update(usersTable)
+      .set({
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        organizationName: userData.organizationName,
+        image: userData.image,
+        about: userData.about,
+        links: links as { url: string; title: string }[],
+      })
+      .where(eq(usersTable.id, args.input.id))
+      .returning();
+
+    if (links) {
+      // delete existing links
+      await t.delete(usersToLinksTable).where(eq(usersToLinksTable.userId, user.id));
+
+      // insert links to links table and map to user
+      const filteredLinks = links.filter((link) => link.url);
+      const newLinks = await t
+        .insert(linksTable)
+        .values(
+          filteredLinks.map((link) => ({
+            url: link.url as string,
+            title: link.title as string,
+          })),
+        )
+        .returning();
+
+      await t.insert(usersToLinksTable).values(
+        newLinks.map((link) => ({
+          userId: user.id,
+          linkId: link.id,
+        })),
+      );
+    }
+
+    return user;
+  });
 }
 
 export async function deleteUserResolver(_root: Root, args: { id: string }, ctx: Context) {
-  const [user] = await ctx.db.delete(usersTable).where(eq(usersTable.id, args.id)).returning();
-
-  return user;
+  return ctx.db.transaction(async (t) => {
+    await t.delete(usersToLinksTable).where(eq(usersToLinksTable.userId, args.id));
+    await t.delete(usersToRolesTable).where(eq(usersToRolesTable.userId, args.id));
+    const [user] = await t.delete(usersTable).where(eq(usersTable.id, args.id)).returning();
+    return user;
+  });
 }
