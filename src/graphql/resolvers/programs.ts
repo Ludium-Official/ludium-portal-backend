@@ -100,16 +100,15 @@ export async function createProgramResolver(
 
     // Handle keywords
     if (keywords?.length) {
-      const newKeywords = await t
-        .insert(keywordsTable)
-        .values(keywords.map((keyword) => ({ name: keyword })))
-        .returning();
-      await t.insert(programsToKeywordsTable).values(
-        newKeywords.map((keyword) => ({
-          programId: program.id,
-          keywordId: keyword.id,
-        })),
-      );
+      await t
+        .insert(programsToKeywordsTable)
+        .values(
+          keywords.map((keyword) => ({
+            programId: program.id,
+            keywordId: keyword,
+          })),
+        )
+        .onConflictDoNothing();
     }
 
     if (links) {
@@ -148,6 +147,16 @@ export async function updateProgramResolver(
   const programData = filterEmptyValues<Program>(inputData);
 
   return ctx.db.transaction(async (t) => {
+    // handle keywords
+    if (keywords) {
+      await t
+        .delete(programsToKeywordsTable)
+        .where(eq(programsToKeywordsTable.programId, args.input.id));
+      await t
+        .insert(programsToKeywordsTable)
+        .values(keywords.map((keyword) => ({ programId: args.input.id, keywordId: keyword })))
+        .onConflictDoNothing();
+    }
     // Transform links if present
     const updateData: Partial<Program> = { ...programData };
     if (links) {
