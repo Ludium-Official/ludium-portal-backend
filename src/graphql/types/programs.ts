@@ -1,6 +1,7 @@
 import type { Program as DBProgram, Keyword as DBProgramKeyword } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getApplicationsByProgramIdResolver } from '@/graphql/resolvers/applications';
+import { getLinksByProgramIdResolver } from '@/graphql/resolvers/links';
 import {
   createProgramResolver,
   deleteProgramResolver,
@@ -13,7 +14,8 @@ import {
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { ApplicationType } from '@/graphql/types/applications';
 import { PaginationInput } from '@/graphql/types/common';
-import { Link, LinkInput, User } from '@/graphql/types/users';
+import { Link, LinkInput } from '@/graphql/types/links';
+import { User } from '@/graphql/types/users';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -38,6 +40,11 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       resolve: async (program, _args, ctx) =>
         getProgramKeywordsByProgramIdResolver({}, { programId: program.id }, ctx),
     }),
+    links: t.field({
+      type: [Link],
+      resolve: async (program, _args, ctx) =>
+        getLinksByProgramIdResolver({}, { programId: program.id }, ctx),
+    }),
     status: t.exposeString('status'),
     creator: t.field({
       type: User,
@@ -48,11 +55,6 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       nullable: true,
       resolve: async (program, _args, ctx) =>
         getUserResolver({}, { id: program.validatorId ?? '' }, ctx),
-    }),
-    links: t.field({
-      type: [Link],
-      nullable: true,
-      resolve: (program) => program.links || [],
     }),
     applications: t.field({
       type: [ApplicationType],

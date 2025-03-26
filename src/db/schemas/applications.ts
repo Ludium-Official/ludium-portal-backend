@@ -1,4 +1,4 @@
-import { relations, sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 import { jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { milestonesTable } from './milestones';
 import { programsTable } from './programs';
@@ -40,7 +40,7 @@ export const applicationsTable = pgTable('applications', {
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
     .notNull()
-    .$onUpdateFn(() => sql`now()`),
+    .$onUpdateFn(() => new Date()),
 });
 
 // Application relations
@@ -59,3 +59,7 @@ export const applicationRelations = relations(applicationsTable, ({ one, many })
 // Types for use in code
 export type Application = typeof applicationsTable.$inferSelect;
 export type NewApplication = typeof applicationsTable.$inferInsert;
+export type ApplicationUpdate = Omit<
+  Application,
+  'id' | 'createdAt' | 'updatedAt' | 'programId' | 'applicantId'
+>;

@@ -1,12 +1,15 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { createApplications } from './data/applications';
+import { links, programLinks } from './data/links';
 import { keywords, programKeywords, programs } from './data/programs';
 import { createUserRoles, roles, users } from './data/users';
 import { applicationsTable } from './schemas/applications';
-import { keywordsTable } from './schemas/program-keywords';
-import { programsTable, programsToKeywordsTable } from './schemas/programs';
-import { rolesTable, usersTable, usersToRolesTable } from './schemas/users';
+import { keywordsTable } from './schemas/keywords';
+import { linksTable } from './schemas/links';
+import { programsTable, programsToKeywordsTable, programsToLinksTable } from './schemas/programs';
+import { rolesTable } from './schemas/roles';
+import { usersTable, usersToRolesTable } from './schemas/users';
 
 const DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://ludium:ludium@localhost:5435/ludium?search_path=public';
@@ -121,6 +124,42 @@ async function seed() {
               .returning()
               .onConflictDoNothing();
             console.log(`✅ Added ${insertedProgramKeywords.length} program-keyword relationships`);
+          }
+
+          // Add links
+          if (links.length > 0) {
+            console.log('🔗 Adding links...');
+            const insertedLinks = await db
+              .insert(linksTable)
+              .values(links)
+              .returning()
+              .onConflictDoNothing();
+            console.log(`✅ Added ${insertedLinks.length} links`);
+
+            // Create program-link relationships
+            console.log('🔄 Adding program-link relationships...');
+            const programLinkValues = [];
+
+            for (const mapping of programLinks) {
+              const programId = insertedPrograms[mapping.programIndex].id;
+
+              for (const linkIndex of mapping.linkIndices) {
+                const linkId = insertedLinks[linkIndex].id;
+                programLinkValues.push({
+                  programId,
+                  linkId,
+                });
+              }
+            }
+
+            if (programLinkValues.length > 0) {
+              const insertedProgramLinks = await db
+                .insert(programsToLinksTable)
+                .values(programLinkValues)
+                .returning()
+                .onConflictDoNothing();
+              console.log(`✅ Added ${insertedProgramLinks.length} program-link relationships`);
+            }
           }
         }
 

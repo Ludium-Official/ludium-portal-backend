@@ -1,4 +1,4 @@
-import { type User as DbUser, rolesTable, usersTable, usersToRolesTable } from '@/db/schemas/users';
+import { type User as DbUser, rolesTable, usersTable, usersToRolesTable } from '@/db/schemas';
 import type { Context } from '@/types';
 import { eq } from 'drizzle-orm';
 import type { FastifyError, FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';

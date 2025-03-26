@@ -1,19 +1,16 @@
-import type { Application as DBApplication, Milestone as DBMilestone } from '@/db/schemas';
+import type { Application as DBApplication } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
   createApplicationResolver,
-  createMilestonesResolver,
   getApplicationResolver,
   getApplicationsResolver,
-  getMilestoneResolver,
-  getMilestonesByApplicationIdResolver,
-  getMilestonesResolver,
   updateApplicationResolver,
-  updateMilestoneResolver,
 } from '@/graphql/resolvers/applications';
+import { getMilestonesByApplicationIdResolver } from '@/graphql/resolvers/milestones';
 import { getUserResolver } from '@/graphql/resolvers/users';
+import { PaginationInput } from '@/graphql/types/common';
+import { MilestoneType } from '@/graphql/types/milestones';
 import { User } from '@/graphql/types/users';
-import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -63,33 +60,6 @@ export const PaginatedApplicationsType = builder
     }),
   });
 
-export const MilestoneStatusEnum = builder.enumType('MilestoneStatus', {
-  values: ['pending', 'completed', 'failed', 'revision_requested'] as const,
-});
-
-export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').implement({
-  fields: (t) => ({
-    id: t.exposeID('id'),
-    title: t.exposeString('title'),
-    description: t.exposeString('description', { nullable: true }),
-    price: t.exposeString('price'),
-    currency: t.exposeString('currency'),
-    status: t.field({
-      type: MilestoneStatusEnum,
-      resolve: (milestone) => milestone.status,
-    }),
-  }),
-});
-
-export const PaginatedMilestonesType = builder
-  .objectRef<{ data: DBMilestone[]; count: number }>('PaginatedMilestones')
-  .implement({
-    fields: (t) => ({
-      data: t.field({ type: [MilestoneType], resolve: (parent) => parent.data }),
-      count: t.field({ type: 'Int', resolve: (parent) => parent.count }),
-    }),
-  });
-
 /* -------------------------------------------------------------------------- */
 /*                                   Inputs                                   */
 /* -------------------------------------------------------------------------- */
@@ -106,28 +76,7 @@ export const UpdateApplicationInput = builder.inputType('UpdateApplicationInput'
     id: t.string({ required: true }),
     content: t.string(),
     metadata: t.field({ type: 'JSON' }),
-    status: t.string(),
-  }),
-});
-
-export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
-  fields: (t) => ({
-    applicationId: t.string({ required: true }),
-    title: t.string({ required: true }),
-    description: t.string(),
-    price: t.string({ required: true }),
-    currency: t.string({ required: true, defaultValue: 'ETH' }),
-  }),
-});
-
-export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
-  fields: (t) => ({
-    id: t.string({ required: true }),
-    title: t.string(),
-    description: t.string(),
-    price: t.string(),
-    currency: t.string(),
-    status: t.string(),
+    status: t.field({ type: ApplicationStatusEnum }),
   }),
 });
 
@@ -149,21 +98,6 @@ builder.queryFields((t) => ({
     },
     resolve: getApplicationResolver,
   }),
-  milestone: t.field({
-    type: MilestoneType,
-    args: {
-      id: t.arg.id({ required: true }),
-    },
-    resolve: getMilestoneResolver,
-  }),
-  milestones: t.field({
-    type: PaginatedMilestonesType,
-    args: {
-      applicationId: t.arg.id({ required: true }),
-      pagination: t.arg({ type: PaginationInput, required: false }),
-    },
-    resolve: getMilestonesResolver,
-  }),
 }));
 
 builder.mutationFields((t) => ({
@@ -182,21 +116,5 @@ builder.mutationFields((t) => ({
       input: t.arg({ type: UpdateApplicationInput, required: true }),
     },
     resolve: updateApplicationResolver,
-  }),
-  createMilestones: t.field({
-    type: [MilestoneType],
-    authScopes: { builder: true },
-    args: {
-      input: t.arg({ type: [CreateMilestoneInput], required: true }),
-    },
-    resolve: createMilestonesResolver,
-  }),
-  updateMilestone: t.field({
-    type: MilestoneType,
-    authScopes: { validator: true, builder: true },
-    args: {
-      input: t.arg({ type: UpdateMilestoneInput, required: true }),
-    },
-    resolve: updateMilestoneResolver,
   }),
 }));

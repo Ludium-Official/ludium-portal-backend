@@ -2,13 +2,15 @@ import {
   type NewProgram,
   type Program,
   keywordsTable,
+  linksTable,
   programsTable,
   programsToKeywordsTable,
+  programsToLinksTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
-import { validAndNotEmptyArray } from '@/utils/common';
+import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
 import { count, eq, inArray } from 'drizzle-orm';
 
 export async function getProgramsResolver(
@@ -89,34 +91,49 @@ export async function createProgramResolver(
       ? new Date(inputData.deadline).toISOString()
       : new Date().toISOString(),
     creatorId: user.id,
-    links:
-      links?.map((link) => ({
-        url: link.url || '',
-        title: link.title || '',
-      })) || null,
     validatorId: inputData.validatorId || null,
     status: 'draft',
   };
 
-  // Now insert with proper typing
-  const [program] = await ctx.db.insert(programsTable).values(insertData).returning();
+  return ctx.db.transaction(async (t) => {
+    const [program] = await t.insert(programsTable).values(insertData).returning();
 
-  // Handle keywords
-  if (keywords?.length) {
-    await Promise.all(
-      keywords.map((keywordId) =>
-        ctx.db
-          .insert(programsToKeywordsTable)
-          .values({
+    // Handle keywords
+    if (keywords?.length) {
+      await t
+        .insert(programsToKeywordsTable)
+        .values(
+          keywords.map((keyword) => ({
             programId: program.id,
-            keywordId,
-          })
-          .onConflictDoNothing(),
-      ),
-    );
-  }
+            keywordId: keyword,
+          })),
+        )
+        .onConflictDoNothing();
+    }
 
-  return program;
+    if (links) {
+      // insert links to links table and map to program
+      const filteredLinks = links.filter((link) => link.url);
+      const newLinks = await t
+        .insert(linksTable)
+        .values(
+          filteredLinks.map((link) => ({
+            url: link.url as string,
+            title: link.title as string,
+          })),
+        )
+        .returning();
+
+      await t.insert(programsToLinksTable).values(
+        newLinks.map((link) => ({
+          programId: program.id,
+          linkId: link.id,
+        })),
+      );
+    }
+
+    return program;
+  });
 }
 
 export async function updateProgramResolver(
@@ -127,24 +144,46 @@ export async function updateProgramResolver(
   const { keywords, links, ...inputData } = args.input;
 
   // Remove null values and prepare data
-  const programData = Object.fromEntries(Object.entries(inputData).filter(([_, v]) => v !== null));
+  const programData = filterEmptyValues<Program>(inputData);
 
-  // Transform links if present
-  const updateData: Partial<Program> = { ...programData };
-  if (links) {
-    updateData.links = links.map((link) => ({
-      url: link.url ?? '',
-      title: link.title ?? '',
-    }));
-  }
+  return ctx.db.transaction(async (t) => {
+    // handle keywords
+    if (keywords) {
+      await t
+        .delete(programsToKeywordsTable)
+        .where(eq(programsToKeywordsTable.programId, args.input.id));
+      await t
+        .insert(programsToKeywordsTable)
+        .values(keywords.map((keyword) => ({ programId: args.input.id, keywordId: keyword })))
+        .onConflictDoNothing();
+    }
+    // Transform links if present
+    const updateData: Partial<Program> = { ...programData };
+    if (links) {
+      // delete existing links
+      await t.delete(programsToLinksTable).where(eq(programsToLinksTable.programId, args.input.id));
 
-  const [program] = await ctx.db
-    .update(programsTable)
-    .set(updateData)
-    .where(eq(programsTable.id, args.input.id))
-    .returning();
+      // insert new links
+      const newLinks = await t
+        .insert(linksTable)
+        .values(links.map((link) => ({ url: link.url as string, title: link.title as string })))
+        .returning();
+      await t.insert(programsToLinksTable).values(
+        newLinks.map((link) => ({
+          programId: args.input.id,
+          linkId: link.id,
+        })),
+      );
+    }
 
-  return program;
+    const [program] = await ctx.db
+      .update(programsTable)
+      .set(updateData)
+      .where(eq(programsTable.id, args.input.id))
+      .returning();
+
+    return program;
+  });
 }
 
 export async function deleteProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
