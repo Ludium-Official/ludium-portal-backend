@@ -54,24 +54,12 @@ export class Educhain {
     price: string;
     startTime: Date;
     endTime: Date;
-    validatorId?: string;
+    validatorAddress: string;
   }) {
     try {
       // Parameter validation
-      if (!params.name || params.name.trim() === '') {
-        throw new Error('Program name is required');
-      }
-
       if (!params.price || Number.isNaN(Number(params.price)) || Number(params.price) <= 0) {
         throw new Error('Valid positive price is required');
-      }
-
-      if (!params.startTime || !(params.startTime instanceof Date)) {
-        throw new Error('Valid start time is required');
-      }
-
-      if (!params.endTime || !(params.endTime instanceof Date)) {
-        throw new Error('Valid end time is required');
       }
 
       if (params.startTime >= params.endTime) {
@@ -92,7 +80,7 @@ export class Educhain {
       const endTimestamp = Math.floor(params.endTime.getTime() / 1000);
 
       // Ensure validator address is available
-      if (!this.server.config.EDUCHAIN_VALIDATOR_ADDRESS) {
+      if (!params.validatorAddress) {
         throw new Error('Validator address not configured');
       }
 
@@ -102,7 +90,7 @@ export class Educhain {
         price,
         startTimestamp,
         endTimestamp,
-        this.server.config.EDUCHAIN_VALIDATOR_ADDRESS,
+        params.validatorAddress,
         { value: price },
       );
 
@@ -142,16 +130,17 @@ export class Educhain {
   /**
    * Approves a program and assigns a builder
    * @param programId The ID of the program to approve
+   * @param builderAddress The address of the builder to assign to the program
    * @returns Transaction receipt
    * @throws Error if program approval fails
    */
-  async approveProgram(programId: string) {
+  async approveProgram(programId: string, builderAddress: string) {
     try {
       if (!programId || (!ethers.utils.isHexString(programId) && Number.isNaN(Number(programId)))) {
         throw new Error('Invalid program ID format');
       }
 
-      if (!this.server.config.EDUCHAIN_BUILDER_ADDRESS) {
+      if (!builderAddress) {
         throw new Error('Builder address not configured');
       }
 
@@ -174,17 +163,8 @@ export class Educhain {
         );
       }
 
-      const tx = await this.contract.approveProgram(
-        programId,
-        this.server.config.EDUCHAIN_BUILDER_ADDRESS,
-      );
+      const tx = await this.contract.approveProgram(programId, builderAddress);
       const receipt = await tx.wait();
-
-      // Verify that the event was emitted
-      const event = receipt.events.find((e: { event: string }) => e.event === 'ProgramApproved');
-      if (!event) {
-        throw new Error('Program approval event not found in transaction receipt');
-      }
 
       return receipt;
     } catch (error) {
@@ -259,12 +239,6 @@ export class Educhain {
 
       const tx = await builderContract.claimGrants(programId);
       const receipt = await tx.wait();
-
-      // Verify that the event was emitted
-      const event = receipt.events.find((e: { event: string }) => e.event === 'ProgramClaimed');
-      if (!event) {
-        throw new Error('Program claim event not found in transaction receipt');
-      }
 
       return receipt;
     } catch (error) {

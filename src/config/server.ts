@@ -1,6 +1,7 @@
 import registerPlugins from '@/plugins';
 import type { Argon2 } from '@/plugins/argon2';
 import type { AuthHandler, RequestAuth } from '@/plugins/auth';
+import type { Educhain } from '@/plugins/educhain';
 import loadEnv from '@/plugins/env';
 import registerRoutes from '@/routes';
 import type { EnvConfig } from '@/types';
@@ -15,6 +16,7 @@ declare module 'fastify' {
     db: PostgresJsDatabase;
     auth: AuthHandler;
     argon2: Argon2;
+    educhain: Educhain;
   }
   interface FastifyRequest {
     jwt: JWT;

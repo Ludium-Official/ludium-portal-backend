@@ -6,6 +6,7 @@ import {
   programsTable,
   programsToKeywordsTable,
   programsToLinksTable,
+  walletTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
@@ -80,22 +81,30 @@ export async function createProgramResolver(
     throw new Error('User not found');
   }
 
-  // Create a properly typed object for the database insert
-  const insertData: NewProgram = {
-    name: inputData.name,
-    summary: inputData.summary || null,
-    description: inputData.description || null,
-    price: inputData.price || '0',
-    currency: inputData.currency || 'ETH',
-    deadline: inputData.deadline
-      ? new Date(inputData.deadline).toISOString()
-      : new Date().toISOString(),
-    creatorId: user.id,
-    validatorId: inputData.validatorId || null,
-    status: 'draft',
-  };
-
   return ctx.db.transaction(async (t) => {
+    const [validatorWallet] = await t
+      .select()
+      .from(walletTable)
+      .where(eq(walletTable.userId, inputData.validatorId));
+    if (!validatorWallet) {
+      throw new Error('Validator wallet not found');
+    }
+
+    // Create a properly typed object for the database insert
+    const insertData: NewProgram = {
+      name: inputData.name,
+      summary: inputData.summary,
+      description: inputData.description,
+      price: inputData.price || '0',
+      currency: inputData.currency || 'ETH',
+      deadline: inputData.deadline
+        ? new Date(inputData.deadline).toISOString()
+        : new Date().toISOString(),
+      creatorId: user.id,
+      validatorId: inputData.validatorId,
+      status: 'draft',
+    };
+
     const [program] = await t.insert(programsTable).values(insertData).returning();
 
     // Handle keywords
@@ -131,6 +140,14 @@ export async function createProgramResolver(
         })),
       );
     }
+
+    await ctx.server.educhain.createProgram({
+      name: inputData.name,
+      price: inputData.price || '0',
+      startTime: new Date(insertData.deadline),
+      endTime: new Date(insertData.deadline),
+      validatorAddress: validatorWallet.address as string,
+    });
 
     return program;
   });
