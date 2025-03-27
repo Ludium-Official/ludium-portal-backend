@@ -1,4 +1,9 @@
-import { type ApplicationUpdate, applicationsTable } from '@/db/schemas';
+import {
+  type ApplicationUpdate,
+  applicationsTable,
+  applicationsToLinksTable,
+  linksTable,
+} from '@/db/schemas';
 import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
@@ -55,16 +60,39 @@ export async function createApplicationResolver(
     throw new Error('User not found');
   }
 
-  const [application] = await ctx.db
-    .insert(applicationsTable)
-    .values({
-      ...args.input,
-      applicantId: user.id,
-      status: 'pending',
-    })
-    .returning();
+  return ctx.db.transaction(async (t) => {
+    const [application] = await t
+      .insert(applicationsTable)
+      .values({
+        ...args.input,
+        applicantId: user.id,
+        status: 'pending',
+      })
+      .returning();
 
-  return application;
+    if (args.input.links) {
+      // insert links to links table and map to program
+      const filteredLinks = args.input.links.filter((link) => link.url);
+      const newLinks = await t
+        .insert(linksTable)
+        .values(
+          filteredLinks.map((link) => ({
+            url: link.url as string,
+            title: link.title as string,
+          })),
+        )
+        .returning();
+
+      await t.insert(applicationsToLinksTable).values(
+        newLinks.map((link) => ({
+          applicationId: application.id,
+          linkId: link.id,
+        })),
+      );
+    }
+
+    return application;
+  });
 }
 
 export async function updateApplicationResolver(
@@ -74,11 +102,38 @@ export async function updateApplicationResolver(
 ) {
   const filteredData = filterEmptyValues<ApplicationUpdate>(args.input);
 
-  const [application] = await ctx.db
-    .update(applicationsTable)
-    .set(filteredData)
-    .where(eq(applicationsTable.id, args.input.id))
-    .returning();
+  return ctx.db.transaction(async (t) => {
+    const [application] = await t
+      .update(applicationsTable)
+      .set(filteredData)
+      .where(eq(applicationsTable.id, args.input.id))
+      .returning();
 
-  return application;
+    if (args.input.links) {
+      // delete existing links
+      await t
+        .delete(applicationsToLinksTable)
+        .where(eq(applicationsToLinksTable.applicationId, args.input.id));
+
+      // insert new links
+      const newLinks = await t
+        .insert(linksTable)
+        .values(
+          args.input.links.map((link) => ({
+            url: link.url as string,
+            title: link.title as string,
+          })),
+        )
+        .returning();
+
+      await t.insert(applicationsToLinksTable).values(
+        newLinks.map((link) => ({
+          applicationId: application.id,
+          linkId: link.id,
+        })),
+      );
+    }
+
+    return application;
+  });
 }

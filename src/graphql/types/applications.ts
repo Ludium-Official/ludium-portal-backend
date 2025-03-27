@@ -9,8 +9,10 @@ import {
 import { getMilestonesByApplicationIdResolver } from '@/graphql/resolvers/milestones';
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { PaginationInput } from '@/graphql/types/common';
+import { Link, LinkInput } from '@/graphql/types/links';
 import { MilestoneType } from '@/graphql/types/milestones';
 import { User } from '@/graphql/types/users';
+import { getLinksByApplicationIdResolver } from '../resolvers/links';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -26,6 +28,7 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
       type: ApplicationStatusEnum,
       resolve: (application) => application.status,
     }),
+    name: t.exposeString('name', { nullable: true }),
     content: t.exposeString('content', { nullable: true }),
     metadata: t.field({
       type: 'JSON',
@@ -41,6 +44,11 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
       type: [MilestoneType],
       resolve: async (application, _args, ctx) =>
         getMilestonesByApplicationIdResolver({}, { applicationId: application.id }, ctx),
+    }),
+    links: t.field({
+      type: [Link],
+      resolve: async (application, _args, ctx) =>
+        getLinksByApplicationIdResolver({}, { applicationId: application.id }, ctx),
     }),
   }),
 });
@@ -66,17 +74,21 @@ export const PaginatedApplicationsType = builder
 export const CreateApplicationInput = builder.inputType('CreateApplicationInput', {
   fields: (t) => ({
     programId: t.string({ required: true }),
+    name: t.string({ required: true }),
     content: t.string({ required: true }),
     metadata: t.field({ type: 'JSON' }),
+    links: t.field({ type: [LinkInput], required: false }),
   }),
 });
 
 export const UpdateApplicationInput = builder.inputType('UpdateApplicationInput', {
   fields: (t) => ({
     id: t.string({ required: true }),
+    name: t.string(),
     content: t.string(),
     metadata: t.field({ type: 'JSON' }),
     status: t.field({ type: ApplicationStatusEnum }),
+    links: t.field({ type: [LinkInput] }),
   }),
 });
 

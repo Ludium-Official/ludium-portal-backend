@@ -84,15 +84,16 @@ export const programKeywords = [
   { programIndex: 4, keywords: ['education', 'blockchain', 'learning'] },
 ];
 
-// Функция для создания заявок на программы
+// Function to create program applications
 export function createApplications(programIds: string[], userIds: string[]): NewApplication[] {
   const applications: NewApplication[] = [];
 
-  // Заявки от первого builder (userIds[3])
+  // Applications from the first builder (userIds[3])
   applications.push({
     programId: programIds[0], // Web3 Development Grant
     applicantId: userIds[3], // Builder
     status: 'pending',
+    name: 'Web3 Development Grant Application',
     content:
       'Я хотел бы принять участие в этой программе, так как имею опыт разработки Web3 приложений и хочу создать новый проект в этой области.',
     metadata: { skills: ['javascript', 'solidity', 'react'] },
@@ -102,16 +103,18 @@ export function createApplications(programIds: string[], userIds: string[]): New
     programId: programIds[1], // Solidity Smart Contract Challenge
     applicantId: userIds[3], // Builder
     status: 'approved',
+    name: 'Solidity Challenge Application',
     content:
       'У меня есть опыт разработки смарт-контрактов на Solidity, и я хотел бы принять участие в этом конкурсе.',
     metadata: { skills: ['solidity', 'ethereum', 'security'] },
   });
 
-  // Заявки от Multi-Role пользователя (userIds[4])
+  // Applications from Multi-Role user (userIds[4])
   applications.push({
     programId: programIds[0], // Web3 Development Grant
     applicantId: userIds[4], // Multi-Role
     status: 'rejected',
+    name: 'Web3 Grant Application',
     content:
       'Я разрабатываю Web3 приложение для децентрализованного обмена данными и хотел бы получить финансирование для его развития.',
     metadata: { skills: ['typescript', 'solidity', 'web3.js'] },
@@ -121,6 +124,7 @@ export function createApplications(programIds: string[], userIds: string[]): New
     programId: programIds[3], // NFT Art Marketplace Development
     applicantId: userIds[4], // Multi-Role
     status: 'pending',
+    name: 'NFT Marketplace Application',
     content:
       'У меня есть опыт разработки NFT маркетплейсов, и я хотел бы принять участие в этом проекте.',
     metadata: { skills: ['react', 'node.js', 'nft'] },

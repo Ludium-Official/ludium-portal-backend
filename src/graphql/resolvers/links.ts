@@ -1,4 +1,5 @@
 import {
+  applicationsToLinksTable,
   linksTable,
   milestonesToLinksTable,
   programsToLinksTable,
@@ -72,6 +73,29 @@ export async function getLinksByMilestoneIdResolver(
       inArray(
         linksTable.id,
         milestoneLinks.map((rel) => rel.linkId),
+      ),
+    );
+}
+
+export async function getLinksByApplicationIdResolver(
+  _root: Root,
+  args: { applicationId: string },
+  ctx: Context,
+) {
+  const applicationLinks = await ctx.db
+    .select()
+    .from(applicationsToLinksTable)
+    .where(eq(applicationsToLinksTable.applicationId, args.applicationId));
+
+  if (!applicationLinks.length) return [];
+
+  return ctx.db
+    .select()
+    .from(linksTable)
+    .where(
+      inArray(
+        linksTable.id,
+        applicationLinks.map((rel) => rel.linkId),
       ),
     );
 }

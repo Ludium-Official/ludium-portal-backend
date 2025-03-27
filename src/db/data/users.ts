@@ -73,35 +73,35 @@ export const roles: NewRole[] = [
   },
 ];
 
-// Функция для создания связей пользователей с ролями
+// Function to create user-role relationships
 export function createUserRoles(userIds: string[], roleIds: { [key: string]: string }) {
   const userRoles = [];
 
-  // Admin имеет роль admin
+  // Admin has admin role
   userRoles.push({
     userId: userIds[0],
     roleId: roleIds.admin,
   });
 
-  // Sponsor имеет роль sponsor
+  // Sponsor has sponsor role
   userRoles.push({
     userId: userIds[1],
     roleId: roleIds.sponsor,
   });
 
-  // Validator имеет роль validator
+  // Validator has validator role
   userRoles.push({
     userId: userIds[2],
     roleId: roleIds.validator,
   });
 
-  // Builder имеет роль builder
+  // Builder has builder role
   userRoles.push({
     userId: userIds[3],
     roleId: roleIds.builder,
   });
 
-  // Multi-Role имеет все роли
+  // Multi-Role has all roles
   userRoles.push({
     userId: userIds[4],
     roleId: roleIds.sponsor,

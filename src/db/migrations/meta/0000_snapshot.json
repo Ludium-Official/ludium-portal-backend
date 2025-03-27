@@ -1,5 +1,5 @@
 {
-  "id": "0e291709-3c17-4de7-b135-5e7a778a6ab2",
+  "id": "86511a53-d667-441f-a80b-38ab32d8b24d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -34,6 +34,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'pending'"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
         "content": {
           "name": "content",
@@ -83,6 +89,58 @@
           "tableTo": "users",
           "columnsFrom": [
             "applicant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.applications_to_links": {
+      "name": "applications_to_links",
+      "schema": "",
+      "columns": {
+        "application_id": {
+          "name": "application_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "link_id": {
+          "name": "link_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "applications_to_links_application_id_applications_id_fk": {
+          "name": "applications_to_links_application_id_applications_id_fk",
+          "tableFrom": "applications_to_links",
+          "tableTo": "applications",
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "applications_to_links_link_id_links_id_fk": {
+          "name": "applications_to_links_link_id_links_id_fk",
+          "tableFrom": "applications_to_links",
+          "tableTo": "links",
+          "columnsFrom": [
+            "link_id"
           ],
           "columnsTo": [
             "id"

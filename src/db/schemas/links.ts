@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { applicationsToLinksTable } from './applications';
 import { milestonesToLinksTable } from './milestones';
 import { programsToLinksTable } from './programs';
 import { usersToLinksTable } from './users';
@@ -21,6 +22,7 @@ export const linksRelations = relations(linksTable, ({ many }) => ({
   usersToLinks: many(usersToLinksTable),
   programsToLinks: many(programsToLinksTable),
   milestonesToLinks: many(milestonesToLinksTable),
+  applicationsToLinks: many(applicationsToLinksTable),
 }));
 
 // Types for use in code

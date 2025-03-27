@@ -2,8 +2,10 @@ type Application {
   applicant: User
   content: String
   id: ID
+  links: [Link!]
   metadata: JSON
   milestones: [Milestone!]
+  name: String
   status: ApplicationStatus
 }
 
@@ -17,7 +19,9 @@ enum ApplicationStatus {
 
 input CreateApplicationInput {
   content: String!
+  links: [LinkInput!]
   metadata: JSON
+  name: String!
   programId: String!
 }
 
@@ -167,7 +171,9 @@ type Role {
 input UpdateApplicationInput {
   content: String
   id: String!
+  links: [LinkInput!]
   metadata: JSON
+  name: String
   status: ApplicationStatus
 }
 
