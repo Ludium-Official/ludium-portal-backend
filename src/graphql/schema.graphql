@@ -17,6 +17,16 @@ enum ApplicationStatus {
   withdrawn
 }
 
+input CheckMilestoneInput {
+  id: String!
+  status: CheckMilestoneStatus!
+}
+
+enum CheckMilestoneStatus {
+  completed
+  pending
+}
+
 input CreateApplicationInput {
   content: String!
   links: [LinkInput!]
@@ -94,13 +104,18 @@ enum MilestoneStatus {
 }
 
 type Mutation {
+  approveApplication(id: ID!): Application
+  checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
   createMilestones(input: [CreateMilestoneInput!]!): [Milestone!]
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
+  denyApplication(id: ID!): Application
   login(address: String, email: String!, network: String, userId: ID!, walletId: String): LoginResponse
+  publishProgram(id: ID!): Program
+  submitMilestone(id: ID!): Milestone
   updateApplication(input: UpdateApplicationInput!): Application
   updateMilestone(input: UpdateMilestoneInput!): Milestone
   updateProgram(input: UpdateProgramInput!): Program

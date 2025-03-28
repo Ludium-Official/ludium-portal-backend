@@ -9,6 +9,7 @@ import {
   getProgramKeywordsResolver,
   getProgramResolver,
   getProgramsResolver,
+  publishProgramResolver,
   updateProgramResolver,
 } from '@/graphql/resolvers/programs';
 import { getUserResolver } from '@/graphql/resolvers/users';
@@ -168,5 +169,13 @@ builder.mutationFields((t) => ({
       id: t.arg.id({ required: true }),
     },
     resolve: deleteProgramResolver,
+  }),
+  publishProgram: t.field({
+    type: ProgramType,
+    authScopes: { validator: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: publishProgramResolver,
   }),
 }));

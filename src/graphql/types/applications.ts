@@ -1,18 +1,20 @@
 import type { Application as DBApplication } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
+  approveApplicationResolver,
   createApplicationResolver,
+  denyApplicationResolver,
   getApplicationResolver,
   getApplicationsResolver,
   updateApplicationResolver,
 } from '@/graphql/resolvers/applications';
+import { getLinksByApplicationIdResolver } from '@/graphql/resolvers/links';
 import { getMilestonesByApplicationIdResolver } from '@/graphql/resolvers/milestones';
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { MilestoneType } from '@/graphql/types/milestones';
 import { User } from '@/graphql/types/users';
-import { getLinksByApplicationIdResolver } from '../resolvers/links';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -123,10 +125,26 @@ builder.mutationFields((t) => ({
   }),
   updateApplication: t.field({
     type: ApplicationType,
-    authScopes: { sponsor: true, validator: true, builder: true },
+    authScopes: { admin: true },
     args: {
       input: t.arg({ type: UpdateApplicationInput, required: true }),
     },
     resolve: updateApplicationResolver,
+  }),
+  approveApplication: t.field({
+    type: ApplicationType,
+    authScopes: { validator: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: approveApplicationResolver,
+  }),
+  denyApplication: t.field({
+    type: ApplicationType,
+    authScopes: { validator: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: denyApplicationResolver,
   }),
 }));

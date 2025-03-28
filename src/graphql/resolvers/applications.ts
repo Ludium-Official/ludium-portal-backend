@@ -7,6 +7,7 @@ import {
 import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
+import { isInSameScope } from '@/utils';
 import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
 import { count, eq } from 'drizzle-orm';
 
@@ -100,9 +101,24 @@ export async function updateApplicationResolver(
   args: { input: typeof UpdateApplicationInput.$inferInput },
   ctx: Context,
 ) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
   const filteredData = filterEmptyValues<ApplicationUpdate>(args.input);
 
   return ctx.db.transaction(async (t) => {
+    const hasAccess = await isInSameScope({
+      scope: 'application_builder',
+      userId: user.id,
+      entityId: args.input.id,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to update this application');
+    }
+
     const [application] = await t
       .update(applicationsTable)
       .set(filteredData)
@@ -134,6 +150,58 @@ export async function updateApplicationResolver(
       );
     }
 
+    return application;
+  });
+}
+
+export async function approveApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return ctx.db.transaction(async (t) => {
+    const hasAccess = await isInSameScope({
+      scope: 'application_validator',
+      userId: user.id,
+      entityId: args.id,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to approve this application');
+    }
+
+    const [application] = await t
+      .update(applicationsTable)
+      .set({ status: 'approved' })
+      .where(eq(applicationsTable.id, args.id))
+      .returning();
+
+    return application;
+  });
+}
+
+export async function denyApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return ctx.db.transaction(async (t) => {
+    const hasAccess = await isInSameScope({
+      scope: 'application_validator',
+      userId: user.id,
+      entityId: args.id,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to deny this application');
+    }
+
+    const [application] = await t
+      .update(applicationsTable)
+      .set({ status: 'rejected' })
+      .where(eq(applicationsTable.id, args.id));
     return application;
   });
 }

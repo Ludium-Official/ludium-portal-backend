@@ -10,7 +10,7 @@ import {
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
-import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
+import { filterEmptyValues, isInSameScope, validAndNotEmptyArray } from '@/utils';
 import { count, eq, inArray } from 'drizzle-orm';
 
 export async function getProgramsResolver(
@@ -22,15 +22,15 @@ export async function getProgramsResolver(
   const offset = args.pagination?.offset || 0;
 
   const data = await ctx.db.select().from(programsTable).limit(limit).offset(offset);
-  const totalCount = await ctx.db.select({ count: count() }).from(programsTable);
+  const [totalCount] = await ctx.db.select({ count: count() }).from(programsTable);
 
-  if (!validAndNotEmptyArray(data) || !validAndNotEmptyArray(totalCount)) {
+  if (!validAndNotEmptyArray(data) || !totalCount) {
     throw new Error('No programs found');
   }
 
   return {
     data,
-    count: totalCount[0].count,
+    count: totalCount.count,
   };
 }
 
@@ -141,12 +141,28 @@ export async function updateProgramResolver(
   args: { input: typeof UpdateProgramInput.$inferInput },
   ctx: Context,
 ) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
   const { keywords, links, ...inputData } = args.input;
 
   // Remove null values and prepare data
   const programData = filterEmptyValues<Program>(inputData);
 
   return ctx.db.transaction(async (t) => {
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: args.input.id,
+      db: t,
+    });
+
+    if (!hasAccess) {
+      throw new Error('You are not allowed to update this program');
+    }
+
     // handle keywords
     if (keywords) {
       await t
@@ -187,6 +203,52 @@ export async function updateProgramResolver(
 }
 
 export async function deleteProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const hasAccess = await isInSameScope({
+    scope: 'program_creator',
+    userId: user.id,
+    entityId: args.id,
+    db: ctx.db,
+  });
+  if (!hasAccess) {
+    throw new Error('You are not allowed to delete this program');
+  }
+
   await ctx.db.delete(programsTable).where(eq(programsTable.id, args.id));
   return true;
+}
+
+export async function publishProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return ctx.db.transaction(async (t) => {
+    const hasAccess = await isInSameScope({
+      scope: 'program_validator',
+      userId: user.id,
+      entityId: args.id,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to publish this program');
+    }
+
+    const [program] = await t
+      .update(programsTable)
+      .set({ status: 'published' })
+      .where(eq(programsTable.id, args.id))
+      .returning();
+
+    if (program.validatorId !== user.id) {
+      throw new Error('You are not allowed to publish this program');
+    }
+
+    return program;
+  });
 }

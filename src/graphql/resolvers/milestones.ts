@@ -6,9 +6,13 @@ import {
   milestonesToLinksTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
-import type { CreateMilestoneInput, UpdateMilestoneInput } from '@/graphql/types/milestones';
+import type {
+  CheckMilestoneInput,
+  CreateMilestoneInput,
+  UpdateMilestoneInput,
+} from '@/graphql/types/milestones';
 import type { Context, Root } from '@/types';
-import { filterEmptyValues, validAndNotEmptyArray } from '@/utils';
+import { filterEmptyValues, isInSameScope, validAndNotEmptyArray } from '@/utils';
 import { count, eq } from 'drizzle-orm';
 
 export async function getMilestoneResolver(_root: Root, args: { id: string }, ctx: Context) {
@@ -127,6 +131,64 @@ export async function updateMilestoneResolver(
     const [milestone] = await t
       .update(milestonesTable)
       .set(filteredData)
+      .where(eq(milestonesTable.id, args.input.id))
+      .returning();
+
+    return milestone;
+  });
+}
+
+export async function submitMilestoneResolver(_root: Root, args: { id: string }, ctx: Context) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return ctx.db.transaction(async (t) => {
+    const hasAccess = await isInSameScope({
+      scope: 'milestone_builder',
+      userId: user.id,
+      entityId: args.id,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to submit this milestone');
+    }
+
+    const [milestone] = await t
+      .update(milestonesTable)
+      .set({ status: 'revision_requested' })
+      .where(eq(milestonesTable.id, args.id))
+      .returning();
+
+    return milestone;
+  });
+}
+
+export async function checkMilestoneResolver(
+  _root: Root,
+  args: { input: typeof CheckMilestoneInput.$inferInput },
+  ctx: Context,
+) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return ctx.db.transaction(async (t) => {
+    const hasAccess = await isInSameScope({
+      scope: 'milestone_validator',
+      userId: user.id,
+      entityId: args.input.id,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to check this milestone');
+    }
+
+    const [milestone] = await t
+      .update(milestonesTable)
+      .set({ status: args.input.status })
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
 
