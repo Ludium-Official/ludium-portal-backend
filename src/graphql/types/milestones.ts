@@ -83,6 +83,15 @@ export const CheckMilestoneInput = builder.inputType('CheckMilestoneInput', {
     status: t.field({ type: CheckMilestoneStatusEnum, required: true }),
   }),
 });
+
+export const SubmitMilestoneInput = builder.inputType('SubmitMilestoneInput', {
+  fields: (t) => ({
+    id: t.string({ required: true }),
+    description: t.string(),
+    links: t.field({ type: [LinkInput] }),
+  }),
+});
+
 /* -------------------------------------------------------------------------- */
 /*                            Queries and mutations                           */
 /* -------------------------------------------------------------------------- */
@@ -125,7 +134,7 @@ builder.mutationFields((t) => ({
     type: MilestoneType,
     authScopes: { builder: true },
     args: {
-      id: t.arg.id({ required: true }),
+      input: t.arg({ type: SubmitMilestoneInput, required: true }),
     },
     resolve: submitMilestoneResolver,
   }),

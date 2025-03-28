@@ -3,12 +3,15 @@ import {
   applicationsTable,
   applicationsToLinksTable,
   linksTable,
+  milestonesTable,
+  programsTable,
 } from '@/db/schemas';
 import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
 import { isInSameScope } from '@/utils';
 import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
+import BigNumber from 'bignumber.js';
 import { count, eq } from 'drizzle-orm';
 
 export async function getApplicationsResolver(
@@ -169,6 +172,29 @@ export async function approveApplicationResolver(_root: Root, args: { id: string
     });
     if (!hasAccess) {
       throw new Error('You are not allowed to approve this application');
+    }
+
+    const milestones = await t
+      .select({ price: milestonesTable.price })
+      .from(milestonesTable)
+      .where(eq(milestonesTable.applicationId, args.id));
+
+    const milestonesTotalPrice = milestones.reduce((acc, m) => {
+      return acc.plus(new BigNumber(m.price));
+    }, new BigNumber(0));
+
+    const [app] = await t
+      .select({ programId: applicationsTable.programId })
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, args.id));
+
+    const [program] = await t
+      .select({ price: programsTable.price })
+      .from(programsTable)
+      .where(eq(programsTable.id, app.programId));
+
+    if (milestonesTotalPrice.gt(new BigNumber(program.price))) {
+      throw new Error('The total price of the milestones is greater than the program price');
     }
 
     const [application] = await t

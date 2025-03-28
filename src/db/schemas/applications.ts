@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { decimal, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { linksTable } from './links';
 import { milestonesTable } from './milestones';
 import { programsTable } from './programs';
@@ -30,6 +30,7 @@ export const applicationsTable = pgTable('applications', {
   name: text('name').notNull(),
   content: text('content'),
   metadata: jsonb('metadata'),
+  price: decimal('price', { precision: 38, scale: 18 }).default('0').notNull(),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

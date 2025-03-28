@@ -80,6 +80,7 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
     content: t.string({ required: true }),
     metadata: t.field({ type: 'JSON' }),
     links: t.field({ type: [LinkInput], required: false }),
+    price: t.string({ required: true }),
   }),
 });
 
