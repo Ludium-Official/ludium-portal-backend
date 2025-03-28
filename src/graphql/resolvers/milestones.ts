@@ -73,8 +73,24 @@ export async function createMilestonesResolver(
   args: { input: (typeof CreateMilestoneInput.$inferInput)[] },
   ctx: Context,
 ) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
   const milestones: Milestone[] = [];
+
   return ctx.db.transaction(async (t) => {
+    const hasAccess = await isInSameScope({
+      scope: 'application_builder',
+      userId: user.id,
+      entityId: args.input[0].applicationId,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to create milestones for this application');
+    }
+
     for (const milestone of args.input) {
       const { links, ...inputData } = milestone;
       const [newMilestone] = await t.insert(milestonesTable).values(inputData).returning();
