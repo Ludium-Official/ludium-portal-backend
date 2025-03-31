@@ -32,6 +32,10 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
     }),
     name: t.exposeString('name', { nullable: true }),
     content: t.exposeString('content', { nullable: true }),
+    price: t.field({
+      type: 'String',
+      resolve: (application) => application.price?.toString() ?? '',
+    }),
     metadata: t.field({
       type: 'JSON',
       nullable: true,

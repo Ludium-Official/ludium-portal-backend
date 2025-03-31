@@ -6,6 +6,7 @@ type Application {
   metadata: JSON
   milestones: [Milestone!]
   name: String
+  price: String
   status: ApplicationStatus
 }
 
