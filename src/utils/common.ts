@@ -1,3 +1,5 @@
+import { BigNumber } from 'bignumber.js';
+
 export function parseId(id: number | string) {
   return typeof id === 'string' ? Number.parseInt(id, 10) : id;
 }
@@ -13,4 +15,16 @@ export function filterEmptyValues<T>(obj: Record<string, unknown>): T {
   return Object.fromEntries(
     Object.entries(obj).filter(([_, v]) => v !== null && v !== undefined),
   ) as T;
+}
+
+export function formatPrice(price: string | number) {
+  try {
+    const priceValue = new BigNumber(price);
+    if (priceValue.isNegative()) {
+      throw new Error('Price cannot be negative');
+    }
+    return priceValue.toString();
+  } catch (_error) {
+    throw new Error('Invalid price format');
+  }
 }

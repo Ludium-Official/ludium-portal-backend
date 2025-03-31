@@ -17,6 +17,7 @@ import { ApplicationType } from '@/graphql/types/applications';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { User } from '@/graphql/types/users';
+import { formatPrice } from '@/utils';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -29,7 +30,7 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
     description: t.exposeString('description'),
     price: t.field({
       type: 'String',
-      resolve: (program) => program.price?.toString() ?? '',
+      resolve: (program) => formatPrice(program.price),
     }),
     currency: t.exposeString('currency'),
     deadline: t.field({

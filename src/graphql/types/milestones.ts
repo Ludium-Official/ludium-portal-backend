@@ -11,6 +11,7 @@ import {
 } from '@/graphql/resolvers/milestones';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
+import { formatPrice } from '@/utils';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -24,7 +25,10 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
     id: t.exposeID('id'),
     title: t.exposeString('title'),
     description: t.exposeString('description', { nullable: true }),
-    price: t.exposeString('price'),
+    price: t.field({
+      type: 'String',
+      resolve: (milestone) => formatPrice(milestone.price),
+    }),
     currency: t.exposeString('currency'),
     status: t.field({
       type: MilestoneStatusEnum,

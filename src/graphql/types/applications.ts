@@ -15,6 +15,7 @@ import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { MilestoneType } from '@/graphql/types/milestones';
 import { User } from '@/graphql/types/users';
+import { formatPrice } from '@/utils';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -34,7 +35,7 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
     content: t.exposeString('content', { nullable: true }),
     price: t.field({
       type: 'String',
-      resolve: (application) => application.price?.toString() ?? '',
+      resolve: (application) => formatPrice(application.price),
     }),
     metadata: t.field({
       type: 'JSON',
