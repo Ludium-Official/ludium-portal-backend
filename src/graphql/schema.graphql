@@ -120,6 +120,7 @@ type Mutation {
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   updateApplication(input: UpdateApplicationInput!): Application
   updateMilestone(input: UpdateMilestoneInput!): Milestone
+  updateProfile(input: UserUpdateInput!): User
   updateProgram(input: UpdateProgramInput!): Program
   updateUser(input: UserUpdateInput!): User
 }
@@ -171,6 +172,7 @@ type Query {
   keywords: [ProgramKeyword!]
   milestone(id: ID!): Milestone
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
+  profile: User
   program(id: ID!): Program
   programs(pagination: PaginationInput): PaginatedPrograms
   roles: [Role!]

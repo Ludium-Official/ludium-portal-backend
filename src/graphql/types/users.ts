@@ -4,10 +4,12 @@ import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
   createUserResolver,
   deleteUserResolver,
+  getProfileResolver,
   getRolesResolver,
   getUserResolver,
   getUsersByRoleResolver,
   getUsersResolver,
+  updateProfileResolver,
   updateUserResolver,
 } from '@/graphql/resolvers/users';
 import { Link, LinkInput } from '@/graphql/types/links';
@@ -100,6 +102,11 @@ builder.queryFields((t) => ({
     },
     resolve: getUsersByRoleResolver,
   }),
+  profile: t.field({
+    type: User,
+    authScopes: { user: true },
+    resolve: getProfileResolver,
+  }),
 }));
 
 builder.mutationFields((t) => ({
@@ -126,5 +133,13 @@ builder.mutationFields((t) => ({
       id: t.arg.id({ required: true }),
     },
     resolve: deleteUserResolver,
+  }),
+  updateProfile: t.field({
+    authScopes: { user: true },
+    type: User,
+    args: {
+      input: t.arg({ type: UserUpdateInput, required: true }),
+    },
+    resolve: updateProfileResolver,
   }),
 }));
