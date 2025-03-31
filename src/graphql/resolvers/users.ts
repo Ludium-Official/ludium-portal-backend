@@ -7,7 +7,7 @@ import {
   usersToRolesTable,
 } from '@/db/schemas';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
-import type { Args, Context, Root } from '@/types';
+import type { Args, Context, Root, UploadFile } from '@/types';
 import { desc, eq, inArray } from 'drizzle-orm';
 
 export async function getUsersResolver(_root: Root, _args: Args, ctx: Context) {
@@ -59,8 +59,17 @@ export async function createUserResolver(
       .insert(usersTable)
       .values({
         ...userData,
+        image: null,
       })
       .returning();
+
+    if (userData.image) {
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: userData.image,
+        userId: user.id,
+      });
+      await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, user.id));
+    }
 
     if (links) {
       // insert links to links table and map to user
@@ -95,13 +104,28 @@ export async function updateUserResolver(
   const { links, ...userData } = args.input;
 
   return ctx.db.transaction(async (t) => {
+    if (userData.image) {
+      const [avatar] = await t
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.uploadedById, userData.id));
+      if (avatar) {
+        await ctx.server.fileManager.deleteFile(avatar.id);
+      }
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: userData.image,
+        userId: userData.id,
+        path: 'users',
+      });
+      await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, userData.id));
+    }
+
     const [user] = await t
       .update(usersTable)
       .set({
         firstName: userData.firstName,
         lastName: userData.lastName,
         organizationName: userData.organizationName,
-        image: userData.image,
         about: userData.about,
         links: links as { url: string; title: string }[],
       })
@@ -166,13 +190,28 @@ export async function updateProfileResolver(
   const { links, ...userData } = args.input;
 
   return ctx.db.transaction(async (t) => {
+    if (userData.image) {
+      const [avatar] = await t
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.uploadedById, loggedinUser.id));
+      if (avatar) {
+        await ctx.server.fileManager.deleteFile(avatar.id);
+      }
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: userData.image,
+        userId: loggedinUser.id,
+        path: 'users',
+      });
+      await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, loggedinUser.id));
+    }
+
     const [user] = await t
       .update(usersTable)
       .set({
         firstName: userData.firstName,
         lastName: userData.lastName,
         organizationName: userData.organizationName,
-        image: userData.image,
         about: userData.about,
         links: links as { url: string; title: string }[],
       })
@@ -220,20 +259,16 @@ export async function getUserAvatarResolver(_root: Root, _args: Args, ctx: Conte
     .orderBy(desc(filesTable.createdAt))
     .limit(1);
 
-  if (!file) return null;
+  if (!file) {
+    return null;
+  }
 
-  // Create a minimal blob for the file
-  const blob = new Blob([], { type: file.mimeType });
-
-  // Convert database file to browser File object
   return {
-    name: file.originalName,
-    lastModified: file.updatedAt.getTime(),
-    type: file.mimeType,
-    webkitRelativePath: '',
-    arrayBuffer: async () => new ArrayBuffer(0),
-    slice: (start?: number, end?: number) => blob.slice(start, end),
-    stream: () => new ReadableStream(),
-    text: async () => '',
-  } as unknown as File;
+    filename: file.originalName,
+    mimetype: file.mimeType,
+    createReadStream: () => {
+      const bucketFile = ctx.server.fileManager.bucket.file(file.path);
+      return bucketFile.createReadStream();
+    },
+  } as unknown as UploadFile;
 }

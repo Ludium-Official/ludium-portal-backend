@@ -2,6 +2,7 @@ import registerPlugins from '@/plugins';
 import type { Argon2 } from '@/plugins/argon2';
 import type { AuthHandler, RequestAuth } from '@/plugins/auth';
 import loadEnv from '@/plugins/env';
+import type { FileManager } from '@/plugins/file-manager';
 import registerRoutes from '@/routes';
 import type { EnvConfig } from '@/types';
 import type { JWT } from '@fastify/jwt';
@@ -13,6 +14,7 @@ declare module 'fastify' {
     config: EnvConfig;
     authenticate: preHandlerHookHandler;
     db: PostgresJsDatabase;
+    fileManager: FileManager;
     auth: AuthHandler;
     argon2: Argon2;
   }

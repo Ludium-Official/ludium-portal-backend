@@ -1,4 +1,4 @@
-import type { Context } from '@/types';
+import type { Context, UploadFile } from '@/types';
 import SchemaBuilder from '@pothos/core';
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth';
 import ValidationPlugin from '@pothos/plugin-validation';
@@ -28,8 +28,8 @@ const builder = new SchemaBuilder<{
       Output: JSON;
     };
     Upload: {
-      Input: File;
-      Output: File;
+      Input: Promise<UploadFile>;
+      Output: Promise<UploadFile | null>;
     };
   };
 }>({
