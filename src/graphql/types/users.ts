@@ -6,6 +6,7 @@ import {
   deleteUserResolver,
   getProfileResolver,
   getRolesResolver,
+  getUserAvatarResolver,
   getUserResolver,
   getUsersByRoleResolver,
   getUsersResolver,
@@ -39,6 +40,11 @@ export const User = builder.objectRef<DBUser>('User').implement({
       type: [Link],
       nullable: true,
       resolve: async (user, _args, ctx) => getLinksByUserIdResolver({}, { userId: user.id }, ctx),
+    }),
+    avatar: t.field({
+      type: 'Upload',
+      nullable: true,
+      resolve: getUserAvatarResolver,
     }),
   }),
 });

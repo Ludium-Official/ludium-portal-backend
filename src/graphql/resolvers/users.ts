@@ -1,4 +1,5 @@
 import {
+  filesTable,
   linksTable,
   rolesTable,
   usersTable,
@@ -7,7 +8,7 @@ import {
 } from '@/db/schemas';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root } from '@/types';
-import { eq, inArray } from 'drizzle-orm';
+import { desc, eq, inArray } from 'drizzle-orm';
 
 export async function getUsersResolver(_root: Root, _args: Args, ctx: Context) {
   return ctx.db.select().from(usersTable);
@@ -204,4 +205,35 @@ export async function updateProfileResolver(
 
     return user;
   });
+}
+
+export async function getUserAvatarResolver(_root: Root, _args: Args, ctx: Context) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const [file] = await ctx.db
+    .select()
+    .from(filesTable)
+    .where(eq(filesTable.uploadedById, user.id))
+    .orderBy(desc(filesTable.createdAt))
+    .limit(1);
+
+  if (!file) return null;
+
+  // Create a minimal blob for the file
+  const blob = new Blob([], { type: file.mimeType });
+
+  // Convert database file to browser File object
+  return {
+    name: file.originalName,
+    lastModified: file.updatedAt.getTime(),
+    type: file.mimeType,
+    webkitRelativePath: '',
+    arrayBuffer: async () => new ArrayBuffer(0),
+    slice: (start?: number, end?: number) => blob.slice(start, end),
+    stream: () => new ReadableStream(),
+    text: async () => '',
+  } as unknown as File;
 }

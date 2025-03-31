@@ -3,6 +3,7 @@ import SchemaBuilder from '@pothos/core';
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth';
 import ValidationPlugin from '@pothos/plugin-validation';
 import { DateResolver, DateTimeResolver, JSONResolver } from 'graphql-scalars';
+import { GraphQLUpload } from 'graphql-upload-minimal';
 
 const builder = new SchemaBuilder<{
   Context: Context;
@@ -25,6 +26,10 @@ const builder = new SchemaBuilder<{
     JSON: {
       Input: JSON;
       Output: JSON;
+    };
+    Upload: {
+      Input: File;
+      Output: File;
     };
   };
 }>({
@@ -49,6 +54,7 @@ const builder = new SchemaBuilder<{
 builder.addScalarType('DateTime', DateTimeResolver);
 builder.addScalarType('Date', DateResolver);
 builder.addScalarType('JSON', JSONResolver);
+builder.addScalarType('Upload', GraphQLUpload);
 
 builder.queryType({});
 builder.mutationType({});
