@@ -11,7 +11,7 @@ import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
 import { filterEmptyValues, isInSameScope, validAndNotEmptyArray } from '@/utils';
-import { count, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
 
 export async function getProgramsResolver(
   _root: Root,
@@ -20,8 +20,40 @@ export async function getProgramsResolver(
 ) {
   const limit = args.pagination?.limit || 10;
   const offset = args.pagination?.offset || 0;
+  const sort = args.pagination?.sort || 'desc';
+  const filter = args.pagination?.filter || [];
 
-  const data = await ctx.db.select().from(programsTable).limit(limit).offset(offset);
+  const data = await ctx.db
+    .select()
+    .from(programsTable)
+    .where(
+      and(
+        ...filter
+          .filter((f) => f.field in programsTable)
+          .map((f) => {
+            switch (f.field) {
+              case 'creatorId':
+                return eq(programsTable.creatorId, f.value);
+              case 'name':
+                return eq(programsTable.name, f.value);
+              case 'status':
+                return eq(
+                  programsTable.status,
+                  f.value as 'draft' | 'published' | 'closed' | 'completed' | 'cancelled',
+                );
+              case 'currency':
+                return eq(programsTable.currency, f.value);
+              default:
+                return undefined;
+            }
+          })
+          .filter((condition): condition is ReturnType<typeof eq> => condition !== undefined),
+      ),
+    )
+    .limit(limit)
+    .offset(offset)
+    .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
+
   const [totalCount] = await ctx.db.select({ count: count() }).from(programsTable);
 
   if (!validAndNotEmptyArray(data) || !totalCount) {
