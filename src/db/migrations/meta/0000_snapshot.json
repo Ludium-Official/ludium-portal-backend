@@ -1,5 +1,5 @@
 {
-  "id": "86511a53-d667-441f-a80b-38ab32d8b24d",
+  "id": "c1ad87b6-8674-443f-bcff-ecaecb55fe5e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -52,6 +52,13 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "price": {
+          "name": "price",
+          "type": "numeric(38, 18)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
         },
         "created_at": {
           "name": "created_at",
@@ -762,7 +769,7 @@
           "name": "price",
           "type": "numeric(38, 18)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "currency": {
           "name": "currency",

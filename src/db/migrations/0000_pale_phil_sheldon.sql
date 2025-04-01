@@ -9,6 +9,7 @@ CREATE TABLE "applications" (
 	"name" text NOT NULL,
 	"content" text,
 	"metadata" jsonb,
+	"price" numeric(38, 18) DEFAULT '0' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -96,7 +97,7 @@ CREATE TABLE "milestones" (
 	"application_id" uuid NOT NULL,
 	"title" varchar(256) NOT NULL,
 	"description" text,
-	"price" numeric(38, 18),
+	"price" numeric(38, 18) NOT NULL,
 	"currency" varchar(10) DEFAULT 'ETH',
 	"status" "milestone_status" DEFAULT 'pending' NOT NULL,
 	"links" jsonb,
