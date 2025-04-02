@@ -115,7 +115,6 @@ export async function updateUserResolver(
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: userData.image,
         userId: userData.id,
-        path: 'users',
       });
       await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, userData.id));
     }
@@ -201,7 +200,6 @@ export async function updateProfileResolver(
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: userData.image,
         userId: loggedinUser.id,
-        path: 'users',
       });
       await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, loggedinUser.id));
     }

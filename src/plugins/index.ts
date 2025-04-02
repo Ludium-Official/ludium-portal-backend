@@ -2,6 +2,8 @@ import { schema as graphqlSchema } from '@/graphql/types';
 import argon2Plugin from '@/plugins/argon2';
 import authPlugin from '@/plugins/auth';
 import dbPlugin from '@/plugins/db';
+import fileManagerPlugin from '@/plugins/file-manager';
+import mercuriusUpload from '@/plugins/gql-upload';
 import corsPlugin from '@fastify/cors';
 import jwtPlugin from '@fastify/jwt';
 import type { FastifyInstance } from 'fastify';
@@ -25,6 +27,10 @@ const registerPlugins = (server: FastifyInstance) => {
   void server.register(corsPlugin, {
     origin: '*',
   });
+
+  void server.register(mercuriusUpload);
+
+  void server.register(fileManagerPlugin);
 
   void server
     .register(mercurius, {
