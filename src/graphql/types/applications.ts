@@ -1,16 +1,21 @@
 import type { Application as DBApplication } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
+  approveApplicationResolver,
   createApplicationResolver,
+  denyApplicationResolver,
   getApplicationResolver,
   getApplicationsResolver,
   updateApplicationResolver,
 } from '@/graphql/resolvers/applications';
+import { getLinksByApplicationIdResolver } from '@/graphql/resolvers/links';
 import { getMilestonesByApplicationIdResolver } from '@/graphql/resolvers/milestones';
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { PaginationInput } from '@/graphql/types/common';
+import { Link, LinkInput } from '@/graphql/types/links';
 import { MilestoneType } from '@/graphql/types/milestones';
 import { User } from '@/graphql/types/users';
+import { formatPrice } from '@/utils';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -26,7 +31,12 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
       type: ApplicationStatusEnum,
       resolve: (application) => application.status,
     }),
+    name: t.exposeString('name', { nullable: true }),
     content: t.exposeString('content', { nullable: true }),
+    price: t.field({
+      type: 'String',
+      resolve: (application) => formatPrice(application.price),
+    }),
     metadata: t.field({
       type: 'JSON',
       nullable: true,
@@ -41,6 +51,11 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
       type: [MilestoneType],
       resolve: async (application, _args, ctx) =>
         getMilestonesByApplicationIdResolver({}, { applicationId: application.id }, ctx),
+    }),
+    links: t.field({
+      type: [Link],
+      resolve: async (application, _args, ctx) =>
+        getLinksByApplicationIdResolver({}, { applicationId: application.id }, ctx),
     }),
   }),
 });
@@ -66,17 +81,22 @@ export const PaginatedApplicationsType = builder
 export const CreateApplicationInput = builder.inputType('CreateApplicationInput', {
   fields: (t) => ({
     programId: t.string({ required: true }),
+    name: t.string({ required: true }),
     content: t.string({ required: true }),
     metadata: t.field({ type: 'JSON' }),
+    links: t.field({ type: [LinkInput], required: false }),
+    price: t.string({ required: true }),
   }),
 });
 
 export const UpdateApplicationInput = builder.inputType('UpdateApplicationInput', {
   fields: (t) => ({
     id: t.string({ required: true }),
+    name: t.string(),
     content: t.string(),
     metadata: t.field({ type: 'JSON' }),
     status: t.field({ type: ApplicationStatusEnum }),
+    links: t.field({ type: [LinkInput] }),
   }),
 });
 
@@ -111,10 +131,26 @@ builder.mutationFields((t) => ({
   }),
   updateApplication: t.field({
     type: ApplicationType,
-    authScopes: { sponsor: true, validator: true, builder: true },
+    authScopes: { admin: true },
     args: {
       input: t.arg({ type: UpdateApplicationInput, required: true }),
     },
     resolve: updateApplicationResolver,
+  }),
+  approveApplication: t.field({
+    type: ApplicationType,
+    authScopes: { validator: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: approveApplicationResolver,
+  }),
+  denyApplication: t.field({
+    type: ApplicationType,
+    authScopes: { validator: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: denyApplicationResolver,
   }),
 }));

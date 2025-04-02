@@ -2,13 +2,16 @@ import type { Milestone as DBMilestone } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getLinksByMilestoneIdResolver } from '@/graphql/resolvers/links';
 import {
+  checkMilestoneResolver,
   createMilestonesResolver,
   getMilestoneResolver,
   getMilestonesResolver,
+  submitMilestoneResolver,
   updateMilestoneResolver,
 } from '@/graphql/resolvers/milestones';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
+import { formatPrice } from '@/utils';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -22,7 +25,10 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
     id: t.exposeID('id'),
     title: t.exposeString('title'),
     description: t.exposeString('description', { nullable: true }),
-    price: t.exposeString('price'),
+    price: t.field({
+      type: 'String',
+      resolve: (milestone) => formatPrice(milestone.price),
+    }),
     currency: t.exposeString('currency'),
     status: t.field({
       type: MilestoneStatusEnum,
@@ -71,6 +77,25 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
   }),
 });
 
+export const CheckMilestoneStatusEnum = builder.enumType('CheckMilestoneStatus', {
+  values: ['pending', 'completed'] as const,
+});
+
+export const CheckMilestoneInput = builder.inputType('CheckMilestoneInput', {
+  fields: (t) => ({
+    id: t.string({ required: true }),
+    status: t.field({ type: CheckMilestoneStatusEnum, required: true }),
+  }),
+});
+
+export const SubmitMilestoneInput = builder.inputType('SubmitMilestoneInput', {
+  fields: (t) => ({
+    id: t.string({ required: true }),
+    description: t.string(),
+    links: t.field({ type: [LinkInput] }),
+  }),
+});
+
 /* -------------------------------------------------------------------------- */
 /*                            Queries and mutations                           */
 /* -------------------------------------------------------------------------- */
@@ -103,10 +128,26 @@ builder.mutationFields((t) => ({
   }),
   updateMilestone: t.field({
     type: MilestoneType,
-    authScopes: { validator: true, builder: true },
+    authScopes: { admin: true },
     args: {
       input: t.arg({ type: UpdateMilestoneInput, required: true }),
     },
     resolve: updateMilestoneResolver,
+  }),
+  submitMilestone: t.field({
+    type: MilestoneType,
+    authScopes: { builder: true },
+    args: {
+      input: t.arg({ type: SubmitMilestoneInput, required: true }),
+    },
+    resolve: submitMilestoneResolver,
+  }),
+  checkMilestone: t.field({
+    type: MilestoneType,
+    authScopes: { validator: true },
+    args: {
+      input: t.arg({ type: CheckMilestoneInput, required: true }),
+    },
+    resolve: checkMilestoneResolver,
   }),
 }));

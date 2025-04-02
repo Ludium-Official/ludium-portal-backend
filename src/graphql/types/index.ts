@@ -6,6 +6,7 @@ import './common';
 import './users';
 import './programs';
 import './applications';
+import './milestones';
 import './auth';
 import './links';
 

@@ -9,6 +9,7 @@ import {
   getProgramKeywordsResolver,
   getProgramResolver,
   getProgramsResolver,
+  publishProgramResolver,
   updateProgramResolver,
 } from '@/graphql/resolvers/programs';
 import { getUserResolver } from '@/graphql/resolvers/users';
@@ -16,6 +17,7 @@ import { ApplicationType } from '@/graphql/types/applications';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { User } from '@/graphql/types/users';
+import { formatPrice } from '@/utils';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -28,7 +30,7 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
     description: t.exposeString('description'),
     price: t.field({
       type: 'String',
-      resolve: (program) => program.price?.toString() ?? '',
+      resolve: (program) => formatPrice(program.price),
     }),
     currency: t.exposeString('currency'),
     deadline: t.field({
@@ -168,5 +170,13 @@ builder.mutationFields((t) => ({
       id: t.arg.id({ required: true }),
     },
     resolve: deleteProgramResolver,
+  }),
+  publishProgram: t.field({
+    type: ProgramType,
+    authScopes: { validator: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: publishProgramResolver,
   }),
 }));

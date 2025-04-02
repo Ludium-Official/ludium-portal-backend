@@ -32,7 +32,7 @@ export const milestonesTable = pgTable('milestones', {
   // Milestone details
   title: varchar('title', { length: 256 }).notNull(),
   description: text('description'),
-  price: decimal('price', { precision: 38, scale: 18 }),
+  price: decimal('price', { precision: 38, scale: 18 }).notNull(),
   currency: varchar('currency', { length: 10 }).default('ETH'),
   status: milestoneStatusEnum('status').default('pending').notNull(),
 

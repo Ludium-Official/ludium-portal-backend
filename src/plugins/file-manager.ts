@@ -44,9 +44,14 @@ export class FileManager {
     });
   };
 
-  uploadFile = async (params: { file: Promise<UploadFile>; path: string }): Promise<string> => {
+  uploadFile = async (params: {
+    file: Promise<UploadFile>;
+    userId: string;
+    path?: string;
+  }): Promise<string> => {
     const filePromise = await params.file;
-    const filePath = await this.uploadFileToStorage(filePromise, params.path);
+    const path = params.path ?? `users/${params.userId}`;
+    const filePath = await this.uploadFileToStorage(filePromise, path);
     const { filename, mimetype } = filePromise;
     const [createdFile] = await this.server.db
       .insert(filesTable)
@@ -55,10 +60,11 @@ export class FileManager {
         mimeType: mimetype,
         path: filePath,
         originalName: filename,
+        uploadedById: params.userId,
       })
       .returning();
 
-    return createdFile.id;
+    return this.makeFullUrl(createdFile.path);
   };
 
   deleteFile = async (id: string): Promise<void> => {

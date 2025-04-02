@@ -4,10 +4,13 @@ import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
   createUserResolver,
   deleteUserResolver,
+  getProfileResolver,
   getRolesResolver,
+  getUserAvatarResolver,
   getUserResolver,
   getUsersByRoleResolver,
   getUsersResolver,
+  updateProfileResolver,
   updateUserResolver,
 } from '@/graphql/resolvers/users';
 import { Link, LinkInput } from '@/graphql/types/links';
@@ -38,6 +41,11 @@ export const User = builder.objectRef<DBUser>('User').implement({
       nullable: true,
       resolve: async (user, _args, ctx) => getLinksByUserIdResolver({}, { userId: user.id }, ctx),
     }),
+    avatar: t.field({
+      type: 'Upload',
+      nullable: true,
+      resolve: getUserAvatarResolver,
+    }),
   }),
 });
 
@@ -51,7 +59,7 @@ export const UserInput = builder.inputType('UserInput', {
     email: t.string({ required: true, validate: { email: true } }),
     password: t.string({ required: true, validate: { minLength: 8 } }),
     organizationName: t.string(),
-    image: t.string(),
+    image: t.field({ type: 'Upload' }),
     about: t.string(),
     links: t.field({ type: [LinkInput] }),
   }),
@@ -63,7 +71,7 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
     firstName: t.string(),
     lastName: t.string(),
     organizationName: t.string(),
-    image: t.string(),
+    image: t.field({ type: 'Upload' }),
     about: t.string(),
     links: t.field({ type: [LinkInput] }),
   }),
@@ -100,6 +108,11 @@ builder.queryFields((t) => ({
     },
     resolve: getUsersByRoleResolver,
   }),
+  profile: t.field({
+    type: User,
+    authScopes: { user: true },
+    resolve: getProfileResolver,
+  }),
 }));
 
 builder.mutationFields((t) => ({
@@ -126,5 +139,13 @@ builder.mutationFields((t) => ({
       id: t.arg.id({ required: true }),
     },
     resolve: deleteUserResolver,
+  }),
+  updateProfile: t.field({
+    authScopes: { user: true },
+    type: User,
+    args: {
+      input: t.arg({ type: UserUpdateInput, required: true }),
+    },
+    resolve: updateProfileResolver,
   }),
 }));
