@@ -1,6 +1,7 @@
 import {
   type NewProgram,
   type Program,
+  applicationsTable,
   keywordsTable,
   linksTable,
   programsTable,
@@ -34,6 +35,11 @@ export async function getProgramsResolver(
             switch (f.field) {
               case 'creatorId':
                 return eq(programsTable.creatorId, f.value);
+              case 'validatorId':
+                return eq(programsTable.validatorId, f.value);
+              case 'applicantId':
+                // get applications related to this builder and return programs to which they are related
+                return inArray(applicationsTable.programId, applicationsTable.applicantId);
               case 'name':
                 return eq(programsTable.name, f.value);
               case 'status':
@@ -41,8 +47,9 @@ export async function getProgramsResolver(
                   programsTable.status,
                   f.value as 'draft' | 'published' | 'closed' | 'completed' | 'cancelled',
                 );
-              case 'currency':
-                return eq(programsTable.currency, f.value);
+              case 'price':
+                // sort by price, value can be 'asc' or 'desc'
+                return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
               default:
                 return undefined;
             }
@@ -190,9 +197,17 @@ export async function updateProgramResolver(
       entityId: args.input.id,
       db: t,
     });
-
     if (!hasAccess) {
       throw new Error('You are not allowed to update this program');
+    }
+
+    // check program status
+    const [programStatus] = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, args.input.id));
+    if (programStatus.status === 'published' && programData.price) {
+      throw new Error('You are not allowed to update the price of a published program');
     }
 
     // handle keywords
@@ -205,6 +220,7 @@ export async function updateProgramResolver(
         .values(keywords.map((keyword) => ({ programId: args.input.id, keywordId: keyword })))
         .onConflictDoNothing();
     }
+
     // Transform links if present
     const updateData: Partial<Program> = { ...programData };
     if (links) {

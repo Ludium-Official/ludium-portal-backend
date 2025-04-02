@@ -12,7 +12,7 @@ import type { Context, Root } from '@/types';
 import { isInSameScope } from '@/utils';
 import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
 import BigNumber from 'bignumber.js';
-import { count, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq } from 'drizzle-orm';
 
 export async function getApplicationsResolver(
   _root: Root,
@@ -21,17 +21,45 @@ export async function getApplicationsResolver(
 ) {
   const limit = args.pagination?.limit || 10;
   const offset = args.pagination?.offset || 0;
+  const sort = args.pagination?.sort || 'desc';
+  const filter = args.pagination?.filter || [];
 
-  const data = await ctx.db.select().from(applicationsTable).limit(limit).offset(offset);
-  const totalCount = await ctx.db.select({ count: count() }).from(applicationsTable);
+  const data = await ctx.db
+    .select()
+    .from(applicationsTable)
+    .limit(limit)
+    .offset(offset)
+    .orderBy(sort === 'asc' ? asc(applicationsTable.createdAt) : desc(applicationsTable.createdAt))
+    .where(
+      and(
+        ...filter
+          .filter((f) => f.field in applicationsTable)
+          .map((f) => {
+            switch (f.field) {
+              case 'programId':
+                return eq(applicationsTable.programId, f.value);
+              case 'applicantId':
+                return eq(applicationsTable.applicantId, f.value);
+              case 'status':
+                return eq(
+                  applicationsTable.status,
+                  f.value as 'pending' | 'approved' | 'rejected' | 'withdrawn',
+                );
+              default:
+                return undefined;
+            }
+          }),
+      ),
+    );
+  const [totalCount] = await ctx.db.select({ count: count() }).from(applicationsTable);
 
-  if (!validAndNotEmptyArray(data) || !validAndNotEmptyArray(totalCount)) {
+  if (!validAndNotEmptyArray(data) || !totalCount) {
     throw new Error('No applications found');
   }
 
   return {
     data,
-    count: totalCount[0].count,
+    count: totalCount.count,
   };
 }
 

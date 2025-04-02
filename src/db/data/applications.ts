@@ -7,6 +7,7 @@ export function createApplications(programIds: string[], userIds: string[]): New
   // Applications from first builder (userIds[3])
   applications.push({
     name: 'Web3 Development Grant Application',
+    price: '10',
     programId: programIds[0], // Web3 Development Grant
     applicantId: userIds[3], // Builder
     status: 'pending',
@@ -17,6 +18,7 @@ export function createApplications(programIds: string[], userIds: string[]): New
 
   applications.push({
     name: 'Solidity Challenge Application',
+    price: '10',
     programId: programIds[1], // Solidity Smart Contract Challenge
     applicantId: userIds[3], // Builder
     status: 'approved',
@@ -28,6 +30,7 @@ export function createApplications(programIds: string[], userIds: string[]): New
   // Applications from Multi-Role user (userIds[4])
   applications.push({
     name: 'Web3 Grant Application',
+    price: '10',
     programId: programIds[0], // Web3 Development Grant
     applicantId: userIds[4], // Multi-Role
     status: 'rejected',
@@ -38,6 +41,7 @@ export function createApplications(programIds: string[], userIds: string[]): New
 
   applications.push({
     name: 'NFT Marketplace Application',
+    price: '10',
     programId: programIds[3], // NFT Art Marketplace Development
     applicantId: userIds[4], // Multi-Role
     status: 'pending',
