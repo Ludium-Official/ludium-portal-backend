@@ -1,29 +1,23 @@
 import { ethers } from 'ethers';
 import type { FastifyError, FastifyInstance, FastifyPluginOptions } from 'fastify';
 import fp from 'fastify-plugin';
-import eduProgram from './abi/LdEduProgram.json';
+import contractJson from './contract.json';
 
 export class Educhain {
   private contract: ethers.Contract;
   private provider: ethers.providers.JsonRpcProvider;
 
   constructor(private server: FastifyInstance) {
-    const contractABI = eduProgram.abi;
+    const contractAbi = contractJson.abi;
     this.provider = new ethers.providers.JsonRpcProvider(this.server.config.EDUCHAIN_RPC_URL);
     const wallet = new ethers.Wallet(this.server.config.EDUCHAIN_PRIVATE_KEY, this.provider);
     this.contract = new ethers.Contract(
       this.server.config.EDUCHAIN_CONTRACT_ADDRESS,
-      contractABI,
+      contractAbi,
       wallet,
     );
   }
 
-  /**
-   * Retrieves program information from the smart contract
-   * @param programId The unique identifier of the program to retrieve
-   * @returns The program data from the smart contract
-   * @throws Error if the program is not found
-   */
   async getProgram(programId: string) {
     try {
       if (!programId || (!ethers.utils.isHexString(programId) && Number.isNaN(Number(programId)))) {
@@ -31,7 +25,6 @@ export class Educhain {
       }
 
       const program = await this.contract.eduPrograms(programId);
-
       if (!program || !program.id) {
         throw new Error('Program not found');
       }
@@ -43,12 +36,6 @@ export class Educhain {
     }
   }
 
-  /**
-   * Creates a new educational program on the blockchain
-   * @param params Program parameters including name, price, start and end times
-   * @returns The ID of the newly created program
-   * @throws Error if program creation fails
-   */
   async createProgram(params: {
     name: string;
     price: string;
@@ -109,31 +96,10 @@ export class Educhain {
       return programId;
     } catch (error) {
       this.server.log.error({ error, params }, 'Failed to create program on blockchain');
-
-      // Provide more descriptive error messages based on error type
-      if (error instanceof Error) {
-        if (error.message.includes('insufficient funds')) {
-          throw new Error('Insufficient funds to create program');
-        }
-
-        if (error.message.includes('execution reverted')) {
-          throw new Error(`Smart contract rejected program creation: ${error.message}`);
-        }
-
-        throw error;
-      }
-
       throw new Error('Program not created due to blockchain error');
     }
   }
 
-  /**
-   * Approves a program and assigns a builder
-   * @param programId The ID of the program to approve
-   * @param builderAddress The address of the builder to assign to the program
-   * @returns Transaction receipt
-   * @throws Error if program approval fails
-   */
   async approveProgram(programId: string, builderAddress: string) {
     try {
       if (!programId || (!ethers.utils.isHexString(programId) && Number.isNaN(Number(programId)))) {
@@ -169,26 +135,10 @@ export class Educhain {
       return receipt;
     } catch (error) {
       this.server.log.error({ error, programId }, 'Failed to approve program on blockchain');
-
-      if (error instanceof Error) {
-        // Pass through custom error messages
-        if (error.message.includes("You don't have approval permissions")) {
-          throw new Error('You do not have permission to approve this program');
-        }
-
-        throw error;
-      }
-
       throw new Error('Program not approved due to blockchain error');
     }
   }
 
-  /**
-   * Claims grants for an approved program
-   * @param programId The ID of the program to claim grants for
-   * @returns Transaction receipt
-   * @throws Error if grant claiming fails
-   */
   async claimGrants(programId: string) {
     try {
       if (!programId || (!ethers.utils.isHexString(programId) && Number.isNaN(Number(programId)))) {
@@ -205,7 +155,7 @@ export class Educhain {
       );
       const builderContract = new ethers.Contract(
         this.server.config.EDUCHAIN_CONTRACT_ADDRESS,
-        eduProgram.abi,
+        contractJson.abi,
         builderWallet,
       );
       const program = await builderContract.eduPrograms(programId);
@@ -243,19 +193,11 @@ export class Educhain {
       return receipt;
     } catch (error) {
       this.server.log.error({ error, programId }, 'Failed to claim program grants on blockchain');
-
-      if (error instanceof Error) {
-        throw error; // Pass through detailed error messages
-      }
-
       throw new Error('Program grants not claimed due to blockchain error');
     }
   }
 }
 
-/**
- * Fastify plugin that registers the Educhain functionality
- */
 const educhainPlugin = (
   server: FastifyInstance,
   _: FastifyPluginOptions,
