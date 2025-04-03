@@ -30,16 +30,25 @@ export async function getProgramsResolver(
     .where(
       and(
         ...filter
-          .filter((f) => f.field in programsTable)
           .map((f) => {
             switch (f.field) {
               case 'creatorId':
                 return eq(programsTable.creatorId, f.value);
               case 'validatorId':
                 return eq(programsTable.validatorId, f.value);
-              case 'applicantId':
-                // get applications related to this builder and return programs to which they are related
-                return inArray(applicationsTable.programId, applicationsTable.applicantId);
+              case 'applicantId': {
+                // get applications related to this builder and return programs to which applications are related
+                return ctx.db
+                  .select()
+                  .from(applicationsTable)
+                  .where(eq(applicationsTable.applicantId, f.value))
+                  .then((applications) => {
+                    return inArray(
+                      applicationsTable.programId,
+                      applications.map((a) => a.programId),
+                    );
+                  });
+              }
               case 'name':
                 return eq(programsTable.name, f.value);
               case 'status':
