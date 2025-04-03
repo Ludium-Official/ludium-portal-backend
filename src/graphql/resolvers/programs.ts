@@ -24,48 +24,43 @@ export async function getProgramsResolver(
   const sort = args.pagination?.sort || 'desc';
   const filter = args.pagination?.filter || [];
 
+  const filterConditions = await Promise.all(
+    filter.map(async (f) => {
+      switch (f.field) {
+        case 'creatorId':
+          return eq(programsTable.creatorId, f.value);
+        case 'validatorId':
+          return eq(programsTable.validatorId, f.value);
+        case 'applicantId': {
+          const applications = await ctx.db
+            .select()
+            .from(applicationsTable)
+            .where(eq(applicationsTable.applicantId, f.value));
+          return inArray(
+            programsTable.id,
+            applications.map((a) => a.programId),
+          );
+        }
+        case 'name':
+          return eq(programsTable.name, f.value);
+        case 'status':
+          return eq(
+            programsTable.status,
+            f.value as 'draft' | 'published' | 'closed' | 'completed' | 'cancelled',
+          );
+        case 'price':
+          // sort by price, value can be 'asc' or 'desc'
+          return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
+        default:
+          return undefined;
+      }
+    }),
+  );
+
   const data = await ctx.db
     .select()
     .from(programsTable)
-    .where(
-      and(
-        ...filter
-          .map((f) => {
-            switch (f.field) {
-              case 'creatorId':
-                return eq(programsTable.creatorId, f.value);
-              case 'validatorId':
-                return eq(programsTable.validatorId, f.value);
-              case 'applicantId': {
-                // get applications related to this builder and return programs to which applications are related
-                return ctx.db
-                  .select()
-                  .from(applicationsTable)
-                  .where(eq(applicationsTable.applicantId, f.value))
-                  .then((applications) => {
-                    return inArray(
-                      applicationsTable.programId,
-                      applications.map((a) => a.programId),
-                    );
-                  });
-              }
-              case 'name':
-                return eq(programsTable.name, f.value);
-              case 'status':
-                return eq(
-                  programsTable.status,
-                  f.value as 'draft' | 'published' | 'closed' | 'completed' | 'cancelled',
-                );
-              case 'price':
-                // sort by price, value can be 'asc' or 'desc'
-                return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
-              default:
-                return undefined;
-            }
-          })
-          .filter((condition): condition is ReturnType<typeof eq> => condition !== undefined),
-      ),
-    )
+    .where(and(...filterConditions))
     .limit(limit)
     .offset(offset)
     .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
