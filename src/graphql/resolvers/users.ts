@@ -10,7 +10,7 @@ import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
 import { desc, eq, inArray } from 'drizzle-orm';
 
-export async function getUsersResolver(_root: Root, _args: Args, ctx: Context) {
+export function getUsersResolver(_root: Root, _args: Args, ctx: Context) {
   return ctx.db.select().from(usersTable);
 }
 
@@ -20,7 +20,7 @@ export async function getUserResolver(_root: Root, args: { id: string }, ctx: Co
   return user;
 }
 
-export async function getRolesResolver(_root: Root, _args: Args, ctx: Context) {
+export function getRolesResolver(_root: Root, _args: Args, ctx: Context) {
   return ctx.db.select().from(rolesTable);
 }
 
@@ -47,7 +47,7 @@ export async function getUsersByRoleResolver(_root: Root, args: { role: string }
     );
 }
 
-export async function createUserResolver(
+export function createUserResolver(
   _root: Root,
   args: { input: typeof UserInput.$inferInput },
   ctx: Context,
@@ -96,7 +96,7 @@ export async function createUserResolver(
   });
 }
 
-export async function updateUserResolver(
+export function updateUserResolver(
   _root: Root,
   args: { input: typeof UserUpdateInput.$inferInput },
   ctx: Context,
@@ -159,7 +159,7 @@ export async function updateUserResolver(
   });
 }
 
-export async function deleteUserResolver(_root: Root, args: { id: string }, ctx: Context) {
+export function deleteUserResolver(_root: Root, args: { id: string }, ctx: Context) {
   return ctx.db.transaction(async (t) => {
     await t.delete(usersToLinksTable).where(eq(usersToLinksTable.userId, args.id));
     await t.delete(usersToRolesTable).where(eq(usersToRolesTable.userId, args.id));
@@ -168,23 +168,16 @@ export async function deleteUserResolver(_root: Root, args: { id: string }, ctx:
   });
 }
 
-export async function getProfileResolver(_root: Root, _args: Args, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
-  return user;
+export function getProfileResolver(_root: Root, _args: Args, ctx: Context) {
+  return ctx.server.auth.getUser(ctx.request);
 }
 
-export async function updateProfileResolver(
+export function updateProfileResolver(
   _root: Root,
   args: { input: typeof UserUpdateInput.$inferInput },
   ctx: Context,
 ) {
   const loggedinUser = ctx.server.auth.getUser(ctx.request);
-  if (!loggedinUser) {
-    throw new Error('User not found');
-  }
 
   const { links, ...userData } = args.input;
 
@@ -246,9 +239,6 @@ export async function updateProfileResolver(
 
 export async function getUserAvatarResolver(_root: Root, _args: Args, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
 
   const [file] = await ctx.db
     .select()

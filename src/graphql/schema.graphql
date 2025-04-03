@@ -122,6 +122,7 @@ type Mutation {
   denyApplication(id: ID!): Application
   login(address: String, email: String!, network: String, userId: ID!, walletId: String): LoginResponse
   publishProgram(id: ID!): Program
+  rejectProgram(id: ID!): Program
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   updateApplication(input: UpdateApplicationInput!): Application
   updateMilestone(input: UpdateMilestoneInput!): Milestone

@@ -112,11 +112,11 @@ export async function getProgramKeywordsByProgramIdResolver(
     );
 }
 
-export async function getProgramKeywordsResolver(_root: Root, _args: Args, ctx: Context) {
+export function getProgramKeywordsResolver(_root: Root, _args: Args, ctx: Context) {
   return ctx.db.select().from(keywordsTable);
 }
 
-export async function createProgramResolver(
+export function createProgramResolver(
   _root: Root,
   args: { input: typeof CreateProgramInput.$inferInput },
   ctx: Context,
@@ -124,9 +124,6 @@ export async function createProgramResolver(
   const { keywords, links, ...inputData } = args.input;
 
   const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
 
   // Create a properly typed object for the database insert
   const insertData: NewProgram = {
@@ -184,15 +181,12 @@ export async function createProgramResolver(
   });
 }
 
-export async function updateProgramResolver(
+export function updateProgramResolver(
   _root: Root,
   args: { input: typeof UpdateProgramInput.$inferInput },
   ctx: Context,
 ) {
   const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
 
   const { keywords, links, ...inputData } = args.input;
 
@@ -261,9 +255,6 @@ export async function updateProgramResolver(
 
 export async function deleteProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
 
   const hasAccess = await isInSameScope({
     scope: 'program_creator',
@@ -279,11 +270,8 @@ export async function deleteProgramResolver(_root: Root, args: { id: string }, c
   return true;
 }
 
-export async function publishProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
+export function publishProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
@@ -305,6 +293,30 @@ export async function publishProgramResolver(_root: Root, args: { id: string }, 
     if (program.validatorId !== user.id) {
       throw new Error('You are not allowed to publish this program');
     }
+
+    return program;
+  });
+}
+
+export function rejectProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
+  const user = ctx.server.auth.getUser(ctx.request);
+
+  return ctx.db.transaction(async (t) => {
+    const hasAccess = await isInSameScope({
+      scope: 'program_validator',
+      userId: user.id,
+      entityId: args.id,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to reject this program');
+    }
+
+    const [program] = await t
+      .update(programsTable)
+      .set({ status: 'draft', validatorId: null })
+      .where(eq(programsTable.id, args.id))
+      .returning();
 
     return program;
   });
