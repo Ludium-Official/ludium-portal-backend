@@ -239,7 +239,6 @@ input UpdateProgramInput {
   validatorId: ID
 }
 
-"""The `Upload` scalar type represents a file upload."""
 scalar Upload
 
 type User {

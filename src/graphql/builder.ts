@@ -1,9 +1,32 @@
 import type { Context, UploadFile } from '@/types';
+import { isPromise } from '@/utils';
 import SchemaBuilder from '@pothos/core';
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth';
 import ValidationPlugin from '@pothos/plugin-validation';
+import { GraphQLError, GraphQLScalarType } from 'graphql';
 import { DateResolver, DateTimeResolver, JSONResolver } from 'graphql-scalars';
-import { GraphQLUpload } from 'graphql-upload-minimal';
+
+const GraphQLUpload = new GraphQLScalarType({
+  name: 'Upload',
+  parseValue: (value: unknown) => {
+    if (
+      value != null &&
+      typeof value === 'object' &&
+      'promise' in value &&
+      isPromise(value.promise)
+    ) {
+      return value.promise;
+    }
+    if (isPromise(value)) {
+      return value;
+    }
+    throw new GraphQLError('Upload value invalid.', {});
+  },
+  serialize: (value: unknown) => value as Promise<UploadFile>,
+  parseLiteral: (ast) => {
+    throw new GraphQLError('Upload literal unsupported.', { nodes: ast });
+  },
+});
 
 const builder = new SchemaBuilder<{
   Context: Context;
