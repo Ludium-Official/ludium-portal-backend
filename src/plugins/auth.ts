@@ -49,7 +49,7 @@ export class AuthHandler {
 
   getUser(request: FastifyRequest) {
     if (!request.auth?.user) {
-      throw new Error('User not found');
+      return null;
     }
     return request.auth.user;
   }

@@ -119,6 +119,9 @@ export function createProgramResolver(
   const { keywords, links, ...inputData } = args.input;
 
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   // Create a properly typed object for the database insert
   const insertData: NewProgram = {
@@ -182,6 +185,9 @@ export function updateProgramResolver(
   ctx: Context,
 ) {
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   const { keywords, links, ...inputData } = args.input;
 
@@ -250,6 +256,9 @@ export function updateProgramResolver(
 
 export async function deleteProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   const hasAccess = await isInSameScope({
     scope: 'program_creator',
@@ -267,6 +276,9 @@ export async function deleteProgramResolver(_root: Root, args: { id: string }, c
 
 export function publishProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
@@ -295,6 +307,9 @@ export function publishProgramResolver(_root: Root, args: { id: string }, ctx: C
 
 export function rejectProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({

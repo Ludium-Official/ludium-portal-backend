@@ -178,6 +178,9 @@ export function updateProfileResolver(
   ctx: Context,
 ) {
   const loggedinUser = ctx.server.auth.getUser(ctx.request);
+  if (!loggedinUser) {
+    throw new Error('User not found');
+  }
 
   const { links, ...userData } = args.input;
 
@@ -239,6 +242,9 @@ export function updateProfileResolver(
 
 export async function getUserAvatarResolver(_root: Root, _args: Args, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   const [file] = await ctx.db
     .select()

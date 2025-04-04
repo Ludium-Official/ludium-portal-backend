@@ -88,6 +88,9 @@ export function createApplicationResolver(
   ctx: Context,
 ) {
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   return ctx.db.transaction(async (t) => {
     const [application] = await t
@@ -130,6 +133,9 @@ export function updateApplicationResolver(
   ctx: Context,
 ) {
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   const filteredData = filterEmptyValues<ApplicationUpdate>(args.input);
 
@@ -181,6 +187,9 @@ export function updateApplicationResolver(
 
 export function approveApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
@@ -228,6 +237,9 @@ export function approveApplicationResolver(_root: Root, args: { id: string }, ct
 
 export function denyApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({

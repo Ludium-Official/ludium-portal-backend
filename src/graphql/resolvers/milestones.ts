@@ -74,6 +74,9 @@ export function createMilestonesResolver(
   ctx: Context,
 ) {
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   const milestones: Milestone[] = [];
 
@@ -195,6 +198,9 @@ export function submitMilestoneResolver(
   ctx: Context,
 ) {
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
@@ -243,6 +249,9 @@ export function checkMilestoneResolver(
   ctx: Context,
 ) {
   const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
