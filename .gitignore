@@ -208,3 +208,4 @@ pnpm-lock.yaml
 
 # GCloud
 .gcloud
+.gcp.json

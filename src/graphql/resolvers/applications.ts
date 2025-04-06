@@ -71,7 +71,7 @@ export async function getApplicationResolver(_root: Root, args: { id: string }, 
   return application;
 }
 
-export async function getApplicationsByProgramIdResolver(
+export function getApplicationsByProgramIdResolver(
   _root: Root,
   args: { programId: string },
   ctx: Context,
@@ -82,7 +82,7 @@ export async function getApplicationsByProgramIdResolver(
     .where(eq(applicationsTable.programId, args.programId));
 }
 
-export async function createApplicationResolver(
+export function createApplicationResolver(
   _root: Root,
   args: { input: typeof CreateApplicationInput.$inferInput },
   ctx: Context,
@@ -127,7 +127,7 @@ export async function createApplicationResolver(
   });
 }
 
-export async function updateApplicationResolver(
+export function updateApplicationResolver(
   _root: Root,
   args: { input: typeof UpdateApplicationInput.$inferInput },
   ctx: Context,
@@ -185,7 +185,7 @@ export async function updateApplicationResolver(
   });
 }
 
-export async function approveApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
+export function approveApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
   if (!user) {
     throw new Error('User not found');
@@ -235,7 +235,7 @@ export async function approveApplicationResolver(_root: Root, args: { id: string
   });
 }
 
-export async function denyApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
+export function denyApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
   if (!user) {
     throw new Error('User not found');

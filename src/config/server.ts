@@ -23,6 +23,7 @@ declare module 'fastify' {
   interface FastifyRequest {
     jwt: JWT;
     auth: RequestAuth | null;
+    mercuriusUploadMultipart?: true;
   }
 }
 

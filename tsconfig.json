@@ -4,10 +4,11 @@
     "lib": [
       "ES2022"
     ],
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
     "resolveJsonModule": true,
-    "allowJs": false,
+    "allowJs": true,
+    "maxNodeModuleJsDepth": 10,
     "sourceMap": true,
     "rootDir": "./src",
     "outDir": "./build",

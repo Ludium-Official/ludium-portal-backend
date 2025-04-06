@@ -25,39 +25,43 @@ export async function getProgramsResolver(
   const sort = args.pagination?.sort || 'desc';
   const filter = args.pagination?.filter || [];
 
+  const filterConditions = await Promise.all(
+    filter.map(async (f) => {
+      switch (f.field) {
+        case 'creatorId':
+          return eq(programsTable.creatorId, f.value);
+        case 'validatorId':
+          return eq(programsTable.validatorId, f.value);
+        case 'applicantId': {
+          const applications = await ctx.db
+            .select()
+            .from(applicationsTable)
+            .where(eq(applicationsTable.applicantId, f.value));
+          return inArray(
+            programsTable.id,
+            applications.map((a) => a.programId),
+          );
+        }
+        case 'name':
+          return eq(programsTable.name, f.value);
+        case 'status':
+          return eq(
+            programsTable.status,
+            f.value as 'draft' | 'published' | 'closed' | 'completed' | 'cancelled',
+          );
+        case 'price':
+          // sort by price, value can be 'asc' or 'desc'
+          return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
+        default:
+          return undefined;
+      }
+    }),
+  );
+
   const data = await ctx.db
     .select()
     .from(programsTable)
-    .where(
-      and(
-        ...filter
-          .filter((f) => f.field in programsTable)
-          .map((f) => {
-            switch (f.field) {
-              case 'creatorId':
-                return eq(programsTable.creatorId, f.value);
-              case 'validatorId':
-                return eq(programsTable.validatorId, f.value);
-              case 'applicantId':
-                // get applications related to this builder and return programs to which they are related
-                return inArray(applicationsTable.programId, applicationsTable.applicantId);
-              case 'name':
-                return eq(programsTable.name, f.value);
-              case 'status':
-                return eq(
-                  programsTable.status,
-                  f.value as 'draft' | 'published' | 'closed' | 'completed' | 'cancelled',
-                );
-              case 'price':
-                // sort by price, value can be 'asc' or 'desc'
-                return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
-              default:
-                return undefined;
-            }
-          })
-          .filter((condition): condition is ReturnType<typeof eq> => condition !== undefined),
-      ),
-    )
+    .where(and(...filterConditions))
     .limit(limit)
     .offset(offset)
     .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
@@ -104,11 +108,11 @@ export async function getProgramKeywordsByProgramIdResolver(
     );
 }
 
-export async function getProgramKeywordsResolver(_root: Root, _args: Args, ctx: Context) {
+export function getProgramKeywordsResolver(_root: Root, _args: Args, ctx: Context) {
   return ctx.db.select().from(keywordsTable);
 }
 
-export async function createProgramResolver(
+export function createProgramResolver(
   _root: Root,
   args: { input: typeof CreateProgramInput.$inferInput },
   ctx: Context,
@@ -192,7 +196,7 @@ export async function createProgramResolver(
   });
 }
 
-export async function updateProgramResolver(
+export function updateProgramResolver(
   _root: Root,
   args: { input: typeof UpdateProgramInput.$inferInput },
   ctx: Context,
@@ -287,7 +291,7 @@ export async function deleteProgramResolver(_root: Root, args: { id: string }, c
   return true;
 }
 
-export async function publishProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
+export function publishProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
   if (!user) {
     throw new Error('User not found');
@@ -313,6 +317,33 @@ export async function publishProgramResolver(_root: Root, args: { id: string }, 
     if (program.validatorId !== user.id) {
       throw new Error('You are not allowed to publish this program');
     }
+
+    return program;
+  });
+}
+
+export function rejectProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return ctx.db.transaction(async (t) => {
+    const hasAccess = await isInSameScope({
+      scope: 'program_validator',
+      userId: user.id,
+      entityId: args.id,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to reject this program');
+    }
+
+    const [program] = await t
+      .update(programsTable)
+      .set({ status: 'draft', validatorId: null })
+      .where(eq(programsTable.id, args.id))
+      .returning();
 
     return program;
   });

@@ -3,6 +3,8 @@ import argon2Plugin from '@/plugins/argon2';
 import authPlugin from '@/plugins/auth';
 import dbPlugin from '@/plugins/db';
 import educhainPlugin from '@/plugins/educhain';
+import fileManagerPlugin from '@/plugins/file-manager';
+import mercuriusUpload from '@/plugins/gql-upload';
 import corsPlugin from '@fastify/cors';
 import jwtPlugin from '@fastify/jwt';
 import type { FastifyInstance } from 'fastify';
@@ -23,15 +25,13 @@ const registerPlugins = (server: FastifyInstance) => {
     server.log.info('DB plugin is ready');
   });
 
-  void server.register(educhainPlugin).ready((err) => {
-    if (err) server.log.error(err);
-    server.log.info('Educhain plugin is ready');
-  });
-
-  // TODO: narrow down the origin
   void server.register(corsPlugin, {
     origin: '*',
   });
+
+  void server.register(mercuriusUpload);
+
+  void server.register(fileManagerPlugin);
 
   void server
     .register(mercurius, {
@@ -78,6 +78,11 @@ const registerPlugins = (server: FastifyInstance) => {
   void server.register(argon2Plugin).ready((err) => {
     if (err) server.log.error(err);
     server.log.info('Password plugin is ready');
+  });
+
+  void server.register(educhainPlugin).ready((err) => {
+    if (err) server.log.error(err);
+    server.log.info('Education plugin is ready');
   });
 };
 

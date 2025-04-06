@@ -57,7 +57,7 @@ export async function getMilestonesResolver(
   };
 }
 
-export async function getMilestonesByApplicationIdResolver(
+export function getMilestonesByApplicationIdResolver(
   _root: Root,
   args: { applicationId: string },
   ctx: Context,
@@ -68,7 +68,7 @@ export async function getMilestonesByApplicationIdResolver(
     .where(eq(milestonesTable.applicationId, args.applicationId));
 }
 
-export async function createMilestonesResolver(
+export function createMilestonesResolver(
   _root: Root,
   args: { input: (typeof CreateMilestoneInput.$inferInput)[] },
   ctx: Context,
@@ -154,7 +154,7 @@ export async function createMilestonesResolver(
   });
 }
 
-export async function updateMilestoneResolver(
+export function updateMilestoneResolver(
   _root: Root,
   args: { input: typeof UpdateMilestoneInput.$inferInput },
   ctx: Context,
@@ -192,7 +192,7 @@ export async function updateMilestoneResolver(
   });
 }
 
-export async function submitMilestoneResolver(
+export function submitMilestoneResolver(
   _root: Root,
   args: { input: typeof SubmitMilestoneInput.$inferInput },
   ctx: Context,
@@ -243,7 +243,7 @@ export async function submitMilestoneResolver(
   });
 }
 
-export async function checkMilestoneResolver(
+export function checkMilestoneResolver(
   _root: Root,
   args: { input: typeof CheckMilestoneInput.$inferInput },
   ctx: Context,

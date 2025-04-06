@@ -8,6 +8,7 @@
 .husky
 .gitignore
 .env*
+.gcp.json
 biome.json
 build
 ci
