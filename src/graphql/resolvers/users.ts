@@ -15,6 +15,10 @@ export function getUsersResolver(_root: Root, _args: Args, ctx: Context) {
 }
 
 export async function getUserResolver(_root: Root, args: { id: string }, ctx: Context) {
+  if (!args.id) {
+    return null;
+  }
+
   const [user] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.id));
 
   return user;
