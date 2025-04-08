@@ -44,7 +44,7 @@ export const User = builder.objectRef<DBUser>('User').implement({
     avatar: t.field({
       type: 'Upload',
       nullable: true,
-      resolve: getUserAvatarResolver,
+      resolve: async (user, _args, ctx) => getUserAvatarResolver({}, { userId: user.id }, ctx),
     }),
   }),
 });

@@ -244,16 +244,11 @@ export function updateProfileResolver(
   });
 }
 
-export async function getUserAvatarResolver(_root: Root, _args: Args, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
-
+export async function getUserAvatarResolver(_root: Root, args: { userId: string }, ctx: Context) {
   const [file] = await ctx.db
     .select()
     .from(filesTable)
-    .where(eq(filesTable.uploadedById, user.id))
+    .where(eq(filesTable.uploadedById, args.userId))
     .orderBy(desc(filesTable.createdAt))
     .limit(1);
 
