@@ -1,5 +1,5 @@
 {
-  "id": "6288d498-f813-4afe-b110-97e0b3d147e7",
+  "id": "1dcc59e8-d482-4284-88ec-f97cb63db323",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -59,6 +59,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
+        },
+        "educhain_application_id": {
+          "name": "educhain_application_id",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -517,6 +523,12 @@
           "primaryKey": false,
           "notNull": false,
           "default": "'draft'"
+        },
+        "educhain_id": {
+          "name": "educhain_id",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -1095,6 +1107,7 @@
       "schema": "public",
       "values": [
         "draft",
+        "payment_required",
         "published",
         "closed",
         "completed",
