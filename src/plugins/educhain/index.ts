@@ -20,7 +20,7 @@ export class Educhain {
 
   async getProgram(programId: string) {
     try {
-      if (!programId || (!ethers.utils.isHexString(programId) && Number.isNaN(Number(programId)))) {
+      if (!programId || !ethers.utils.isHexString(programId)) {
         throw new Error('Invalid program ID format');
       }
 
@@ -36,6 +36,7 @@ export class Educhain {
     }
   }
 
+  /* -------------------------- Sponsor methods start ------------------------- */
   async createProgram(params: {
     name: string;
     price: string;
@@ -93,16 +94,19 @@ export class Educhain {
 
       // Extract the program ID from the event args
       const programId = event.args[0].toString();
-      return programId;
+      return programId as string;
     } catch (error) {
       this.server.log.error({ error, params }, 'Failed to create program on blockchain');
       throw new Error('Program not created due to blockchain error');
     }
   }
 
+  /* -------------------------- Sponsor methods end --------------------------- */
+
+  /* -------------------------- Validator methods start ------------------------- */
   async approveProgram(programId: string, builderAddress: string) {
     try {
-      if (!programId || (!ethers.utils.isHexString(programId) && Number.isNaN(Number(programId)))) {
+      if (!programId || !ethers.utils.isHexString(programId)) {
         throw new Error('Invalid program ID format');
       }
 
@@ -110,26 +114,9 @@ export class Educhain {
         throw new Error('Builder address not configured');
       }
 
-      // Verify the program exists before approving
       const program = await this.getProgram(programId);
 
-      if (program.approve) {
-        throw new Error('Program is already approved');
-      }
-
-      if (program.claimed) {
-        throw new Error('Program is already claimed or reclaimed');
-      }
-
-      // Current time validation
-      const currentTime = Math.floor(Date.now() / 1000);
-      if (currentTime > program.endTime.toNumber()) {
-        throw new Error(
-          `Program has already ended (End time: ${new Date(program.endTime.toNumber() * 1000).toLocaleString()})`,
-        );
-      }
-
-      const tx = await this.contract.approveProgram(programId, builderAddress);
+      const tx = await this.contract.approveProgram(program.id.toString(), builderAddress);
       const receipt = await tx.wait();
 
       return receipt;
@@ -138,6 +125,111 @@ export class Educhain {
       throw new Error('Program not approved due to blockchain error');
     }
   }
+
+  async selectApplication(programId: string, applicationId: string) {
+    try {
+      if (!programId || !ethers.utils.isHexString(programId)) {
+        throw new Error('Invalid program ID format');
+      }
+      if (!applicationId || !ethers.utils.isHexString(applicationId)) {
+        throw new Error('Invalid application ID format');
+      }
+
+      const tx = await this.contract.selectApplication(programId, applicationId, true);
+
+      return tx.wait();
+    } catch (error) {
+      this.server.log.error(
+        { error, programId, applicationId },
+        'Failed to select application on blockchain',
+      );
+      throw new Error('Application not selected due to blockchain error');
+    }
+  }
+
+  async acceptMilestone(programId: string, milestoneId: string) {
+    try {
+      if (!programId || !ethers.utils.isHexString(programId)) {
+        throw new Error('Invalid program ID format');
+      }
+      if (!milestoneId || !ethers.utils.isHexString(milestoneId)) {
+        throw new Error('Invalid milestone ID format');
+      }
+
+      const tx = await this.contract.acceptMilestone(programId, milestoneId);
+      return tx.wait();
+    } catch (error) {
+      this.server.log.error(
+        { error, programId, milestoneId },
+        'Failed to accept milestone on blockchain',
+      );
+      throw new Error('Milestone not accepted due to blockchain error');
+    }
+  }
+  /* -------------------------- Validator methods end --------------------------- */
+
+  /* -------------------------- Builder methods start ---------------------------- */
+  async submitApplication(params: {
+    programId: string;
+    milestoneNames: string[];
+    milestoneDescriptions: string[];
+    milestonePrices: string[];
+  }) {
+    try {
+      if (!params.programId || !ethers.utils.isHexString(params.programId)) {
+        throw new Error('Invalid program ID format');
+      }
+
+      const milestonePrices = params.milestonePrices.map((price) => ethers.utils.parseEther(price));
+
+      const tx = await this.contract.submitApplication(
+        params.programId,
+        params.milestoneNames,
+        params.milestoneDescriptions,
+        milestonePrices,
+      );
+
+      const receipt = await tx.wait();
+      const event = receipt.events.find((e: { event: string }) => e.event === 'ProgramApplied');
+
+      if (!event || !event.args || !event.args[0]) {
+        throw new Error('Program application event not found in transaction receipt');
+      }
+
+      const applicationId = event.args[0].toString();
+
+      return applicationId as string;
+    } catch (error) {
+      this.server.log.error({ error, params }, 'Failed to submit application on blockchain');
+      throw new Error('Application not submitted due to blockchain error');
+    }
+  }
+
+  async submitMilestone(params: {
+    programId: string;
+    milestoneId: string;
+    links: string[];
+  }) {
+    try {
+      if (!params.programId || !ethers.utils.isHexString(params.programId)) {
+        throw new Error('Invalid program ID format');
+      }
+      if (!params.milestoneId || !ethers.utils.isHexString(params.milestoneId)) {
+        throw new Error('Invalid milestone ID format');
+      }
+
+      const tx = await this.contract.submitMilestone(
+        params.programId,
+        params.milestoneId,
+        params.links,
+      );
+      return tx.wait();
+    } catch (error) {
+      this.server.log.error({ error, params }, 'Failed to submit milestone on blockchain');
+      throw new Error('Milestone not submitted due to blockchain error');
+    }
+  }
+  /* -------------------------- Builder methods end ---------------------------- */
 
   async claimGrants(programId: string) {
     try {

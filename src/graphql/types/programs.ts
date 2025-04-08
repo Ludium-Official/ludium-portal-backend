@@ -3,6 +3,7 @@ import builder from '@/graphql/builder';
 import { getApplicationsByProgramIdResolver } from '@/graphql/resolvers/applications';
 import { getLinksByProgramIdResolver } from '@/graphql/resolvers/links';
 import {
+  acceptProgramResolver,
   createProgramResolver,
   deleteProgramResolver,
   getProgramKeywordsByProgramIdResolver,
@@ -34,6 +35,7 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       resolve: (program) => formatPrice(program.price),
     }),
     currency: t.exposeString('currency'),
+    educhainProgramId: t.exposeString('educhainProgramId'),
     deadline: t.field({
       type: 'Date',
       resolve: (program) => (program.deadline ? new Date(program.deadline) : null),
@@ -172,13 +174,13 @@ builder.mutationFields((t) => ({
     },
     resolve: deleteProgramResolver,
   }),
-  publishProgram: t.field({
+  acceptProgram: t.field({
     type: ProgramType,
     authScopes: { validator: true },
     args: {
       id: t.arg.id({ required: true }),
     },
-    resolve: publishProgramResolver,
+    resolve: acceptProgramResolver,
   }),
   rejectProgram: t.field({
     type: ProgramType,
@@ -187,5 +189,13 @@ builder.mutationFields((t) => ({
       id: t.arg.id({ required: true }),
     },
     resolve: rejectProgramResolver,
+  }),
+  publishProgram: t.field({
+    type: ProgramType,
+    authScopes: { sponsor: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: publishProgramResolver,
   }),
 }));

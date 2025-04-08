@@ -17,6 +17,7 @@ import { usersTable } from './users';
 
 export const programStatusEnum = pgEnum('program_status', [
   'draft',
+  'payment_required',
   'published',
   'closed',
   'completed',
@@ -39,6 +40,7 @@ export const programsTable = pgTable('programs', {
     .references(() => usersTable.id, { onDelete: 'cascade' }),
   validatorId: uuid('validator_id').references(() => usersTable.id, { onDelete: 'set null' }),
   status: programStatusEnum('status').default('draft'),
+  educhainProgramId: varchar('educhain_id', { length: 256 }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()

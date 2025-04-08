@@ -122,9 +122,20 @@ export function createMilestonesResolver(
       .where(eq(applicationsTable.id, args.input[0].applicationId));
 
     const [program] = await t
-      .select({ price: programsTable.price })
+      .select({ price: programsTable.price, educhainProgramId: programsTable.educhainProgramId })
       .from(programsTable)
       .where(eq(programsTable.id, application.programId));
+
+    if (!program.educhainProgramId) {
+      throw new Error('Blockchain program not found');
+    }
+
+    const educhainAppId = await ctx.server.educhain.submitApplication({
+      programId: program.educhainProgramId,
+      milestoneNames: milestones.map((m) => m.title),
+      milestoneDescriptions: milestones.map((m) => m.description ?? ''),
+      milestonePrices: milestones.map((m) => m.price),
+    });
 
     const applications = await t
       .select({ price: applicationsTable.price })
@@ -147,6 +158,7 @@ export function createMilestonesResolver(
       .update(applicationsTable)
       .set({
         price: milestonesTotalPrice.toString(),
+        educhainApplicationId: educhainAppId,
       })
       .where(eq(applicationsTable.id, args.input[0].applicationId));
 

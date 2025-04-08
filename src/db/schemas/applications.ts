@@ -1,5 +1,14 @@
 import { relations } from 'drizzle-orm';
-import { decimal, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  decimal,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { linksTable } from './links';
 import { milestonesTable } from './milestones';
 import { programsTable } from './programs';
@@ -31,6 +40,7 @@ export const applicationsTable = pgTable('applications', {
   content: text('content'),
   metadata: jsonb('metadata'),
   price: decimal('price', { precision: 38, scale: 18 }).default('0').notNull(),
+  educhainApplicationId: varchar('educhain_application_id', { length: 256 }),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

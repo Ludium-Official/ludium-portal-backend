@@ -1,6 +1,7 @@
 type Application {
   applicant: User
   content: String
+  educhainApplicationId: String
   id: ID
   links: [Link!]
   metadata: JSON
@@ -111,6 +112,7 @@ enum MilestoneStatus {
 }
 
 type Mutation {
+  acceptProgram(id: ID!): Program
   approveApplication(id: ID!): Application
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
@@ -159,6 +161,7 @@ type Program {
   currency: String
   deadline: Date
   description: String
+  educhainProgramId: String
   id: ID
   keywords: [ProgramKeyword!]
   links: [Link!]
