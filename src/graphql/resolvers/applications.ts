@@ -212,12 +212,15 @@ export function approveApplicationResolver(_root: Root, args: { id: string }, ct
     }, new BigNumber(0));
 
     const [app] = await t
-      .select({ programId: applicationsTable.programId })
+      .select({
+        programId: applicationsTable.programId,
+        educhainApplicationId: applicationsTable.educhainApplicationId,
+      })
       .from(applicationsTable)
       .where(eq(applicationsTable.id, args.id));
 
     const [program] = await t
-      .select({ price: programsTable.price })
+      .select({ price: programsTable.price, educhainProgramId: programsTable.educhainProgramId })
       .from(programsTable)
       .where(eq(programsTable.id, app.programId));
 
@@ -225,11 +228,20 @@ export function approveApplicationResolver(_root: Root, args: { id: string }, ct
       throw new Error('The total price of the milestones is greater than the program price');
     }
 
+    if (!program.educhainProgramId || !app.educhainApplicationId) {
+      throw new Error('Blockchain program or application not found');
+    }
+
     const [application] = await t
       .update(applicationsTable)
       .set({ status: 'approved' })
       .where(eq(applicationsTable.id, args.id))
       .returning();
+
+    await ctx.server.educhain.selectApplication(
+      program.educhainProgramId,
+      app.educhainApplicationId,
+    );
 
     return application;
   });

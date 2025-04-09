@@ -2,17 +2,24 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { createApplications } from './data/applications';
 import { links, programLinks } from './data/links';
+import { createMilestones } from './data/milestones';
 import { keywords, programKeywords, programs } from './data/programs';
 import { createUserRoles, roles, users } from './data/users';
 import { applicationsTable } from './schemas/applications';
 import { keywordsTable } from './schemas/keywords';
 import { linksTable } from './schemas/links';
+import { milestonesTable } from './schemas/milestones';
 import { programsTable, programsToKeywordsTable, programsToLinksTable } from './schemas/programs';
 import { rolesTable } from './schemas/roles';
 import { usersTable, usersToRolesTable } from './schemas/users';
 
 const DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://ludium:ludium@localhost:5435/ludium?search_path=public';
+
+if (!DATABASE_URL) {
+  console.error('❌ DATABASE_URL is not defined in environment variables.');
+  process.exit(1);
+}
 
 async function seed() {
   try {
@@ -175,6 +182,20 @@ async function seed() {
             .returning()
             .onConflictDoNothing();
           console.log(`✅ Added ${insertedApplications.length} applications`);
+
+          // Add milestones for each application
+          if (insertedApplications.length > 0) {
+            console.log('🏆 Adding milestones for applications...');
+            const applicationIds = insertedApplications.map((application) => application.id);
+            const milestones = createMilestones(applicationIds);
+
+            const insertedMilestones = await db
+              .insert(milestonesTable)
+              .values(milestones)
+              .returning()
+              .onConflictDoNothing();
+            console.log(`✅ Added ${insertedMilestones.length} milestones`);
+          }
         }
       }
     }

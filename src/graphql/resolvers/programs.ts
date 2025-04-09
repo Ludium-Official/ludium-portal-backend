@@ -7,6 +7,7 @@ import {
   programsTable,
   programsToKeywordsTable,
   programsToLinksTable,
+  walletTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
@@ -123,22 +124,30 @@ export function createProgramResolver(
     throw new Error('User not found');
   }
 
-  // Create a properly typed object for the database insert
-  const insertData: NewProgram = {
-    name: inputData.name,
-    summary: inputData.summary || null,
-    description: inputData.description || null,
-    price: inputData.price || '0',
-    currency: inputData.currency || 'ETH',
-    deadline: inputData.deadline
-      ? new Date(inputData.deadline).toISOString()
-      : new Date().toISOString(),
-    creatorId: user.id,
-    validatorId: inputData.validatorId || null,
-    status: 'draft',
-  };
-
   return ctx.db.transaction(async (t) => {
+    const [validatorWallet] = await t
+      .select()
+      .from(walletTable)
+      .where(eq(walletTable.userId, inputData.validatorId));
+    if (!validatorWallet) {
+      throw new Error('Validator wallet not found');
+    }
+
+    // Create a properly typed object for the database insert
+    const insertData: NewProgram = {
+      name: inputData.name,
+      summary: inputData.summary,
+      description: inputData.description,
+      price: inputData.price || '0',
+      currency: inputData.currency || 'ETH',
+      deadline: inputData.deadline
+        ? new Date(inputData.deadline).toISOString()
+        : new Date().toISOString(),
+      creatorId: user.id,
+      validatorId: inputData.validatorId,
+      status: 'draft',
+    };
+
     const [program] = await t.insert(programsTable).values(insertData).returning();
 
     // Handle keywords
@@ -274,7 +283,7 @@ export async function deleteProgramResolver(_root: Root, args: { id: string }, c
   return true;
 }
 
-export function publishProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
+export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
   const user = ctx.server.auth.getUser(ctx.request);
   if (!user) {
     throw new Error('User not found');
@@ -288,18 +297,14 @@ export function publishProgramResolver(_root: Root, args: { id: string }, ctx: C
       db: t,
     });
     if (!hasAccess) {
-      throw new Error('You are not allowed to publish this program');
+      throw new Error('You are not allowed to accept this program');
     }
 
     const [program] = await t
       .update(programsTable)
-      .set({ status: 'published' })
+      .set({ status: 'payment_required' })
       .where(eq(programsTable.id, args.id))
       .returning();
-
-    if (program.validatorId !== user.id) {
-      throw new Error('You are not allowed to publish this program');
-    }
 
     return program;
   });
@@ -327,6 +332,51 @@ export function rejectProgramResolver(_root: Root, args: { id: string }, ctx: Co
       .set({ status: 'draft', validatorId: null })
       .where(eq(programsTable.id, args.id))
       .returning();
+
+    return program;
+  });
+}
+
+export function publishProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return ctx.db.transaction(async (t) => {
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: args.id,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to publish this program');
+    }
+
+    const [program] = await t
+      .update(programsTable)
+      .set({ status: 'published' })
+      .where(eq(programsTable.id, args.id))
+      .returning();
+
+    const [validatorWallet] = await t
+      .select()
+      .from(walletTable)
+      .where(eq(walletTable.userId, user.id));
+
+    const eduProgramId = await ctx.server.educhain.createProgram({
+      name: program.name,
+      price: program.price,
+      startTime: new Date(),
+      endTime: new Date(program.deadline),
+      validatorAddress: validatorWallet.address as string,
+    });
+
+    await t
+      .update(programsTable)
+      .set({ educhainProgramId: eduProgramId })
+      .where(eq(programsTable.id, program.id));
 
     return program;
   });

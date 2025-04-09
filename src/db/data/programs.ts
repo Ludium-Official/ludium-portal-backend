@@ -1,4 +1,4 @@
-import type { NewApplication, NewProgram } from '@/db/schemas';
+import type { NewProgram } from '@/db/schemas';
 
 export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
   {
@@ -83,52 +83,3 @@ export const programKeywords = [
   // Blockchain Education Platform
   { programIndex: 4, keywords: ['education', 'blockchain', 'learning'] },
 ];
-
-// Function to create program applications
-export function createApplications(programIds: string[], userIds: string[]): NewApplication[] {
-  const applications: NewApplication[] = [];
-
-  // Applications from the first builder (userIds[3])
-  applications.push({
-    programId: programIds[0], // Web3 Development Grant
-    applicantId: userIds[3], // Builder
-    status: 'pending',
-    name: 'Web3 Development Grant Application',
-    content:
-      'Я хотел бы принять участие в этой программе, так как имею опыт разработки Web3 приложений и хочу создать новый проект в этой области.',
-    metadata: { skills: ['javascript', 'solidity', 'react'] },
-  });
-
-  applications.push({
-    programId: programIds[1], // Solidity Smart Contract Challenge
-    applicantId: userIds[3], // Builder
-    status: 'approved',
-    name: 'Solidity Challenge Application',
-    content:
-      'У меня есть опыт разработки смарт-контрактов на Solidity, и я хотел бы принять участие в этом конкурсе.',
-    metadata: { skills: ['solidity', 'ethereum', 'security'] },
-  });
-
-  // Applications from Multi-Role user (userIds[4])
-  applications.push({
-    programId: programIds[0], // Web3 Development Grant
-    applicantId: userIds[4], // Multi-Role
-    status: 'rejected',
-    name: 'Web3 Grant Application',
-    content:
-      'Я разрабатываю Web3 приложение для децентрализованного обмена данными и хотел бы получить финансирование для его развития.',
-    metadata: { skills: ['typescript', 'solidity', 'web3.js'] },
-  });
-
-  applications.push({
-    programId: programIds[3], // NFT Art Marketplace Development
-    applicantId: userIds[4], // Multi-Role
-    status: 'pending',
-    name: 'NFT Marketplace Application',
-    content:
-      'У меня есть опыт разработки NFT маркетплейсов, и я хотел бы принять участие в этом проекте.',
-    metadata: { skills: ['react', 'node.js', 'nft'] },
-  });
-
-  return applications;
-}

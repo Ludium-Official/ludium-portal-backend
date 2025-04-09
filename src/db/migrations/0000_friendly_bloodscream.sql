@@ -1,5 +1,5 @@
 CREATE TYPE "public"."application_status" AS ENUM('pending', 'approved', 'rejected', 'completed', 'withdrawn');--> statement-breakpoint
-CREATE TYPE "public"."program_status" AS ENUM('draft', 'published', 'closed', 'completed', 'cancelled');--> statement-breakpoint
+CREATE TYPE "public"."program_status" AS ENUM('draft', 'payment_required', 'published', 'closed', 'completed', 'cancelled');--> statement-breakpoint
 CREATE TYPE "public"."milestone_status" AS ENUM('pending', 'completed', 'failed', 'revision_requested');--> statement-breakpoint
 CREATE TABLE "applications" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -10,6 +10,7 @@ CREATE TABLE "applications" (
 	"content" text,
 	"metadata" jsonb,
 	"price" numeric(38, 18) DEFAULT '0' NOT NULL,
+	"educhain_application_id" integer,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -68,6 +69,7 @@ CREATE TABLE "programs" (
 	"creator_id" uuid NOT NULL,
 	"validator_id" uuid,
 	"status" "program_status" DEFAULT 'draft',
+	"educhain_id" integer,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -101,6 +103,7 @@ CREATE TABLE "milestones" (
 	"currency" varchar(10) DEFAULT 'ETH',
 	"status" "milestone_status" DEFAULT 'pending' NOT NULL,
 	"links" jsonb,
+	"educhain_milestone_id" integer,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );

@@ -37,6 +37,7 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
       type: 'String',
       resolve: (application) => formatPrice(application.price),
     }),
+    educhainApplicationId: t.exposeInt('educhainApplicationId', { nullable: true }),
     metadata: t.field({
       type: 'JSON',
       nullable: true,
