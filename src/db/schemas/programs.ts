@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import {
   date,
   decimal,
+  integer,
   pgEnum,
   pgTable,
   primaryKey,
@@ -40,7 +41,7 @@ export const programsTable = pgTable('programs', {
     .references(() => usersTable.id, { onDelete: 'cascade' }),
   validatorId: uuid('validator_id').references(() => usersTable.id, { onDelete: 'set null' }),
   status: programStatusEnum('status').default('draft'),
-  educhainProgramId: varchar('educhain_id', { length: 256 }),
+  educhainProgramId: integer('educhain_id'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()

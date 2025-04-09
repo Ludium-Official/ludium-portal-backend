@@ -91,9 +91,13 @@ export function createMilestonesResolver(
       throw new Error('You are not allowed to create milestones for this application');
     }
 
+    let counter = 1;
     for (const milestone of args.input) {
       const { links, ...inputData } = milestone;
-      const [newMilestone] = await t.insert(milestonesTable).values(inputData).returning();
+      const [newMilestone] = await t
+        .insert(milestonesTable)
+        .values({ ...inputData, educhainMilestoneId: counter++ })
+        .returning();
       // handle links
       if (links) {
         const filteredLinks = links.filter((link) => link.url);
@@ -130,7 +134,7 @@ export function createMilestonesResolver(
       throw new Error('Blockchain program not found');
     }
 
-    const educhainAppId = await ctx.server.educhain.submitApplication({
+    const applicationId = await ctx.server.educhain.submitApplication({
       programId: program.educhainProgramId,
       milestoneNames: milestones.map((m) => m.title),
       milestoneDescriptions: milestones.map((m) => m.description ?? ''),
@@ -158,7 +162,7 @@ export function createMilestonesResolver(
       .update(applicationsTable)
       .set({
         price: milestonesTotalPrice.toString(),
-        educhainApplicationId: educhainAppId,
+        educhainApplicationId: applicationId,
       })
       .where(eq(applicationsTable.id, args.input[0].applicationId));
 
@@ -251,6 +255,25 @@ export function submitMilestoneResolver(
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
 
+    if (!milestone.educhainMilestoneId) {
+      throw new Error('Milestone not found on blockchain');
+    }
+
+    const [program] = await t
+      .select({ educhainProgramId: programsTable.educhainProgramId })
+      .from(programsTable)
+      .where(eq(programsTable.id, milestone.applicationId));
+
+    if (!program.educhainProgramId) {
+      throw new Error('Program not found on blockchain');
+    }
+
+    await ctx.server.educhain.submitMilestone({
+      programId: program.educhainProgramId,
+      milestoneId: milestone.educhainMilestoneId,
+      links: args.input.links?.map((link) => link.url as string) ?? [],
+    });
+
     return milestone;
   });
 }
@@ -281,6 +304,34 @@ export function checkMilestoneResolver(
       .set({ status: args.input.status })
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
+
+    if (!milestone.educhainMilestoneId) {
+      throw new Error('Milestone not found on blockchain');
+    }
+
+    const [program] = await t
+      .select({ educhainProgramId: programsTable.educhainProgramId })
+      .from(programsTable)
+      .where(eq(programsTable.id, milestone.applicationId));
+
+    if (!program.educhainProgramId) {
+      throw new Error('Program not found on blockchain');
+    }
+
+    switch (args.input.status) {
+      case 'completed':
+        await ctx.server.educhain.acceptMilestone(
+          program.educhainProgramId,
+          milestone.educhainMilestoneId,
+        );
+        break;
+      case 'pending':
+        await ctx.server.educhain.rejectMilestone(
+          program.educhainProgramId,
+          milestone.educhainMilestoneId,
+        );
+        break;
+    }
 
     return milestone;
   });

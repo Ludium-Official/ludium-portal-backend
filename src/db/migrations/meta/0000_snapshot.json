@@ -1,5 +1,5 @@
 {
-  "id": "1dcc59e8-d482-4284-88ec-f97cb63db323",
+  "id": "ba168f99-e2e6-45fa-b8d9-55af14112188",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -62,7 +62,7 @@
         },
         "educhain_application_id": {
           "name": "educhain_application_id",
-          "type": "varchar(256)",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -526,7 +526,7 @@
         },
         "educhain_id": {
           "name": "educhain_id",
-          "type": "varchar(256)",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -801,6 +801,12 @@
         "links": {
           "name": "links",
           "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "educhain_milestone_id": {
+          "name": "educhain_milestone_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },

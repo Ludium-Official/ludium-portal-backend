@@ -16,6 +16,11 @@ import { usersTable, usersToRolesTable } from './schemas/users';
 const DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://ludium:ludium@localhost:5435/ludium?search_path=public';
 
+if (!DATABASE_URL) {
+  console.error('❌ DATABASE_URL is not defined in environment variables.');
+  process.exit(1);
+}
+
 async function seed() {
   try {
     const client = postgres(DATABASE_URL);

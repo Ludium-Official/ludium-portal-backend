@@ -35,7 +35,7 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       resolve: (program) => formatPrice(program.price),
     }),
     currency: t.exposeString('currency'),
-    educhainProgramId: t.exposeString('educhainProgramId'),
+    educhainProgramId: t.exposeInt('educhainProgramId'),
     deadline: t.field({
       type: 'Date',
       resolve: (program) => (program.deadline ? new Date(program.deadline) : null),

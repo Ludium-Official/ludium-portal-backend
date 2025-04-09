@@ -30,6 +30,7 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
       resolve: (milestone) => formatPrice(milestone.price),
     }),
     currency: t.exposeString('currency'),
+    educhainMilestoneId: t.exposeInt('educhainMilestoneId', { nullable: true }),
     status: t.field({
       type: MilestoneStatusEnum,
       resolve: (milestone) => milestone.status,
