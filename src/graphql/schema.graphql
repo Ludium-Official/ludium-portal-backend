@@ -1,7 +1,7 @@
 type Application {
   applicant: User
   content: String
-  educhainApplicationId: String
+  educhainApplicationId: Int
   id: ID
   links: [Link!]
   metadata: JSON
@@ -97,6 +97,7 @@ type LoginResponse {
 type Milestone {
   currency: String
   description: String
+  educhainMilestoneId: Int
   id: ID
   links: [Link!]
   price: String
@@ -161,7 +162,7 @@ type Program {
   currency: String
   deadline: Date
   description: String
-  educhainProgramId: String
+  educhainProgramId: Int
   id: ID
   keywords: [ProgramKeyword!]
   links: [Link!]
