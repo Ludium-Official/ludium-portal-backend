@@ -43,6 +43,9 @@ export class Educhain {
     startTime: Date;
     endTime: Date;
     validatorAddress: string;
+    summary: string;
+    description: string;
+    links: string[];
   }) {
     try {
       // Parameter validation
@@ -50,13 +53,13 @@ export class Educhain {
         throw new Error('Valid positive price is required');
       }
 
-      if (params.startTime >= params.endTime) {
+      if (params.startTime.getTime() >= params.endTime.getTime()) {
         throw new Error('Start time must be earlier than end time');
       }
 
       // Current time validation
       const now = new Date();
-      if (params.startTime < now) {
+      if (params.startTime.getTime() < now.getTime()) {
         throw new Error('Start time cannot be in the past');
       }
 
@@ -79,6 +82,9 @@ export class Educhain {
         startTimestamp,
         endTimestamp,
         params.validatorAddress,
+        params.summary,
+        params.description,
+        params.links,
         { value: price },
       );
 

@@ -16,7 +16,7 @@ export const users: NewUser[] = [
   {
     firstName: 'Sponsor',
     lastName: 'User',
-    email: 'sponsor@example.com',
+    email: '2458olympic@ptct.net',
     organizationName: 'Sponsor Organization',
     about: 'Sponsor user who provides opportunities',
     image: 'https://ui-avatars.com/api/?name=Sponsor&background=random',
@@ -25,7 +25,7 @@ export const users: NewUser[] = [
   {
     firstName: 'Validator',
     lastName: 'User',
-    email: 'validator@example.com',
+    email: 'peach6399@ptct.net',
     organizationName: 'Validator Organization',
     about: 'Validator user who validates postings',
     image: 'https://ui-avatars.com/api/?name=Validator&background=random',
@@ -34,7 +34,7 @@ export const users: NewUser[] = [
   {
     firstName: 'Builder',
     lastName: 'User',
-    email: 'builder@example.com',
+    email: 'industrialolympe@ptct.net',
     organizationName: 'Builder Organization',
     about: 'Builder user who applies to postings',
     image: 'https://ui-avatars.com/api/?name=Builder&background=random',
@@ -46,7 +46,7 @@ export const users: NewUser[] = [
   {
     firstName: 'Multi',
     lastName: 'Role',
-    email: 'multi@example.com',
+    email: 'brownberni@ptct.net',
     organizationName: 'Multi-Role Organization',
     about: 'User with multiple roles',
     image: 'https://ui-avatars.com/api/?name=Multi+Role&background=random',
