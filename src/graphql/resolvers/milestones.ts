@@ -130,9 +130,9 @@ export function createMilestonesResolver(
       .from(programsTable)
       .where(eq(programsTable.id, application.programId));
 
-    if (!program.educhainProgramId) {
-      throw new Error('Blockchain program not found');
-    }
+    // if (!program.educhainProgramId) {
+    //   throw new Error('Blockchain program not found');
+    // }
 
     // const applicationId = await ctx.server.educhain.submitApplication({
     //   programId: program.educhainProgramId,
