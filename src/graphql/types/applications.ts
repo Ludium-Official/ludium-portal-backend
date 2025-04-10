@@ -1,4 +1,5 @@
 import type { Application as DBApplication } from '@/db/schemas';
+import { applicationsTable } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
   approveApplicationResolver,
@@ -16,6 +17,7 @@ import { Link, LinkInput } from '@/graphql/types/links';
 import { MilestoneType } from '@/graphql/types/milestones';
 import { User } from '@/graphql/types/users';
 import { formatPrice } from '@/utils';
+import { eq } from 'drizzle-orm';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -124,7 +126,7 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   createApplication: t.field({
     type: ApplicationType,
-    authScopes: { builder: true },
+    authScopes: { user: true },
     args: {
       input: t.arg({ type: CreateApplicationInput, required: true }),
     },
@@ -132,7 +134,10 @@ builder.mutationFields((t) => ({
   }),
   updateApplication: t.field({
     type: ApplicationType,
-    authScopes: { admin: true },
+    authScopes: (_, args) => ({
+      admin: true,
+      programBuilder: { programId: args.input.id },
+    }),
     args: {
       input: t.arg({ type: UpdateApplicationInput, required: true }),
     },
@@ -140,7 +145,21 @@ builder.mutationFields((t) => ({
   }),
   approveApplication: t.field({
     type: ApplicationType,
-    authScopes: { validator: true },
+    authScopes: async (_, args, ctx) => {
+      const applicationId = args.id;
+      const [application] = await ctx.db
+        .select()
+        .from(applicationsTable)
+        .where(eq(applicationsTable.id, applicationId));
+      if (!application?.programId) {
+        throw new Error('Program not found');
+      }
+
+      return {
+        programValidator: { programId: application.programId },
+        admin: true,
+      };
+    },
     args: {
       id: t.arg.id({ required: true }),
     },
@@ -148,7 +167,21 @@ builder.mutationFields((t) => ({
   }),
   denyApplication: t.field({
     type: ApplicationType,
-    authScopes: { validator: true },
+    authScopes: async (_, args, ctx) => {
+      const applicationId = args.id;
+      const [application] = await ctx.db
+        .select()
+        .from(applicationsTable)
+        .where(eq(applicationsTable.id, applicationId));
+      if (!application?.programId) {
+        throw new Error('Program not found');
+      }
+
+      return {
+        programValidator: { programId: application.programId },
+        admin: true,
+      };
+    },
     args: {
       id: t.arg.id({ required: true }),
     },

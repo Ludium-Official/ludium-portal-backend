@@ -31,11 +31,25 @@ const GraphQLUpload = new GraphQLScalarType({
 const builder = new SchemaBuilder<{
   Context: Context;
   AuthScopes: {
+    // Global scopes
     user: boolean;
+
     admin: boolean;
-    sponsor: boolean;
-    validator: boolean;
-    builder: boolean;
+
+    // Program-specific scopes
+    programSponsor: {
+      programId: string;
+    };
+    programValidator: {
+      programId: string;
+    };
+    programBuilder: {
+      programId: string;
+    };
+    programParticipant: {
+      // Any role in the program
+      programId: string;
+    };
   };
   Scalars: {
     DateTime: {
@@ -62,9 +76,20 @@ const builder = new SchemaBuilder<{
     authScopes: async (context) => ({
       user: context.server.auth.isUser(context.request),
       admin: context.server.auth.isAdmin(context.request),
-      sponsor: context.server.auth.isSponsor(context.request),
-      validator: context.server.auth.isValidator(context.request),
-      builder: context.server.auth.isBuilder(context.request),
+      // Program-specific scopes with dynamic context
+      programSponsor: async ({ programId }) => {
+        return await context.server.auth.isProgramSponsor(context.request, programId);
+      },
+      programValidator: async ({ programId }) => {
+        return await context.server.auth.isProgramValidator(context.request, programId);
+      },
+      programBuilder: async ({ programId }) => {
+        return await context.server.auth.isProgramBuilder(context.request, programId);
+      },
+      programParticipant: async ({ programId }) => {
+        const roles = await context.server.auth.getProgramRoles(context.request, programId);
+        return roles.length > 0;
+      },
     }),
   },
   validationOptions: {

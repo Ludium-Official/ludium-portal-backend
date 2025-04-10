@@ -89,11 +89,6 @@ input LinkInput {
   url: String
 }
 
-type LoginResponse {
-  token: String
-  userRoles: [String!]
-}
-
 type Milestone {
   currency: String
   description: String
@@ -123,7 +118,7 @@ type Mutation {
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
   denyApplication(id: ID!): Application
-  login(address: String, email: String!, network: String, userId: ID!, walletId: String): LoginResponse
+  login(address: String, email: String!, network: String, userId: ID!, walletId: String): String
   publishProgram(id: ID!): Program
   rejectProgram(id: ID!): Program
   submitMilestone(input: SubmitMilestoneInput!): Milestone
@@ -187,16 +182,8 @@ type Query {
   profile: User
   program(id: ID!): Program
   programs(pagination: PaginationInput): PaginatedPrograms
-  roles: [Role!]
   user(id: ID!): User
   users: [User!]
-  usersByRole(role: String!): [User!]
-}
-
-type Role {
-  description: String
-  id: ID
-  name: String
 }
 
 enum SortEnum {

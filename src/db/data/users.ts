@@ -1,4 +1,4 @@
-import type { NewRole, NewUser } from '@/db/schemas/users';
+import type { NewUser } from '@/db/schemas/users';
 
 export const users: NewUser[] = [
   {
@@ -7,6 +7,7 @@ export const users: NewUser[] = [
     email: 'admin@example.com',
     organizationName: 'Admin Organization',
     about: 'Admin user with full access',
+    isAdmin: true,
     image: 'https://ui-avatars.com/api/?name=Admin&background=random',
     links: [
       { url: 'https://github.com/admin', title: 'GitHub' },
@@ -53,69 +54,3 @@ export const users: NewUser[] = [
     links: [{ url: 'https://github.com/multi', title: 'GitHub' }],
   },
 ];
-
-export const roles: NewRole[] = [
-  {
-    name: 'admin',
-    description: 'Administrator with full access to the platform',
-  },
-  {
-    name: 'sponsor',
-    description: 'Provides opportunities and jobs',
-  },
-  {
-    name: 'validator',
-    description: 'Validates sponsor postings and creates milestones',
-  },
-  {
-    name: 'builder',
-    description: 'Applies to postings and completes milestones',
-  },
-];
-
-// Function to create user-role relationships
-export function createUserRoles(userIds: string[], roleIds: { [key: string]: string }) {
-  const userRoles = [];
-
-  // Admin has admin role
-  userRoles.push({
-    userId: userIds[0],
-    roleId: roleIds.admin,
-  });
-
-  // Sponsor has sponsor role
-  userRoles.push({
-    userId: userIds[1],
-    roleId: roleIds.sponsor,
-  });
-
-  // Validator has validator role
-  userRoles.push({
-    userId: userIds[2],
-    roleId: roleIds.validator,
-  });
-
-  // Builder has builder role
-  userRoles.push({
-    userId: userIds[3],
-    roleId: roleIds.builder,
-  });
-
-  // Multi-Role has all roles
-  userRoles.push({
-    userId: userIds[4],
-    roleId: roleIds.sponsor,
-  });
-
-  userRoles.push({
-    userId: userIds[4],
-    roleId: roleIds.validator,
-  });
-
-  userRoles.push({
-    userId: userIds[4],
-    roleId: roleIds.builder,
-  });
-
-  return userRoles;
-}

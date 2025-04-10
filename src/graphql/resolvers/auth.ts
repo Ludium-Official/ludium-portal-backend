@@ -1,6 +1,6 @@
-import { rolesTable, usersTable, usersToRolesTable, walletTable } from '@/db/schemas';
+import { type User, usersTable, walletTable } from '@/db/schemas';
 import type { Context, Root } from '@/types';
-import { eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 export async function loginResolver(
   _root: Root,
@@ -14,18 +14,34 @@ export async function loginResolver(
   ctx: Context,
 ) {
   const { email, userId } = args;
-  const [user] = await ctx.db.select().from(usersTable).where(eq(usersTable.email, email));
+  const [foundUser] = await ctx.db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.email, email));
 
-  if (!user) {
-    throw new Error('User not found');
+  let user: User | null = null;
+
+  if (!foundUser) {
+    const [newUser] = await ctx.db
+      .insert(usersTable)
+      .values({
+        email,
+        externalId: userId,
+      })
+      .returning();
+
+    user = newUser;
+  } else {
+    const [updatedUser] = await ctx.db
+      .update(usersTable)
+      .set({
+        externalId: userId,
+      })
+      .where(eq(usersTable.id, foundUser.id))
+      .returning();
+
+    user = updatedUser;
   }
-
-  await ctx.db
-    .update(usersTable)
-    .set({
-      externalId: userId,
-    })
-    .where(eq(usersTable.id, user.id));
 
   if (args.walletId) {
     const [wallet] = await ctx.db
@@ -43,23 +59,6 @@ export async function loginResolver(
     }
   }
 
-  const userToRoles = await ctx.db
-    .select()
-    .from(usersToRolesTable)
-    .where(eq(usersToRolesTable.userId, user.id));
-
-  const userRoles = await ctx.db
-    .select()
-    .from(rolesTable)
-    .where(
-      inArray(
-        rolesTable.id,
-        userToRoles.map((role) => role.roleId),
-      ),
-    );
-
-  const userRoleNames = userRoles.map((role) => role.name);
-
   const token = ctx.server.jwt.sign(
     {
       payload: {
@@ -72,8 +71,5 @@ export async function loginResolver(
     },
   );
 
-  return {
-    token,
-    userRoles: userRoleNames,
-  };
+  return token;
 }

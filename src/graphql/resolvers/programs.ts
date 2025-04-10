@@ -4,6 +4,7 @@ import {
   applicationsTable,
   keywordsTable,
   linksTable,
+  programUserRolesTable,
   programsTable,
   programsToKeywordsTable,
   programsToLinksTable,
@@ -150,6 +151,13 @@ export function createProgramResolver(
     };
 
     const [program] = await t.insert(programsTable).values(insertData).returning();
+
+    // Add creator as program sponsor (auto-confirmed)
+    await t.insert(programUserRolesTable).values({
+      programId: program.id,
+      userId: user.id,
+      roleType: 'sponsor',
+    });
 
     // Handle keywords
     if (keywords?.length) {
@@ -300,6 +308,13 @@ export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Co
     if (!hasAccess) {
       throw new Error('You are not allowed to accept this program');
     }
+
+    // Add validator
+    await t.insert(programUserRolesTable).values({
+      programId: args.id,
+      userId: user.id,
+      roleType: 'validator',
+    });
 
     const [program] = await t
       .update(programsTable)

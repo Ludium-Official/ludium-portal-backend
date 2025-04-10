@@ -144,7 +144,7 @@ builder.queryFields((t) => ({
   }),
   keywords: t.field({
     type: [ProgramKeywordType],
-    authScopes: { sponsor: true },
+    authScopes: { user: true },
     resolve: getProgramKeywordsResolver,
   }),
 }));
@@ -152,7 +152,7 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   createProgram: t.field({
     type: ProgramType,
-    authScopes: { sponsor: true },
+    authScopes: { user: true },
     args: {
       input: t.arg({ type: CreateProgramInput, required: true }),
     },
@@ -160,7 +160,10 @@ builder.mutationFields((t) => ({
   }),
   updateProgram: t.field({
     type: ProgramType,
-    authScopes: { sponsor: true },
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.input.id },
+      admin: true,
+    }),
     args: {
       input: t.arg({ type: UpdateProgramInput, required: true }),
     },
@@ -168,7 +171,10 @@ builder.mutationFields((t) => ({
   }),
   deleteProgram: t.field({
     type: 'Boolean',
-    authScopes: { sponsor: true },
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.id },
+      admin: true,
+    }),
     args: {
       id: t.arg.id({ required: true }),
     },
@@ -176,7 +182,10 @@ builder.mutationFields((t) => ({
   }),
   acceptProgram: t.field({
     type: ProgramType,
-    authScopes: { validator: true },
+    authScopes: (_, args) => ({
+      programValidator: { programId: args.id },
+      admin: true,
+    }),
     args: {
       id: t.arg.id({ required: true }),
     },
@@ -184,7 +193,10 @@ builder.mutationFields((t) => ({
   }),
   rejectProgram: t.field({
     type: ProgramType,
-    authScopes: { validator: true },
+    authScopes: (_, args) => ({
+      programValidator: { programId: args.id },
+      admin: true,
+    }),
     args: {
       id: t.arg.id({ required: true }),
     },
@@ -192,7 +204,10 @@ builder.mutationFields((t) => ({
   }),
   publishProgram: t.field({
     type: ProgramType,
-    authScopes: { sponsor: true },
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.id },
+      admin: true,
+    }),
     args: {
       id: t.arg.id({ required: true }),
     },

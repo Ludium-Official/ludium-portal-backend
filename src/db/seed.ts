@@ -1,17 +1,25 @@
+import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { createApplications } from './data/applications';
 import { links, programLinks } from './data/links';
 import { createMilestones } from './data/milestones';
 import { keywords, programKeywords, programs } from './data/programs';
-import { createUserRoles, roles, users } from './data/users';
-import { applicationsTable } from './schemas/applications';
-import { keywordsTable } from './schemas/keywords';
-import { linksTable } from './schemas/links';
-import { milestonesTable } from './schemas/milestones';
-import { programsTable, programsToKeywordsTable, programsToLinksTable } from './schemas/programs';
-import { rolesTable } from './schemas/roles';
-import { usersTable, usersToRolesTable } from './schemas/users';
+import { users } from './data/users';
+import {
+  applicationsTable,
+  keywordsTable,
+  linksTable,
+  milestonesTable,
+  programUserRolesTable,
+  programsTable,
+  programsToKeywordsTable,
+  programsToLinksTable,
+  usersTable,
+} from './schemas';
+
+// Define role types for program roles
+type ProgramRoleType = 'sponsor' | 'validator' | 'builder';
 
 const DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://ludium:ludium@localhost:5435/ludium?search_path=public';
@@ -27,19 +35,6 @@ async function seed() {
     const db = drizzle(client);
     console.log('🌱 Starting seed...');
 
-    console.log('👑 Adding roles...');
-    const insertedRoles = await db
-      .insert(rolesTable)
-      .values(roles)
-      .returning()
-      .onConflictDoNothing();
-
-    const roleIds: { [key: string]: string } = {};
-    for (const role of insertedRoles) {
-      roleIds[role.name] = role.id;
-    }
-    console.log(`✅ Added ${insertedRoles.length} roles`);
-
     console.log('👤 Adding users...');
     const insertedUsers = await db
       .insert(usersTable)
@@ -50,16 +45,13 @@ async function seed() {
 
     const userIds = insertedUsers.map((user) => user.id);
 
-    if (userIds.length > 0 && Object.keys(roleIds).length > 0) {
-      console.log('🔗 Creating user roles...');
-      const userRoles = createUserRoles(userIds, roleIds);
-
-      const insertedUserRoles = await db
-        .insert(usersToRolesTable)
-        .values(userRoles)
-        .returning()
-        .onConflictDoNothing();
-      console.log(`✅ Created ${insertedUserRoles.length} user roles`);
+    // Manually set the first user as admin
+    if (insertedUsers.length > 0) {
+      await db
+        .update(usersTable)
+        .set({ isAdmin: true })
+        .where(eq(usersTable.id, insertedUsers[0].id));
+      console.log('✅ Set first user as admin');
     }
 
     // Add keywords
@@ -103,6 +95,42 @@ async function seed() {
           .returning()
           .onConflictDoNothing();
         console.log(`✅ Added ${insertedPrograms.length} programs`);
+
+        // Add program-specific roles
+        if (insertedPrograms.length > 0) {
+          console.log('👥 Adding program-specific roles...');
+
+          const programRoles = [];
+
+          // For each program, add sponsor and validator roles
+          for (const program of insertedPrograms) {
+            // Creator is sponsor (auto-confirmed)
+            programRoles.push({
+              programId: program.id,
+              userId: program.creatorId,
+              roleType: 'sponsor' as ProgramRoleType,
+            });
+
+            // Make sure validatorId is not null
+            if (program.validatorId) {
+              // Validator needs confirmation
+              programRoles.push({
+                programId: program.id,
+                userId: program.validatorId,
+                roleType: 'validator' as ProgramRoleType,
+              });
+            }
+          }
+
+          if (programRoles.length > 0) {
+            const insertedProgramRoles = await db
+              .insert(programUserRolesTable)
+              .values(programRoles)
+              .returning()
+              .onConflictDoNothing();
+            console.log(`✅ Added ${insertedProgramRoles.length} program-specific roles`);
+          }
+        }
 
         // Add program-keyword relationships
         if (insertedPrograms.length > 0) {
@@ -182,6 +210,29 @@ async function seed() {
             .returning()
             .onConflictDoNothing();
           console.log(`✅ Added ${insertedApplications.length} applications`);
+
+          // Add builder roles for approved applications
+          const approvedApplications = insertedApplications.filter(
+            (app) => app.status === 'approved',
+          );
+          if (approvedApplications.length > 0) {
+            console.log('👷 Adding builder roles for approved applications...');
+
+            const builderRoles = approvedApplications.map((app) => ({
+              programId: app.programId,
+              userId: app.applicantId,
+              roleType: 'builder' as ProgramRoleType,
+            }));
+
+            if (builderRoles.length > 0) {
+              const insertedBuilderRoles = await db
+                .insert(programUserRolesTable)
+                .values(builderRoles)
+                .returning()
+                .onConflictDoNothing();
+              console.log(`✅ Added ${insertedBuilderRoles.length} builder roles`);
+            }
+          }
 
           // Add milestones for each application
           if (insertedApplications.length > 0) {
