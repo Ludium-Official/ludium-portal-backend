@@ -182,10 +182,7 @@ builder.mutationFields((t) => ({
   }),
   acceptProgram: t.field({
     type: ProgramType,
-    authScopes: (_, args) => ({
-      programValidator: { programId: args.id },
-      admin: true,
-    }),
+    authScopes: { user: true },
     args: {
       id: t.arg.id({ required: true }),
     },
@@ -193,10 +190,7 @@ builder.mutationFields((t) => ({
   }),
   rejectProgram: t.field({
     type: ProgramType,
-    authScopes: (_, args) => ({
-      programValidator: { programId: args.id },
-      admin: true,
-    }),
+    authScopes: { user: true },
     args: {
       id: t.arg.id({ required: true }),
     },

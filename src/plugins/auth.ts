@@ -19,7 +19,7 @@ interface DecodedToken {
 type RoleType = 'sponsor' | 'validator' | 'builder';
 
 export class AuthHandler {
-  constructor(private _: FastifyInstance) {}
+  constructor(private server: FastifyInstance) {}
 
   isUser(request: FastifyRequest) {
     if (!request.auth?.user) {
@@ -47,7 +47,7 @@ export class AuthHandler {
     const user = this.getUser(request);
     if (!user) return false;
 
-    const [programRole] = await this._.db
+    const [programRole] = await this.server.db
       .select()
       .from(programUserRolesTable)
       .where(
@@ -77,7 +77,7 @@ export class AuthHandler {
     const user = this.getUser(request);
     if (!user) return [];
 
-    const programRoles = await this._.db
+    const programRoles = await this.server.db
       .select()
       .from(programUserRolesTable)
       .where(
