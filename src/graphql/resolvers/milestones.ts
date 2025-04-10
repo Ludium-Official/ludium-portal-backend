@@ -259,14 +259,14 @@ export function submitMilestoneResolver(
       throw new Error('Milestone not found on blockchain');
     }
 
-    const [program] = await t
-      .select({ educhainProgramId: programsTable.educhainProgramId })
-      .from(programsTable)
-      .where(eq(programsTable.id, milestone.applicationId));
+    // const [program] = await t
+    //   .select({ educhainProgramId: programsTable.educhainProgramId })
+    //   .from(programsTable)
+    //   .where(eq(programsTable.id, milestone.applicationId));
 
-    if (!program.educhainProgramId) {
-      throw new Error('Program not found on blockchain');
-    }
+    // if (!program.educhainProgramId) {
+    //   throw new Error('Program not found on blockchain');
+    // }
 
     // await ctx.server.educhain.submitMilestone({
     //   programId: program.educhainProgramId,
