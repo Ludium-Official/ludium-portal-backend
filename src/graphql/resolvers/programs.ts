@@ -14,7 +14,6 @@ import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
 import { filterEmptyValues, isInSameScope, validAndNotEmptyArray } from '@/utils';
-import BigNumber from 'bignumber.js';
 import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
 
 export async function getProgramsResolver(
@@ -376,32 +375,32 @@ export function publishProgramResolver(_root: Root, args: { id: string }, ctx: C
       .where(eq(programsTable.id, args.id))
       .returning();
 
-    const [validatorWallet] = await t
-      .select()
-      .from(walletTable)
-      .where(eq(walletTable.userId, user.id));
+    // const [validatorWallet] = await t
+    //   .select()
+    //   .from(walletTable)
+    //   .where(eq(walletTable.userId, user.id));
 
-    const links = await t
-      .select({ id: linksTable.id, url: linksTable.url })
-      .from(programsToLinksTable)
-      .leftJoin(linksTable, eq(programsToLinksTable.linkId, linksTable.id))
-      .where(eq(programsToLinksTable.programId, args.id));
+    // const links = await t
+    //   .select({ id: linksTable.id, url: linksTable.url })
+    //   .from(programsToLinksTable)
+    //   .leftJoin(linksTable, eq(programsToLinksTable.linkId, linksTable.id))
+    //   .where(eq(programsToLinksTable.programId, args.id));
 
-    const eduProgramId = await ctx.server.educhain.createProgram({
-      name: program.name,
-      price: new BigNumber(program.price).toString(),
-      startTime: new Date(),
-      endTime: new Date(program.deadline),
-      validatorAddress: validatorWallet.address as string,
-      summary: program.summary ?? '',
-      description: program.description ?? '',
-      links: links.map((link) => link.url ?? ''),
-    });
+    // const eduProgramId = await ctx.server.educhain.createProgram({
+    //   name: program.name,
+    //   price: new BigNumber(program.price).toString(),
+    //   startTime: new Date(),
+    //   endTime: new Date(program.deadline),
+    //   validatorAddress: validatorWallet.address as string,
+    //   summary: program.summary ?? '',
+    //   description: program.description ?? '',
+    //   links: links.map((link) => link.url ?? ''),
+    // });
 
-    await t
-      .update(programsTable)
-      .set({ educhainProgramId: eduProgramId })
-      .where(eq(programsTable.id, program.id));
+    // await t
+    //   .update(programsTable)
+    //   .set({ educhainProgramId: eduProgramId })
+    //   .where(eq(programsTable.id, program.id));
 
     return program;
   });
