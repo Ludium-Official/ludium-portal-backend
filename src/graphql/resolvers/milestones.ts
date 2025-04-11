@@ -130,16 +130,16 @@ export function createMilestonesResolver(
       .from(programsTable)
       .where(eq(programsTable.id, application.programId));
 
-    if (!program.educhainProgramId) {
-      throw new Error('Blockchain program not found');
-    }
+    // if (!program.educhainProgramId) {
+    //   throw new Error('Blockchain program not found');
+    // }
 
-    const applicationId = await ctx.server.educhain.submitApplication({
-      programId: program.educhainProgramId,
-      milestoneNames: milestones.map((m) => m.title),
-      milestoneDescriptions: milestones.map((m) => m.description ?? ''),
-      milestonePrices: milestones.map((m) => m.price),
-    });
+    // const applicationId = await ctx.server.educhain.submitApplication({
+    //   programId: program.educhainProgramId,
+    //   milestoneNames: milestones.map((m) => m.title),
+    //   milestoneDescriptions: milestones.map((m) => m.description ?? ''),
+    //   milestonePrices: milestones.map((m) => m.price),
+    // });
 
     const applications = await t
       .select({ price: applicationsTable.price })
@@ -162,7 +162,7 @@ export function createMilestonesResolver(
       .update(applicationsTable)
       .set({
         price: milestonesTotalPrice.toString(),
-        educhainApplicationId: applicationId,
+        // educhainApplicationId: applicationId,
       })
       .where(eq(applicationsTable.id, args.input[0].applicationId));
 
@@ -255,24 +255,24 @@ export function submitMilestoneResolver(
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
 
-    if (!milestone.educhainMilestoneId) {
-      throw new Error('Milestone not found on blockchain');
-    }
+    // if (!milestone.educhainMilestoneId) {
+    //   throw new Error('Milestone not found on blockchain');
+    // }
 
-    const [program] = await t
-      .select({ educhainProgramId: programsTable.educhainProgramId })
-      .from(programsTable)
-      .where(eq(programsTable.id, milestone.applicationId));
+    // const [program] = await t
+    //   .select({ educhainProgramId: programsTable.educhainProgramId })
+    //   .from(programsTable)
+    //   .where(eq(programsTable.id, milestone.applicationId));
 
-    if (!program.educhainProgramId) {
-      throw new Error('Program not found on blockchain');
-    }
+    // if (!program.educhainProgramId) {
+    //   throw new Error('Program not found on blockchain');
+    // }
 
-    await ctx.server.educhain.submitMilestone({
-      programId: program.educhainProgramId,
-      milestoneId: milestone.educhainMilestoneId,
-      links: args.input.links?.map((link) => link.url as string) ?? [],
-    });
+    // await ctx.server.educhain.submitMilestone({
+    //   programId: program.educhainProgramId,
+    //   milestoneId: milestone.educhainMilestoneId,
+    //   links: args.input.links?.map((link) => link.url as string) ?? [],
+    // });
 
     return milestone;
   });
@@ -305,33 +305,33 @@ export function checkMilestoneResolver(
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
 
-    if (!milestone.educhainMilestoneId) {
-      throw new Error('Milestone not found on blockchain');
-    }
+    // if (!milestone.educhainMilestoneId) {
+    //   throw new Error('Milestone not found on blockchain');
+    // }
 
-    const [program] = await t
-      .select({ educhainProgramId: programsTable.educhainProgramId })
-      .from(programsTable)
-      .where(eq(programsTable.id, milestone.applicationId));
+    // const [program] = await t
+    //   .select({ educhainProgramId: programsTable.educhainProgramId })
+    //   .from(programsTable)
+    //   .where(eq(programsTable.id, milestone.applicationId));
 
-    if (!program.educhainProgramId) {
-      throw new Error('Program not found on blockchain');
-    }
+    // if (!program.educhainProgramId) {
+    //   throw new Error('Program not found on blockchain');
+    // }
 
-    switch (args.input.status) {
-      case 'completed':
-        await ctx.server.educhain.acceptMilestone(
-          program.educhainProgramId,
-          milestone.educhainMilestoneId,
-        );
-        break;
-      case 'pending':
-        await ctx.server.educhain.rejectMilestone(
-          program.educhainProgramId,
-          milestone.educhainMilestoneId,
-        );
-        break;
-    }
+    // switch (args.input.status) {
+    //   case 'completed':
+    //     await ctx.server.educhain.acceptMilestone(
+    //       program.educhainProgramId,
+    //       milestone.educhainMilestoneId,
+    //     );
+    //     break;
+    //   case 'pending':
+    //     await ctx.server.educhain.rejectMilestone(
+    //       program.educhainProgramId,
+    //       milestone.educhainMilestoneId,
+    //     );
+    //     break;
+    // }
 
     return milestone;
   });
