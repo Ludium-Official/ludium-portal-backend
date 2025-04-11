@@ -1,10 +1,18 @@
 import { relations } from 'drizzle-orm';
-import { jsonb, pgTable, primaryKey, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
 import { filesTable } from './files';
 import { linksTable } from './links';
-import { programsTable } from './programs';
-import { rolesTable } from './roles';
+import { programUserRolesTable, programsTable } from './programs';
 import { walletTable } from './wallet';
 
 export const usersTable = pgTable('users', {
@@ -17,6 +25,7 @@ export const usersTable = pgTable('users', {
   about: text('about'),
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
   externalId: varchar('external_id', { length: 256 }),
+  isAdmin: boolean('is_admin').default(false),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
@@ -25,39 +34,14 @@ export const usersTable = pgTable('users', {
 });
 
 export const userRelations = relations(usersTable, ({ many, one }) => ({
-  roles: many(usersToRolesTable),
   files: many(filesTable),
   createdPrograms: many(programsTable, { relationName: 'program_creator' }),
   validatedPrograms: many(programsTable, { relationName: 'program_validator' }),
   applications: many(applicationsTable),
+  programRoles: many(programUserRolesTable),
   wallet: one(walletTable, {
     fields: [usersTable.id],
     references: [walletTable.userId],
-  }),
-}));
-
-// Roles
-export const usersToRolesTable = pgTable(
-  'users_to_roles',
-  {
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => usersTable.id, { onDelete: 'cascade' }),
-    roleId: uuid('role_id')
-      .notNull()
-      .references(() => rolesTable.id, { onDelete: 'cascade' }),
-  },
-  (t) => [primaryKey({ columns: [t.userId, t.roleId] })],
-);
-
-export const usersToRolesRelations = relations(usersToRolesTable, ({ one }) => ({
-  user: one(usersTable, {
-    fields: [usersToRolesTable.userId],
-    references: [usersTable.id],
-  }),
-  role: one(rolesTable, {
-    fields: [usersToRolesTable.roleId],
-    references: [rolesTable.id],
   }),
 }));
 
@@ -88,5 +72,3 @@ export const usersToLinksRelations = relations(usersToLinksTable, ({ one }) => (
 
 export type User = typeof usersTable.$inferSelect;
 export type NewUser = typeof usersTable.$inferInsert;
-export type Role = typeof rolesTable.$inferSelect;
-export type NewRole = typeof rolesTable.$inferInsert;

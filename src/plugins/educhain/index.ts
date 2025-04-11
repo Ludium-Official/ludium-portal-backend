@@ -10,11 +10,12 @@ export class Educhain {
   constructor(private server: FastifyInstance) {
     const contractAbi = contractJson.abi;
     this.provider = new ethers.providers.JsonRpcProvider(this.server.config.EDUCHAIN_RPC_URL);
-    const wallet = new ethers.Wallet(this.server.config.EDUCHAIN_PRIVATE_KEY, this.provider);
+    // const wallet = new ethers.Wallet(this.server.config.EDUCHAIN_PRIVATE_KEY, this.provider);
+    const signer = this.provider.getSigner();
     this.contract = new ethers.Contract(
       this.server.config.EDUCHAIN_CONTRACT_ADDRESS,
       contractAbi,
-      wallet,
+      signer,
     );
   }
 
@@ -40,6 +41,7 @@ export class Educhain {
   async createProgram(params: {
     name: string;
     price: string;
+    keywords: string[];
     startTime: Date;
     endTime: Date;
     validatorAddress: string;
@@ -64,7 +66,7 @@ export class Educhain {
       }
 
       // Convert price from ETH string to wei
-      const price = ethers.utils.parseEther(params.price);
+      const price = ethers.utils.parseEther('0.00001');
 
       // Convert dates to Unix timestamps (seconds)
       const startTimestamp = Math.floor(params.startTime.getTime() / 1000);
@@ -79,6 +81,7 @@ export class Educhain {
       const tx = await this.contract.createEduProgram(
         params.name,
         price,
+        params.keywords,
         startTimestamp,
         endTimestamp,
         params.validatorAddress,

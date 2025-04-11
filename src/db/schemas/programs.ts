@@ -63,6 +63,7 @@ export const programRelations = relations(programsTable, ({ one, many }) => ({
   }),
   applications: many(applicationsTable),
   programsToKeywords: many(programsToKeywordsTable),
+  userRoles: many(programUserRolesTable),
 }));
 
 // Keywords
@@ -115,6 +116,44 @@ export const programsToLinksRelations = relations(programsToLinksTable, ({ one }
   }),
 }));
 
+// Program role types
+export const programRoleEnum = pgEnum('program_role_type', [
+  'sponsor', // Program creator
+  'validator', // Assigned validator
+  'builder', // Approved applicant
+]);
+
+// Program user roles table
+export const programUserRolesTable = pgTable('program_user_roles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  programId: uuid('program_id')
+    .notNull()
+    .references(() => programsTable.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => usersTable.id, { onDelete: 'cascade' }),
+  roleType: programRoleEnum('role_type').notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' })
+    .defaultNow()
+    .notNull()
+    .$onUpdateFn(() => new Date()),
+});
+
+// Add relations
+export const programUserRolesRelations = relations(programUserRolesTable, ({ one }) => ({
+  program: one(programsTable, {
+    fields: [programUserRolesTable.programId],
+    references: [programsTable.id],
+  }),
+  user: one(usersTable, {
+    fields: [programUserRolesTable.userId],
+    references: [usersTable.id],
+  }),
+}));
+
 // Types for use in code
 export type Program = typeof programsTable.$inferSelect;
 export type NewProgram = typeof programsTable.$inferInsert;
+export type ProgramUserRole = typeof programUserRolesTable.$inferSelect;
+export type NewProgramUserRole = typeof programUserRolesTable.$inferInsert;

@@ -4,6 +4,7 @@ import {
   applicationsTable,
   keywordsTable,
   linksTable,
+  programUserRolesTable,
   programsTable,
   programsToKeywordsTable,
   programsToLinksTable,
@@ -13,7 +14,7 @@ import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
 import { filterEmptyValues, isInSameScope, validAndNotEmptyArray } from '@/utils';
-import BigNumber from 'bignumber.js';
+import { BigNumber } from 'bignumber.js';
 import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
 
 export async function getProgramsResolver(
@@ -150,6 +151,13 @@ export function createProgramResolver(
     };
 
     const [program] = await t.insert(programsTable).values(insertData).returning();
+
+    // Add creator as program sponsor (auto-confirmed)
+    await t.insert(programUserRolesTable).values({
+      programId: program.id,
+      userId: user.id,
+      roleType: 'sponsor',
+    });
 
     // Handle keywords
     if (keywords?.length) {
@@ -301,6 +309,13 @@ export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Co
       throw new Error('You are not allowed to accept this program');
     }
 
+    // Add validator
+    await t.insert(programUserRolesTable).values({
+      programId: args.id,
+      userId: user.id,
+      roleType: 'validator',
+    });
+
     const [program] = await t
       .update(programsTable)
       .set({ status: 'payment_required' })
@@ -372,9 +387,16 @@ export function publishProgramResolver(_root: Root, args: { id: string }, ctx: C
       .leftJoin(linksTable, eq(programsToLinksTable.linkId, linksTable.id))
       .where(eq(programsToLinksTable.programId, args.id));
 
+    const keywords = await t
+      .select({ id: keywordsTable.id, name: keywordsTable.name })
+      .from(programsToKeywordsTable)
+      .leftJoin(keywordsTable, eq(programsToKeywordsTable.keywordId, keywordsTable.id))
+      .where(eq(programsToKeywordsTable.programId, args.id));
+
     const eduProgramId = await ctx.server.educhain.createProgram({
       name: program.name,
       price: new BigNumber(program.price).toString(),
+      keywords: keywords.map((keyword) => keyword.name).filter((name) => name !== null),
       startTime: new Date(),
       endTime: new Date(program.deadline),
       validatorAddress: validatorWallet.address as string,

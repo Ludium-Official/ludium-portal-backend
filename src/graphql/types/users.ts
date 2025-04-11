@@ -1,14 +1,12 @@
-import type { Role as DBRole, User as DBUser } from '@/db/schemas/users';
+import type { User as DBUser } from '@/db/schemas/users';
 import builder from '@/graphql/builder';
 import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
   createUserResolver,
   deleteUserResolver,
   getProfileResolver,
-  getRolesResolver,
   getUserAvatarResolver,
   getUserResolver,
-  getUsersByRoleResolver,
   getUsersResolver,
   updateProfileResolver,
   updateUserResolver,
@@ -18,14 +16,6 @@ import { Link, LinkInput } from '@/graphql/types/links';
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
-
-export const Role = builder.objectRef<DBRole>('Role').implement({
-  fields: (t) => ({
-    id: t.exposeID('id'),
-    name: t.exposeString('name'),
-    description: t.exposeString('description', { nullable: true }),
-  }),
-});
 
 export const User = builder.objectRef<DBUser>('User').implement({
   fields: (t) => ({
@@ -82,7 +72,7 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
 /* -------------------------------------------------------------------------- */
 builder.queryFields((t) => ({
   users: t.field({
-    authScopes: { admin: true },
+    authScopes: { user: true },
     type: [User],
     resolve: getUsersResolver,
   }),
@@ -94,19 +84,6 @@ builder.queryFields((t) => ({
       id: t.arg.id({ required: true }),
     },
     resolve: getUserResolver,
-  }),
-  roles: t.field({
-    authScopes: { admin: true },
-    type: [Role],
-    resolve: getRolesResolver,
-  }),
-  usersByRole: t.field({
-    authScopes: { sponsor: true },
-    type: [User],
-    args: {
-      role: t.arg.string({ required: true }),
-    },
-    resolve: getUsersByRoleResolver,
   }),
   profile: t.field({
     type: User,

@@ -1,17 +1,12 @@
-import { type User as DbUser, rolesTable, usersTable, usersToRolesTable } from '@/db/schemas';
+import { type User as DbUser, programUserRolesTable, usersTable } from '@/db/schemas';
 import type { Context } from '@/types';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { FastifyError, FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 
-// Extended User type with roles
-interface User extends DbUser {
-  roles?: string[];
-}
-
 export interface RequestAuth {
   identity?: { id?: number };
-  user?: User | null;
+  user?: DbUser | null;
 }
 
 interface DecodedToken {
@@ -21,8 +16,10 @@ interface DecodedToken {
   iat: number;
 }
 
+type RoleType = 'sponsor' | 'validator' | 'builder';
+
 export class AuthHandler {
-  constructor(private _: FastifyInstance) {}
+  constructor(private server: FastifyInstance) {}
 
   isUser(request: FastifyRequest) {
     if (!request.auth?.user) {
@@ -32,19 +29,7 @@ export class AuthHandler {
   }
 
   isAdmin(request: FastifyRequest) {
-    return Boolean(this.isUser(request) && request.auth?.user?.roles?.includes('admin'));
-  }
-
-  isSponsor(request: FastifyRequest) {
-    return Boolean(this.isUser(request) && request.auth?.user?.roles?.includes('sponsor'));
-  }
-
-  isValidator(request: FastifyRequest) {
-    return Boolean(this.isUser(request) && request.auth?.user?.roles?.includes('validator'));
-  }
-
-  isBuilder(request: FastifyRequest) {
-    return Boolean(this.isUser(request) && request.auth?.user?.roles?.includes('builder'));
+    return Boolean(request.auth?.user?.isAdmin);
   }
 
   getUser(request: FastifyRequest) {
@@ -52,6 +37,57 @@ export class AuthHandler {
       return null;
     }
     return request.auth.user;
+  }
+
+  async isUserInProgramRole(
+    request: FastifyRequest,
+    programId: string,
+    roleType: RoleType,
+  ): Promise<boolean> {
+    const user = this.getUser(request);
+    if (!user) return false;
+
+    const [programRole] = await this.server.db
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, programId),
+          eq(programUserRolesTable.userId, user.id),
+          eq(programUserRolesTable.roleType, roleType),
+        ),
+      );
+
+    return Boolean(programRole);
+  }
+
+  async isProgramSponsor(request: FastifyRequest, programId: string): Promise<boolean> {
+    return this.isUserInProgramRole(request, programId, 'sponsor');
+  }
+
+  async isProgramValidator(request: FastifyRequest, programId: string): Promise<boolean> {
+    return this.isUserInProgramRole(request, programId, 'validator');
+  }
+
+  async isProgramBuilder(request: FastifyRequest, programId: string): Promise<boolean> {
+    return this.isUserInProgramRole(request, programId, 'builder');
+  }
+
+  async getProgramRoles(request: FastifyRequest, programId: string): Promise<string[]> {
+    const user = this.getUser(request);
+    if (!user) return [];
+
+    const programRoles = await this.server.db
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, programId),
+          eq(programUserRolesTable.userId, user.id),
+        ),
+      );
+
+    return programRoles.map((role) => role.roleType);
   }
 }
 
@@ -64,20 +100,6 @@ async function requestHandler(decodedToken: DecodedToken, db: Context['db']) {
   const userId = String(decodedToken.payload.id);
 
   const [user] = await db.selectDistinct().from(usersTable).where(eq(usersTable.id, userId));
-
-  if (user) {
-    // Fetch user roles
-    const userRoles = await db
-      .select({
-        name: rolesTable.name,
-      })
-      .from(usersToRolesTable)
-      .innerJoin(rolesTable, eq(usersToRolesTable.roleId, rolesTable.id))
-      .where(eq(usersToRolesTable.userId, user.id));
-
-    // Add roles array to user object
-    (user as User).roles = userRoles.map((r) => r.name);
-  }
 
   const auth: RequestAuth = {
     identity: {

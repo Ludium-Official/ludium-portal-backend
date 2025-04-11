@@ -3,15 +3,13 @@ import {
   applicationsTable,
   applicationsToLinksTable,
   linksTable,
-  milestonesTable,
-  programsTable,
+  programUserRolesTable,
 } from '@/db/schemas';
 import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
 import { isInSameScope } from '@/utils';
 import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
-import BigNumber from 'bignumber.js';
 import { and, asc, count, desc, eq } from 'drizzle-orm';
 
 export async function getApplicationsResolver(
@@ -186,62 +184,23 @@ export function updateApplicationResolver(
 }
 
 export function approveApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
-
   return ctx.db.transaction(async (t) => {
-    const hasAccess = await isInSameScope({
-      scope: 'application_validator',
-      userId: user.id,
-      entityId: args.id,
-      db: t,
-    });
-    if (!hasAccess) {
-      throw new Error('You are not allowed to approve this application');
-    }
-
-    const milestones = await t
-      .select({ price: milestonesTable.price })
-      .from(milestonesTable)
-      .where(eq(milestonesTable.applicationId, args.id));
-
-    const milestonesTotalPrice = milestones.reduce((acc, m) => {
-      return acc.plus(new BigNumber(m.price));
-    }, new BigNumber(0));
-
-    const [app] = await t
-      .select({
-        programId: applicationsTable.programId,
-        educhainApplicationId: applicationsTable.educhainApplicationId,
-      })
-      .from(applicationsTable)
-      .where(eq(applicationsTable.id, args.id));
-
-    const [program] = await t
-      .select({ price: programsTable.price, educhainProgramId: programsTable.educhainProgramId })
-      .from(programsTable)
-      .where(eq(programsTable.id, app.programId));
-
-    if (milestonesTotalPrice.gt(new BigNumber(program.price))) {
-      throw new Error('The total price of the milestones is greater than the program price');
-    }
-
-    if (!program.educhainProgramId || !app.educhainApplicationId) {
-      throw new Error('Blockchain program or application not found');
-    }
-
     const [application] = await t
       .update(applicationsTable)
       .set({ status: 'approved' })
       .where(eq(applicationsTable.id, args.id))
       .returning();
 
-    await ctx.server.educhain.selectApplication(
-      program.educhainProgramId,
-      app.educhainApplicationId,
-    );
+    if (!application) {
+      throw new Error('Application not found');
+    }
+
+    // Add applicant as program builder (auto-confirmed)
+    await t.insert(programUserRolesTable).values({
+      programId: application.programId,
+      userId: application.applicantId,
+      roleType: 'builder',
+    });
 
     return application;
   });

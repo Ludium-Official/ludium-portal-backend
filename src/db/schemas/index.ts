@@ -6,4 +6,3 @@ export * from './keywords';
 export * from './milestones';
 export * from './wallet';
 export * from './links';
-export * from './roles';

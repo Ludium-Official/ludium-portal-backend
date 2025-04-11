@@ -121,7 +121,7 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   createMilestones: t.field({
     type: [MilestoneType],
-    authScopes: { builder: true },
+    authScopes: { user: true },
     args: {
       input: t.arg({ type: [CreateMilestoneInput], required: true }),
     },
@@ -137,7 +137,7 @@ builder.mutationFields((t) => ({
   }),
   submitMilestone: t.field({
     type: MilestoneType,
-    authScopes: { builder: true },
+    authScopes: { user: true },
     args: {
       input: t.arg({ type: SubmitMilestoneInput, required: true }),
     },
@@ -145,7 +145,7 @@ builder.mutationFields((t) => ({
   }),
   checkMilestone: t.field({
     type: MilestoneType,
-    authScopes: { validator: true },
+    authScopes: { user: true },
     args: {
       input: t.arg({ type: CheckMilestoneInput, required: true }),
     },

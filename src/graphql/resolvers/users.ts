@@ -1,14 +1,7 @@
-import {
-  filesTable,
-  linksTable,
-  rolesTable,
-  usersTable,
-  usersToLinksTable,
-  usersToRolesTable,
-} from '@/db/schemas';
+import { filesTable, linksTable, usersTable, usersToLinksTable } from '@/db/schemas';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
-import { desc, eq, inArray } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 export function getUsersResolver(_root: Root, _args: Args, ctx: Context) {
   return ctx.db.select().from(usersTable);
@@ -22,33 +15,6 @@ export async function getUserResolver(_root: Root, args: { id: string }, ctx: Co
   const [user] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.id));
 
   return user;
-}
-
-export function getRolesResolver(_root: Root, _args: Args, ctx: Context) {
-  return ctx.db.select().from(rolesTable);
-}
-
-export async function getUsersByRoleResolver(_root: Root, args: { role: string }, ctx: Context) {
-  const [role] = await ctx.db.select().from(rolesTable).where(eq(rolesTable.name, args.role));
-
-  if (!role) return [];
-
-  const userRoles = await ctx.db
-    .select({ userId: usersToRolesTable.userId })
-    .from(usersToRolesTable)
-    .where(eq(usersToRolesTable.roleId, role.id));
-
-  if (!userRoles.length) return [];
-
-  return ctx.db
-    .select()
-    .from(usersTable)
-    .where(
-      inArray(
-        usersTable.id,
-        userRoles.map((ur) => ur.userId),
-      ),
-    );
 }
 
 export function createUserResolver(
@@ -166,7 +132,6 @@ export function updateUserResolver(
 export function deleteUserResolver(_root: Root, args: { id: string }, ctx: Context) {
   return ctx.db.transaction(async (t) => {
     await t.delete(usersToLinksTable).where(eq(usersToLinksTable.userId, args.id));
-    await t.delete(usersToRolesTable).where(eq(usersToRolesTable.userId, args.id));
     const [user] = await t.delete(usersTable).where(eq(usersTable.id, args.id)).returning();
     return user;
   });
@@ -184,6 +149,10 @@ export function updateProfileResolver(
   const loggedinUser = ctx.server.auth.getUser(ctx.request);
   if (!loggedinUser) {
     throw new Error('User not found');
+  }
+
+  if (loggedinUser.id !== args.input.id && !loggedinUser.isAdmin) {
+    throw new Error('Unauthorized');
   }
 
   const { links, ...userData } = args.input;
