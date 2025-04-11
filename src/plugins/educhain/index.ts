@@ -66,7 +66,7 @@ export class Educhain {
       }
 
       // Convert price from ETH string to wei
-      const price = ethers.utils.parseEther('0.00001');
+      const price = ethers.utils.parseEther(params.price);
 
       // Convert dates to Unix timestamps (seconds)
       const startTimestamp = Math.floor(params.startTime.getTime() / 1000);
