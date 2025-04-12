@@ -1,4 +1,4 @@
-import { filesTable, linksTable, usersTable, usersToLinksTable } from '@/db/schemas';
+import { filesTable, linksTable, usersTable, usersToLinksTable, walletTable } from '@/db/schemas';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
 import { desc, eq } from 'drizzle-orm';
@@ -15,6 +15,14 @@ export async function getUserResolver(_root: Root, args: { id: string }, ctx: Co
   const [user] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.id));
 
   return user;
+}
+
+export async function getUserWalletResolver(_root: Root, args: { userId: string }, ctx: Context) {
+  const [wallet] = await ctx.db
+    .select()
+    .from(walletTable)
+    .where(eq(walletTable.userId, args.userId));
+  return wallet;
 }
 
 export function createUserResolver(

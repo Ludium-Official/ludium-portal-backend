@@ -1,4 +1,4 @@
-import type { User as DBUser } from '@/db/schemas/users';
+import type { User as DBUser, Wallet as DBWallet } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
@@ -7,6 +7,7 @@ import {
   getProfileResolver,
   getUserAvatarResolver,
   getUserResolver,
+  getUserWalletResolver,
   getUsersResolver,
   updateProfileResolver,
   updateUserResolver,
@@ -16,7 +17,6 @@ import { Link, LinkInput } from '@/graphql/types/links';
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
-
 export const User = builder.objectRef<DBUser>('User').implement({
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -36,6 +36,19 @@ export const User = builder.objectRef<DBUser>('User').implement({
       nullable: true,
       resolve: async (user, _args, ctx) => getUserAvatarResolver({}, { userId: user.id }, ctx),
     }),
+    wallet: t.field({
+      type: Wallet,
+      nullable: true,
+      resolve: async (user, _args, ctx) => getUserWalletResolver({}, { userId: user.id }, ctx),
+    }),
+  }),
+});
+
+export const Wallet = builder.objectRef<DBWallet>('Wallet').implement({
+  fields: (t) => ({
+    walletId: t.exposeString('walletId'),
+    address: t.exposeString('address'),
+    network: t.exposeString('network'),
   }),
 });
 

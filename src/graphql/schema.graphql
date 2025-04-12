@@ -242,6 +242,7 @@ type User {
   lastName: String
   links: [Link!]
   organizationName: String
+  wallet: Wallet
 }
 
 input UserInput {
@@ -263,4 +264,10 @@ input UserUpdateInput {
   lastName: String
   links: [LinkInput!]
   organizationName: String
+}
+
+type Wallet {
+  address: String
+  network: String
+  walletId: String
 }

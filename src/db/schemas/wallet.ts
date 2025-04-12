@@ -1,5 +1,6 @@
 import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { usersTable } from './users';
+
 export const walletTable = pgTable('wallet', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id')
@@ -14,3 +15,6 @@ export const walletTable = pgTable('wallet', {
     .notNull()
     .$onUpdateFn(() => new Date()),
 });
+
+export type Wallet = typeof walletTable.$inferSelect;
+export type NewWallet = typeof walletTable.$inferInsert;
