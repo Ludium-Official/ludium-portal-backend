@@ -14,7 +14,7 @@ export async function getUserResolver(_root: Root, args: { id: string }, ctx: Co
 
   const [user] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.id));
 
-  return user;
+  return { ...user, wallet: await getUserWalletResolver({}, { userId: user.id }, ctx) };
 }
 
 export async function getUserWalletResolver(_root: Root, args: { userId: string }, ctx: Context) {
