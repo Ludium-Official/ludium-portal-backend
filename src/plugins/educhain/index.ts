@@ -39,6 +39,7 @@ export class Educhain {
 
   /* -------------------------- Sponsor methods start ------------------------- */
   async createProgram(params: {
+    // implemented
     name: string;
     price: string;
     keywords: string[];
@@ -114,6 +115,7 @@ export class Educhain {
 
   /* -------------------------- Validator methods start ------------------------- */
   async approveProgram(programId: number, builderAddress: string) {
+    // not needed
     try {
       if (!programId) {
         throw new Error('Invalid program ID');
@@ -136,6 +138,7 @@ export class Educhain {
   }
 
   async selectApplication(programId: number, applicationId: number) {
+    // implemented
     try {
       if (!programId) {
         throw new Error('Invalid program ID');
@@ -157,6 +160,7 @@ export class Educhain {
   }
 
   async acceptMilestone(programId: number, milestoneId: number) {
+    // implemented
     try {
       if (!programId) {
         throw new Error('Invalid program ID');
@@ -177,6 +181,7 @@ export class Educhain {
   }
 
   async rejectMilestone(programId: number, milestoneId: number) {
+    // implemented
     try {
       if (!programId) {
         throw new Error('Invalid program ID');
@@ -199,6 +204,7 @@ export class Educhain {
 
   /* -------------------------- Builder methods start ---------------------------- */
   async submitApplication(params: {
+    // implemented
     programId: number;
     milestoneNames: string[];
     milestoneDescriptions: string[];
@@ -235,6 +241,7 @@ export class Educhain {
   }
 
   async submitMilestone(params: {
+    // implemented
     programId: number;
     milestoneId: number;
     links: string[];

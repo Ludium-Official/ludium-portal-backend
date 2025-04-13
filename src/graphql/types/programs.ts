@@ -204,6 +204,8 @@ builder.mutationFields((t) => ({
     }),
     args: {
       id: t.arg.id({ required: true }),
+      educhainProgramId: t.arg.int({ required: true }),
+      txHash: t.arg.string({ required: true }),
     },
     resolve: publishProgramResolver,
   }),

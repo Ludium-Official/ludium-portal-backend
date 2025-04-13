@@ -42,6 +42,7 @@ export const programsTable = pgTable('programs', {
   validatorId: uuid('validator_id').references(() => usersTable.id, { onDelete: 'set null' }),
   status: programStatusEnum('status').default('draft'),
   educhainProgramId: integer('educhain_id'),
+  txHash: varchar('tx_hash', { length: 256 }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
