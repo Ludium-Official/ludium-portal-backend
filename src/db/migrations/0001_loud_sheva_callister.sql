@@ -1,0 +1,1 @@
+ALTER TABLE "programs" ADD COLUMN "tx_hash" varchar(256);
