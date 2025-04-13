@@ -126,13 +126,9 @@ export function createMilestonesResolver(
       .where(eq(applicationsTable.id, args.input[0].applicationId));
 
     const [program] = await t
-      .select({ price: programsTable.price, educhainProgramId: programsTable.educhainProgramId })
+      .select({ price: programsTable.price })
       .from(programsTable)
       .where(eq(programsTable.id, application.programId));
-
-    if (!program.educhainProgramId) {
-      throw new Error('Blockchain program not found');
-    }
 
     const applications = await t
       .select({ price: applicationsTable.price })
@@ -248,26 +244,6 @@ export function submitMilestoneResolver(
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
 
-    // if (!milestone.educhainMilestoneId) {
-    //   throw new Error('Milestone not found on blockchain');
-    // }
-
-    // Get blockchain program id
-    // const [program] = await t
-    //   .select({ educhainProgramId: programsTable.educhainProgramId })
-    //   .from(programsTable)
-    //   .where(eq(programsTable.id, milestone.applicationId));
-
-    // if (!program.educhainProgramId) {
-    //   throw new Error('Program not found on blockchain');
-    // }
-
-    // await ctx.server.educhain.submitMilestone({
-    //   programId: program.educhainProgramId,
-    //   milestoneId: milestone.educhainMilestoneId,
-    //   links: args.input.links?.map((link) => link.url as string) ?? [],
-    // });
-
     // Get all application milestones and check if they are all completed
     const applicationMilestones = await t
       .select({ status: milestonesTable.status })
@@ -316,30 +292,6 @@ export function checkMilestoneResolver(
 
     if (!milestone.educhainMilestoneId) {
       throw new Error('Milestone not found on blockchain');
-    }
-
-    const [program] = await t
-      .select({ educhainProgramId: programsTable.educhainProgramId })
-      .from(programsTable)
-      .where(eq(programsTable.id, milestone.applicationId));
-
-    if (!program.educhainProgramId) {
-      throw new Error('Program not found on blockchain');
-    }
-
-    switch (args.input.status) {
-      case 'completed':
-        await ctx.server.educhain.acceptMilestone(
-          program.educhainProgramId,
-          milestone.educhainMilestoneId,
-        );
-        break;
-      case 'pending':
-        await ctx.server.educhain.rejectMilestone(
-          program.educhainProgramId,
-          milestone.educhainMilestoneId,
-        );
-        break;
     }
 
     return milestone;
