@@ -91,12 +91,11 @@ export function createMilestonesResolver(
       throw new Error('You are not allowed to create milestones for this application');
     }
 
-    let counter = 1;
     for (const milestone of args.input) {
       const { links, ...inputData } = milestone;
       const [newMilestone] = await t
         .insert(milestonesTable)
-        .values({ ...inputData, educhainMilestoneId: counter++ })
+        .values({ ...inputData, educhainMilestoneId: milestone.educhainMilestoneId })
         .returning();
       // handle links
       if (links) {
@@ -126,20 +125,9 @@ export function createMilestonesResolver(
       .where(eq(applicationsTable.id, args.input[0].applicationId));
 
     const [program] = await t
-      .select({ price: programsTable.price, educhainProgramId: programsTable.educhainProgramId })
+      .select({ price: programsTable.price })
       .from(programsTable)
       .where(eq(programsTable.id, application.programId));
-
-    if (!program.educhainProgramId) {
-      throw new Error('Blockchain program not found');
-    }
-
-    const applicationId = await ctx.server.educhain.submitApplication({
-      programId: program.educhainProgramId,
-      milestoneNames: milestones.map((m) => m.title),
-      milestoneDescriptions: milestones.map((m) => m.description ?? ''),
-      milestonePrices: milestones.map((m) => m.price),
-    });
 
     const applications = await t
       .select({ price: applicationsTable.price })
@@ -162,7 +150,7 @@ export function createMilestonesResolver(
       .update(applicationsTable)
       .set({
         price: milestonesTotalPrice.toString(),
-        educhainApplicationId: applicationId,
+        educhainApplicationId: args.input[0].educhainApplicationId,
       })
       .where(eq(applicationsTable.id, args.input[0].applicationId));
 
@@ -255,27 +243,6 @@ export function submitMilestoneResolver(
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
 
-    if (!milestone.educhainMilestoneId) {
-      throw new Error('Milestone not found on blockchain');
-    }
-
-    // Get blockchain program id
-    const [program] = await t
-      .select({ educhainProgramId: programsTable.educhainProgramId })
-      .from(programsTable)
-      .where(eq(programsTable.id, milestone.applicationId));
-
-    if (!program.educhainProgramId) {
-      throw new Error('Program not found on blockchain');
-    }
-
-    // Submit milestone to blockchain
-    await ctx.server.educhain.submitMilestone({
-      programId: program.educhainProgramId,
-      milestoneId: milestone.educhainMilestoneId,
-      links: args.input.links?.map((link) => link.url as string) ?? [],
-    });
-
     // Get all application milestones and check if they are all completed
     const applicationMilestones = await t
       .select({ status: milestonesTable.status })
@@ -324,30 +291,6 @@ export function checkMilestoneResolver(
 
     if (!milestone.educhainMilestoneId) {
       throw new Error('Milestone not found on blockchain');
-    }
-
-    const [program] = await t
-      .select({ educhainProgramId: programsTable.educhainProgramId })
-      .from(programsTable)
-      .where(eq(programsTable.id, milestone.applicationId));
-
-    if (!program.educhainProgramId) {
-      throw new Error('Program not found on blockchain');
-    }
-
-    switch (args.input.status) {
-      case 'completed':
-        await ctx.server.educhain.acceptMilestone(
-          program.educhainProgramId,
-          milestone.educhainMilestoneId,
-        );
-        break;
-      case 'pending':
-        await ctx.server.educhain.rejectMilestone(
-          program.educhainProgramId,
-          milestone.educhainMilestoneId,
-        );
-        break;
     }
 
     return milestone;

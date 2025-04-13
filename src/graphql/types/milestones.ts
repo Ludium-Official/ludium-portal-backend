@@ -11,7 +11,7 @@ import {
 } from '@/graphql/resolvers/milestones';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
-import { formatPrice } from '@/utils';
+import BigNumber from 'bignumber.js';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -25,10 +25,7 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
     id: t.exposeID('id'),
     title: t.exposeString('title'),
     description: t.exposeString('description', { nullable: true }),
-    price: t.field({
-      type: 'String',
-      resolve: (milestone) => formatPrice(milestone.price),
-    }),
+    price: t.exposeString('price'),
     currency: t.exposeString('currency'),
     educhainMilestoneId: t.exposeInt('educhainMilestoneId', { nullable: true }),
     status: t.field({
@@ -58,9 +55,18 @@ export const PaginatedMilestonesType = builder
 export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
   fields: (t) => ({
     applicationId: t.string({ required: true }),
+    educhainApplicationId: t.int({ required: true }),
+    educhainMilestoneId: t.int({ required: true }),
     title: t.string({ required: true }),
     description: t.string(),
-    price: t.string({ required: true }),
+    price: t.string({
+      required: true,
+      validate: {
+        refine(value) {
+          return new BigNumber(value).isPositive();
+        },
+      },
+    }),
     currency: t.string({ required: true, defaultValue: 'ETH' }),
     links: t.field({ type: [LinkInput] }),
   }),

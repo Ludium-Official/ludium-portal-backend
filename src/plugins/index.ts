@@ -2,7 +2,6 @@ import { schema as graphqlSchema } from '@/graphql/types';
 import argon2Plugin from '@/plugins/argon2';
 import authPlugin from '@/plugins/auth';
 import dbPlugin from '@/plugins/db';
-import educhainPlugin from '@/plugins/educhain';
 import fileManagerPlugin from '@/plugins/file-manager';
 import mercuriusUpload from '@/plugins/gql-upload';
 import corsPlugin from '@fastify/cors';
@@ -78,11 +77,6 @@ const registerPlugins = (server: FastifyInstance) => {
   void server.register(argon2Plugin).ready((err) => {
     if (err) server.log.error(err);
     server.log.info('Password plugin is ready');
-  });
-
-  void server.register(educhainPlugin).ready((err) => {
-    if (err) server.log.error(err);
-    server.log.info('Education plugin is ready');
   });
 };
 

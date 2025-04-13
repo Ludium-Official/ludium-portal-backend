@@ -1,7 +1,6 @@
 import { relations } from 'drizzle-orm';
 import {
   date,
-  decimal,
   integer,
   pgEnum,
   pgTable,
@@ -30,10 +29,7 @@ export const programsTable = pgTable('programs', {
   name: varchar('name', { length: 256 }).notNull().notNull(),
   summary: text('summary'),
   description: text('description'),
-
-  /* 38 total digits provides sufficient range for any cryptocurrency value
-     18 decimal places matches common ERC-20 token precision */
-  price: decimal('price', { precision: 38, scale: 18 }).notNull(),
+  price: varchar('price', { length: 256 }).notNull(),
   currency: varchar('currency', { length: 10 }).default('ETH').notNull(),
   deadline: date('deadline').notNull(),
   creatorId: uuid('creator_id')
@@ -42,6 +38,7 @@ export const programsTable = pgTable('programs', {
   validatorId: uuid('validator_id').references(() => usersTable.id, { onDelete: 'set null' }),
   status: programStatusEnum('status').default('draft'),
   educhainProgramId: integer('educhain_id'),
+  txHash: varchar('tx_hash', { length: 256 }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
