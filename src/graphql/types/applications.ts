@@ -16,7 +16,7 @@ import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { MilestoneType } from '@/graphql/types/milestones';
 import { User } from '@/graphql/types/users';
-import { formatPrice } from '@/utils';
+import BigNumber from 'bignumber.js';
 import { eq } from 'drizzle-orm';
 
 /* -------------------------------------------------------------------------- */
@@ -35,10 +35,7 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
     }),
     name: t.exposeString('name', { nullable: true }),
     content: t.exposeString('content', { nullable: true }),
-    price: t.field({
-      type: 'String',
-      resolve: (application) => formatPrice(application.price),
-    }),
+    price: t.exposeString('price'),
     educhainApplicationId: t.exposeInt('educhainApplicationId', { nullable: true }),
     metadata: t.field({
       type: 'JSON',
@@ -88,7 +85,14 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
     content: t.string({ required: true }),
     metadata: t.field({ type: 'JSON' }),
     links: t.field({ type: [LinkInput], required: false }),
-    price: t.string({ required: true }),
+    price: t.string({
+      required: true,
+      validate: {
+        refine(value) {
+          return new BigNumber(value).isPositive();
+        },
+      },
+    }),
   }),
 });
 

@@ -50,12 +50,12 @@ input CreateMilestoneInput {
 
 input CreateProgramInput {
   currency: String
-  deadline: String
+  deadline: String!
   description: String
   keywords: [ID!]
   links: [LinkInput!]
   name: String!
-  price: String
+  price: String!
   summary: String
   validatorId: ID!
 }

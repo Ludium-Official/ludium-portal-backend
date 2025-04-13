@@ -1,6 +1,5 @@
 import { relations } from 'drizzle-orm';
 import {
-  decimal,
   integer,
   jsonb,
   pgEnum,
@@ -8,6 +7,7 @@ import {
   text,
   timestamp,
   uuid,
+  varchar,
 } from 'drizzle-orm/pg-core';
 import { linksTable } from './links';
 import { milestonesTable } from './milestones';
@@ -39,7 +39,7 @@ export const applicationsTable = pgTable('applications', {
   name: text('name').notNull(),
   content: text('content'),
   metadata: jsonb('metadata'),
-  price: decimal('price', { precision: 38, scale: 18 }).default('0').notNull(),
+  price: varchar('price', { length: 256 }).default('0').notNull(),
   educhainApplicationId: integer('educhain_application_id'),
 
   // Timestamps

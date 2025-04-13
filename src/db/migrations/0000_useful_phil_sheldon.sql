@@ -10,7 +10,7 @@ CREATE TABLE "applications" (
 	"name" text NOT NULL,
 	"content" text,
 	"metadata" jsonb,
-	"price" numeric(38, 18) DEFAULT '0' NOT NULL,
+	"price" varchar(256) DEFAULT '0' NOT NULL,
 	"educhain_application_id" integer,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
@@ -68,13 +68,14 @@ CREATE TABLE "programs" (
 	"name" varchar(256) NOT NULL,
 	"summary" text,
 	"description" text,
-	"price" numeric(38, 18) NOT NULL,
+	"price" varchar(256) NOT NULL,
 	"currency" varchar(10) DEFAULT 'ETH' NOT NULL,
 	"deadline" date NOT NULL,
 	"creator_id" uuid NOT NULL,
 	"validator_id" uuid,
 	"status" "program_status" DEFAULT 'draft',
 	"educhain_id" integer,
+	"tx_hash" varchar(256),
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -104,7 +105,7 @@ CREATE TABLE "milestones" (
 	"application_id" uuid NOT NULL,
 	"title" varchar(256) NOT NULL,
 	"description" text,
-	"price" numeric(38, 18) NOT NULL,
+	"price" varchar(256) NOT NULL,
 	"currency" varchar(10) DEFAULT 'ETH',
 	"status" "milestone_status" DEFAULT 'pending' NOT NULL,
 	"links" jsonb,

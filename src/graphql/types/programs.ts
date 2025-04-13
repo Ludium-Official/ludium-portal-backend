@@ -19,7 +19,7 @@ import { ApplicationType } from '@/graphql/types/applications';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { User } from '@/graphql/types/users';
-import { formatPrice } from '@/utils';
+import BigNumber from 'bignumber.js';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -30,10 +30,7 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
     name: t.exposeString('name'),
     summary: t.exposeString('summary'),
     description: t.exposeString('description'),
-    price: t.field({
-      type: 'String',
-      resolve: (program) => formatPrice(program.price),
-    }),
+    price: t.exposeString('price'),
     currency: t.exposeString('currency'),
     educhainProgramId: t.exposeInt('educhainProgramId'),
     deadline: t.field({
@@ -99,9 +96,16 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
     name: t.string({ required: true }),
     summary: t.string(),
     description: t.string(),
-    price: t.string(),
+    price: t.string({
+      required: true,
+      validate: {
+        refine(value) {
+          return new BigNumber(value).isPositive();
+        },
+      },
+    }),
     currency: t.string(),
-    deadline: t.string(),
+    deadline: t.string({ required: true }),
     keywords: t.idList(),
     links: t.field({ type: [LinkInput] }),
     validatorId: t.id({ required: true }),
@@ -114,7 +118,13 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     name: t.string(),
     summary: t.string(),
     description: t.string(),
-    price: t.string(),
+    price: t.string({
+      validate: {
+        refine(value) {
+          return new BigNumber(value).isPositive();
+        },
+      },
+    }),
     currency: t.string(),
     deadline: t.string(),
     keywords: t.idList(),

@@ -1,6 +1,5 @@
 import { relations } from 'drizzle-orm';
 import {
-  decimal,
   integer,
   jsonb,
   pgEnum,
@@ -33,7 +32,7 @@ export const milestonesTable = pgTable('milestones', {
   // Milestone details
   title: varchar('title', { length: 256 }).notNull(),
   description: text('description'),
-  price: decimal('price', { precision: 38, scale: 18 }).notNull(),
+  price: varchar('price', { length: 256 }).notNull(),
   currency: varchar('currency', { length: 10 }).default('ETH'),
   status: milestoneStatusEnum('status').default('pending').notNull(),
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
