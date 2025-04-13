@@ -56,6 +56,7 @@ export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
   fields: (t) => ({
     applicationId: t.string({ required: true }),
     educhainApplicationId: t.int({ required: true }),
+    educhainMilestoneId: t.int({ required: true }),
     title: t.string({ required: true }),
     description: t.string(),
     price: t.string({

@@ -43,6 +43,7 @@ input CreateMilestoneInput {
   currency: String! = "ETH"
   description: String
   educhainApplicationId: Int!
+  educhainMilestoneId: Int!
   links: [LinkInput!]
   price: String!
   title: String!

@@ -91,12 +91,11 @@ export function createMilestonesResolver(
       throw new Error('You are not allowed to create milestones for this application');
     }
 
-    let counter = 1;
     for (const milestone of args.input) {
       const { links, ...inputData } = milestone;
       const [newMilestone] = await t
         .insert(milestonesTable)
-        .values({ ...inputData, educhainMilestoneId: counter++ })
+        .values({ ...inputData, educhainMilestoneId: milestone.educhainMilestoneId })
         .returning();
       // handle links
       if (links) {
