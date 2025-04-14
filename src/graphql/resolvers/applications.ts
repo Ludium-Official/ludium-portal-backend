@@ -4,6 +4,7 @@ import {
   applicationsToLinksTable,
   linksTable,
   programUserRolesTable,
+  programsTable,
 } from '@/db/schemas';
 import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
@@ -91,6 +92,19 @@ export function createApplicationResolver(
   }
 
   return ctx.db.transaction(async (t) => {
+    const [program] = await t
+      .select({ creatorId: programsTable.creatorId, validatorId: programsTable.validatorId })
+      .from(programsTable)
+      .where(eq(programsTable.id, args.input.programId));
+
+    if (program.creatorId === user.id) {
+      throw new Error('You are already a sponsor of this program');
+    }
+
+    if (program.validatorId === user.id) {
+      throw new Error('You are already a validator of this program');
+    }
+
     const [application] = await t
       .insert(applicationsTable)
       .values({
