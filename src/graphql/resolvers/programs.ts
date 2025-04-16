@@ -14,7 +14,7 @@ import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
 import { filterEmptyValues, isInSameScope, validAndNotEmptyArray } from '@/utils';
-import { and, asc, count, desc, eq, ilike, inArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, or } from 'drizzle-orm';
 
 export async function getProgramsResolver(
   _root: Root,
@@ -26,52 +26,101 @@ export async function getProgramsResolver(
   const sort = args.pagination?.sort || 'desc';
   const filter = args.pagination?.filter || [];
 
-  const filterConditions = await Promise.all(
-    filter.map(async (f) => {
-      switch (f.field) {
-        case 'creatorId':
-          return eq(programsTable.creatorId, f.value);
-        case 'validatorId':
-          return eq(programsTable.validatorId, f.value);
-        case 'applicantId': {
-          const applications = await ctx.db
-            .select()
-            .from(applicationsTable)
-            .where(eq(applicationsTable.applicantId, f.value));
-          return inArray(
-            programsTable.id,
-            applications.map((a) => a.programId),
+  const filterPromises = filter.map(async (f) => {
+    switch (f.field) {
+      case 'creatorId':
+        return eq(programsTable.creatorId, f.value);
+      case 'validatorId':
+        return eq(programsTable.validatorId, f.value);
+      case 'applicantId': {
+        const applications = await ctx.db
+          .select()
+          .from(applicationsTable)
+          .where(eq(applicationsTable.applicantId, f.value));
+        return inArray(
+          programsTable.id,
+          applications.map((a) => a.programId),
+        );
+      }
+      case 'userId': {
+        const creatorCondition = eq(programsTable.creatorId, f.value);
+        const validatorCondition = eq(programsTable.validatorId, f.value);
+
+        const userRoles = await ctx.db
+          .select()
+          .from(programUserRolesTable)
+          .where(eq(programUserRolesTable.userId, f.value));
+
+        const applications = await ctx.db
+          .select()
+          .from(applicationsTable)
+          .where(eq(applicationsTable.applicantId, f.value));
+
+        const conditions = [creatorCondition, validatorCondition];
+
+        if (userRoles.length > 0) {
+          conditions.push(
+            inArray(
+              programsTable.id,
+              userRoles.map((role) => role.programId),
+            ),
           );
         }
-        case 'name':
-          return ilike(programsTable.name, `%${f.value}%`);
-        case 'status':
-          return eq(
-            programsTable.status,
-            f.value as 'draft' | 'published' | 'closed' | 'completed' | 'cancelled',
-          );
-        case 'price':
-          // sort by price, value can be 'asc' or 'desc'
-          return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
-        default:
-          return undefined;
-      }
-    }),
-  );
 
-  const data = await ctx.db
-    .select()
-    .from(programsTable)
-    .where(and(...filterConditions))
-    .limit(limit)
-    .offset(offset)
-    .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
+        if (applications.length > 0) {
+          conditions.push(
+            inArray(
+              programsTable.id,
+              applications.map((app) => app.programId),
+            ),
+          );
+        }
+
+        return or(...conditions);
+      }
+      case 'name':
+        return ilike(programsTable.name, `%${f.value}%`);
+      case 'status':
+        return eq(
+          programsTable.status,
+          f.value as 'draft' | 'published' | 'closed' | 'completed' | 'cancelled',
+        );
+      case 'price':
+        // sort by price, value can be 'asc' or 'desc'
+        return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
+      default:
+        return undefined;
+    }
+  });
+
+  const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
+
+  let data: Program[] = [];
+  if (filterConditions.length > 0) {
+    data = await ctx.db
+      .select()
+      .from(programsTable)
+      .where(and(...filterConditions))
+      .limit(limit)
+      .offset(offset)
+      .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
+  } else {
+    data = await ctx.db
+      .select()
+      .from(programsTable)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
+  }
+
+  if (!validAndNotEmptyArray(data)) {
+    return {
+      data: [],
+      count: 0,
+    };
+  }
 
   const [totalCount] = await ctx.db.select({ count: count() }).from(programsTable);
-
-  if (!validAndNotEmptyArray(data) || !totalCount) {
-    throw new Error('No programs found');
-  }
 
   return {
     data,
