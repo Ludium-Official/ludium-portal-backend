@@ -145,8 +145,13 @@ export function deleteUserResolver(_root: Root, args: { id: string }, ctx: Conte
   });
 }
 
-export function getProfileResolver(_root: Root, _args: Args, ctx: Context) {
-  return ctx.server.auth.getUser(ctx.request);
+export async function getProfileResolver(_root: Root, _args: Args, ctx: Context) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+  const wallet = await getUserWalletResolver({}, { userId: user.id }, ctx);
+  return { ...user, wallet };
 }
 
 export function updateProfileResolver(
