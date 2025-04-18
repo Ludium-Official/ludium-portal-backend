@@ -143,6 +143,10 @@ export function createMilestonesResolver(
     }, new BigNumber(0));
 
     if (applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price))) {
+      await t
+        .delete(applicationsTable)
+        .where(eq(applicationsTable.id, args.input[0].applicationId));
+      t.rollback();
       throw new Error('The total price of the applications is greater than the program price');
     }
 
