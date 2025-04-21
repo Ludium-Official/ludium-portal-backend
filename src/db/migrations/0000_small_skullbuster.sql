@@ -11,7 +11,6 @@ CREATE TABLE "applications" (
 	"content" text,
 	"metadata" jsonb,
 	"price" varchar(256) DEFAULT '0' NOT NULL,
-	"educhain_application_id" integer,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -109,7 +108,6 @@ CREATE TABLE "milestones" (
 	"currency" varchar(10) DEFAULT 'ETH',
 	"status" "milestone_status" DEFAULT 'pending' NOT NULL,
 	"links" jsonb,
-	"educhain_milestone_id" integer,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
