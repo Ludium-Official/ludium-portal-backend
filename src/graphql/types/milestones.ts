@@ -27,7 +27,6 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
     description: t.exposeString('description', { nullable: true }),
     price: t.exposeString('price'),
     currency: t.exposeString('currency'),
-    educhainMilestoneId: t.exposeInt('educhainMilestoneId', { nullable: true }),
     status: t.field({
       type: MilestoneStatusEnum,
       resolve: (milestone) => milestone.status,
@@ -55,8 +54,6 @@ export const PaginatedMilestonesType = builder
 export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
   fields: (t) => ({
     applicationId: t.string({ required: true }),
-    educhainApplicationId: t.int({ required: true }),
-    educhainMilestoneId: t.int({ required: true }),
     title: t.string({ required: true }),
     description: t.string(),
     price: t.string({

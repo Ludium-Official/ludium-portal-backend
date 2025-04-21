@@ -95,7 +95,7 @@ export function createMilestonesResolver(
       const { links, ...inputData } = milestone;
       const [newMilestone] = await t
         .insert(milestonesTable)
-        .values({ ...inputData, educhainMilestoneId: milestone.educhainMilestoneId })
+        .values({ ...inputData })
         .returning();
       // handle links
       if (links) {
@@ -154,7 +154,6 @@ export function createMilestonesResolver(
       .update(applicationsTable)
       .set({
         price: milestonesTotalPrice.toString(),
-        educhainApplicationId: args.input[0].educhainApplicationId,
       })
       .where(eq(applicationsTable.id, args.input[0].applicationId));
 
@@ -292,10 +291,6 @@ export function checkMilestoneResolver(
       .set({ status: args.input.status })
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
-
-    if (!milestone.educhainMilestoneId) {
-      throw new Error('Milestone not found on blockchain');
-    }
 
     return milestone;
   });

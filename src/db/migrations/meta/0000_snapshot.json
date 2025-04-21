@@ -1,5 +1,5 @@
 {
-  "id": "27b8ea4c-2961-46e0-94f7-09d88c8cae7f",
+  "id": "164dcade-f2e6-4995-88d7-ee92e53218a2",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -59,12 +59,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
-        },
-        "educhain_application_id": {
-          "name": "educhain_application_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -834,12 +828,6 @@
         "links": {
           "name": "links",
           "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "educhain_milestone_id": {
-          "name": "educhain_milestone_id",
-          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
