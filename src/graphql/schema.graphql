@@ -1,7 +1,6 @@
 type Application {
   applicant: User
   content: String
-  educhainApplicationId: Int
   id: ID
   links: [Link!]
   metadata: JSON
@@ -42,8 +41,6 @@ input CreateMilestoneInput {
   applicationId: String!
   currency: String! = "ETH"
   description: String
-  educhainApplicationId: Int!
-  educhainMilestoneId: Int!
   links: [LinkInput!]
   price: String!
   title: String!
@@ -94,7 +91,6 @@ input LinkInput {
 type Milestone {
   currency: String
   description: String
-  educhainMilestoneId: Int
   id: ID
   links: [Link!]
   price: String
