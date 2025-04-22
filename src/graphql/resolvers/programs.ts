@@ -424,14 +424,9 @@ export function publishProgramResolver(
 
     const [program] = await t
       .update(programsTable)
-      .set({ status: 'published', txHash: args.txHash })
+      .set({ status: 'published', educhainProgramId: args.educhainProgramId, txHash: args.txHash })
       .where(eq(programsTable.id, args.id))
       .returning();
-
-    await t
-      .update(programsTable)
-      .set({ educhainProgramId: args.educhainProgramId })
-      .where(eq(programsTable.id, program.id));
 
     return program;
   });
