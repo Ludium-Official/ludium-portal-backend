@@ -3,17 +3,17 @@ name: "Build and Deploy to Cloud Run"
 on:
   push:
     branches:
-      - dev
+      - main
 
 env:
   PROJECT_ID: "ludium-development"
   REGION: "asia-northeast3"
-  SERVICE: "api-dev-service"
-  DOCKER_REGISTRY: "api-dev-repo"
+  SERVICE: "api-prod-service"
+  DOCKER_REGISTRY: "api-prod-repo"
 
 jobs:
   deploy:
-    environment: "development"
+    environment: "production"
     runs-on: "ubuntu-24.04"
 
     permissions:
