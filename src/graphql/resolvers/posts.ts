@@ -1,9 +1,15 @@
-import { type Post, postsTable } from '@/db/schemas';
+import {
+  type Post,
+  filesTable,
+  keywordsTable,
+  postsTable,
+  postsToKeywordsTable,
+} from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreatePostInput, UpdatePostInput } from '@/graphql/types/posts';
 import type { Context, Root } from '@/types';
 import { filterEmptyValues, validAndNotEmptyArray } from '@/utils';
-import { and, asc, count, desc, eq, ilike } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray } from 'drizzle-orm';
 
 export async function getPostsResolver(
   _root: Root,
@@ -67,6 +73,29 @@ export async function getPostResolver(_root: Root, args: { id: string }, ctx: Co
   return post;
 }
 
+export async function getPostKeywordsByPostIdResolver(
+  _root: Root,
+  args: { postId: string },
+  ctx: Context,
+) {
+  const keywordRelations = await ctx.db
+    .select()
+    .from(postsToKeywordsTable)
+    .where(eq(postsToKeywordsTable.postId, args.postId));
+
+  if (!keywordRelations.length) return [];
+
+  return ctx.db
+    .select()
+    .from(keywordsTable)
+    .where(
+      inArray(
+        keywordsTable.id,
+        keywordRelations.map((rel) => rel.keywordId),
+      ),
+    );
+}
+
 export async function createPostResolver(
   _root: Root,
   args: { input: typeof CreatePostInput.$inferInput },
@@ -77,18 +106,37 @@ export async function createPostResolver(
     throw new Error('User not found');
   }
 
-  const { title, content } = args.input;
+  const { title, content, image } = args.input;
 
-  const [post] = await ctx.db
-    .insert(postsTable)
-    .values({
-      title,
-      content,
-      authorId: user.id,
-    })
-    .returning();
+  return ctx.db.transaction(async (t) => {
+    const [post] = await t
+      .insert(postsTable)
+      .values({
+        title,
+        content,
+        authorId: user.id,
+      })
+      .returning();
 
-  return post;
+    if (image) {
+      const [avatar] = await t
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.uploadedById, user.id));
+      if (avatar) {
+        await ctx.server.fileManager.deleteFile(avatar.id);
+      }
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: image,
+        userId: user.id,
+        type: 'post',
+        entityId: post.id,
+      });
+      await t.update(postsTable).set({ image: fileUrl }).where(eq(postsTable.id, post.id));
+    }
+
+    return post;
+  });
 }
 
 export async function updatePostResolver(
@@ -103,11 +151,30 @@ export async function updatePostResolver(
 
   const postData = filterEmptyValues<Post>(args.input);
 
-  const [post] = await ctx.db
-    .update(postsTable)
-    .set(postData)
-    .where(eq(postsTable.id, args.input.id))
-    .returning();
+  return ctx.db.transaction(async (t) => {
+    const [post] = await t
+      .update(postsTable)
+      .set(postData)
+      .where(eq(postsTable.id, args.input.id))
+      .returning();
 
-  return post;
+    if (args.input.image) {
+      const [avatar] = await t
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.uploadedById, user.id));
+      if (avatar) {
+        await ctx.server.fileManager.deleteFile(avatar.id);
+      }
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: args.input.image,
+        userId: user.id,
+        type: 'post',
+        entityId: post.id,
+      });
+      await t.update(postsTable).set({ image: fileUrl }).where(eq(postsTable.id, post.id));
+    }
+
+    return post;
+  });
 }

@@ -2,13 +2,14 @@ import type { Post as DBPost } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
   createPostResolver,
+  getPostKeywordsByPostIdResolver,
   getPostResolver,
   getPostsResolver,
   updatePostResolver,
 } from '@/graphql/resolvers/posts';
 import { getUserResolver } from '@/graphql/resolvers/users';
+import { KeywordType, PaginationInput } from '@/graphql/types/common';
 import { User } from '@/graphql/types/users';
-import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -18,9 +19,15 @@ export const PostType = builder.objectRef<DBPost>('Post').implement({
     id: t.exposeID('id'),
     title: t.exposeString('title'),
     content: t.exposeString('content'),
+    image: t.exposeString('image'),
     author: t.field({
       type: User,
       resolve: (parent, _args, ctx) => getUserResolver({}, { id: parent.authorId }, ctx),
+    }),
+    keywords: t.field({
+      type: [KeywordType],
+      resolve: async (post, _args, ctx) =>
+        getPostKeywordsByPostIdResolver({}, { postId: post.id }, ctx),
     }),
   }),
 });
@@ -41,6 +48,8 @@ export const CreatePostInput = builder.inputType('CreatePostInput', {
   fields: (t) => ({
     title: t.string({ required: true }),
     content: t.string({ required: true }),
+    keywords: t.idList(),
+    image: t.field({ type: 'Upload' }),
   }),
 });
 
@@ -49,6 +58,8 @@ export const UpdatePostInput = builder.inputType('UpdatePostInput', {
     id: t.id({ required: true }),
     title: t.string(),
     content: t.string(),
+    keywords: t.idList(),
+    image: t.field({ type: 'Upload' }),
   }),
 });
 

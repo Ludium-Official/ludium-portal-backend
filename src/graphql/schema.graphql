@@ -59,6 +59,8 @@ input CreateMilestoneInput {
 
 input CreatePostInput {
   content: String!
+  image: Upload
+  keywords: [ID!]
   title: String!
 }
 
@@ -93,6 +95,11 @@ input FilterInput {
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
 scalar JSON
+
+type Keyword {
+  id: ID
+  name: String
+}
 
 type Link {
   title: String
@@ -183,6 +190,8 @@ type Post {
   author: User
   content: String
   id: ID
+  image: String
+  keywords: [Keyword!]
   title: String
 }
 
@@ -194,7 +203,7 @@ type Program {
   description: String
   educhainProgramId: Int
   id: ID
-  keywords: [ProgramKeyword!]
+  keywords: [Keyword!]
   links: [Link!]
   name: String
   price: String
@@ -203,17 +212,12 @@ type Program {
   validator: User
 }
 
-type ProgramKeyword {
-  id: ID
-  name: String
-}
-
 type Query {
   application(id: ID!): Application
   applications(pagination: PaginationInput): PaginatedApplications
   comment(id: ID!): Comment
   comments(pagination: PaginationInput): PaginatedComments
-  keywords: [ProgramKeyword!]
+  keywords: [Keyword!]
   milestone(id: ID!): Milestone
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
   post(id: ID!): Post
@@ -263,6 +267,8 @@ input UpdateMilestoneInput {
 input UpdatePostInput {
   content: String
   id: ID!
+  image: Upload
+  keywords: [ID!]
   title: String
 }
 
