@@ -29,6 +29,7 @@ export const PostType = builder.objectRef<DBPost>('Post').implement({
       resolve: async (post, _args, ctx) =>
         getPostKeywordsByPostIdResolver({}, { postId: post.id }, ctx),
     }),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
   }),
 });
 

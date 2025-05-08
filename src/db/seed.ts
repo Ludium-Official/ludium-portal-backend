@@ -4,6 +4,7 @@ import postgres from 'postgres';
 import { createApplications } from './data/applications';
 import { links, programLinks } from './data/links';
 import { createMilestones } from './data/milestones';
+import { postKeywords, posts } from './data/posts';
 import { keywords, programKeywords, programs } from './data/programs';
 import { users } from './data/users';
 import {
@@ -11,6 +12,8 @@ import {
   keywordsTable,
   linksTable,
   milestonesTable,
+  postsTable,
+  postsToKeywordsTable,
   programUserRolesTable,
   programsTable,
   programsToKeywordsTable,
@@ -249,13 +252,65 @@ async function seed() {
           }
         }
       }
+
+      // Add posts
+      if (userIds.length > 0) {
+        console.log('📄 Adding posts...');
+
+        // Distribute posts between different authors
+        const postsWithAuthors = posts.map((post, index) => {
+          // Use different users as authors (cycling through userIds)
+          const authorId = userIds[index % userIds.length];
+
+          return {
+            ...post,
+            authorId,
+          };
+        });
+
+        const insertedPosts = await db
+          .insert(postsTable)
+          .values(postsWithAuthors)
+          .returning()
+          .onConflictDoNothing();
+        console.log(`✅ Added ${insertedPosts.length} posts`);
+
+        // Add post-keyword relationships
+        if (insertedPosts.length > 0) {
+          console.log('🔄 Adding post-keyword relationships...');
+
+          const postKeywordValues = [];
+
+          for (const mapping of postKeywords) {
+            const postId = insertedPosts[mapping.postIndex].id;
+
+            for (const keywordName of mapping.keywords) {
+              const keywordId = keywordMap[keywordName];
+              if (keywordId) {
+                postKeywordValues.push({
+                  postId,
+                  keywordId,
+                });
+              }
+            }
+          }
+
+          if (postKeywordValues.length > 0) {
+            const insertedPostKeywords = await db
+              .insert(postsToKeywordsTable)
+              .values(postKeywordValues)
+              .returning()
+              .onConflictDoNothing();
+            console.log(`✅ Added ${insertedPostKeywords.length} post-keyword relationships`);
+          }
+        }
+      }
     }
 
-    console.log('✅ Database successfully seeded!');
+    console.log('✅ Seed complete!');
     await client.end();
-    process.exit(0);
   } catch (error) {
-    console.error('❌ Error seeding database:', error);
+    console.error('❌ Error in seed:', error);
     process.exit(1);
   }
 }
