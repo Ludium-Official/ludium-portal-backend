@@ -17,7 +17,7 @@ export const posts: Omit<NewPost, 'authorId'>[] = [
     title: 'DeFi Revolution: Changing Finance',
     content:
       'Decentralized Finance (DeFi) is revolutionizing the financial industry. Learn about the key DeFi protocols and how they are disrupting traditional finance.',
-    image: 'https://images.unsplash.com/photo-1621761191214-152233183232?w=800&h=600&fit=crop',
+    image: 'https://images.unsplash.com/photo-1709884735626-63e92727d8b6?w=800&h=600&fit=crop',
   },
   {
     title: 'NFT Art: A New Era for Creators',
