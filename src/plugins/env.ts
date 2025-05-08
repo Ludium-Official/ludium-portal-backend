@@ -8,6 +8,7 @@ const load = (server: FastifyInstance) => {
     .register(envPlugin, {
       schema: envSchema,
       dotenv: isLocal,
+      expandEnv: isLocal,
       data: isLocal ? process.env : JSON.parse(process.env.SECRETS ?? '{}'),
     })
     .ready((err) => {
