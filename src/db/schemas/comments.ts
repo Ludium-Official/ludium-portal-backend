@@ -11,6 +11,7 @@ export const commentsTable = pgTable('comments', {
   postId: uuid('post_id')
     .notNull()
     .references(() => postsTable.id, { onDelete: 'cascade' }),
+  parentId: uuid('parent_id'),
   content: text('content').notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
@@ -27,6 +28,10 @@ export const commentsRelations = relations(commentsTable, ({ one }) => ({
   post: one(postsTable, {
     fields: [commentsTable.postId],
     references: [postsTable.id],
+  }),
+  parent: one(commentsTable, {
+    fields: [commentsTable.parentId],
+    references: [commentsTable.id],
   }),
 }));
 

@@ -3,17 +3,21 @@ import type { CreateCommentInput, UpdateCommentInput } from '@/graphql/types/com
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
 import { filterEmptyValues, validAndNotEmptyArray } from '@/utils';
-import { and, asc, count, desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
 
 export async function getCommentsResolver(
   _root: Root,
-  args: { pagination?: typeof PaginationInput.$inferInput | null },
+  args: {
+    pagination?: typeof PaginationInput.$inferInput | null;
+    topLevelOnly?: boolean | null;
+  },
   ctx: Context,
 ) {
   const limit = args.pagination?.limit || 10;
   const offset = args.pagination?.offset || 0;
   const sort = args.pagination?.sort || 'desc';
   const filter = args.pagination?.filter || [];
+  const topLevelOnly = args.topLevelOnly || false;
 
   const filterPromises = filter.map(async (f) => {
     switch (f.field) {
@@ -26,7 +30,11 @@ export async function getCommentsResolver(
     }
   });
 
-  const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
+  const baseFilterConditions = (await Promise.all(filterPromises)).filter(Boolean);
+
+  const filterConditions = topLevelOnly
+    ? [...baseFilterConditions, isNull(commentsTable.parentId)]
+    : baseFilterConditions;
 
   let data: Comment[] = [];
   if (filterConditions.length > 0) {
@@ -67,6 +75,34 @@ export async function getCommentResolver(_root: Root, args: { id: string }, ctx:
   return comment;
 }
 
+export async function getCommentRepliesResolver(
+  _root: Root,
+  args: { parentId: string },
+  ctx: Context,
+) {
+  const replies = await ctx.db
+    .select()
+    .from(commentsTable)
+    .where(eq(commentsTable.parentId, args.parentId))
+    .orderBy(desc(commentsTable.createdAt));
+
+  return replies;
+}
+
+export async function getCommentsByPostResolver(
+  _root: Root,
+  args: { postId: string },
+  ctx: Context,
+) {
+  const comments = await ctx.db
+    .select()
+    .from(commentsTable)
+    .where(eq(commentsTable.postId, args.postId))
+    .orderBy(desc(commentsTable.createdAt));
+
+  return comments;
+}
+
 export async function createCommentResolver(
   _root: Root,
   args: { input: typeof CreateCommentInput.$inferInput },
@@ -77,7 +113,22 @@ export async function createCommentResolver(
     throw new Error('User not found');
   }
 
-  const { postId, content } = args.input;
+  const { postId, content, parentId } = args.input;
+
+  if (parentId) {
+    const [parentComment] = await ctx.db
+      .select()
+      .from(commentsTable)
+      .where(eq(commentsTable.id, parentId));
+
+    if (!parentComment) {
+      throw new Error('Parent comment not found');
+    }
+
+    if (parentComment.parentId) {
+      throw new Error('Cannot reply to a comment that is already a reply (max nesting depth is 1)');
+    }
+  }
 
   const [comment] = await ctx.db
     .insert(commentsTable)
@@ -85,6 +136,7 @@ export async function createCommentResolver(
       postId,
       content,
       authorId: user.id,
+      parentId: parentId || null,
     })
     .returning();
 

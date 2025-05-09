@@ -31,7 +31,11 @@ enum CheckMilestoneStatus {
 type Comment {
   author: User
   content: String
+  createdAt: Date
   id: ID
+  parent: Comment
+  post: Post
+  replies: [Comment!]
 }
 
 input CreateApplicationInput {
@@ -45,6 +49,7 @@ input CreateApplicationInput {
 
 input CreateCommentInput {
   content: String!
+  parentId: ID
   postId: ID!
 }
 
@@ -217,7 +222,8 @@ type Query {
   application(id: ID!): Application
   applications(pagination: PaginationInput): PaginatedApplications
   comment(id: ID!): Comment
-  comments(pagination: PaginationInput): PaginatedComments
+  comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
+  commentsByPost(postId: ID!): [Comment!]
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
