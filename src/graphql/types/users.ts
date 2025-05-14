@@ -13,6 +13,7 @@ import {
   updateUserResolver,
 } from '@/graphql/resolvers/users';
 import { Link, LinkInput } from '@/graphql/types/links';
+import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -86,6 +87,9 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
 builder.queryFields((t) => ({
   users: t.field({
     type: [User],
+    args: {
+      pagination: t.arg({ type: PaginationInput, required: false }),
+    },
     resolve: getUsersResolver,
   }),
   user: t.field({

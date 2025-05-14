@@ -1,10 +1,44 @@
 import { filesTable, linksTable, usersTable, usersToLinksTable, walletTable } from '@/db/schemas';
+import type { PaginationInput } from '@/graphql/types/common';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
-import { desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike } from 'drizzle-orm';
 
-export function getUsersResolver(_root: Root, _args: Args, ctx: Context) {
-  return ctx.db.select().from(usersTable);
+export async function getUsersResolver(
+  _root: Root,
+  args: { pagination?: typeof PaginationInput.$inferInput | null },
+  ctx: Context,
+) {
+  const limit = args.pagination?.limit || 10;
+  const offset = args.pagination?.offset || 0;
+  const sort = args.pagination?.sort || 'desc';
+  const filter = args.pagination?.filter || [];
+
+  const filterPromises = filter.map(async (f) => {
+    switch (f.field) {
+      case 'firstName':
+        return ilike(usersTable.firstName, `%${f.value}%`);
+      case 'lastName':
+        return ilike(usersTable.lastName, `%${f.value}%`);
+      case 'organizationName':
+        return ilike(usersTable.organizationName, `%${f.value}%`);
+      case 'email':
+        return ilike(usersTable.email, `%${f.value}%`);
+    }
+  });
+
+  const conditions = await Promise.all(filterPromises);
+  const where = and(...conditions);
+  const orderBy = sort === 'asc' ? asc(usersTable.createdAt) : desc(usersTable.createdAt);
+  const users = await ctx.db
+    .select()
+    .from(usersTable)
+    .where(where)
+    .orderBy(orderBy)
+    .limit(limit)
+    .offset(offset);
+
+  return users;
 }
 
 export async function getUserByIdResolver(_root: Root, args: { id: string }, ctx: Context) {

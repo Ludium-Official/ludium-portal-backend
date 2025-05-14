@@ -233,7 +233,7 @@ type Query {
   program(id: ID!): Program
   programs(pagination: PaginationInput): PaginatedPrograms
   user(id: ID!): User
-  users: [User!]
+  users(pagination: PaginationInput): [User!]
 }
 
 enum SortEnum {
