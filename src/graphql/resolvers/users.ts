@@ -2,7 +2,7 @@ import { filesTable, linksTable, usersTable, usersToLinksTable, walletTable } fr
 import type { PaginationInput } from '@/graphql/types/common';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
-import { and, asc, desc, eq, ilike } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, or } from 'drizzle-orm';
 
 export async function getUsersResolver(
   _root: Root,
@@ -15,6 +15,15 @@ export async function getUsersResolver(
   const filter = args.pagination?.filter || [];
 
   const filterPromises = filter.map(async (f) => {
+    if (f.field === 'search') {
+      return or(
+        ilike(usersTable.firstName, `%${f.value}%`),
+        ilike(usersTable.lastName, `%${f.value}%`),
+        ilike(usersTable.organizationName, `%${f.value}%`),
+        ilike(usersTable.email, `%${f.value}%`),
+      );
+    }
+
     switch (f.field) {
       case 'firstName':
         return ilike(usersTable.firstName, `%${f.value}%`);
@@ -24,6 +33,8 @@ export async function getUsersResolver(
         return ilike(usersTable.organizationName, `%${f.value}%`);
       case 'email':
         return ilike(usersTable.email, `%${f.value}%`);
+      default:
+        return undefined;
     }
   });
 
