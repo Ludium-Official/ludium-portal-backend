@@ -106,7 +106,7 @@ export async function createPostResolver(
     throw new Error('User not found');
   }
 
-  const { title, content, image } = args.input;
+  const { title, content, image, keywords } = args.input;
 
   return ctx.db.transaction(async (t) => {
     const [post] = await t
@@ -135,6 +135,19 @@ export async function createPostResolver(
       await t.update(postsTable).set({ image: fileUrl }).where(eq(postsTable.id, post.id));
     }
 
+    // Handle keywords
+    if (keywords?.length) {
+      await t
+        .insert(postsToKeywordsTable)
+        .values(
+          keywords.map((keyword) => ({
+            postId: post.id,
+            keywordId: keyword,
+          })),
+        )
+        .onConflictDoNothing();
+    }
+
     return post;
   });
 }
@@ -157,6 +170,17 @@ export async function updatePostResolver(
       .set(postData)
       .where(eq(postsTable.id, args.input.id))
       .returning();
+
+    // handle keywords
+    if (args.input.keywords?.length) {
+      await t.delete(postsToKeywordsTable).where(eq(postsToKeywordsTable.postId, args.input.id));
+      await t
+        .insert(postsToKeywordsTable)
+        .values(
+          args.input.keywords.map((keyword) => ({ postId: args.input.id, keywordId: keyword })),
+        )
+        .onConflictDoNothing();
+    }
 
     if (args.input.image) {
       const [avatar] = await t
