@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { postsToKeywordsTable } from './posts';
 import { programsToKeywordsTable } from './programs';
 
 // Keywords table
@@ -18,6 +19,7 @@ export const keywordsTable = pgTable('keywords', {
 // Keyword relations
 export const keywordRelations = relations(keywordsTable, ({ many }) => ({
   programsToKeywords: many(programsToKeywordsTable),
+  postsToKeywords: many(postsToKeywordsTable),
 }));
 
 // Types for use in code

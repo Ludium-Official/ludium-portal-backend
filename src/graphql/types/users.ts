@@ -6,7 +6,7 @@ import {
   deleteUserResolver,
   getProfileResolver,
   getUserAvatarResolver,
-  getUserResolver,
+  getUserByIdResolver,
   getUserWalletResolver,
   getUsersResolver,
   updateProfileResolver,
@@ -85,18 +85,15 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
 /* -------------------------------------------------------------------------- */
 builder.queryFields((t) => ({
   users: t.field({
-    authScopes: { user: true },
     type: [User],
     resolve: getUsersResolver,
   }),
   user: t.field({
-    authScopes: { admin: true },
     type: User,
-    nullable: true,
     args: {
       id: t.arg.id({ required: true }),
     },
-    resolve: getUserResolver,
+    resolve: getUserByIdResolver,
   }),
   profile: t.field({
     type: User,

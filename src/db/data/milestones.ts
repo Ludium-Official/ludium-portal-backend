@@ -1,14 +1,21 @@
 import type { NewMilestone } from '@/db/schemas/milestones';
+import { createApplications } from './applications';
 
 // Function to create milestones for applications
-export function createMilestones(applicationIds: string[]): NewMilestone[] {
+export function createMilestones(
+  programs: Array<{ id: string } | string>,
+  userIds: string[],
+): NewMilestone[] {
   const milestones: NewMilestone[] = [];
 
-  // Create milestones for each application
-  for (const applicationId of applicationIds) {
+  // First, get applications since milestones are linked to applications, not programs
+  const applications = createApplications(programs, userIds);
+
+  // Create 3 milestones for each application
+  for (const application of applications) {
     // First milestone - Planning phase
     milestones.push({
-      applicationId,
+      applicationId: application.id,
       title: 'Planning and Requirements',
       description: 'Define project requirements, create detailed plan and architecture',
       price: '2',
@@ -22,7 +29,7 @@ export function createMilestones(applicationIds: string[]): NewMilestone[] {
 
     // Second milestone - Development
     milestones.push({
-      applicationId,
+      applicationId: application.id,
       title: 'Development',
       description: 'Implementation of core functionality based on approved plans',
       price: '5',
@@ -36,7 +43,7 @@ export function createMilestones(applicationIds: string[]): NewMilestone[] {
 
     // Third milestone - Testing & Delivery
     milestones.push({
-      applicationId,
+      applicationId: application.id,
       title: 'Testing and Delivery',
       description: 'Final testing, bug fixes, and project delivery',
       price: '3',

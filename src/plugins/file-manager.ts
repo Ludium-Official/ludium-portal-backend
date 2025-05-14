@@ -47,9 +47,19 @@ export class FileManager {
   uploadFile = async (params: {
     file: Promise<UploadFile>;
     userId: string;
+    type: 'user' | 'post';
+    entityId?: string;
   }): Promise<string> => {
+    let path = '';
+    switch (params.type) {
+      case 'user':
+        path = `users/${params.userId}/`;
+        break;
+      case 'post':
+        path = `posts/${params.entityId}/`;
+    }
+
     const filePromise = await params.file;
-    const path = `users/${params.userId}/`;
     const filePath = await this.uploadFileToStorage(filePromise, path);
     const { filename, mimetype } = filePromise;
     const [createdFile] = await this.server.db

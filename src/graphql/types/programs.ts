@@ -1,4 +1,4 @@
-import type { Program as DBProgram, Keyword as DBProgramKeyword } from '@/db/schemas';
+import type { Program as DBProgram } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getApplicationsByProgramIdResolver } from '@/graphql/resolvers/applications';
 import { getLinksByProgramIdResolver } from '@/graphql/resolvers/links';
@@ -16,7 +16,7 @@ import {
 } from '@/graphql/resolvers/programs';
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { ApplicationType } from '@/graphql/types/applications';
-import { PaginationInput } from '@/graphql/types/common';
+import { KeywordType, PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { User } from '@/graphql/types/users';
 import BigNumber from 'bignumber.js';
@@ -38,7 +38,7 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       resolve: (program) => (program.deadline ? new Date(program.deadline) : null),
     }),
     keywords: t.field({
-      type: [ProgramKeywordType],
+      type: [KeywordType],
       resolve: async (program, _args, ctx) =>
         getProgramKeywordsByProgramIdResolver({}, { programId: program.id }, ctx),
     }),
@@ -80,13 +80,6 @@ export const PaginatedProgramsType = builder
       }),
     }),
   });
-
-export const ProgramKeywordType = builder.objectRef<DBProgramKeyword>('ProgramKeyword').implement({
-  fields: (t) => ({
-    id: t.exposeID('id'),
-    name: t.exposeString('name'),
-  }),
-});
 
 /* -------------------------------------------------------------------------- */
 /*                                   Inputs                                   */
@@ -153,7 +146,7 @@ builder.queryFields((t) => ({
     resolve: getProgramResolver,
   }),
   keywords: t.field({
-    type: [ProgramKeywordType],
+    type: [KeywordType],
     authScopes: { user: true },
     resolve: getProgramKeywordsResolver,
   }),

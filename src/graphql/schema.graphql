@@ -28,6 +28,16 @@ enum CheckMilestoneStatus {
   pending
 }
 
+type Comment {
+  author: User
+  content: String
+  createdAt: Date
+  id: ID
+  parent: Comment
+  post: Post
+  replies: [Comment!]
+}
+
 input CreateApplicationInput {
   content: String!
   links: [LinkInput!]
@@ -37,12 +47,25 @@ input CreateApplicationInput {
   programId: String!
 }
 
+input CreateCommentInput {
+  content: String!
+  parentId: ID
+  postId: ID!
+}
+
 input CreateMilestoneInput {
   applicationId: String!
   currency: String! = "ETH"
   description: String
   links: [LinkInput!]
   price: String!
+  title: String!
+}
+
+input CreatePostInput {
+  content: String!
+  image: Upload
+  keywords: [ID!]
   title: String!
 }
 
@@ -78,6 +101,11 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://
 """
 scalar JSON
 
+type Keyword {
+  id: ID
+  name: String
+}
+
 type Link {
   title: String
   url: String
@@ -110,7 +138,9 @@ type Mutation {
   approveApplication(id: ID!): Application
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
+  createComment(input: CreateCommentInput!): Comment
   createMilestones(input: [CreateMilestoneInput!]!): [Milestone!]
+  createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
   deleteProgram(id: ID!): Boolean
@@ -121,7 +151,9 @@ type Mutation {
   rejectProgram(id: ID!): Program
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   updateApplication(input: UpdateApplicationInput!): Application
+  updateComment(input: UpdateCommentInput!): Comment
   updateMilestone(input: UpdateMilestoneInput!): Milestone
+  updatePost(input: UpdatePostInput!): Post
   updateProfile(input: UserUpdateInput!): User
   updateProgram(input: UpdateProgramInput!): Program
   updateUser(input: UserUpdateInput!): User
@@ -132,9 +164,19 @@ type PaginatedApplications {
   data: [Application!]
 }
 
+type PaginatedComments {
+  count: Int
+  data: [Comment!]
+}
+
 type PaginatedMilestones {
   count: Int
   data: [Milestone!]
+}
+
+type PaginatedPosts {
+  count: Int
+  data: [Post!]
 }
 
 type PaginatedPrograms {
@@ -149,6 +191,16 @@ input PaginationInput {
   sort: SortEnum
 }
 
+type Post {
+  author: User
+  content: String
+  createdAt: Date
+  id: ID
+  image: String
+  keywords: [Keyword!]
+  title: String
+}
+
 type Program {
   applications: [Application!]
   creator: User
@@ -157,7 +209,7 @@ type Program {
   description: String
   educhainProgramId: Int
   id: ID
-  keywords: [ProgramKeyword!]
+  keywords: [Keyword!]
   links: [Link!]
   name: String
   price: String
@@ -166,17 +218,17 @@ type Program {
   validator: User
 }
 
-type ProgramKeyword {
-  id: ID
-  name: String
-}
-
 type Query {
   application(id: ID!): Application
   applications(pagination: PaginationInput): PaginatedApplications
-  keywords: [ProgramKeyword!]
+  comment(id: ID!): Comment
+  comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
+  commentsByPost(postId: ID!): [Comment!]
+  keywords: [Keyword!]
   milestone(id: ID!): Milestone
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
+  post(id: ID!): Post
+  posts(pagination: PaginationInput): PaginatedPosts
   profile: User
   program(id: ID!): Program
   programs(pagination: PaginationInput): PaginatedPrograms
@@ -204,6 +256,11 @@ input UpdateApplicationInput {
   status: ApplicationStatus
 }
 
+input UpdateCommentInput {
+  content: String
+  id: ID!
+}
+
 input UpdateMilestoneInput {
   currency: String
   description: String
@@ -211,6 +268,14 @@ input UpdateMilestoneInput {
   links: [LinkInput!]
   price: String
   status: MilestoneStatus
+  title: String
+}
+
+input UpdatePostInput {
+  content: String
+  id: ID!
+  image: Upload
+  keywords: [ID!]
   title: String
 }
 

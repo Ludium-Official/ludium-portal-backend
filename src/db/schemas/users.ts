@@ -12,6 +12,7 @@ import {
 import { applicationsTable } from './applications';
 import { filesTable } from './files';
 import { linksTable } from './links';
+import { postsTable } from './posts';
 import { programUserRolesTable, programsTable } from './programs';
 import { walletTable } from './wallet';
 
@@ -43,6 +44,7 @@ export const userRelations = relations(usersTable, ({ many, one }) => ({
     fields: [usersTable.id],
     references: [walletTable.userId],
   }),
+  posts: many(postsTable),
 }));
 
 // Links

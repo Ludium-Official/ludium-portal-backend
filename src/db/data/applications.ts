@@ -1,11 +1,21 @@
 import type { NewApplication } from '@/db/schemas/applications';
+import { v4 as uuidv4 } from 'uuid';
 
 // Function to create applications for programs
-export function createApplications(programIds: string[], userIds: string[]): NewApplication[] {
-  const applications: NewApplication[] = [];
+export function createApplications(
+  programs: Array<{ id: string } | string>,
+  userIds: string[],
+): (NewApplication & { id: string })[] {
+  const applications: (NewApplication & { id: string })[] = [];
+
+  // Get program IDs from the input (which could be strings or objects)
+  const programIds = programs.map((program) =>
+    typeof program === 'string' ? program : program.id,
+  );
 
   // Applications from first builder (userIds[3])
   applications.push({
+    id: uuidv4(),
     name: 'Web3 Development Grant Application',
     price: '5',
     programId: programIds[0], // Web3 Development Grant
@@ -17,6 +27,7 @@ export function createApplications(programIds: string[], userIds: string[]): New
   });
 
   applications.push({
+    id: uuidv4(),
     name: 'Solidity Challenge Application',
     price: '2.5',
     programId: programIds[1], // Solidity Smart Contract Challenge
@@ -29,6 +40,7 @@ export function createApplications(programIds: string[], userIds: string[]): New
 
   // Applications from Multi-Role user (userIds[4])
   applications.push({
+    id: uuidv4(),
     name: 'Web3 Grant Application',
     price: '5',
     programId: programIds[0], // Web3 Development Grant
@@ -40,6 +52,7 @@ export function createApplications(programIds: string[], userIds: string[]): New
   });
 
   applications.push({
+    id: uuidv4(),
     name: 'NFT Marketplace Application',
     price: '7.5',
     programId: programIds[3], // NFT Art Marketplace Development
