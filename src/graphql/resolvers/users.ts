@@ -2,7 +2,8 @@ import { filesTable, linksTable, usersTable, usersToLinksTable, walletTable } fr
 import type { PaginationInput } from '@/graphql/types/common';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
-import { and, asc, desc, eq, ilike, or } from 'drizzle-orm';
+import { validAndNotEmptyArray } from '@/utils/common';
+import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm';
 
 export async function getUsersResolver(
   _root: Root,
@@ -49,7 +50,16 @@ export async function getUsersResolver(
     .limit(limit)
     .offset(offset);
 
-  return users;
+  if (!validAndNotEmptyArray(users)) {
+    return {
+      data: [],
+      count: 0,
+    };
+  }
+
+  const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable);
+
+  return { data: users, count: totalCount.count };
 }
 
 export async function getUserByIdResolver(_root: Root, args: { id: string }, ctx: Context) {

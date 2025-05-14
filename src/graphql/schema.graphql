@@ -184,6 +184,11 @@ type PaginatedPrograms {
   data: [Program!]
 }
 
+type PaginatedUsers {
+  count: Int
+  data: [User!]
+}
+
 input PaginationInput {
   filter: [FilterInput!]
   limit: Int
@@ -233,7 +238,7 @@ type Query {
   program(id: ID!): Program
   programs(pagination: PaginationInput): PaginatedPrograms
   user(id: ID!): User
-  users(pagination: PaginationInput): [User!]
+  users(pagination: PaginationInput): PaginatedUsers
 }
 
 enum SortEnum {
