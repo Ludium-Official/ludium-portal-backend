@@ -1,9 +1,16 @@
-import { filesTable, linksTable, usersTable, usersToLinksTable, walletTable } from '@/db/schemas';
+import {
+  filesTable,
+  linksTable,
+  programUserRolesTable,
+  usersTable,
+  usersToLinksTable,
+  walletTable,
+} from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
 import { validAndNotEmptyArray } from '@/utils/common';
-import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
 
 export async function getUsersResolver(
   _root: Root,
@@ -15,6 +22,9 @@ export async function getUsersResolver(
   const sort = args.pagination?.sort || 'desc';
   const filter = args.pagination?.filter || [];
 
+  const sortByProjects = filter.some((f) => f.field === 'byNumberOfProjects');
+  const sortDirection = filter.find((f) => f.field === 'byNumberOfProjects')?.value || 'desc';
+
   const filterPromises = filter.map(async (f) => {
     if (f.field === 'search') {
       return or(
@@ -23,6 +33,10 @@ export async function getUsersResolver(
         ilike(usersTable.organizationName, `%${f.value}%`),
         ilike(usersTable.email, `%${f.value}%`),
       );
+    }
+
+    if (f.field === 'byNumberOfProjects') {
+      return undefined;
     }
 
     switch (f.field) {
@@ -40,7 +54,41 @@ export async function getUsersResolver(
   });
 
   const conditions = await Promise.all(filterPromises);
-  const where = and(...conditions);
+  const validConditions = conditions.filter(Boolean);
+  const where = validConditions.length > 0 ? and(...validConditions) : undefined;
+
+  if (sortByProjects) {
+    const subquery = ctx.db
+      .select({
+        userId: programUserRolesTable.userId,
+        projectCount: count(programUserRolesTable.id).as('project_count'),
+      })
+      .from(programUserRolesTable)
+      .groupBy(programUserRolesTable.userId)
+      .as('project_counts');
+
+    const userWithCounts = await ctx.db
+      .select({
+        user: usersTable,
+        projectCount: sql<number>`COALESCE(${subquery.projectCount}, 0)`,
+      })
+      .from(usersTable)
+      .leftJoin(subquery, eq(usersTable.id, subquery.userId))
+      .where(where)
+      .orderBy(
+        sortDirection === 'desc'
+          ? desc(sql<number>`COALESCE(${subquery.projectCount}, 0)`)
+          : asc(sql<number>`COALESCE(${subquery.projectCount}, 0)`),
+      )
+      .limit(limit)
+      .offset(offset);
+
+    const users = userWithCounts.map((result) => result.user);
+
+    const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable);
+    return { data: users, count: totalCount.count };
+  }
+
   const orderBy = sort === 'asc' ? asc(usersTable.createdAt) : desc(usersTable.createdAt);
   const users = await ctx.db
     .select()
