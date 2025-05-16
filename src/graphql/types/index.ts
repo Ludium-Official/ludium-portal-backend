@@ -9,6 +9,8 @@ import './applications';
 import './milestones';
 import './auth';
 import './links';
+import './posts';
+import './comments';
 
 export const schema = builder.toSchema();
 const schemaAsString = printSchema(lexicographicSortSchema(schema));

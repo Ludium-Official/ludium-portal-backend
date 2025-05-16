@@ -2,24 +2,25 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { createApplications } from './data/applications';
-import { links, programLinks } from './data/links';
-import { createMilestones } from './data/milestones';
+import { comments } from './data/comments';
+import { programLinks } from './data/links';
+import { postKeywords, posts } from './data/posts';
 import { keywords, programKeywords, programs } from './data/programs';
 import { users } from './data/users';
 import {
   applicationsTable,
+  commentsTable,
   keywordsTable,
   linksTable,
   milestonesTable,
+  postsTable,
+  postsToKeywordsTable,
   programUserRolesTable,
   programsTable,
   programsToKeywordsTable,
   programsToLinksTable,
   usersTable,
 } from './schemas';
-
-// Define role types for program roles
-type ProgramRoleType = 'sponsor' | 'validator' | 'builder';
 
 const DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://ludium:ludium@localhost:5435/ludium?search_path=public';
@@ -55,155 +56,217 @@ async function seed() {
     }
 
     // Add keywords
-    if (keywords.length > 0) {
-      console.log('🏷️ Adding keywords...');
-      const keywordValues = keywords.map((name) => ({ name }));
+    console.log('🏷️ Adding keywords...');
+    const keywordValues = keywords.map((name) => ({ name }));
+    const insertedKeywords = await db
+      .insert(keywordsTable)
+      .values(keywordValues)
+      .returning()
+      .onConflictDoNothing();
+    console.log(`✅ Added ${insertedKeywords.length} keywords`);
 
-      const insertedKeywords = await db
-        .insert(keywordsTable)
-        .values(keywordValues)
+    // Create keyword map for easier reference later
+    const keywordMap: Record<string, string> = {};
+    for (const keyword of insertedKeywords) {
+      keywordMap[keyword.name] = keyword.id;
+    }
+
+    // Add programs
+    if (userIds.length > 0) {
+      console.log('📚 Adding programs...');
+
+      // Distribute programs between different sponsors
+      const programsWithSponsors = programs.map((program, index) => {
+        // Use different users as sponsors (cycling through userIds)
+        const sponsorId = userIds[index % userIds.length];
+
+        return {
+          ...program,
+          creatorId: sponsorId, // Use creatorId instead of sponsorId
+        };
+      });
+
+      const insertedPrograms = await db
+        .insert(programsTable)
+        .values(programsWithSponsors)
         .returning()
         .onConflictDoNothing();
-      console.log(`✅ Added ${insertedKeywords.length} keywords`);
+      console.log(`✅ Added ${insertedPrograms.length} programs`);
 
-      // Create a map of keyword names to IDs
-      const keywordMap: { [key: string]: string } = {};
-      for (const keyword of insertedKeywords) {
-        keywordMap[keyword.name] = keyword.id;
-      }
+      // Add program-keyword relationships
+      if (insertedPrograms.length > 0) {
+        console.log('🔄 Adding program-keyword relationships...');
 
-      // Add programs
-      if (userIds.length > 0) {
-        console.log('📝 Adding programs...');
+        const programKeywordValues = [];
 
-        // Distribute programs between sponsors (userIds[1] and userIds[4])
-        // and assign validators (userIds[2] and userIds[4])
-        const programsWithUsers = programs.map((program, index) => {
-          const creatorId = index % 2 === 0 ? userIds[1] : userIds[4]; // Sponsors
-          const validatorId = index % 2 === 0 ? userIds[2] : userIds[4]; // Validators
+        for (const mapping of programKeywords) {
+          const programId = insertedPrograms[mapping.programIndex].id;
 
-          return {
-            ...program,
-            creatorId,
-            validatorId,
-          };
-        });
-
-        const insertedPrograms = await db
-          .insert(programsTable)
-          .values(programsWithUsers)
-          .returning()
-          .onConflictDoNothing();
-        console.log(`✅ Added ${insertedPrograms.length} programs`);
-
-        // Add program-specific roles
-        if (insertedPrograms.length > 0) {
-          console.log('👥 Adding program-specific roles...');
-
-          const programRoles = [];
-
-          // For each program, add sponsor and validator roles
-          for (const program of insertedPrograms) {
-            // Creator is sponsor (auto-confirmed)
-            programRoles.push({
-              programId: program.id,
-              userId: program.creatorId,
-              roleType: 'sponsor' as ProgramRoleType,
-            });
-
-            // Make sure validatorId is not null
-            if (program.validatorId) {
-              // Validator needs confirmation
-              programRoles.push({
-                programId: program.id,
-                userId: program.validatorId,
-                roleType: 'validator' as ProgramRoleType,
+          for (const keywordName of mapping.keywords) {
+            const keywordId = keywordMap[keywordName];
+            if (keywordId) {
+              programKeywordValues.push({
+                programId,
+                keywordId,
               });
             }
           }
-
-          if (programRoles.length > 0) {
-            const insertedProgramRoles = await db
-              .insert(programUserRolesTable)
-              .values(programRoles)
-              .returning()
-              .onConflictDoNothing();
-            console.log(`✅ Added ${insertedProgramRoles.length} program-specific roles`);
-          }
         }
 
-        // Add program-keyword relationships
-        if (insertedPrograms.length > 0) {
-          console.log('🔄 Adding program-keyword relationships...');
+        if (programKeywordValues.length > 0) {
+          const insertedProgramKeywords = await db
+            .insert(programsToKeywordsTable)
+            .values(programKeywordValues)
+            .returning()
+            .onConflictDoNothing();
+          console.log(`✅ Added ${insertedProgramKeywords.length} program-keyword relationships`);
+        }
+      }
 
-          const programKeywordValues = [];
+      // Add program user roles
+      if (insertedPrograms.length > 0 && userIds.length > 2) {
+        console.log('👥 Adding program user roles...');
 
-          for (const mapping of programKeywords) {
+        const programUserRoleValues = [];
+
+        // For each program, add sample roles
+        for (const [index, program] of insertedPrograms.entries()) {
+          // Skip the first user (admin) and add roles to different users
+          const validatorId = userIds[(index + 1) % userIds.length];
+          const builderId = userIds[(index + 2) % userIds.length];
+
+          programUserRoleValues.push(
+            {
+              programId: program.id,
+              userId: validatorId,
+              roleType: 'validator' as const, // Use roleType instead of role
+              isApproved: true,
+            },
+            {
+              programId: program.id,
+              userId: builderId,
+              roleType: 'builder' as const, // Use roleType instead of role
+              isApproved: true,
+            },
+          );
+        }
+
+        if (programUserRoleValues.length > 0) {
+          const insertedRoles = await db
+            .insert(programUserRolesTable)
+            .values(programUserRoleValues)
+            .returning()
+            .onConflictDoNothing();
+          console.log(`✅ Added ${insertedRoles.length} program user roles`);
+        }
+      }
+
+      // Add program links - Direct insertion approach
+      if (insertedPrograms.length > 0) {
+        console.log('🔗 Adding program links...');
+
+        // First, create links directly in the links table
+        const linksToAdd = [];
+        const programLinksMap = new Map();
+
+        for (const mapping of programLinks) {
+          if (mapping.programIndex < insertedPrograms.length) {
             const programId = insertedPrograms[mapping.programIndex].id;
 
-            for (const keywordName of mapping.keywords) {
-              const keywordId = keywordMap[keywordName];
-              if (keywordId) {
-                programKeywordValues.push({
-                  programId,
-                  keywordId,
-                });
-              }
-            }
-          }
-
-          if (programKeywordValues.length > 0) {
-            const insertedProgramKeywords = await db
-              .insert(programsToKeywordsTable)
-              .values(programKeywordValues)
-              .returning()
-              .onConflictDoNothing();
-            console.log(`✅ Added ${insertedProgramKeywords.length} program-keyword relationships`);
-          }
-
-          // Add links
-          if (links.length > 0) {
-            console.log('🔗 Adding links...');
-            const insertedLinks = await db
-              .insert(linksTable)
-              .values(links)
-              .returning()
-              .onConflictDoNothing();
-            console.log(`✅ Added ${insertedLinks.length} links`);
-
-            // Create program-link relationships
-            console.log('🔄 Adding program-link relationships...');
-            const programLinkValues = [];
-
-            for (const mapping of programLinks) {
-              const programId = insertedPrograms[mapping.programIndex].id;
-
-              for (const linkIndex of mapping.linkIndices) {
-                const linkId = insertedLinks[linkIndex].id;
-                programLinkValues.push({
-                  programId,
-                  linkId,
-                });
-              }
+            // Store program ID with its link indices for later correlation
+            if (!programLinksMap.has(programId)) {
+              programLinksMap.set(programId, []);
             }
 
-            if (programLinkValues.length > 0) {
-              const insertedProgramLinks = await db
-                .insert(programsToLinksTable)
-                .values(programLinkValues)
-                .returning()
-                .onConflictDoNothing();
-              console.log(`✅ Added ${insertedProgramLinks.length} program-link relationships`);
+            // Add each link to be created
+            for (const linkIndex of mapping.linkIndices) {
+              linksToAdd.push({
+                url: `https://example.com/link-${linkIndex}`,
+                title: `Link ${linkIndex} for Program ${mapping.programIndex}`,
+                programIndex: mapping.programIndex,
+                linkIndex,
+              });
             }
           }
         }
 
-        // Add applications for programs
-        if (insertedPrograms.length > 0) {
-          console.log('📋 Adding applications...');
-          const programIds = insertedPrograms.map((program) => program.id);
-          const applications = createApplications(programIds, userIds);
+        if (linksToAdd.length > 0) {
+          // Insert all links first
+          const insertedLinks = await db
+            .insert(linksTable)
+            .values(linksToAdd.map(({ url, title }) => ({ url, title })))
+            .returning()
+            .onConflictDoNothing();
 
+          console.log(`✅ Added ${insertedLinks.length} links`);
+
+          // Now create the program-to-link relationships
+          const programToLinkValues = [];
+
+          for (let i = 0; i < insertedLinks.length; i++) {
+            const linkData = linksToAdd[i];
+            const programId = insertedPrograms[linkData.programIndex].id;
+            const linkId = insertedLinks[i].id;
+
+            programToLinkValues.push({
+              programId,
+              linkId,
+            });
+          }
+
+          if (programToLinkValues.length > 0) {
+            const insertedProgramLinks = await db
+              .insert(programsToLinksTable)
+              .values(programToLinkValues)
+              .returning()
+              .onConflictDoNothing();
+            console.log(`✅ Added ${insertedProgramLinks.length} program links`);
+          }
+        }
+      }
+
+      // Add user links
+      if (userIds.length > 0) {
+        console.log('🔗 Adding user links...');
+
+        const userLinksValues: {
+          userId: string;
+          url: string;
+          title: string;
+        }[] = [];
+
+        for (const [index, user] of users.entries()) {
+          if (index < insertedUsers.length && user.links && user.links.length > 0) {
+            const userId = insertedUsers[index].id;
+
+            for (const link of user.links) {
+              userLinksValues.push({
+                userId,
+                url: link.url,
+                title: link.title,
+              });
+            }
+          }
+        }
+
+        if (userLinksValues.length > 0) {
+          const insertedUserLinks = await db
+            .insert(linksTable)
+            .values(userLinksValues)
+            .returning()
+            .onConflictDoNothing();
+          console.log(`✅ Added ${insertedUserLinks.length} user links`);
+        }
+      }
+
+      // Add applications
+      if (insertedPrograms.length > 0 && userIds.length > 0) {
+        console.log('📝 Adding applications...');
+
+        const applications = createApplications(insertedPrograms, userIds);
+
+        if (applications.length > 0) {
+          // Insert applications with explicit IDs
           const insertedApplications = await db
             .insert(applicationsTable)
             .values(applications)
@@ -211,51 +274,184 @@ async function seed() {
             .onConflictDoNothing();
           console.log(`✅ Added ${insertedApplications.length} applications`);
 
-          // Add builder roles for approved applications
-          const approvedApplications = insertedApplications.filter(
-            (app) => app.status === 'approved',
-          );
-          if (approvedApplications.length > 0) {
-            console.log('👷 Adding builder roles for approved applications...');
+          // Add milestones directly using the inserted applications
+          if (insertedApplications.length > 0) {
+            console.log('🏆 Adding milestones...');
 
-            const builderRoles = approvedApplications.map((app) => ({
-              programId: app.programId,
-              userId: app.applicantId,
-              roleType: 'builder' as ProgramRoleType,
-            }));
+            // Create milestones for each application
+            const milestonesData = [];
 
-            if (builderRoles.length > 0) {
-              const insertedBuilderRoles = await db
-                .insert(programUserRolesTable)
-                .values(builderRoles)
+            for (const application of insertedApplications) {
+              // First milestone - Planning phase
+              milestonesData.push({
+                applicationId: application.id,
+                title: 'Planning and Requirements',
+                description: 'Define project requirements, create detailed plan and architecture',
+                price: '2',
+                currency: 'ETH',
+                status: 'pending' as const,
+              });
+
+              // Second milestone - Development
+              milestonesData.push({
+                applicationId: application.id,
+                title: 'Development',
+                description: 'Implementation of core functionality based on approved plans',
+                price: '5',
+                currency: 'ETH',
+                status: 'pending' as const,
+              });
+
+              // Third milestone - Testing & Delivery
+              milestonesData.push({
+                applicationId: application.id,
+                title: 'Testing and Delivery',
+                description: 'Final testing, bug fixes, and project delivery',
+                price: '3',
+                currency: 'ETH',
+                status: 'pending' as const,
+              });
+            }
+
+            if (milestonesData.length > 0) {
+              const insertedMilestones = await db
+                .insert(milestonesTable)
+                .values(milestonesData)
                 .returning()
                 .onConflictDoNothing();
-              console.log(`✅ Added ${insertedBuilderRoles.length} builder roles`);
+              console.log(`✅ Added ${insertedMilestones.length} milestones`);
+            }
+          }
+        }
+      }
+
+      // Add posts
+      if (userIds.length > 0) {
+        console.log('📄 Adding posts...');
+
+        // Distribute posts between different authors
+        const postsWithAuthors = posts.map((post, index) => {
+          // Use different users as authors (cycling through userIds)
+          const authorId = userIds[index % userIds.length];
+
+          return {
+            ...post,
+            authorId,
+          };
+        });
+
+        const insertedPosts = await db
+          .insert(postsTable)
+          .values(postsWithAuthors)
+          .returning()
+          .onConflictDoNothing();
+        console.log(`✅ Added ${insertedPosts.length} posts`);
+
+        // Add post-keyword relationships
+        if (insertedPosts.length > 0) {
+          console.log('🔄 Adding post-keyword relationships...');
+
+          const postKeywordValues = [];
+
+          for (const mapping of postKeywords) {
+            const postId = insertedPosts[mapping.postIndex].id;
+
+            for (const keywordName of mapping.keywords) {
+              const keywordId = keywordMap[keywordName];
+              if (keywordId) {
+                postKeywordValues.push({
+                  postId,
+                  keywordId,
+                });
+              }
             }
           }
 
-          // Add milestones for each application
-          if (insertedApplications.length > 0) {
-            console.log('🏆 Adding milestones for applications...');
-            const applicationIds = insertedApplications.map((application) => application.id);
-            const milestones = createMilestones(applicationIds);
-
-            const insertedMilestones = await db
-              .insert(milestonesTable)
-              .values(milestones)
+          if (postKeywordValues.length > 0) {
+            const insertedPostKeywords = await db
+              .insert(postsToKeywordsTable)
+              .values(postKeywordValues)
               .returning()
               .onConflictDoNothing();
-            console.log(`✅ Added ${insertedMilestones.length} milestones`);
+            console.log(`✅ Added ${insertedPostKeywords.length} post-keyword relationships`);
+          }
+        }
+
+        // Add comments to posts
+        if (insertedPosts.length > 0 && userIds.length > 0) {
+          console.log('💬 Adding comments...');
+
+          // First, create a map to store inserted comment IDs for establishing parent-child relationships
+          const commentIdMap: Record<number, string> = {};
+
+          // Process comments in two phases:
+          // 1. First add all top-level comments (without parent)
+          // 2. Then add all replies (with parent)
+
+          // Process comments without parents first
+          const topLevelComments = comments.filter((comment) => comment.parentIndex === undefined);
+          const topLevelCommentValues = topLevelComments.map((comment, index) => {
+            const postId = insertedPosts[comment.postIndex].id;
+            const authorId = userIds[comment.authorIndex % userIds.length];
+
+            return {
+              postId,
+              authorId,
+              content: comment.content,
+              parentId: null,
+              originalIndex: index,
+            };
+          });
+
+          if (topLevelCommentValues.length > 0) {
+            const insertedTopLevelComments = await db
+              .insert(commentsTable)
+              .values(topLevelCommentValues.map(({ originalIndex, ...rest }) => rest))
+              .returning()
+              .onConflictDoNothing();
+
+            // Store the mapping of original indices to inserted IDs
+            for (let i = 0; i < insertedTopLevelComments.length; i++) {
+              const originalIndex = topLevelCommentValues[i].originalIndex;
+              commentIdMap[originalIndex] = insertedTopLevelComments[i].id;
+            }
+
+            console.log(`✅ Added ${insertedTopLevelComments.length} top-level comments`);
+          }
+
+          // Now process child comments
+          const childComments = comments.filter((comment) => comment.parentIndex !== undefined);
+          const childCommentValues = childComments.map((comment) => {
+            const postId = insertedPosts[comment.postIndex].id;
+            const authorId = userIds[comment.authorIndex % userIds.length];
+            const parentId =
+              comment.parentIndex !== undefined ? commentIdMap[comment.parentIndex] : null;
+
+            return {
+              postId,
+              authorId,
+              content: comment.content,
+              parentId,
+            };
+          });
+
+          if (childCommentValues.length > 0) {
+            const insertedChildComments = await db
+              .insert(commentsTable)
+              .values(childCommentValues)
+              .returning()
+              .onConflictDoNothing();
+
+            console.log(`✅ Added ${insertedChildComments.length} reply comments`);
           }
         }
       }
     }
 
-    console.log('✅ Database successfully seeded!');
+    console.log('✅ Seed complete!');
     await client.end();
-    process.exit(0);
   } catch (error) {
-    console.error('❌ Error seeding database:', error);
+    console.error('❌ Error in seed:', error);
     process.exit(1);
   }
 }
