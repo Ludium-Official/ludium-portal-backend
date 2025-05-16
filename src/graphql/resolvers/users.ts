@@ -1,10 +1,113 @@
-import { filesTable, linksTable, usersTable, usersToLinksTable, walletTable } from '@/db/schemas';
+import {
+  filesTable,
+  linksTable,
+  programUserRolesTable,
+  usersTable,
+  usersToLinksTable,
+  walletTable,
+} from '@/db/schemas';
+import type { PaginationInput } from '@/graphql/types/common';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
-import { desc, eq } from 'drizzle-orm';
+import { validAndNotEmptyArray } from '@/utils/common';
+import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
 
-export function getUsersResolver(_root: Root, _args: Args, ctx: Context) {
-  return ctx.db.select().from(usersTable);
+export async function getUsersResolver(
+  _root: Root,
+  args: { pagination?: typeof PaginationInput.$inferInput | null },
+  ctx: Context,
+) {
+  const limit = args.pagination?.limit || 10;
+  const offset = args.pagination?.offset || 0;
+  const sort = args.pagination?.sort || 'desc';
+  const filter = args.pagination?.filter || [];
+
+  const sortByProjects = filter.some((f) => f.field === 'byNumberOfProjects');
+  const sortDirection = filter.find((f) => f.field === 'byNumberOfProjects')?.value || 'desc';
+
+  const filterPromises = filter.map(async (f) => {
+    if (f.field === 'search') {
+      return or(
+        ilike(usersTable.firstName, `%${f.value}%`),
+        ilike(usersTable.lastName, `%${f.value}%`),
+        ilike(usersTable.organizationName, `%${f.value}%`),
+        ilike(usersTable.email, `%${f.value}%`),
+      );
+    }
+
+    if (f.field === 'byNumberOfProjects') {
+      return undefined;
+    }
+
+    switch (f.field) {
+      case 'firstName':
+        return ilike(usersTable.firstName, `%${f.value}%`);
+      case 'lastName':
+        return ilike(usersTable.lastName, `%${f.value}%`);
+      case 'organizationName':
+        return ilike(usersTable.organizationName, `%${f.value}%`);
+      case 'email':
+        return ilike(usersTable.email, `%${f.value}%`);
+      default:
+        return undefined;
+    }
+  });
+
+  const conditions = await Promise.all(filterPromises);
+  const validConditions = conditions.filter(Boolean);
+  const where = validConditions.length > 0 ? and(...validConditions) : undefined;
+
+  if (sortByProjects) {
+    const subquery = ctx.db
+      .select({
+        userId: programUserRolesTable.userId,
+        projectCount: count(programUserRolesTable.id).as('project_count'),
+      })
+      .from(programUserRolesTable)
+      .groupBy(programUserRolesTable.userId)
+      .as('project_counts');
+
+    const userWithCounts = await ctx.db
+      .select({
+        user: usersTable,
+        projectCount: sql<number>`COALESCE(${subquery.projectCount}, 0)`,
+      })
+      .from(usersTable)
+      .leftJoin(subquery, eq(usersTable.id, subquery.userId))
+      .where(where)
+      .orderBy(
+        sortDirection === 'desc'
+          ? desc(sql<number>`COALESCE(${subquery.projectCount}, 0)`)
+          : asc(sql<number>`COALESCE(${subquery.projectCount}, 0)`),
+      )
+      .limit(limit)
+      .offset(offset);
+
+    const users = userWithCounts.map((result) => result.user);
+
+    const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable);
+    return { data: users, count: totalCount.count };
+  }
+
+  const orderBy = sort === 'asc' ? asc(usersTable.createdAt) : desc(usersTable.createdAt);
+  const users = await ctx.db
+    .select()
+    .from(usersTable)
+    .where(where)
+    .orderBy(orderBy)
+    .limit(limit)
+    .offset(offset);
+
+  if (!validAndNotEmptyArray(users)) {
+    return {
+      data: [],
+      count: 0,
+    };
+  }
+
+  const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable);
+
+  return { data: users, count: totalCount.count };
 }
 
 export async function getUserByIdResolver(_root: Root, args: { id: string }, ctx: Context) {

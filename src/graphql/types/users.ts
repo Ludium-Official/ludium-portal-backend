@@ -13,6 +13,7 @@ import {
   updateUserResolver,
 } from '@/graphql/resolvers/users';
 import { Link, LinkInput } from '@/graphql/types/links';
+import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -43,6 +44,15 @@ export const User = builder.objectRef<DBUser>('User').implement({
     }),
   }),
 });
+
+export const PaginatedUsersType = builder
+  .objectRef<{ data: DBUser[]; count: number }>('PaginatedUsers')
+  .implement({
+    fields: (t) => ({
+      data: t.field({ type: [User], resolve: (parent) => parent.data }),
+      count: t.field({ type: 'Int', resolve: (parent) => parent.count }),
+    }),
+  });
 
 export const Wallet = builder.objectRef<DBWallet>('Wallet').implement({
   fields: (t) => ({
@@ -85,7 +95,10 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
 /* -------------------------------------------------------------------------- */
 builder.queryFields((t) => ({
   users: t.field({
-    type: [User],
+    type: PaginatedUsersType,
+    args: {
+      pagination: t.arg({ type: PaginationInput, required: false }),
+    },
     resolve: getUsersResolver,
   }),
   user: t.field({
