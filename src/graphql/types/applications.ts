@@ -1,5 +1,5 @@
 import type { Application as DBApplication } from '@/db/schemas';
-import { applicationsTable } from '@/db/schemas';
+import { applicationStatuses, applicationsTable } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
   approveApplicationResolver,
@@ -23,7 +23,7 @@ import { eq } from 'drizzle-orm';
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
 export const ApplicationStatusEnum = builder.enumType('ApplicationStatus', {
-  values: ['pending', 'approved', 'rejected', 'completed', 'withdrawn'] as const,
+  values: applicationStatuses,
 });
 
 export const ApplicationType = builder.objectRef<DBApplication>('Application').implement({

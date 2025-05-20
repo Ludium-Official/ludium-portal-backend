@@ -247,9 +247,18 @@ type Program {
   links: [Link!]
   name: String
   price: String
-  status: String
+  status: ProgramStatus
   summary: String
   validator: User
+}
+
+enum ProgramStatus {
+  cancelled
+  closed
+  completed
+  draft
+  payment_required
+  published
 }
 
 type Query {
@@ -329,7 +338,7 @@ input UpdateProgramInput {
   links: [LinkInput!]
   name: String
   price: String
-  status: String
+  status: ProgramStatus
   summary: String
   validatorId: ID
 }

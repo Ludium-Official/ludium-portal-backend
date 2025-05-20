@@ -1,4 +1,4 @@
-import type { Program as DBProgram } from '@/db/schemas';
+import { type Program as DBProgram, programStatuses } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getApplicationsByProgramIdResolver } from '@/graphql/resolvers/applications';
 import { getLinksByProgramIdResolver } from '@/graphql/resolvers/links';
@@ -24,6 +24,10 @@ import BigNumber from 'bignumber.js';
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
+export const ProgramStatusEnum = builder.enumType('ProgramStatus', {
+  values: programStatuses,
+});
+
 export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -47,7 +51,10 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       resolve: async (program, _args, ctx) =>
         getLinksByProgramIdResolver({}, { programId: program.id }, ctx),
     }),
-    status: t.exposeString('status'),
+    status: t.field({
+      type: ProgramStatusEnum,
+      resolve: (program) => program.status,
+    }),
     creator: t.field({
       type: User,
       resolve: async (program, _args, ctx) => getUserResolver({}, { id: program.creatorId }, ctx),
@@ -122,7 +129,7 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     deadline: t.string(),
     keywords: t.idList(),
     links: t.field({ type: [LinkInput] }),
-    status: t.string(),
+    status: t.field({ type: ProgramStatusEnum }),
     validatorId: t.id(),
   }),
 });
