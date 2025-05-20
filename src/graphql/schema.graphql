@@ -140,6 +140,7 @@ type Mutation {
   createApplication(input: CreateApplicationInput!): Application
   createComment(input: CreateCommentInput!): Comment
   createMilestones(input: [CreateMilestoneInput!]!): [Milestone!]
+  createNotification(content: String!, metadata: JSON, title: String!, type: NotificationType!): Notification
   createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
@@ -147,6 +148,7 @@ type Mutation {
   deleteUser(id: ID!): User
   denyApplication(id: ID!): Application
   login(address: String, email: String!, network: String, userId: ID!, walletId: String): String
+  markNotificationAsRead(id: ID!): Notification
   publishProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   rejectProgram(id: ID!): Program
   submitMilestone(input: SubmitMilestoneInput!): Milestone
@@ -157,6 +159,24 @@ type Mutation {
   updateProfile(input: UserUpdateInput!): User
   updateProgram(input: UpdateProgramInput!): Program
   updateUser(input: UserUpdateInput!): User
+}
+
+type Notification {
+  content: String
+  id: ID
+  metadata: JSON
+  readAt: Date
+  title: String
+  type: NotificationType
+}
+
+enum NotificationType {
+  comment_added
+  general
+  milestone_completed
+  milestone_submitted
+  program_application
+  program_status_changed
 }
 
 type PaginatedApplications {
@@ -229,9 +249,11 @@ type Query {
   comment(id: ID!): Comment
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
   commentsByPost(postId: ID!): [Comment!]
+  countNotifications: Int
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
+  notifications: [Notification!]
   post(id: ID!): Post
   posts(pagination: PaginationInput): PaginatedPosts
   profile: User
@@ -250,6 +272,11 @@ input SubmitMilestoneInput {
   description: String
   id: String!
   links: [LinkInput!]
+}
+
+type Subscription {
+  countNotifications: Int
+  notifications: [Notification!]
 }
 
 input UpdateApplicationInput {

@@ -3,6 +3,7 @@ import type { Context } from '@/types';
 import { and, eq } from 'drizzle-orm';
 import type { FastifyError, FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
+import { GraphQLError } from 'graphql';
 
 export interface RequestAuth {
   identity?: { id?: number };
@@ -88,6 +89,21 @@ export class AuthHandler {
       );
 
     return programRoles.map((role) => role.roleType);
+  }
+
+  async getUserForSubscription({ request, db }: { request: FastifyRequest; db: Context['db'] }) {
+    let auth: RequestAuth | null = null;
+    try {
+      const decodedToken = await request.jwtVerify<DecodedToken>();
+      auth = await requestHandler(decodedToken, db);
+      if (!auth?.user) {
+        throw new GraphQLError('No token provided');
+      }
+    } catch (_) {
+      throw new GraphQLError('No token provided');
+    }
+    request.auth = auth;
+    return auth.user;
   }
 }
 

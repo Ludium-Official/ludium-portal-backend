@@ -11,6 +11,7 @@ import './auth';
 import './links';
 import './posts';
 import './comments';
+import './notifications';
 
 export const schema = builder.toSchema();
 const schemaAsString = printSchema(lexicographicSortSchema(schema));

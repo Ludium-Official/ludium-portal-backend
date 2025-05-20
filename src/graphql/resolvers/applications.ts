@@ -135,6 +135,14 @@ export function createApplicationResolver(
       );
     }
 
+    await ctx.server.pubsub.publish(t, 'notifications', {
+      type: 'application',
+      action: 'created',
+      recipientId: program.creatorId,
+      entityId: application.id,
+    });
+    await ctx.server.pubsub.publish(t, 'notificationsCount');
+
     return application;
   });
 }
