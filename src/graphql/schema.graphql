@@ -140,7 +140,6 @@ type Mutation {
   createApplication(input: CreateApplicationInput!): Application
   createComment(input: CreateCommentInput!): Comment
   createMilestones(input: [CreateMilestoneInput!]!): [Milestone!]
-  createNotification(content: String!, metadata: JSON, title: String!, type: NotificationType!): Notification
   createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
@@ -162,7 +161,9 @@ type Mutation {
 }
 
 type Notification {
+  action: NotificationAction
   content: String
+  entityId: ID
   id: ID
   metadata: JSON
   readAt: Date
@@ -170,13 +171,21 @@ type Notification {
   type: NotificationType
 }
 
+enum NotificationAction {
+  accepted
+  broadcast
+  completed
+  created
+  rejected
+  submitted
+}
+
 enum NotificationType {
-  comment_added
-  general
-  milestone_completed
-  milestone_submitted
-  program_application
-  program_status_changed
+  application
+  comment
+  milestone
+  program
+  system
 }
 
 type PaginatedApplications {

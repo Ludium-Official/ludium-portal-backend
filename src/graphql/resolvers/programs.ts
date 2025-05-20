@@ -241,6 +241,14 @@ export function createProgramResolver(
       );
     }
 
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'created',
+      recipientId: inputData.validatorId,
+      entityId: program.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
     return program;
   });
 }
@@ -370,6 +378,14 @@ export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Co
       .where(eq(programsTable.id, args.id))
       .returning();
 
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'accepted',
+      recipientId: program.creatorId,
+      entityId: program.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
     return program;
   });
 }
@@ -396,6 +412,14 @@ export function rejectProgramResolver(_root: Root, args: { id: string }, ctx: Co
       .set({ status: 'draft', validatorId: null })
       .where(eq(programsTable.id, args.id))
       .returning();
+
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'rejected',
+      recipientId: program.creatorId,
+      entityId: program.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
 
     return program;
   });
@@ -427,6 +451,14 @@ export function publishProgramResolver(
       .set({ status: 'published', educhainProgramId: args.educhainProgramId, txHash: args.txHash })
       .where(eq(programsTable.id, args.id))
       .returning();
+
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'submitted',
+      recipientId: program.creatorId,
+      entityId: program.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
 
     return program;
   });

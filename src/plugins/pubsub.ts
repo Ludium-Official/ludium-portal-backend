@@ -14,8 +14,8 @@ export class PubSubWrapper {
     return this.pubsub.asyncIterableIterator(name);
   }
 
-  async publish(db: DB, triggerName: string, data?: NotificationInsert) {
-    if (data) {
+  async publish(triggerName: string, db?: DB, data?: NotificationInsert) {
+    if (data && db) {
       await db.insert(notificationsTable).values(data);
     }
     return this.pubsub.publish(triggerName, data ?? {});

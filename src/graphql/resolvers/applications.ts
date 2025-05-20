@@ -135,13 +135,13 @@ export function createApplicationResolver(
       );
     }
 
-    await ctx.server.pubsub.publish(t, 'notifications', {
+    await ctx.server.pubsub.publish('notifications', t, {
       type: 'application',
       action: 'created',
       recipientId: program.creatorId,
       entityId: application.id,
     });
-    await ctx.server.pubsub.publish(t, 'notificationsCount');
+    await ctx.server.pubsub.publish('notificationsCount');
 
     return application;
   });
@@ -224,6 +224,14 @@ export function approveApplicationResolver(_root: Root, args: { id: string }, ct
       roleType: 'builder',
     });
 
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'application',
+      action: 'accepted',
+      recipientId: application.applicantId,
+      entityId: application.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
     return application;
   });
 }
@@ -248,7 +256,17 @@ export function denyApplicationResolver(_root: Root, args: { id: string }, ctx: 
     const [application] = await t
       .update(applicationsTable)
       .set({ status: 'rejected' })
-      .where(eq(applicationsTable.id, args.id));
+      .where(eq(applicationsTable.id, args.id))
+      .returning();
+
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'application',
+      action: 'rejected',
+      recipientId: application.applicantId,
+      entityId: application.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
     return application;
   });
 }
