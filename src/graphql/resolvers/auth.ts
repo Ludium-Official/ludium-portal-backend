@@ -1,4 +1,4 @@
-import { type User, usersTable, walletTable } from '@/db/schemas';
+import { type User, usersTable } from '@/db/schemas';
 import type { Context, Root } from '@/types';
 import { eq } from 'drizzle-orm';
 
@@ -7,9 +7,6 @@ export async function loginResolver(
   args: {
     email: string;
     userId: string;
-    walletId?: string | null;
-    network?: string | null;
-    address?: string | null;
   },
   ctx: Context,
 ) {
@@ -41,22 +38,6 @@ export async function loginResolver(
       .returning();
 
     user = updatedUser;
-  }
-
-  if (args.walletId) {
-    const [wallet] = await ctx.db
-      .select()
-      .from(walletTable)
-      .where(eq(walletTable.walletId, args.walletId));
-
-    if (!wallet) {
-      await ctx.db.insert(walletTable).values({
-        userId: user.id,
-        walletId: args.walletId,
-        network: args.network,
-        address: args.address,
-      });
-    }
   }
 
   const token = ctx.server.jwt.sign(

@@ -1,4 +1,4 @@
-import type { User as DBUser, Wallet as DBWallet } from '@/db/schemas';
+import type { User as DBUser } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
@@ -7,7 +7,6 @@ import {
   getProfileResolver,
   getUserAvatarResolver,
   getUserByIdResolver,
-  getUserWalletResolver,
   getUsersResolver,
   updateProfileResolver,
   updateUserResolver,
@@ -37,11 +36,6 @@ export const User = builder.objectRef<DBUser>('User').implement({
       nullable: true,
       resolve: async (user, _args, ctx) => getUserAvatarResolver({}, { userId: user.id }, ctx),
     }),
-    wallet: t.field({
-      type: Wallet,
-      nullable: true,
-      resolve: async (user, _args, ctx) => getUserWalletResolver({}, { userId: user.id }, ctx),
-    }),
   }),
 });
 
@@ -53,14 +47,6 @@ export const PaginatedUsersType = builder
       count: t.field({ type: 'Int', resolve: (parent) => parent.count }),
     }),
   });
-
-export const Wallet = builder.objectRef<DBWallet>('Wallet').implement({
-  fields: (t) => ({
-    walletId: t.exposeString('walletId'),
-    address: t.exposeString('address'),
-    network: t.exposeString('network'),
-  }),
-});
 
 /* -------------------------------------------------------------------------- */
 /*                                   Inputs                                   */

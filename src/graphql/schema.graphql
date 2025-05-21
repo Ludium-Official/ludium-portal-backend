@@ -147,7 +147,7 @@ type Mutation {
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
   denyApplication(id: ID!): Application
-  login(address: String, email: String!, network: String, userId: ID!, walletId: String): String
+  login(email: String!, userId: ID!): String
   publishProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   rejectProgram(id: ID!): Program
   submitMilestone(input: SubmitMilestoneInput!): Milestone
@@ -314,7 +314,6 @@ type User {
   lastName: String
   links: [Link!]
   organizationName: String
-  wallet: Wallet
 }
 
 input UserInput {
@@ -336,10 +335,4 @@ input UserUpdateInput {
   lastName: String
   links: [LinkInput!]
   organizationName: String
-}
-
-type Wallet {
-  address: String
-  network: String
-  walletId: String
 }
