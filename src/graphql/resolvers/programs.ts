@@ -1,3 +1,4 @@
+import { NETWORKS } from '@/constants';
 import {
   type NewProgram,
   type Program,
@@ -183,6 +184,11 @@ export function createProgramResolver(
       throw new Error('Validator wallet not found');
     }
 
+    // Validate network
+    if (inputData.network && !NETWORKS.includes(inputData.network)) {
+      throw new Error('Invalid network');
+    }
+
     // Create a properly typed object for the database insert
     const insertData: NewProgram = {
       name: inputData.name,
@@ -196,6 +202,7 @@ export function createProgramResolver(
       creatorId: user.id,
       validatorId: inputData.validatorId,
       status: 'draft',
+      network: inputData.network,
     };
 
     const [program] = await t.insert(programsTable).values(insertData).returning();
@@ -269,6 +276,11 @@ export function updateProgramResolver(
     });
     if (!hasAccess) {
       throw new Error('You are not allowed to update this program');
+    }
+
+    // Validate network
+    if (programData.network && !NETWORKS.includes(programData.network)) {
+      throw new Error('Invalid network');
     }
 
     // check program status

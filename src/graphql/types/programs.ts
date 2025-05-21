@@ -33,6 +33,8 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
     price: t.exposeString('price'),
     currency: t.exposeString('currency'),
     educhainProgramId: t.exposeInt('educhainProgramId'),
+    txHash: t.exposeString('txHash'),
+    network: t.exposeString('network'),
     deadline: t.field({
       type: 'Date',
       resolve: (program) => (program.deadline ? new Date(program.deadline) : null),
@@ -102,6 +104,7 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
     keywords: t.idList(),
     links: t.field({ type: [LinkInput] }),
     validatorId: t.id({ required: true }),
+    network: t.string(),
   }),
 });
 
@@ -124,6 +127,7 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     links: t.field({ type: [LinkInput] }),
     status: t.string(),
     validatorId: t.id(),
+    network: t.string(),
   }),
 });
 
