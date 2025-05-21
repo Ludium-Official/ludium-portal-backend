@@ -14,19 +14,22 @@ import { filesTable } from './files';
 import { linksTable } from './links';
 import { postsTable } from './posts';
 import { programUserRolesTable, programsTable } from './programs';
-import { walletTable } from './wallet';
 
 export const usersTable = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   firstName: varchar('first_name', { length: 256 }),
   lastName: varchar('last_name', { length: 256 }),
-  email: varchar('email', { length: 256 }).notNull().unique(),
+  email: varchar('email', { length: 256 }).unique(),
+  walletAddress: varchar('wallet_address', { length: 256 }).unique(),
   organizationName: varchar('organization_name', { length: 256 }),
   image: varchar('image', { length: 512 }),
   about: text('about'),
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
   externalId: varchar('external_id', { length: 256 }),
   isAdmin: boolean('is_admin').default(false),
+  loginType: varchar('login_type', { length: 256 }),
+
+  // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
@@ -34,16 +37,12 @@ export const usersTable = pgTable('users', {
     .$onUpdateFn(() => new Date()),
 });
 
-export const userRelations = relations(usersTable, ({ many, one }) => ({
+export const userRelations = relations(usersTable, ({ many }) => ({
   files: many(filesTable),
   createdPrograms: many(programsTable, { relationName: 'program_creator' }),
   validatedPrograms: many(programsTable, { relationName: 'program_validator' }),
   applications: many(applicationsTable),
   programRoles: many(programUserRolesTable),
-  wallet: one(walletTable, {
-    fields: [usersTable.id],
-    references: [walletTable.userId],
-  }),
   posts: many(postsTable),
 }));
 

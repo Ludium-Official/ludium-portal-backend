@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1745211579735,
-      "tag": "0000_small_skullbuster",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1747052726938,
-      "tag": "0001_far_wraith",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1747790583925,
-      "tag": "0002_moaning_groot",
+      "when": 1747823846135,
+      "tag": "0000_square_pyro",
       "breakpoints": true
     }
   ]
