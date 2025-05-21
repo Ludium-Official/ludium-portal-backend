@@ -99,7 +99,9 @@ const builder = new SchemaBuilder<{
     ...subscribeOptionsFromIterator((name, ctx) => ctx.server.pubsub.asyncIterableIterator(name)),
     subscribe: async (_name, ctx, cb) => {
       const decoded = await ctx.request.jwtVerify<DecodedToken>();
+      console.log('decoded', decoded);
       const user = await ctx.server.auth.getUserForSubscription(decoded);
+      console.log('user', user);
       if (user) {
         console.log('user', user);
         cb(null, user);
