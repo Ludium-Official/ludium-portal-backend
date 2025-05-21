@@ -1,18 +1,17 @@
 import { type User as DbUser, programUserRolesTable, usersTable } from '@/db/schemas';
-import type { Context } from '@/types';
+import type { Context, DB } from '@/types';
 import { and, eq } from 'drizzle-orm';
 import type { FastifyError, FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
-import { GraphQLError } from 'graphql';
 
 export interface RequestAuth {
-  identity?: { id?: number };
+  identity?: { id?: string };
   user?: DbUser | null;
 }
 
-interface DecodedToken {
+export interface DecodedToken {
   payload: {
-    id: number;
+    id: string;
   };
   iat: number;
 }
@@ -91,19 +90,10 @@ export class AuthHandler {
     return programRoles.map((role) => role.roleType);
   }
 
-  async getUserForSubscription({ request, db }: { request: FastifyRequest; db: Context['db'] }) {
-    let auth: RequestAuth | null = null;
-    try {
-      const decodedToken = await request.jwtVerify<DecodedToken>();
-      auth = await requestHandler(decodedToken, db);
-      if (!auth?.user) {
-        throw new GraphQLError('No token provided');
-      }
-    } catch (_) {
-      throw new GraphQLError('No token provided');
-    }
-    request.auth = auth;
-    return auth.user;
+  async getUserForSubscription(decodedToken: DecodedToken, db: DB) {
+    const userId = decodedToken.payload.id;
+    const [user] = await db.selectDistinct().from(usersTable).where(eq(usersTable.id, userId));
+    return user;
   }
 }
 

@@ -1,6 +1,6 @@
 import { schema as graphqlSchema } from '@/graphql/types';
 import argon2Plugin from '@/plugins/argon2';
-import authPlugin from '@/plugins/auth';
+import authPlugin, { type DecodedToken } from '@/plugins/auth';
 import dbPlugin from '@/plugins/db';
 import fileManagerPlugin from '@/plugins/file-manager';
 import mercuriusUploadPlugin from '@/plugins/gql-upload';
@@ -55,6 +55,19 @@ const registerPlugins = (server: FastifyInstance) => {
             server,
             db: server.db,
           };
+        },
+        verifyClient: async (info, next) => {
+          if (info.req.headers.authorization) {
+            const token = info.req.headers.authorization.split(' ')[1];
+            const decoded = server.jwt.verify<DecodedToken>(token);
+            if (decoded.payload.id) {
+              const user = await server.auth.getUserForSubscription(decoded, server.db);
+              if (user) {
+                return next(true);
+              }
+            }
+          }
+          return next(false);
         },
       },
       // TODO: Uncomment when we have a production environment
