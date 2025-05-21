@@ -76,6 +76,7 @@ input CreateProgramInput {
   keywords: [ID!]
   links: [LinkInput!]
   name: String!
+  network: String
   price: String!
   summary: String
   validatorId: ID!
@@ -246,9 +247,11 @@ type Program {
   keywords: [Keyword!]
   links: [Link!]
   name: String
+  network: String
   price: String
   status: ProgramStatus
   summary: String
+  txHash: String
   validator: User
 }
 
@@ -337,6 +340,7 @@ input UpdateProgramInput {
   keywords: [ID!]
   links: [LinkInput!]
   name: String
+  network: String
   price: String
   status: ProgramStatus
   summary: String

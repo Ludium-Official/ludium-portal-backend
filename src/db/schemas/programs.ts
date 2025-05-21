@@ -40,6 +40,7 @@ export const programsTable = pgTable('programs', {
   status: programStatusEnum('status').default('draft'),
   educhainProgramId: integer('educhain_id'),
   txHash: varchar('tx_hash', { length: 256 }),
+  network: varchar('network', { length: 256 }).default('educhain'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
