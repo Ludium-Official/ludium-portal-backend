@@ -97,7 +97,7 @@ export class AuthHandler {
       .from(usersTable)
       .where(eq(usersTable.id, userId));
     if (!user) {
-      return null;
+      throw new Error('User not found');
     }
     return user;
   }

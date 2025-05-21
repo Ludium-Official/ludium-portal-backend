@@ -9,6 +9,7 @@ import {
   getNotificationsResolver,
   markNotificationAsReadResolver,
 } from '@/graphql/resolvers/notifications';
+import type { DecodedToken } from '@/plugins/auth';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -53,13 +54,21 @@ builder.queryFields((t) => ({
   notifications: t.field({
     type: [NotificationType],
     smartSubscription: true,
-    subscribe: (subscriptions) => subscriptions.register('notifications'),
+    subscribe: async (subscriptions, _parent, _args, ctx, _info) => {
+      const decoded = await ctx.request.jwtVerify<DecodedToken>();
+      await ctx.server.auth.getUserForSubscription(decoded);
+      return subscriptions.register('notifications');
+    },
     resolve: getNotificationsResolver,
   }),
   countNotifications: t.field({
     type: 'Int',
     smartSubscription: true,
-    subscribe: (subscriptions) => subscriptions.register('notificationsCount'),
+    subscribe: async (subscriptions, _parent, _args, ctx, _info) => {
+      const decoded = await ctx.request.jwtVerify<DecodedToken>();
+      await ctx.server.auth.getUserForSubscription(decoded);
+      return subscriptions.register('notificationsCount');
+    },
     resolve: getNotificationsCountResolver,
   }),
 }));
