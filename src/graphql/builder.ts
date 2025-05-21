@@ -3,9 +3,7 @@ import type { Context, UploadFile } from '@/types';
 import { isPromise } from '@/utils';
 import SchemaBuilder from '@pothos/core';
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth';
-import SmartSubscriptionsPlugin, {
-  subscribeOptionsFromIterator,
-} from '@pothos/plugin-smart-subscriptions';
+import SmartSubscriptionsPlugin from '@pothos/plugin-smart-subscriptions';
 import ValidationPlugin from '@pothos/plugin-validation';
 import { GraphQLError, GraphQLScalarType } from 'graphql';
 import { DateResolver, DateTimeResolver, JSONResolver } from 'graphql-scalars';
@@ -96,7 +94,10 @@ const builder = new SchemaBuilder<{
     },
   },
   smartSubscriptions: {
-    ...subscribeOptionsFromIterator((name, ctx) => ctx.server.pubsub.asyncIterableIterator(name)),
+    debounceDelay: 1000,
+    unsubscribe(name, context) {
+      console.log('unsubscribe', name, context);
+    },
     subscribe: async (name, ctx, cb) => {
       console.log('name', name);
       console.log('ctx', ctx.request.headers);
