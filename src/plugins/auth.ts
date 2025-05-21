@@ -97,7 +97,7 @@ export class AuthHandler {
       .from(usersTable)
       .where(eq(usersTable.id, userId));
     if (!user) {
-      throw new Error('User not found');
+      throw new Error('Websocket User not found');
     }
     return user;
   }
