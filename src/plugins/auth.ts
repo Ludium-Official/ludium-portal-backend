@@ -1,5 +1,5 @@
 import { type User as DbUser, programUserRolesTable, usersTable } from '@/db/schemas';
-import type { Context, DB } from '@/types';
+import type { Context } from '@/types';
 import { and, eq } from 'drizzle-orm';
 import type { FastifyError, FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
@@ -90,9 +90,15 @@ export class AuthHandler {
     return programRoles.map((role) => role.roleType);
   }
 
-  async getUserForSubscription(decodedToken: DecodedToken, db: DB) {
+  async getUserForSubscription(decodedToken: DecodedToken) {
     const userId = decodedToken.payload.id;
-    const [user] = await db.selectDistinct().from(usersTable).where(eq(usersTable.id, userId));
+    const [user] = await this.server.db
+      .selectDistinct()
+      .from(usersTable)
+      .where(eq(usersTable.id, userId));
+    if (!user) {
+      return null;
+    }
     return user;
   }
 }

@@ -52,14 +52,12 @@ export const NotificationType = builder.objectRef<DBNotiication>('Notification')
 builder.queryFields((t) => ({
   notifications: t.field({
     type: [NotificationType],
-    authScopes: { user: true },
     smartSubscription: true,
     subscribe: (subscriptions) => subscriptions.register('notifications'),
     resolve: getNotificationsResolver,
   }),
   countNotifications: t.field({
     type: 'Int',
-    authScopes: { user: true },
     smartSubscription: true,
     subscribe: (subscriptions) => subscriptions.register('notificationsCount'),
     resolve: getNotificationsCountResolver,

@@ -1,3 +1,4 @@
+import type { DecodedToken } from '@/plugins/auth';
 import type { Context, UploadFile } from '@/types';
 import { isPromise } from '@/utils';
 import SchemaBuilder from '@pothos/core';
@@ -96,6 +97,16 @@ const builder = new SchemaBuilder<{
   },
   smartSubscriptions: {
     ...subscribeOptionsFromIterator((name, ctx) => ctx.server.pubsub.asyncIterableIterator(name)),
+    subscribe: async (_name, ctx, cb) => {
+      const decoded = await ctx.request.jwtVerify<DecodedToken>();
+      const user = await ctx.server.auth.getUserForSubscription(decoded);
+      if (user) {
+        console.log('user', user);
+        cb(null, user);
+      } else {
+        cb(new GraphQLError('User not found', {}));
+      }
+    },
   },
 });
 
