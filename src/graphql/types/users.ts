@@ -26,6 +26,9 @@ export const User = builder.objectRef<DBUser>('User').implement({
     organizationName: t.exposeString('organizationName', { nullable: true }),
     image: t.exposeString('image', { nullable: true }),
     about: t.exposeString('about', { nullable: true }),
+    loginType: t.exposeString('loginType', { nullable: true }),
+    walletAddress: t.exposeString('walletAddress', { nullable: true }),
+    isAdmin: t.exposeBoolean('isAdmin'),
     links: t.field({
       type: [Link],
       nullable: true,
@@ -61,6 +64,8 @@ export const UserInput = builder.inputType('UserInput', {
     image: t.field({ type: 'Upload' }),
     about: t.string(),
     links: t.field({ type: [LinkInput] }),
+    loginType: t.string(),
+    walletAddress: t.string(),
   }),
 });
 
@@ -73,6 +78,8 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
     image: t.field({ type: 'Upload' }),
     about: t.string(),
     links: t.field({ type: [LinkInput] }),
+    loginType: t.string(),
+    walletAddress: t.string(),
   }),
 });
 
