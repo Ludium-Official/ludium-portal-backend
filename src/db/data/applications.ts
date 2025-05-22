@@ -32,7 +32,7 @@ export function createApplications(
     price: '2.5',
     programId: programIds[1], // Solidity Smart Contract Challenge
     applicantId: userIds[3], // Builder
-    status: 'approved',
+    status: 'accepted',
     content:
       'I have experience in developing Solidity smart contracts and would like to participate in this competition.',
     metadata: { skills: ['solidity', 'ethereum', 'security'] },
