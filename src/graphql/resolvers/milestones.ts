@@ -15,7 +15,7 @@ import type {
   UpdateMilestoneInput,
 } from '@/graphql/types/milestones';
 import type { Context, Root } from '@/types';
-import { filterEmptyValues, isInSameScope, validAndNotEmptyArray } from '@/utils';
+import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
 import BigNumber from 'bignumber.js';
 import { count, eq } from 'drizzle-orm';
 
@@ -73,10 +73,7 @@ export function createMilestonesResolver(
   args: { input: (typeof CreateMilestoneInput.$inferInput)[] },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   const milestones: Milestone[] = [];
 
@@ -217,10 +214,7 @@ export function submitMilestoneResolver(
   args: { input: typeof SubmitMilestoneInput.$inferInput },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
@@ -253,7 +247,7 @@ export function submitMilestoneResolver(
     const [milestone] = await t
       .update(milestonesTable)
       .set({
-        status: 'revision_requested',
+        status: 'submitted',
         description: args.input.description,
       })
       .where(eq(milestonesTable.id, args.input.id))
@@ -304,10 +298,7 @@ export function checkMilestoneResolver(
   args: { input: typeof CheckMilestoneInput.$inferInput },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({

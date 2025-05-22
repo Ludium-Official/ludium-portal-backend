@@ -9,6 +9,7 @@ import {
 import type { PaginationInput } from '@/graphql/types/common';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
+import { requireUser } from '@/utils';
 import { validAndNotEmptyArray } from '@/utils/common';
 import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
 
@@ -256,10 +257,7 @@ export function deleteUserResolver(_root: Root, args: { id: string }, ctx: Conte
 }
 
 export async function getProfileResolver(_root: Root, _args: Args, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
   const wallet = await getUserWalletResolver({}, { userId: user.id }, ctx);
   return { ...user, wallet };
 }
@@ -269,10 +267,7 @@ export function updateProfileResolver(
   args: { input: typeof UserUpdateInput.$inferInput },
   ctx: Context,
 ) {
-  const loggedinUser = ctx.server.auth.getUser(ctx.request);
-  if (!loggedinUser) {
-    throw new Error('User not found');
-  }
+  const loggedinUser = requireUser(ctx);
 
   if (loggedinUser.id !== args.input.id && !loggedinUser.isAdmin) {
     throw new Error('Unauthorized');

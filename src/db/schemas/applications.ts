@@ -7,10 +7,10 @@ import { usersTable } from './users';
 
 export const applicationStatuses = [
   'pending',
-  'approved',
+  'accepted',
   'rejected',
   'completed',
-  'withdrawn',
+  'submitted',
 ] as const;
 export const applicationStatusEnum = pgEnum('application_status', applicationStatuses);
 

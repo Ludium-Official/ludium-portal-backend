@@ -11,11 +11,11 @@ type Application {
 }
 
 enum ApplicationStatus {
-  approved
+  accepted
   completed
   pending
   rejected
-  withdrawn
+  submitted
 }
 
 input CheckMilestoneInput {
@@ -129,14 +129,14 @@ type Milestone {
 
 enum MilestoneStatus {
   completed
-  failed
   pending
-  revision_requested
+  rejected
+  submitted
 }
 
 type Mutation {
+  acceptApplication(id: ID!): Application
   acceptProgram(id: ID!): Program
-  approveApplication(id: ID!): Application
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
   createComment(input: CreateCommentInput!): Comment
@@ -146,12 +146,12 @@ type Mutation {
   createUser(input: UserInput!): User
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
-  denyApplication(id: ID!): Application
   login(address: String, email: String!, network: String, userId: ID!, walletId: String): String
   markNotificationAsRead(id: ID!): Notification
-  publishProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
+  rejectApplication(id: ID!): Application
   rejectProgram(id: ID!): Program
   submitMilestone(input: SubmitMilestoneInput!): Milestone
+  submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   updateApplication(input: UpdateApplicationInput!): Application
   updateComment(input: UpdateCommentInput!): Comment
   updateMilestone(input: UpdateMilestoneInput!): Milestone

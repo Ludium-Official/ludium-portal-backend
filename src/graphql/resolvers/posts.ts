@@ -8,7 +8,7 @@ import {
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreatePostInput, UpdatePostInput } from '@/graphql/types/posts';
 import type { Context, Root } from '@/types';
-import { filterEmptyValues, validAndNotEmptyArray } from '@/utils';
+import { filterEmptyValues, requireUser, validAndNotEmptyArray } from '@/utils';
 import { and, asc, count, desc, eq, ilike, inArray } from 'drizzle-orm';
 
 export async function getPostsResolver(
@@ -101,10 +101,7 @@ export async function createPostResolver(
   args: { input: typeof CreatePostInput.$inferInput },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   const { title, content, image, keywords } = args.input;
 
@@ -157,10 +154,7 @@ export async function updatePostResolver(
   args: { input: typeof UpdatePostInput.$inferInput },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   const postData = filterEmptyValues<Post>(args.input);
 

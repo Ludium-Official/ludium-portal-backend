@@ -1,6 +1,7 @@
 import { notificationsTable } from '@/db/schemas';
 import type { DecodedToken } from '@/plugins/auth';
 import type { Args, Context, Root } from '@/types';
+import { requireUser } from '@/utils';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 
 export async function getNotificationsResolver(_root: Root, _args: Args, ctx: Context) {
@@ -37,15 +38,11 @@ export async function markNotificationAsReadResolver(
   args: { id: string },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
-
+  const user = requireUser(ctx);
   await ctx.db
     .update(notificationsTable)
     .set({ readAt: new Date() })
-    .where(eq(notificationsTable.id, args.id))
+    .where(and(eq(notificationsTable.id, args.id), eq(notificationsTable.recipientId, user.id)))
     .returning();
 
   await ctx.server.pubsub.publish('notifications');
@@ -55,11 +52,7 @@ export async function markNotificationAsReadResolver(
 }
 
 export async function markAllNotificationsAsReadResolver(_root: Root, _args: Args, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
-
+  const user = requireUser(ctx);
   await ctx.db
     .update(notificationsTable)
     .set({ readAt: new Date() })

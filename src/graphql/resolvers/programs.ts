@@ -14,7 +14,7 @@ import {
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
-import { filterEmptyValues, isInSameScope, validAndNotEmptyArray } from '@/utils';
+import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
 import { and, asc, count, desc, eq, ilike, inArray, or } from 'drizzle-orm';
 
 export async function getProgramsResolver(
@@ -170,10 +170,7 @@ export function createProgramResolver(
 ) {
   const { keywords, links, ...inputData } = args.input;
 
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const [validatorWallet] = await t
@@ -265,10 +262,7 @@ export function updateProgramResolver(
   args: { input: typeof UpdateProgramInput.$inferInput },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   const { keywords, links, ...inputData } = args.input;
 
@@ -341,10 +335,7 @@ export function updateProgramResolver(
 }
 
 export async function deleteProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   const hasAccess = await isInSameScope({
     scope: 'program_creator',
@@ -361,10 +352,7 @@ export async function deleteProgramResolver(_root: Root, args: { id: string }, c
 }
 
 export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
@@ -403,10 +391,7 @@ export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Co
 }
 
 export function rejectProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
@@ -442,10 +427,7 @@ export function publishProgramResolver(
   args: { id: string; educhainProgramId: number; txHash: string },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({

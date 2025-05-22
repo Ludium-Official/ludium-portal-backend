@@ -1,12 +1,15 @@
-import type { Application as DBApplication } from '@/db/schemas';
-import { applicationStatuses, applicationsTable } from '@/db/schemas';
+import {
+  type Application as DBApplication,
+  applicationStatuses,
+  applicationsTable,
+} from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
-  approveApplicationResolver,
+  acceptApplicationResolver,
   createApplicationResolver,
-  denyApplicationResolver,
   getApplicationResolver,
   getApplicationsResolver,
+  rejectApplicationResolver,
   updateApplicationResolver,
 } from '@/graphql/resolvers/applications';
 import { getLinksByApplicationIdResolver } from '@/graphql/resolvers/links';
@@ -146,7 +149,7 @@ builder.mutationFields((t) => ({
     },
     resolve: updateApplicationResolver,
   }),
-  approveApplication: t.field({
+  acceptApplication: t.field({
     type: ApplicationType,
     authScopes: async (_, args, ctx) => {
       const applicationId = args.id;
@@ -166,9 +169,9 @@ builder.mutationFields((t) => ({
     args: {
       id: t.arg.id({ required: true }),
     },
-    resolve: approveApplicationResolver,
+    resolve: acceptApplicationResolver,
   }),
-  denyApplication: t.field({
+  rejectApplication: t.field({
     type: ApplicationType,
     authScopes: async (_, args, ctx) => {
       const applicationId = args.id;
@@ -188,6 +191,6 @@ builder.mutationFields((t) => ({
     args: {
       id: t.arg.id({ required: true }),
     },
-    resolve: denyApplicationResolver,
+    resolve: rejectApplicationResolver,
   }),
 }));

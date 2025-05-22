@@ -1,4 +1,5 @@
 import {
+  type ApplicationStatusEnum,
   type ApplicationUpdate,
   applicationsTable,
   applicationsToLinksTable,
@@ -9,7 +10,7 @@ import {
 import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
-import { isInSameScope } from '@/utils';
+import { isInSameScope, requireUser } from '@/utils';
 import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
 import { and, asc, count, desc, eq } from 'drizzle-orm';
 
@@ -40,10 +41,7 @@ export async function getApplicationsResolver(
               case 'applicantId':
                 return eq(applicationsTable.applicantId, f.value);
               case 'status':
-                return eq(
-                  applicationsTable.status,
-                  f.value as 'pending' | 'approved' | 'rejected' | 'withdrawn',
-                );
+                return eq(applicationsTable.status, f.value as ApplicationStatusEnum);
               default:
                 return undefined;
             }
@@ -86,10 +84,7 @@ export function createApplicationResolver(
   args: { input: typeof CreateApplicationInput.$inferInput },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const [program] = await t
@@ -157,10 +152,7 @@ export function updateApplicationResolver(
   args: { input: typeof UpdateApplicationInput.$inferInput },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   const filteredData = filterEmptyValues<ApplicationUpdate>(args.input);
 
@@ -210,11 +202,11 @@ export function updateApplicationResolver(
   });
 }
 
-export function approveApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
+export function acceptApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
   return ctx.db.transaction(async (t) => {
     const [application] = await t
       .update(applicationsTable)
-      .set({ status: 'approved' })
+      .set({ status: 'accepted' })
       .where(eq(applicationsTable.id, args.id))
       .returning();
 
@@ -242,11 +234,8 @@ export function approveApplicationResolver(_root: Root, args: { id: string }, ct
   });
 }
 
-export function denyApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+export function rejectApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({

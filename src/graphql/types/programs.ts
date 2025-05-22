@@ -210,7 +210,7 @@ builder.mutationFields((t) => ({
     },
     resolve: rejectProgramResolver,
   }),
-  publishProgram: t.field({
+  submitProgram: t.field({
     type: ProgramType,
     authScopes: (_, args) => ({
       programSponsor: { programId: args.id },
