@@ -1,23 +1,21 @@
-import { type User, usersTable, walletTable } from '@/db/schemas';
+import { type User, usersTable } from '@/db/schemas';
 import type { Context, Root } from '@/types';
-import { eq } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
 
 export async function loginResolver(
   _root: Root,
   args: {
-    email: string;
-    userId: string;
-    walletId?: string | null;
-    network?: string | null;
-    address?: string | null;
+    walletAddress: string;
+    loginType: string;
+    email?: string | null;
   },
   ctx: Context,
 ) {
-  const { email, userId } = args;
+  const { email, walletAddress, loginType } = args;
   const [foundUser] = await ctx.db
     .select({ id: usersTable.id })
     .from(usersTable)
-    .where(eq(usersTable.email, email));
+    .where(or(eq(usersTable.email, email ?? ''), eq(usersTable.walletAddress, walletAddress)));
 
   let user: User | null = null;
 
@@ -26,7 +24,8 @@ export async function loginResolver(
       .insert(usersTable)
       .values({
         email,
-        externalId: userId,
+        walletAddress,
+        loginType,
       })
       .returning();
 
@@ -35,28 +34,13 @@ export async function loginResolver(
     const [updatedUser] = await ctx.db
       .update(usersTable)
       .set({
-        externalId: userId,
+        walletAddress,
+        loginType,
       })
       .where(eq(usersTable.id, foundUser.id))
       .returning();
 
     user = updatedUser;
-  }
-
-  if (args.walletId) {
-    const [wallet] = await ctx.db
-      .select()
-      .from(walletTable)
-      .where(eq(walletTable.walletId, args.walletId));
-
-    if (!wallet) {
-      await ctx.db.insert(walletTable).values({
-        userId: user.id,
-        walletId: args.walletId,
-        network: args.network,
-        address: args.address,
-      });
-    }
   }
 
   const token = ctx.server.jwt.sign(

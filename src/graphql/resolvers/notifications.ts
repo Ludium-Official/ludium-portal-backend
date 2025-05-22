@@ -1,15 +1,10 @@
 import { notificationsTable } from '@/db/schemas';
-import type { DecodedToken } from '@/plugins/auth';
 import type { Args, Context, Root } from '@/types';
-import { requireUser } from '@/utils';
+import { requireUser, requireUserForSubscription } from '@/utils';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 
 export async function getNotificationsResolver(_root: Root, _args: Args, ctx: Context) {
-  const decoded = await ctx.request.jwtVerify<DecodedToken>();
-  const user = await ctx.server.auth.getUserForSubscription(decoded);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = await requireUserForSubscription(ctx);
 
   return ctx.db
     .select()
@@ -19,11 +14,7 @@ export async function getNotificationsResolver(_root: Root, _args: Args, ctx: Co
 }
 
 export async function getNotificationsCountResolver(_root: Root, _args: Args, ctx: Context) {
-  const decoded = await ctx.request.jwtVerify<DecodedToken>();
-  const user = await ctx.server.auth.getUserForSubscription(decoded);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = await requireUserForSubscription(ctx);
 
   const [result] = await ctx.db
     .select({ count: count() })

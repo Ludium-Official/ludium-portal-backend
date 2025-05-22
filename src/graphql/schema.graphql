@@ -146,8 +146,9 @@ type Mutation {
   createUser(input: UserInput!): User
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
-  login(address: String, email: String!, network: String, userId: ID!, walletId: String): String
-  markNotificationAsRead(id: ID!): Notification
+  login(email: String, loginType: String!, walletAddress: String!): String
+  markAllNotificationsAsRead: Boolean
+  markNotificationAsRead(id: ID!): Boolean
   rejectApplication(id: ID!): Application
   rejectProgram(id: ID!): Program
   submitMilestone(input: SubmitMilestoneInput!): Milestone
@@ -356,10 +357,12 @@ type User {
   firstName: String
   id: ID
   image: String
+  isAdmin: Boolean
   lastName: String
   links: [Link!]
+  loginType: String
   organizationName: String
-  wallet: Wallet
+  walletAddress: String
 }
 
 input UserInput {
@@ -369,8 +372,10 @@ input UserInput {
   image: Upload
   lastName: String
   links: [LinkInput!]
+  loginType: String
   organizationName: String
   password: String!
+  walletAddress: String
 }
 
 input UserUpdateInput {
@@ -380,11 +385,7 @@ input UserUpdateInput {
   image: Upload
   lastName: String
   links: [LinkInput!]
+  loginType: String
   organizationName: String
-}
-
-type Wallet {
-  address: String
-  network: String
-  walletId: String
+  walletAddress: String
 }

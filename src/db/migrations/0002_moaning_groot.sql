@@ -1,1 +1,0 @@
-ALTER TABLE "programs" ADD COLUMN "network" varchar(256) DEFAULT 'educhain';

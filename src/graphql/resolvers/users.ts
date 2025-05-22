@@ -4,7 +4,6 @@ import {
   programUserRolesTable,
   usersTable,
   usersToLinksTable,
-  walletTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
@@ -123,15 +122,7 @@ export async function getUserResolver(_root: Root, args: { id: string }, ctx: Co
 
   const [user] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.id));
 
-  return { ...user, wallet: await getUserWalletResolver({}, { userId: user.id }, ctx) };
-}
-
-export async function getUserWalletResolver(_root: Root, args: { userId: string }, ctx: Context) {
-  const [wallet] = await ctx.db
-    .select()
-    .from(walletTable)
-    .where(eq(walletTable.userId, args.userId));
-  return wallet;
+  return user;
 }
 
 export function createUserResolver(
@@ -258,8 +249,7 @@ export function deleteUserResolver(_root: Root, args: { id: string }, ctx: Conte
 
 export async function getProfileResolver(_root: Root, _args: Args, ctx: Context) {
   const user = requireUser(ctx);
-  const wallet = await getUserWalletResolver({}, { userId: user.id }, ctx);
-  return { ...user, wallet };
+  return user;
 }
 
 export function updateProfileResolver(

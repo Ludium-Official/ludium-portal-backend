@@ -1,6 +1,6 @@
 {
-  "id": "7d59e89c-457c-421f-b6be-dee1cb19a19b",
-  "prevId": "164dcade-f2e6-4995-88d7-ee92e53218a2",
+  "id": "1a70cc3f-809d-45f2-a87d-371b8f390d7f",
+  "prevId": "1d897e9a-d382-4781-bf95-ad6ea15d601c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -352,7 +352,13 @@
           "name": "email",
           "type": "varchar(256)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false
         },
         "organization_name": {
           "name": "organization_name",
@@ -378,18 +384,18 @@
           "primaryKey": false,
           "notNull": false
         },
-        "external_id": {
-          "name": "external_id",
-          "type": "varchar(256)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "is_admin": {
           "name": "is_admin",
           "type": "boolean",
           "primaryKey": false,
           "notNull": false,
           "default": false
+        },
+        "login_type": {
+          "name": "login_type",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -415,6 +421,13 @@
           "nullsNotDistinct": false,
           "columns": [
             "email"
+          ]
+        },
+        "users_wallet_address_unique": {
+          "name": "users_wallet_address_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "wallet_address"
           ]
         }
       },
@@ -641,6 +654,13 @@
           "type": "varchar(256)",
           "primaryKey": false,
           "notNull": false
+        },
+        "network": {
+          "name": "network",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'educhain'"
         },
         "created_at": {
           "name": "created_at",
@@ -1009,94 +1029,6 @@
         }
       },
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.wallet": {
-      "name": "wallet",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "wallet_id": {
-          "name": "wallet_id",
-          "type": "varchar(256)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "network": {
-          "name": "network",
-          "type": "varchar(256)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'Ethereum'"
-        },
-        "address": {
-          "name": "address",
-          "type": "varchar(256)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "wallet_user_id_users_id_fk": {
-          "name": "wallet_user_id_users_id_fk",
-          "tableFrom": "wallet",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "wallet_wallet_id_unique": {
-          "name": "wallet_wallet_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "wallet_id"
-          ]
-        },
-        "wallet_address_unique": {
-          "name": "wallet_address_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "address"
-          ]
-        }
-      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

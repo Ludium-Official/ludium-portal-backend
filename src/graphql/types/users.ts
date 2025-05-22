@@ -1,4 +1,4 @@
-import type { User as DBUser, Wallet as DBWallet } from '@/db/schemas';
+import type { User as DBUser } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
@@ -7,7 +7,6 @@ import {
   getProfileResolver,
   getUserAvatarResolver,
   getUserByIdResolver,
-  getUserWalletResolver,
   getUsersResolver,
   updateProfileResolver,
   updateUserResolver,
@@ -27,6 +26,9 @@ export const User = builder.objectRef<DBUser>('User').implement({
     organizationName: t.exposeString('organizationName', { nullable: true }),
     image: t.exposeString('image', { nullable: true }),
     about: t.exposeString('about', { nullable: true }),
+    loginType: t.exposeString('loginType', { nullable: true }),
+    walletAddress: t.exposeString('walletAddress', { nullable: true }),
+    isAdmin: t.exposeBoolean('isAdmin'),
     links: t.field({
       type: [Link],
       nullable: true,
@@ -36,11 +38,6 @@ export const User = builder.objectRef<DBUser>('User').implement({
       type: 'Upload',
       nullable: true,
       resolve: async (user, _args, ctx) => getUserAvatarResolver({}, { userId: user.id }, ctx),
-    }),
-    wallet: t.field({
-      type: Wallet,
-      nullable: true,
-      resolve: async (user, _args, ctx) => getUserWalletResolver({}, { userId: user.id }, ctx),
     }),
   }),
 });
@@ -53,14 +50,6 @@ export const PaginatedUsersType = builder
       count: t.field({ type: 'Int', resolve: (parent) => parent.count }),
     }),
   });
-
-export const Wallet = builder.objectRef<DBWallet>('Wallet').implement({
-  fields: (t) => ({
-    walletId: t.exposeString('walletId'),
-    address: t.exposeString('address'),
-    network: t.exposeString('network'),
-  }),
-});
 
 /* -------------------------------------------------------------------------- */
 /*                                   Inputs                                   */
@@ -75,6 +64,8 @@ export const UserInput = builder.inputType('UserInput', {
     image: t.field({ type: 'Upload' }),
     about: t.string(),
     links: t.field({ type: [LinkInput] }),
+    loginType: t.string(),
+    walletAddress: t.string(),
   }),
 });
 
@@ -87,6 +78,8 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
     image: t.field({ type: 'Upload' }),
     about: t.string(),
     links: t.field({ type: [LinkInput] }),
+    loginType: t.string(),
+    walletAddress: t.string(),
   }),
 });
 

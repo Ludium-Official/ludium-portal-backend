@@ -9,7 +9,6 @@ import {
   programsTable,
   programsToKeywordsTable,
   programsToLinksTable,
-  walletTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
@@ -173,14 +172,6 @@ export function createProgramResolver(
   const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
-    const [validatorWallet] = await t
-      .select()
-      .from(walletTable)
-      .where(eq(walletTable.userId, inputData.validatorId));
-    if (!validatorWallet) {
-      throw new Error('Validator wallet not found');
-    }
-
     // Validate network
     if (inputData.network && !NETWORKS.includes(inputData.network)) {
       throw new Error('Invalid network');
