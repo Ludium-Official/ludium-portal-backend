@@ -93,7 +93,11 @@ export function createApplicationResolver(
 
   return ctx.db.transaction(async (t) => {
     const [program] = await t
-      .select({ creatorId: programsTable.creatorId, validatorId: programsTable.validatorId })
+      .select({
+        creatorId: programsTable.creatorId,
+        validatorId: programsTable.validatorId,
+        id: programsTable.id,
+      })
       .from(programsTable)
       .where(eq(programsTable.id, args.input.programId));
 
@@ -140,6 +144,7 @@ export function createApplicationResolver(
       action: 'created',
       recipientId: program.creatorId,
       entityId: application.id,
+      metadata: { programId: program.id },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -229,6 +234,7 @@ export function approveApplicationResolver(_root: Root, args: { id: string }, ct
       action: 'accepted',
       recipientId: application.applicantId,
       entityId: application.id,
+      metadata: { programId: application.programId },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -264,6 +270,7 @@ export function denyApplicationResolver(_root: Root, args: { id: string }, ctx: 
       action: 'rejected',
       recipientId: application.applicantId,
       entityId: application.id,
+      metadata: { programId: application.programId },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 

@@ -7,6 +7,7 @@ import builder from '@/graphql/builder';
 import {
   getNotificationsCountResolver,
   getNotificationsResolver,
+  markAllNotificationsAsReadResolver,
   markNotificationAsReadResolver,
 } from '@/graphql/resolvers/notifications';
 
@@ -66,11 +67,16 @@ builder.queryFields((t) => ({
 
 builder.mutationFields((t) => ({
   markNotificationAsRead: t.field({
-    type: NotificationType,
+    type: 'Boolean',
     authScopes: { user: true },
     args: {
       id: t.arg.id({ required: true }),
     },
     resolve: markNotificationAsReadResolver,
+  }),
+  markAllNotificationsAsRead: t.field({
+    type: 'Boolean',
+    authScopes: { user: true },
+    resolve: markAllNotificationsAsReadResolver,
   }),
 }));

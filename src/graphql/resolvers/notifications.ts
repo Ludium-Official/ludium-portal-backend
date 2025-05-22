@@ -1,7 +1,7 @@
 import { notificationsTable } from '@/db/schemas';
 import type { DecodedToken } from '@/plugins/auth';
 import type { Args, Context, Root } from '@/types';
-import { and, count, eq, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, isNull } from 'drizzle-orm';
 
 export async function getNotificationsResolver(_root: Root, _args: Args, ctx: Context) {
   const decoded = await ctx.request.jwtVerify<DecodedToken>();
@@ -13,7 +13,8 @@ export async function getNotificationsResolver(_root: Root, _args: Args, ctx: Co
   return ctx.db
     .select()
     .from(notificationsTable)
-    .where(eq(notificationsTable.recipientId, user.id));
+    .where(and(eq(notificationsTable.recipientId, user.id), isNull(notificationsTable.readAt)))
+    .orderBy(desc(notificationsTable.createdAt));
 }
 
 export async function getNotificationsCountResolver(_root: Root, _args: Args, ctx: Context) {
@@ -27,6 +28,7 @@ export async function getNotificationsCountResolver(_root: Root, _args: Args, ct
     .select({ count: count() })
     .from(notificationsTable)
     .where(and(eq(notificationsTable.recipientId, user.id), isNull(notificationsTable.readAt)));
+
   return result?.count ?? 0;
 }
 
@@ -40,10 +42,31 @@ export async function markNotificationAsReadResolver(
     throw new Error('User not found');
   }
 
-  const [notification] = await ctx.db
+  await ctx.db
     .update(notificationsTable)
     .set({ readAt: new Date() })
     .where(eq(notificationsTable.id, args.id))
     .returning();
-  return notification;
+
+  await ctx.server.pubsub.publish('notifications');
+  await ctx.server.pubsub.publish('notificationsCount');
+
+  return true;
+}
+
+export async function markAllNotificationsAsReadResolver(_root: Root, _args: Args, ctx: Context) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  await ctx.db
+    .update(notificationsTable)
+    .set({ readAt: new Date() })
+    .where(and(eq(notificationsTable.recipientId, user.id), isNull(notificationsTable.readAt)));
+
+  await ctx.server.pubsub.publish('notifications');
+  await ctx.server.pubsub.publish('notificationsCount');
+
+  return true;
 }
