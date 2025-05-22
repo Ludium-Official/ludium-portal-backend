@@ -25,7 +25,6 @@ export const usersTable = pgTable('users', {
   image: varchar('image', { length: 512 }),
   about: text('about'),
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
-  externalId: varchar('external_id', { length: 256 }),
   isAdmin: boolean('is_admin').default(false),
   loginType: varchar('login_type', { length: 256 }),
 

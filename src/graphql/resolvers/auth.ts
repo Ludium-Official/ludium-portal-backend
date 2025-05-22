@@ -1,20 +1,21 @@
 import { type User, usersTable } from '@/db/schemas';
 import type { Context, Root } from '@/types';
-import { eq } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
 
 export async function loginResolver(
   _root: Root,
   args: {
-    email: string;
-    userId: string;
+    walletAddress: string;
+    loginType: string;
+    email?: string | null;
   },
   ctx: Context,
 ) {
-  const { email, userId } = args;
+  const { email, walletAddress, loginType } = args;
   const [foundUser] = await ctx.db
     .select({ id: usersTable.id })
     .from(usersTable)
-    .where(eq(usersTable.email, email));
+    .where(or(eq(usersTable.email, email ?? ''), eq(usersTable.walletAddress, walletAddress)));
 
   let user: User | null = null;
 
@@ -23,7 +24,8 @@ export async function loginResolver(
       .insert(usersTable)
       .values({
         email,
-        externalId: userId,
+        walletAddress,
+        loginType,
       })
       .returning();
 
@@ -32,7 +34,8 @@ export async function loginResolver(
     const [updatedUser] = await ctx.db
       .update(usersTable)
       .set({
-        externalId: userId,
+        walletAddress,
+        loginType,
       })
       .where(eq(usersTable.id, foundUser.id))
       .returning();
