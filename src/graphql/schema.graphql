@@ -311,9 +311,12 @@ type User {
   firstName: String
   id: ID
   image: String
+  isAdmin: Boolean
   lastName: String
   links: [Link!]
+  loginType: String
   organizationName: String
+  walletAddress: String
 }
 
 input UserInput {
@@ -323,8 +326,10 @@ input UserInput {
   image: Upload
   lastName: String
   links: [LinkInput!]
+  loginType: String
   organizationName: String
   password: String!
+  walletAddress: String
 }
 
 input UserUpdateInput {
@@ -334,5 +339,7 @@ input UserUpdateInput {
   image: Upload
   lastName: String
   links: [LinkInput!]
+  loginType: String
   organizationName: String
+  walletAddress: String
 }
