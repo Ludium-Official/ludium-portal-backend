@@ -15,7 +15,7 @@ import type {
   UpdateMilestoneInput,
 } from '@/graphql/types/milestones';
 import type { Context, Root } from '@/types';
-import { filterEmptyValues, isInSameScope, validAndNotEmptyArray } from '@/utils';
+import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
 import BigNumber from 'bignumber.js';
 import { count, eq } from 'drizzle-orm';
 
@@ -73,10 +73,7 @@ export function createMilestonesResolver(
   args: { input: (typeof CreateMilestoneInput.$inferInput)[] },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   const milestones: Milestone[] = [];
 
@@ -120,12 +117,15 @@ export function createMilestonesResolver(
     }
 
     const [application] = await t
-      .select({ programId: applicationsTable.programId })
+      .select({
+        id: applicationsTable.id,
+        programId: applicationsTable.programId,
+      })
       .from(applicationsTable)
       .where(eq(applicationsTable.id, args.input[0].applicationId));
 
     const [program] = await t
-      .select({ price: programsTable.price })
+      .select({ price: programsTable.price, validatorId: programsTable.validatorId })
       .from(programsTable)
       .where(eq(programsTable.id, application.programId));
 
@@ -156,6 +156,16 @@ export function createMilestonesResolver(
         price: milestonesTotalPrice.toString(),
       })
       .where(eq(applicationsTable.id, args.input[0].applicationId));
+
+    if (program.validatorId) {
+      await ctx.server.pubsub.publish('notifications', t, {
+        type: 'application',
+        action: 'created',
+        recipientId: program.validatorId,
+        entityId: application.id,
+      });
+      await ctx.server.pubsub.publish('notificationsCount');
+    }
 
     return milestones;
   });
@@ -204,10 +214,7 @@ export function submitMilestoneResolver(
   args: { input: typeof SubmitMilestoneInput.$inferInput },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
@@ -240,7 +247,7 @@ export function submitMilestoneResolver(
     const [milestone] = await t
       .update(milestonesTable)
       .set({
-        status: 'revision_requested',
+        status: 'submitted',
         description: args.input.description,
       })
       .where(eq(milestonesTable.id, args.input.id))
@@ -261,6 +268,27 @@ export function submitMilestoneResolver(
         .where(eq(applicationsTable.id, milestone.applicationId));
     }
 
+    // TODO: Refactor this
+    const [application] = await t
+      .select({ programId: applicationsTable.programId })
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, milestone.applicationId));
+
+    const [program] = await t
+      .select({ validatorId: programsTable.validatorId })
+      .from(programsTable)
+      .where(eq(programsTable.id, application.programId));
+
+    if (program.validatorId) {
+      await ctx.server.pubsub.publish('notifications', t, {
+        type: 'milestone',
+        action: 'submitted',
+        recipientId: program.validatorId,
+        entityId: milestone.id,
+      });
+      await ctx.server.pubsub.publish('notificationsCount');
+    }
+
     return milestone;
   });
 }
@@ -270,10 +298,7 @@ export function checkMilestoneResolver(
   args: { input: typeof CheckMilestoneInput.$inferInput },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
@@ -291,6 +316,19 @@ export function checkMilestoneResolver(
       .set({ status: args.input.status })
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
+
+    const [application] = await t
+      .select({ applicantId: applicationsTable.applicantId })
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, milestone.applicationId));
+
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'milestone',
+      action: args.input.status === 'pending' ? 'rejected' : 'accepted',
+      recipientId: application.applicantId,
+      entityId: milestone.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
 
     return milestone;
   });

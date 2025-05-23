@@ -11,11 +11,11 @@ type Application {
 }
 
 enum ApplicationStatus {
-  approved
+  accepted
   completed
   pending
   rejected
-  withdrawn
+  submitted
 }
 
 input CheckMilestoneInput {
@@ -129,14 +129,14 @@ type Milestone {
 
 enum MilestoneStatus {
   completed
-  failed
   pending
-  revision_requested
+  rejected
+  submitted
 }
 
 type Mutation {
+  acceptApplication(id: ID!): Application
   acceptProgram(id: ID!): Program
-  approveApplication(id: ID!): Application
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
   createComment(input: CreateCommentInput!): Comment
@@ -146,11 +146,13 @@ type Mutation {
   createUser(input: UserInput!): User
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
-  denyApplication(id: ID!): Application
-  login(email: String!, userId: ID!): String
-  publishProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
+  login(email: String, loginType: String!, walletAddress: String!): String
+  markAllNotificationsAsRead: Boolean
+  markNotificationAsRead(id: ID!): Boolean
+  rejectApplication(id: ID!): Application
   rejectProgram(id: ID!): Program
   submitMilestone(input: SubmitMilestoneInput!): Milestone
+  submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   updateApplication(input: UpdateApplicationInput!): Application
   updateComment(input: UpdateCommentInput!): Comment
   updateMilestone(input: UpdateMilestoneInput!): Milestone
@@ -158,6 +160,34 @@ type Mutation {
   updateProfile(input: UserUpdateInput!): User
   updateProgram(input: UpdateProgramInput!): Program
   updateUser(input: UserUpdateInput!): User
+}
+
+type Notification {
+  action: NotificationAction
+  content: String
+  entityId: ID
+  id: ID
+  metadata: JSON
+  readAt: Date
+  title: String
+  type: NotificationType
+}
+
+enum NotificationAction {
+  accepted
+  broadcast
+  completed
+  created
+  rejected
+  submitted
+}
+
+enum NotificationType {
+  application
+  comment
+  milestone
+  program
+  system
 }
 
 type PaginatedApplications {
@@ -220,10 +250,19 @@ type Program {
   name: String
   network: String
   price: String
-  status: String
+  status: ProgramStatus
   summary: String
   txHash: String
   validator: User
+}
+
+enum ProgramStatus {
+  cancelled
+  closed
+  completed
+  draft
+  payment_required
+  published
 }
 
 type Query {
@@ -232,9 +271,11 @@ type Query {
   comment(id: ID!): Comment
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
   commentsByPost(postId: ID!): [Comment!]
+  countNotifications: Int
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
+  notifications: [Notification!]
   post(id: ID!): Post
   posts(pagination: PaginationInput): PaginatedPosts
   profile: User
@@ -253,6 +294,11 @@ input SubmitMilestoneInput {
   description: String
   id: String!
   links: [LinkInput!]
+}
+
+type Subscription {
+  countNotifications: Int
+  notifications: [Notification!]
 }
 
 input UpdateApplicationInput {
@@ -297,7 +343,7 @@ input UpdateProgramInput {
   name: String
   network: String
   price: String
-  status: String
+  status: ProgramStatus
   summary: String
   validatorId: ID
 }

@@ -3,7 +3,8 @@ import argon2Plugin from '@/plugins/argon2';
 import authPlugin from '@/plugins/auth';
 import dbPlugin from '@/plugins/db';
 import fileManagerPlugin from '@/plugins/file-manager';
-import mercuriusUpload from '@/plugins/gql-upload';
+import mercuriusUploadPlugin from '@/plugins/gql-upload';
+import pubsubPlugin from '@/plugins/pubsub';
 import corsPlugin from '@fastify/cors';
 import jwtPlugin from '@fastify/jwt';
 import type { FastifyInstance } from 'fastify';
@@ -28,9 +29,11 @@ const registerPlugins = (server: FastifyInstance) => {
     origin: '*',
   });
 
-  void server.register(mercuriusUpload);
+  void server.register(mercuriusUploadPlugin);
 
   void server.register(fileManagerPlugin);
+
+  void server.register(pubsubPlugin);
 
   void server
     .register(mercurius, {

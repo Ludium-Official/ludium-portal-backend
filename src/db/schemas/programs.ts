@@ -15,14 +15,15 @@ import { keywordsTable } from './keywords';
 import { linksTable } from './links';
 import { usersTable } from './users';
 
-export const programStatusEnum = pgEnum('program_status', [
+export const programStatuses = [
   'draft',
   'payment_required',
   'published',
   'closed',
   'completed',
   'cancelled',
-]);
+] as const;
+export const programStatusEnum = pgEnum('program_status', programStatuses);
 
 export const programsTable = pgTable('programs', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -155,3 +156,4 @@ export type Program = typeof programsTable.$inferSelect;
 export type NewProgram = typeof programsTable.$inferInsert;
 export type ProgramUserRole = typeof programUserRolesTable.$inferSelect;
 export type NewProgramUserRole = typeof programUserRolesTable.$inferInsert;
+export type ProgramStatusEnum = (typeof programStatuses)[number];

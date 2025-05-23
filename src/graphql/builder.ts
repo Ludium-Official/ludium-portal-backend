@@ -2,6 +2,9 @@ import type { Context, UploadFile } from '@/types';
 import { isPromise } from '@/utils';
 import SchemaBuilder from '@pothos/core';
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth';
+import SmartSubscriptionsPlugin, {
+  subscribeOptionsFromIterator,
+} from '@pothos/plugin-smart-subscriptions';
 import ValidationPlugin from '@pothos/plugin-validation';
 import { GraphQLError, GraphQLScalarType } from 'graphql';
 import { DateResolver, DateTimeResolver, JSONResolver } from 'graphql-scalars';
@@ -31,12 +34,8 @@ const GraphQLUpload = new GraphQLScalarType({
 const builder = new SchemaBuilder<{
   Context: Context;
   AuthScopes: {
-    // Global scopes
     user: boolean;
-
     admin: boolean;
-
-    // Program-specific scopes
     programSponsor: {
       programId: string;
     };
@@ -47,7 +46,6 @@ const builder = new SchemaBuilder<{
       programId: string;
     };
     programParticipant: {
-      // Any role in the program
       programId: string;
     };
   };
@@ -70,13 +68,12 @@ const builder = new SchemaBuilder<{
     };
   };
 }>({
-  plugins: [ScopeAuthPlugin, ValidationPlugin],
+  plugins: [ScopeAuthPlugin, ValidationPlugin, SmartSubscriptionsPlugin],
   scopeAuth: {
     authorizeOnSubscribe: true,
     authScopes: async (context) => ({
       user: context.server.auth.isUser(context.request),
       admin: context.server.auth.isAdmin(context.request),
-      // Program-specific scopes with dynamic context
       programSponsor: async ({ programId }) => {
         return await context.server.auth.isProgramSponsor(context.request, programId);
       },
@@ -97,6 +94,9 @@ const builder = new SchemaBuilder<{
       return zodError;
     },
   },
+  smartSubscriptions: {
+    ...subscribeOptionsFromIterator((name, ctx) => ctx.server.pubsub.asyncIterableIterator(name)),
+  },
 });
 
 builder.addScalarType('DateTime', DateTimeResolver);
@@ -106,5 +106,6 @@ builder.addScalarType('Upload', GraphQLUpload);
 
 builder.queryType({});
 builder.mutationType({});
+builder.subscriptionType({});
 
 export default builder;

@@ -15,6 +15,13 @@
       "when": 1747875584739,
       "tag": "0001_rainy_gamora",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1747895896988,
+      "tag": "0003_broad_paladin",
+      "breakpoints": true
     }
   ]
 }

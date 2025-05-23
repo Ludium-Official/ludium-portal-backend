@@ -5,13 +5,14 @@ import { milestonesTable } from './milestones';
 import { programsTable } from './programs';
 import { usersTable } from './users';
 
-export const applicationStatusEnum = pgEnum('application_status', [
-  'pending', // Initial state when submitted
-  'approved', // Application approved by validator
-  'rejected', // Application rejected by validator
-  'completed', // Work completed and verified
-  'withdrawn', // Application withdrawn by applicant
-]);
+export const applicationStatuses = [
+  'pending',
+  'accepted',
+  'rejected',
+  'completed',
+  'submitted',
+] as const;
+export const applicationStatusEnum = pgEnum('application_status', applicationStatuses);
 
 // Applications table
 export const applicationsTable = pgTable('applications', {
@@ -81,3 +82,4 @@ export type ApplicationUpdate = Omit<
   Application,
   'id' | 'createdAt' | 'updatedAt' | 'programId' | 'applicantId'
 >;
+export type ApplicationStatusEnum = (typeof applicationStatuses)[number];

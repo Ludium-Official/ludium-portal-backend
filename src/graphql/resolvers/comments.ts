@@ -2,7 +2,7 @@ import { type Comment, commentsTable } from '@/db/schemas';
 import type { CreateCommentInput, UpdateCommentInput } from '@/graphql/types/comments';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
-import { filterEmptyValues, validAndNotEmptyArray } from '@/utils';
+import { filterEmptyValues, requireUser, validAndNotEmptyArray } from '@/utils';
 import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
 
 export async function getCommentsResolver(
@@ -108,10 +108,7 @@ export async function createCommentResolver(
   args: { input: typeof CreateCommentInput.$inferInput },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   const { postId, content, parentId } = args.input;
 
@@ -148,10 +145,7 @@ export async function updateCommentResolver(
   args: { input: typeof UpdateCommentInput.$inferInput },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  requireUser(ctx);
 
   const commentData = filterEmptyValues<Comment>(args.input);
 

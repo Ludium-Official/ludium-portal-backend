@@ -5,13 +5,13 @@ import type { FastifyError, FastifyInstance, FastifyPluginOptions, FastifyReques
 import fp from 'fastify-plugin';
 
 export interface RequestAuth {
-  identity?: { id?: number };
+  identity?: { id?: string };
   user?: DbUser | null;
 }
 
-interface DecodedToken {
+export interface DecodedToken {
   payload: {
-    id: number;
+    id: string;
   };
   iat: number;
 }
@@ -88,6 +88,18 @@ export class AuthHandler {
       );
 
     return programRoles.map((role) => role.roleType);
+  }
+
+  async getUserForSubscription(decodedToken: DecodedToken) {
+    const userId = decodedToken.payload.id;
+    const [user] = await this.server.db
+      .selectDistinct()
+      .from(usersTable)
+      .where(eq(usersTable.id, userId));
+    if (!user) {
+      throw new Error('Websocket User not found');
+    }
+    return user;
   }
 }
 

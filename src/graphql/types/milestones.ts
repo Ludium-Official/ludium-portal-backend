@@ -1,4 +1,4 @@
-import type { Milestone as DBMilestone } from '@/db/schemas';
+import { type Milestone as DBMilestone, milestoneStatuses } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getLinksByMilestoneIdResolver } from '@/graphql/resolvers/links';
 import {
@@ -17,7 +17,7 @@ import BigNumber from 'bignumber.js';
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
 export const MilestoneStatusEnum = builder.enumType('MilestoneStatus', {
-  values: ['pending', 'completed', 'failed', 'revision_requested'] as const,
+  values: milestoneStatuses,
 });
 
 export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').implement({
