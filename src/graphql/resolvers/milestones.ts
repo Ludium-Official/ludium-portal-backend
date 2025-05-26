@@ -17,7 +17,7 @@ import type {
 import type { Context, Root } from '@/types';
 import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
 import BigNumber from 'bignumber.js';
-import { count, eq } from 'drizzle-orm';
+import { asc, count, eq } from 'drizzle-orm';
 
 export async function getMilestoneResolver(_root: Root, args: { id: string }, ctx: Context) {
   const [milestone] = await ctx.db
@@ -65,7 +65,8 @@ export function getMilestonesByApplicationIdResolver(
   return ctx.db
     .select()
     .from(milestonesTable)
-    .where(eq(milestonesTable.applicationId, args.applicationId));
+    .where(eq(milestonesTable.applicationId, args.applicationId))
+    .orderBy(asc(milestonesTable.createdAt));
 }
 
 export function createMilestonesResolver(
