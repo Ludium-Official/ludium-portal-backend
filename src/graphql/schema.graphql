@@ -8,6 +8,7 @@ type Application {
   name: String
   price: String
   status: ApplicationStatus
+  summary: String
 }
 
 enum ApplicationStatus {
@@ -45,6 +46,7 @@ input CreateApplicationInput {
   name: String!
   price: String!
   programId: String!
+  summary: String
 }
 
 input CreateCommentInput {
@@ -236,6 +238,7 @@ type Post {
   id: ID
   image: String
   keywords: [Keyword!]
+  summary: String
   title: String
 }
 
@@ -311,6 +314,7 @@ input UpdateApplicationInput {
   metadata: JSON
   name: String
   status: ApplicationStatus
+  summary: String
 }
 
 input UpdateCommentInput {
@@ -367,6 +371,7 @@ type User {
   links: [Link!]
   loginType: String
   organizationName: String
+  summary: String
   walletAddress: String
 }
 
@@ -380,6 +385,7 @@ input UserInput {
   loginType: String
   organizationName: String
   password: String!
+  summary: String
   walletAddress: String
 }
 
@@ -393,5 +399,6 @@ input UserUpdateInput {
   links: [LinkInput!]
   loginType: String
   organizationName: String
+  summary: String
   walletAddress: String
 }

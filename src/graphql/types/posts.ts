@@ -20,6 +20,7 @@ export const PostType = builder.objectRef<DBPost>('Post').implement({
     id: t.exposeID('id'),
     title: t.exposeString('title'),
     content: t.exposeString('content'),
+    summary: t.exposeString('summary'),
     image: t.exposeString('image'),
     author: t.field({
       type: User,

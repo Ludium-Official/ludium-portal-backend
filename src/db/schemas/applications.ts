@@ -30,6 +30,7 @@ export const applicationsTable = pgTable('applications', {
   status: applicationStatusEnum('status').default('pending').notNull(),
   name: text('name').notNull(),
   content: text('content'),
+  summary: varchar('summary', { length: 512 }),
   metadata: jsonb('metadata'),
   price: varchar('price', { length: 256 }).default('0').notNull(),
 
