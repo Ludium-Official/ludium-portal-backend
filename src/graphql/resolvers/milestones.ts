@@ -66,7 +66,7 @@ export function getMilestonesByApplicationIdResolver(
     .select()
     .from(milestonesTable)
     .where(eq(milestonesTable.applicationId, args.applicationId))
-    .orderBy(asc(milestonesTable.createdAt));
+    .orderBy(asc(milestonesTable.sortOrder));
 }
 
 export function createMilestonesResolver(
@@ -89,11 +89,12 @@ export function createMilestonesResolver(
       throw new Error('You are not allowed to create milestones for this application');
     }
 
+    let sortOrder = 0;
     for (const milestone of args.input) {
       const { links, ...inputData } = milestone;
       const [newMilestone] = await t
         .insert(milestonesTable)
-        .values({ ...inputData })
+        .values({ ...inputData, sortOrder })
         .returning();
       // handle links
       if (links) {
@@ -115,6 +116,7 @@ export function createMilestonesResolver(
         );
       }
       milestones.push(newMilestone);
+      sortOrder++;
     }
 
     const [application] = await t

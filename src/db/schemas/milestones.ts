@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import {
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -31,6 +32,7 @@ export const milestonesTable = pgTable('milestones', {
   currency: varchar('currency', { length: 10 }).default('ETH'),
   status: milestoneStatusEnum('status').default('pending').notNull(),
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
+  sortOrder: integer('sort_order').notNull().default(0),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
