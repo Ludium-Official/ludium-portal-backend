@@ -2,6 +2,7 @@ import type { Post as DBPost } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
   createPostResolver,
+  getBannerPostResolver,
   getPostKeywordsByPostIdResolver,
   getPostResolver,
   getPostsResolver,
@@ -83,6 +84,10 @@ builder.queryFields((t) => ({
       id: t.arg.id({ required: true }),
     },
     resolve: getPostResolver,
+  }),
+  banner: t.field({
+    type: PostType,
+    resolve: getBannerPostResolver,
   }),
 }));
 

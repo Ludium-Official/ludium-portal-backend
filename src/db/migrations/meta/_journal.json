@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1747823846135,
-      "tag": "0000_square_pyro",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1747875584739,
-      "tag": "0001_rainy_gamora",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1747895896988,
-      "tag": "0003_broad_paladin",
+      "when": 1748322037346,
+      "tag": "0000_dark_iron_fist",
       "breakpoints": true
     }
   ]

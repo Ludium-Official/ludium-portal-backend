@@ -7,7 +7,7 @@ import {
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreatePostInput, UpdatePostInput } from '@/graphql/types/posts';
-import type { Context, Root } from '@/types';
+import type { Args, Context, Root } from '@/types';
 import { filterEmptyValues, requireUser, validAndNotEmptyArray } from '@/utils';
 import { and, asc, count, desc, eq, ilike, inArray } from 'drizzle-orm';
 
@@ -70,6 +70,16 @@ export async function getPostsResolver(
 export async function getPostResolver(_root: Root, args: { id: string }, ctx: Context) {
   const [post] = await ctx.db.select().from(postsTable).where(eq(postsTable.id, args.id));
 
+  return post;
+}
+
+export async function getBannerPostResolver(_root: Root, _args: Args, ctx: Context) {
+  const [post] = await ctx.db
+    .select()
+    .from(postsTable)
+    .where(eq(postsTable.isBanner, true))
+    .orderBy(desc(postsTable.createdAt))
+    .limit(1);
   return post;
 }
 
