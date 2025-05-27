@@ -65,6 +65,7 @@ input CreateMilestoneInput {
 input CreatePostInput {
   content: String!
   image: Upload
+  isBanner: Boolean
   keywords: [ID!]
   summary: String!
   title: String!
@@ -331,6 +332,7 @@ input UpdatePostInput {
   content: String
   id: ID!
   image: Upload
+  isBanner: Boolean
   keywords: [ID!]
   summary: String
   title: String

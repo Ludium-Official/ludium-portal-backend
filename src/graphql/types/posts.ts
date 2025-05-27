@@ -52,6 +52,7 @@ export const CreatePostInput = builder.inputType('CreatePostInput', {
     content: t.string({ required: true }),
     summary: t.string({ required: true }),
     keywords: t.idList(),
+    isBanner: t.boolean(),
     image: t.field({ type: 'Upload' }),
   }),
 });
@@ -62,6 +63,7 @@ export const UpdatePostInput = builder.inputType('UpdatePostInput', {
     title: t.string(),
     content: t.string(),
     summary: t.string(),
+    isBanner: t.boolean(),
     keywords: t.idList(),
     image: t.field({ type: 'Upload' }),
   }),

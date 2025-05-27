@@ -170,6 +170,10 @@ export async function updatePostResolver(
   const postData = filterEmptyValues<Post>(args.input);
 
   return ctx.db.transaction(async (t) => {
+    if (user.id !== postData.authorId && !user.isAdmin) {
+      throw new Error('You are not the author of this post');
+    }
+
     const [post] = await t
       .update(postsTable)
       .set(postData)
