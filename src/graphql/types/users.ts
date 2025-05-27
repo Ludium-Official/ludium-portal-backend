@@ -11,8 +11,8 @@ import {
   updateProfileResolver,
   updateUserResolver,
 } from '@/graphql/resolvers/users';
+import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
-import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -74,6 +74,7 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
     id: t.id({ required: true }),
     firstName: t.string(),
     lastName: t.string(),
+    email: t.string({ validate: { email: true } }),
     organizationName: t.string(),
     image: t.field({ type: 'Upload' }),
     about: t.string(),

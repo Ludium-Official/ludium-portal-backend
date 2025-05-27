@@ -103,7 +103,7 @@ export async function createPostResolver(
 ) {
   const user = requireUser(ctx);
 
-  const { title, content, image, keywords } = args.input;
+  const { title, content, image, keywords, summary } = args.input;
 
   return ctx.db.transaction(async (t) => {
     const [post] = await t
@@ -111,6 +111,7 @@ export async function createPostResolver(
       .values({
         title,
         content,
+        summary,
         authorId: user.id,
       })
       .returning();

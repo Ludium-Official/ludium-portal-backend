@@ -11,6 +11,7 @@ export const postsTable = pgTable('posts', {
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
   content: text('content').notNull(),
+  summary: varchar('summary', { length: 512 }).notNull(),
   image: varchar('image', { length: 512 }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
