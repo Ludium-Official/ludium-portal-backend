@@ -1,4 +1,5 @@
 import {
+  type User,
   filesTable,
   linksTable,
   programUserRolesTable,
@@ -9,7 +10,7 @@ import type { PaginationInput } from '@/graphql/types/common';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
 import { requireUser } from '@/utils';
-import { validAndNotEmptyArray } from '@/utils/common';
+import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
 import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
 
 export async function getUsersResolver(
@@ -265,6 +266,8 @@ export function updateProfileResolver(
 
   const { links, ...userData } = args.input;
 
+  const filteredUserData = filterEmptyValues<User>(userData);
+
   return ctx.db.transaction(async (t) => {
     if (userData.image) {
       const [avatar] = await t
@@ -285,10 +288,7 @@ export function updateProfileResolver(
     const [user] = await t
       .update(usersTable)
       .set({
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        organizationName: userData.organizationName,
-        about: userData.about,
+        ...filteredUserData,
         links: links as { url: string; title: string }[],
       })
       .where(eq(usersTable.id, loggedinUser.id))
