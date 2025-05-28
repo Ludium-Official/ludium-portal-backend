@@ -85,7 +85,7 @@ export async function getUsersResolver(
 
     const users = userWithCounts.map((result) => result.user);
 
-    const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable);
+    const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable).where(where);
     return { data: users, count: totalCount.count };
   }
 

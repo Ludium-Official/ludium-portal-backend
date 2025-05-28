@@ -59,7 +59,10 @@ export async function getPostsResolver(
     };
   }
 
-  const [totalCount] = await ctx.db.select({ count: count() }).from(postsTable);
+  const [totalCount] = await ctx.db
+    .select({ count: count() })
+    .from(postsTable)
+    .where(and(...filterConditions));
 
   return {
     data,

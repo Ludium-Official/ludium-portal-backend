@@ -24,12 +24,32 @@ export async function getApplicationsResolver(
   const sort = args.pagination?.sort || 'desc';
   const filter = args.pagination?.filter || [];
 
+  const filterPromises = filter
+    .map((f) => {
+      switch (f.field) {
+        case 'programId':
+          return eq(applicationsTable.programId, f.value);
+        case 'applicantId':
+          return eq(applicationsTable.applicantId, f.value);
+        case 'status':
+          return eq(applicationsTable.status, f.value as ApplicationStatusEnum);
+        default:
+          return undefined;
+      }
+    })
+    .filter(Boolean);
+
   const data = await ctx.db
     .select()
     .from(applicationsTable)
     .limit(limit)
     .offset(offset)
     .orderBy(sort === 'asc' ? asc(applicationsTable.createdAt) : desc(applicationsTable.createdAt))
+    .where(and(...filterPromises));
+
+  const [totalCount] = await ctx.db
+    .select({ count: count() })
+    .from(applicationsTable)
     .where(
       and(
         ...filter
@@ -48,10 +68,12 @@ export async function getApplicationsResolver(
           }),
       ),
     );
-  const [totalCount] = await ctx.db.select({ count: count() }).from(applicationsTable);
 
-  if (!validAndNotEmptyArray(data) || !totalCount) {
-    throw new Error('No applications found');
+  if (!validAndNotEmptyArray(data)) {
+    return {
+      data: [],
+      count: 0,
+    };
   }
 
   return {
