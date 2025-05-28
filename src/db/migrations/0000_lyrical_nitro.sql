@@ -11,6 +11,7 @@ CREATE TABLE "applications" (
 	"status" "application_status" DEFAULT 'pending' NOT NULL,
 	"name" text NOT NULL,
 	"content" text,
+	"summary" varchar(512),
 	"metadata" jsonb,
 	"price" varchar(256) DEFAULT '0' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -52,6 +53,7 @@ CREATE TABLE "users" (
 	"organization_name" varchar(256),
 	"image" varchar(512),
 	"about" text,
+	"summary" varchar(512),
 	"links" jsonb,
 	"is_admin" boolean DEFAULT false,
 	"login_type" varchar(256),
@@ -123,6 +125,7 @@ CREATE TABLE "milestones" (
 	"currency" varchar(10) DEFAULT 'ETH',
 	"status" "milestone_status" DEFAULT 'pending' NOT NULL,
 	"links" jsonb,
+	"sort_order" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );

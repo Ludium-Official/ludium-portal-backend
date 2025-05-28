@@ -1,5 +1,5 @@
 {
-  "id": "0050d6a1-6573-42e2-9520-4fd891f1c579",
+  "id": "f69e56cd-2740-4353-a48e-5bb6b69bf2c8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -44,6 +44,12 @@
         "content": {
           "name": "content",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "varchar(512)",
           "primaryKey": false,
           "notNull": false
         },
@@ -375,6 +381,12 @@
         "about": {
           "name": "about",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "varchar(512)",
           "primaryKey": false,
           "notNull": false
         },
@@ -935,6 +947,13 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "created_at": {
           "name": "created_at",
