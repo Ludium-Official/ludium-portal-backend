@@ -66,7 +66,7 @@ export function getMilestonesByApplicationIdResolver(
     .select()
     .from(milestonesTable)
     .where(eq(milestonesTable.applicationId, args.applicationId))
-    .orderBy(asc(milestonesTable.sortOrder));
+    .orderBy(asc(milestonesTable.createdAt));
 }
 
 export function createMilestonesResolver(
@@ -145,12 +145,16 @@ export function createMilestonesResolver(
       return acc.plus(new BigNumber(a.price));
     }, new BigNumber(0));
 
-    if (applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price))) {
+    if (
+      applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price)) ||
+      !validAndNotEmptyArray(milestones)
+    ) {
       await t
         .delete(applicationsTable)
         .where(eq(applicationsTable.id, args.input[0].applicationId));
+
       t.rollback();
-      throw new Error('The total price of the applications is greater than the program price');
+      return [];
     }
 
     await t
