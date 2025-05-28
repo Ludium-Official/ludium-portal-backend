@@ -166,7 +166,7 @@ export function createApplicationResolver(
       const { links, ...inputData } = milestone;
       const [newMilestone] = await t
         .insert(milestonesTable)
-        .values({ ...inputData, sortOrder })
+        .values({ ...inputData, sortOrder, applicationId: application.id })
         .returning();
       // handle links
       if (links) {

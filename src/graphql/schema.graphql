@@ -57,7 +57,6 @@ input CreateCommentInput {
 }
 
 input CreateMilestoneInput {
-  applicationId: String!
   currency: String! = "ETH"
   description: String
   links: [LinkInput!]
@@ -145,7 +144,6 @@ type Mutation {
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
   createComment(input: CreateCommentInput!): Comment
-  createMilestones(input: [CreateMilestoneInput!]!): [Milestone!]
   createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
