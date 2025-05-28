@@ -13,8 +13,8 @@ import {
 import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
-import { isInSameScope, requireUser } from '@/utils';
-import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
+import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
+import BigNumber from 'bignumber.js';
 import { and, asc, count, desc, eq } from 'drizzle-orm';
 
 export async function getApplicationsResolver(
