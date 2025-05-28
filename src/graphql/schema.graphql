@@ -43,6 +43,7 @@ input CreateApplicationInput {
   content: String!
   links: [LinkInput!]
   metadata: JSON
+  milestones: [CreateMilestoneInput!]!
   name: String!
   price: String!
   programId: String!

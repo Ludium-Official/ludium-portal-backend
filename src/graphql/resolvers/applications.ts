@@ -1,9 +1,12 @@
 import {
   type ApplicationStatusEnum,
   type ApplicationUpdate,
+  type Milestone,
   applicationsTable,
   applicationsToLinksTable,
   linksTable,
+  milestonesTable,
+  milestonesToLinksTable,
   programUserRolesTable,
   programsTable,
 } from '@/db/schemas';
@@ -107,6 +110,7 @@ export function createApplicationResolver(
   ctx: Context,
 ) {
   const user = requireUser(ctx);
+  const milestones: Milestone[] = [];
 
   return ctx.db.transaction(async (t) => {
     const [program] = await t
@@ -114,6 +118,7 @@ export function createApplicationResolver(
         creatorId: programsTable.creatorId,
         validatorId: programsTable.validatorId,
         id: programsTable.id,
+        price: programsTable.price,
       })
       .from(programsTable)
       .where(eq(programsTable.id, args.input.programId));
@@ -156,14 +161,71 @@ export function createApplicationResolver(
       );
     }
 
-    await ctx.server.pubsub.publish('notifications', t, {
-      type: 'application',
-      action: 'created',
-      recipientId: program.creatorId,
-      entityId: application.id,
-      metadata: { programId: program.id },
-    });
-    await ctx.server.pubsub.publish('notificationsCount');
+    let sortOrder = 0;
+    for (const milestone of args.input.milestones) {
+      const { links, ...inputData } = milestone;
+      const [newMilestone] = await t
+        .insert(milestonesTable)
+        .values({ ...inputData, sortOrder })
+        .returning();
+      // handle links
+      if (links) {
+        const filteredLinks = links.filter((link) => link.url);
+        const newLinks = await t
+          .insert(linksTable)
+          .values(
+            filteredLinks.map((link) => ({
+              url: link.url as string,
+              title: link.title as string,
+            })),
+          )
+          .returning();
+        await t.insert(milestonesToLinksTable).values(
+          newLinks.map((link) => ({
+            milestoneId: newMilestone.id,
+            linkId: link.id,
+          })),
+        );
+      }
+      milestones.push(newMilestone);
+      sortOrder++;
+    }
+
+    if (!validAndNotEmptyArray(milestones)) {
+      t.rollback();
+      throw new Error('Milestones are required');
+    }
+
+    const applications = await t
+      .select({ price: applicationsTable.price })
+      .from(applicationsTable)
+      .where(eq(applicationsTable.programId, application.programId));
+
+    const milestonesTotalPrice = milestones.reduce((acc, m) => {
+      return acc.plus(new BigNumber(m.price));
+    }, new BigNumber(0));
+
+    const applicationsTotalPrice = applications.reduce((acc, a) => {
+      return acc.plus(new BigNumber(a.price));
+    }, new BigNumber(0));
+
+    if (
+      applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price)) ||
+      !validAndNotEmptyArray(milestones)
+    ) {
+      t.rollback();
+      throw new Error('The total price of the applications is greater than the program price');
+    }
+
+    if (program.validatorId) {
+      await ctx.server.pubsub.publish('notifications', t, {
+        type: 'application',
+        action: 'created',
+        recipientId: program.validatorId,
+        entityId: application.id,
+      });
+      await ctx.server.pubsub.publish('notificationsCount');
+    }
 
     return application;
   });

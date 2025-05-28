@@ -17,7 +17,7 @@ import { getMilestonesByApplicationIdResolver } from '@/graphql/resolvers/milest
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
-import { MilestoneType } from '@/graphql/types/milestones';
+import { CreateMilestoneInput, MilestoneType } from '@/graphql/types/milestones';
 import { User } from '@/graphql/types/users';
 import BigNumber from 'bignumber.js';
 import { eq } from 'drizzle-orm';
@@ -97,6 +97,7 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
         },
       },
     }),
+    milestones: t.field({ type: [CreateMilestoneInput], required: true }),
   }),
 });
 
