@@ -173,6 +173,9 @@ export async function updatePostResolver(
   const postData = filterEmptyValues<Post>(args.input);
 
   return ctx.db.transaction(async (t) => {
+    if (postData.isBanner === true) {
+      await t.update(postsTable).set({ isBanner: false }).where(eq(postsTable.isBanner, true));
+    }
     const [post] = await t
       .update(postsTable)
       .set(postData)
