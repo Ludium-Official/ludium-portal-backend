@@ -120,7 +120,10 @@ export async function getProgramsResolver(
     };
   }
 
-  const [totalCount] = await ctx.db.select({ count: count() }).from(programsTable);
+  const [totalCount] = await ctx.db
+    .select({ count: count() })
+    .from(programsTable)
+    .where(and(...filterConditions));
 
   return {
     data,

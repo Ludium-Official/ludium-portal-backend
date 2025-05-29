@@ -1,7 +1,9 @@
-CREATE TYPE "public"."application_status" AS ENUM('pending', 'approved', 'rejected', 'completed', 'withdrawn');--> statement-breakpoint
+CREATE TYPE "public"."application_status" AS ENUM('pending', 'accepted', 'rejected', 'completed', 'submitted');--> statement-breakpoint
 CREATE TYPE "public"."program_role_type" AS ENUM('sponsor', 'validator', 'builder');--> statement-breakpoint
 CREATE TYPE "public"."program_status" AS ENUM('draft', 'payment_required', 'published', 'closed', 'completed', 'cancelled');--> statement-breakpoint
-CREATE TYPE "public"."milestone_status" AS ENUM('pending', 'completed', 'failed', 'revision_requested');--> statement-breakpoint
+CREATE TYPE "public"."milestone_status" AS ENUM('pending', 'completed', 'rejected', 'submitted');--> statement-breakpoint
+CREATE TYPE "public"."notification_action" AS ENUM('created', 'accepted', 'rejected', 'submitted', 'completed', 'broadcast');--> statement-breakpoint
+CREATE TYPE "public"."notification_type" AS ENUM('program', 'application', 'milestone', 'comment', 'system');--> statement-breakpoint
 CREATE TABLE "applications" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"program_id" uuid NOT NULL,
@@ -9,6 +11,7 @@ CREATE TABLE "applications" (
 	"status" "application_status" DEFAULT 'pending' NOT NULL,
 	"name" text NOT NULL,
 	"content" text,
+	"summary" varchar(512),
 	"metadata" jsonb,
 	"price" varchar(256) DEFAULT '0' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -50,8 +53,8 @@ CREATE TABLE "users" (
 	"organization_name" varchar(256),
 	"image" varchar(512),
 	"about" text,
+	"summary" varchar(512),
 	"links" jsonb,
-	"external_id" varchar(256),
 	"is_admin" boolean DEFAULT false,
 	"login_type" varchar(256),
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -122,6 +125,7 @@ CREATE TABLE "milestones" (
 	"currency" varchar(10) DEFAULT 'ETH',
 	"status" "milestone_status" DEFAULT 'pending' NOT NULL,
 	"links" jsonb,
+	"sort_order" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -145,7 +149,9 @@ CREATE TABLE "posts" (
 	"title" varchar(256) NOT NULL,
 	"author_id" uuid NOT NULL,
 	"content" text NOT NULL,
+	"summary" varchar(512) NOT NULL,
 	"image" varchar(512),
+	"is_banner" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -154,6 +160,20 @@ CREATE TABLE "posts_to_keywords" (
 	"post_id" uuid NOT NULL,
 	"keyword_id" uuid NOT NULL,
 	CONSTRAINT "posts_to_keywords_post_id_keyword_id_pk" PRIMARY KEY("post_id","keyword_id")
+);
+--> statement-breakpoint
+CREATE TABLE "notifications" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"type" "notification_type" NOT NULL,
+	"action" "notification_action" NOT NULL,
+	"recipient_id" uuid NOT NULL,
+	"entity_id" uuid NOT NULL,
+	"title" varchar(255),
+	"content" text,
+	"metadata" jsonb,
+	"read_at" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 ALTER TABLE "applications" ADD CONSTRAINT "applications_program_id_programs_id_fk" FOREIGN KEY ("program_id") REFERENCES "public"."programs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -178,4 +198,5 @@ ALTER TABLE "milestones_to_links" ADD CONSTRAINT "milestones_to_links_milestone_
 ALTER TABLE "milestones_to_links" ADD CONSTRAINT "milestones_to_links_link_id_links_id_fk" FOREIGN KEY ("link_id") REFERENCES "public"."links"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts" ADD CONSTRAINT "posts_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts_to_keywords" ADD CONSTRAINT "posts_to_keywords_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "posts_to_keywords" ADD CONSTRAINT "posts_to_keywords_keyword_id_keywords_id_fk" FOREIGN KEY ("keyword_id") REFERENCES "public"."keywords"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "posts_to_keywords" ADD CONSTRAINT "posts_to_keywords_keyword_id_keywords_id_fk" FOREIGN KEY ("keyword_id") REFERENCES "public"."keywords"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_recipient_id_users_id_fk" FOREIGN KEY ("recipient_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;

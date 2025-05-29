@@ -17,7 +17,7 @@ import { getMilestonesByApplicationIdResolver } from '@/graphql/resolvers/milest
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
-import { MilestoneType } from '@/graphql/types/milestones';
+import { CreateMilestoneInput, MilestoneType } from '@/graphql/types/milestones';
 import { User } from '@/graphql/types/users';
 import BigNumber from 'bignumber.js';
 import { eq } from 'drizzle-orm';
@@ -38,6 +38,7 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
     }),
     name: t.exposeString('name', { nullable: true }),
     content: t.exposeString('content', { nullable: true }),
+    summary: t.exposeString('summary', { nullable: true }),
     price: t.exposeString('price'),
     metadata: t.field({
       type: 'JSON',
@@ -85,6 +86,7 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
     programId: t.string({ required: true }),
     name: t.string({ required: true }),
     content: t.string({ required: true }),
+    summary: t.string(),
     metadata: t.field({ type: 'JSON' }),
     links: t.field({ type: [LinkInput], required: false }),
     price: t.string({
@@ -95,6 +97,7 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
         },
       },
     }),
+    milestones: t.field({ type: [CreateMilestoneInput], required: true }),
   }),
 });
 
@@ -103,6 +106,7 @@ export const UpdateApplicationInput = builder.inputType('UpdateApplicationInput'
     id: t.string({ required: true }),
     name: t.string(),
     content: t.string(),
+    summary: t.string(),
     metadata: t.field({ type: 'JSON' }),
     status: t.field({ type: ApplicationStatusEnum }),
     links: t.field({ type: [LinkInput] }),

@@ -7,7 +7,7 @@ import {
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreatePostInput, UpdatePostInput } from '@/graphql/types/posts';
-import type { Context, Root } from '@/types';
+import type { Args, Context, Root } from '@/types';
 import { filterEmptyValues, requireUser, validAndNotEmptyArray } from '@/utils';
 import { and, asc, count, desc, eq, ilike, inArray } from 'drizzle-orm';
 
@@ -59,7 +59,10 @@ export async function getPostsResolver(
     };
   }
 
-  const [totalCount] = await ctx.db.select({ count: count() }).from(postsTable);
+  const [totalCount] = await ctx.db
+    .select({ count: count() })
+    .from(postsTable)
+    .where(and(...filterConditions));
 
   return {
     data,
@@ -70,6 +73,16 @@ export async function getPostsResolver(
 export async function getPostResolver(_root: Root, args: { id: string }, ctx: Context) {
   const [post] = await ctx.db.select().from(postsTable).where(eq(postsTable.id, args.id));
 
+  return post;
+}
+
+export async function getBannerPostResolver(_root: Root, _args: Args, ctx: Context) {
+  const [post] = await ctx.db
+    .select()
+    .from(postsTable)
+    .where(eq(postsTable.isBanner, true))
+    .orderBy(desc(postsTable.createdAt))
+    .limit(1);
   return post;
 }
 
@@ -103,7 +116,7 @@ export async function createPostResolver(
 ) {
   const user = requireUser(ctx);
 
-  const { title, content, image, keywords } = args.input;
+  const { title, content, image, keywords, summary } = args.input;
 
   return ctx.db.transaction(async (t) => {
     const [post] = await t
@@ -111,6 +124,7 @@ export async function createPostResolver(
       .values({
         title,
         content,
+        summary,
         authorId: user.id,
       })
       .returning();
@@ -159,11 +173,18 @@ export async function updatePostResolver(
   const postData = filterEmptyValues<Post>(args.input);
 
   return ctx.db.transaction(async (t) => {
+    if (postData.isBanner === true) {
+      await t.update(postsTable).set({ isBanner: false }).where(eq(postsTable.isBanner, true));
+    }
     const [post] = await t
       .update(postsTable)
       .set(postData)
       .where(eq(postsTable.id, args.input.id))
       .returning();
+
+    if (user.id !== post?.authorId && !user.isAdmin) {
+      throw new Error('You are not the author of this post');
+    }
 
     // handle keywords
     if (args.input.keywords?.length) {

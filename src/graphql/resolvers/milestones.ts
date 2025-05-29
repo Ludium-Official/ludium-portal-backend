@@ -1,5 +1,4 @@
 import {
-  type Milestone,
   type MilestoneUpdate,
   applicationsTable,
   linksTable,
@@ -10,13 +9,11 @@ import {
 import type { PaginationInput } from '@/graphql/types/common';
 import type {
   CheckMilestoneInput,
-  CreateMilestoneInput,
   SubmitMilestoneInput,
   UpdateMilestoneInput,
 } from '@/graphql/types/milestones';
 import type { Context, Root } from '@/types';
 import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
-import BigNumber from 'bignumber.js';
 import { asc, count, eq } from 'drizzle-orm';
 
 export async function getMilestoneResolver(_root: Root, args: { id: string }, ctx: Context) {
@@ -67,109 +64,6 @@ export function getMilestonesByApplicationIdResolver(
     .from(milestonesTable)
     .where(eq(milestonesTable.applicationId, args.applicationId))
     .orderBy(asc(milestonesTable.createdAt));
-}
-
-export function createMilestonesResolver(
-  _root: Root,
-  args: { input: (typeof CreateMilestoneInput.$inferInput)[] },
-  ctx: Context,
-) {
-  const user = requireUser(ctx);
-
-  const milestones: Milestone[] = [];
-
-  return ctx.db.transaction(async (t) => {
-    const hasAccess = await isInSameScope({
-      scope: 'application_builder',
-      userId: user.id,
-      entityId: args.input[0].applicationId,
-      db: t,
-    });
-    if (!hasAccess) {
-      throw new Error('You are not allowed to create milestones for this application');
-    }
-
-    for (const milestone of args.input) {
-      const { links, ...inputData } = milestone;
-      const [newMilestone] = await t
-        .insert(milestonesTable)
-        .values({ ...inputData })
-        .returning();
-      // handle links
-      if (links) {
-        const filteredLinks = links.filter((link) => link.url);
-        const newLinks = await t
-          .insert(linksTable)
-          .values(
-            filteredLinks.map((link) => ({
-              url: link.url as string,
-              title: link.title as string,
-            })),
-          )
-          .returning();
-        await t.insert(milestonesToLinksTable).values(
-          newLinks.map((link) => ({
-            milestoneId: newMilestone.id,
-            linkId: link.id,
-          })),
-        );
-      }
-      milestones.push(newMilestone);
-    }
-
-    const [application] = await t
-      .select({
-        id: applicationsTable.id,
-        programId: applicationsTable.programId,
-      })
-      .from(applicationsTable)
-      .where(eq(applicationsTable.id, args.input[0].applicationId));
-
-    const [program] = await t
-      .select({ price: programsTable.price, validatorId: programsTable.validatorId })
-      .from(programsTable)
-      .where(eq(programsTable.id, application.programId));
-
-    const applications = await t
-      .select({ price: applicationsTable.price })
-      .from(applicationsTable)
-      .where(eq(applicationsTable.programId, application.programId));
-
-    const milestonesTotalPrice = milestones.reduce((acc, m) => {
-      return acc.plus(new BigNumber(m.price));
-    }, new BigNumber(0));
-
-    const applicationsTotalPrice = applications.reduce((acc, a) => {
-      return acc.plus(new BigNumber(a.price));
-    }, new BigNumber(0));
-
-    if (applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price))) {
-      await t
-        .delete(applicationsTable)
-        .where(eq(applicationsTable.id, args.input[0].applicationId));
-      t.rollback();
-      throw new Error('The total price of the applications is greater than the program price');
-    }
-
-    await t
-      .update(applicationsTable)
-      .set({
-        price: milestonesTotalPrice.toString(),
-      })
-      .where(eq(applicationsTable.id, args.input[0].applicationId));
-
-    if (program.validatorId) {
-      await ctx.server.pubsub.publish('notifications', t, {
-        type: 'application',
-        action: 'created',
-        recipientId: program.validatorId,
-        entityId: application.id,
-      });
-      await ctx.server.pubsub.publish('notificationsCount');
-    }
-
-    return milestones;
-  });
 }
 
 export function updateMilestoneResolver(

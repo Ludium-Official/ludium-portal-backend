@@ -8,6 +8,7 @@ type Application {
   name: String
   price: String
   status: ApplicationStatus
+  summary: String
 }
 
 enum ApplicationStatus {
@@ -42,9 +43,11 @@ input CreateApplicationInput {
   content: String!
   links: [LinkInput!]
   metadata: JSON
+  milestones: [CreateMilestoneInput!]!
   name: String!
   price: String!
   programId: String!
+  summary: String
 }
 
 input CreateCommentInput {
@@ -54,7 +57,6 @@ input CreateCommentInput {
 }
 
 input CreateMilestoneInput {
-  applicationId: String!
   currency: String! = "ETH"
   description: String
   links: [LinkInput!]
@@ -65,7 +67,9 @@ input CreateMilestoneInput {
 input CreatePostInput {
   content: String!
   image: Upload
+  isBanner: Boolean
   keywords: [ID!]
+  summary: String!
   title: String!
 }
 
@@ -140,7 +144,6 @@ type Mutation {
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
   createComment(input: CreateCommentInput!): Comment
-  createMilestones(input: [CreateMilestoneInput!]!): [Milestone!]
   createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
@@ -234,6 +237,7 @@ type Post {
   id: ID
   image: String
   keywords: [Keyword!]
+  summary: String
   title: String
 }
 
@@ -268,6 +272,7 @@ enum ProgramStatus {
 type Query {
   application(id: ID!): Application
   applications(pagination: PaginationInput): PaginatedApplications
+  banner: Post
   comment(id: ID!): Comment
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
   commentsByPost(postId: ID!): [Comment!]
@@ -308,6 +313,7 @@ input UpdateApplicationInput {
   metadata: JSON
   name: String
   status: ApplicationStatus
+  summary: String
 }
 
 input UpdateCommentInput {
@@ -329,7 +335,9 @@ input UpdatePostInput {
   content: String
   id: ID!
   image: Upload
+  isBanner: Boolean
   keywords: [ID!]
+  summary: String
   title: String
 }
 
@@ -362,6 +370,7 @@ type User {
   links: [Link!]
   loginType: String
   organizationName: String
+  summary: String
   walletAddress: String
 }
 
@@ -375,11 +384,13 @@ input UserInput {
   loginType: String
   organizationName: String
   password: String!
+  summary: String
   walletAddress: String
 }
 
 input UserUpdateInput {
   about: String
+  email: String
   firstName: String
   id: ID!
   image: Upload
@@ -387,5 +398,6 @@ input UserUpdateInput {
   links: [LinkInput!]
   loginType: String
   organizationName: String
+  summary: String
   walletAddress: String
 }

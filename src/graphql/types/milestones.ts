@@ -3,7 +3,6 @@ import builder from '@/graphql/builder';
 import { getLinksByMilestoneIdResolver } from '@/graphql/resolvers/links';
 import {
   checkMilestoneResolver,
-  createMilestonesResolver,
   getMilestoneResolver,
   getMilestonesResolver,
   submitMilestoneResolver,
@@ -53,7 +52,6 @@ export const PaginatedMilestonesType = builder
 /* -------------------------------------------------------------------------- */
 export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
   fields: (t) => ({
-    applicationId: t.string({ required: true }),
     title: t.string({ required: true }),
     description: t.string(),
     price: t.string({
@@ -122,14 +120,6 @@ builder.queryFields((t) => ({
 }));
 
 builder.mutationFields((t) => ({
-  createMilestones: t.field({
-    type: [MilestoneType],
-    authScopes: { user: true },
-    args: {
-      input: t.arg({ type: [CreateMilestoneInput], required: true }),
-    },
-    resolve: createMilestonesResolver,
-  }),
   updateMilestone: t.field({
     type: MilestoneType,
     authScopes: { admin: true },

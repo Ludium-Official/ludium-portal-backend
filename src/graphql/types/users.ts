@@ -11,8 +11,8 @@ import {
   updateProfileResolver,
   updateUserResolver,
 } from '@/graphql/resolvers/users';
+import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
-import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -26,6 +26,7 @@ export const User = builder.objectRef<DBUser>('User').implement({
     organizationName: t.exposeString('organizationName', { nullable: true }),
     image: t.exposeString('image', { nullable: true }),
     about: t.exposeString('about', { nullable: true }),
+    summary: t.exposeString('summary'),
     loginType: t.exposeString('loginType', { nullable: true }),
     walletAddress: t.exposeString('walletAddress', { nullable: true }),
     isAdmin: t.exposeBoolean('isAdmin'),
@@ -63,6 +64,7 @@ export const UserInput = builder.inputType('UserInput', {
     organizationName: t.string(),
     image: t.field({ type: 'Upload' }),
     about: t.string(),
+    summary: t.string(),
     links: t.field({ type: [LinkInput] }),
     loginType: t.string(),
     walletAddress: t.string(),
@@ -74,9 +76,11 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
     id: t.id({ required: true }),
     firstName: t.string(),
     lastName: t.string(),
+    email: t.string({ validate: { email: true } }),
     organizationName: t.string(),
     image: t.field({ type: 'Upload' }),
     about: t.string(),
+    summary: t.string(),
     links: t.field({ type: [LinkInput] }),
     loginType: t.string(),
     walletAddress: t.string(),

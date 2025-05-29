@@ -1,5 +1,5 @@
 {
-  "id": "1d897e9a-d382-4781-bf95-ad6ea15d601c",
+  "id": "f69e56cd-2740-4353-a48e-5bb6b69bf2c8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -44,6 +44,12 @@
         "content": {
           "name": "content",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "varchar(512)",
           "primaryKey": false,
           "notNull": false
         },
@@ -378,15 +384,15 @@
           "primaryKey": false,
           "notNull": false
         },
-        "links": {
-          "name": "links",
-          "type": "jsonb",
+        "summary": {
+          "name": "summary",
+          "type": "varchar(512)",
           "primaryKey": false,
           "notNull": false
         },
-        "external_id": {
-          "name": "external_id",
-          "type": "varchar(256)",
+        "links": {
+          "name": "links",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
@@ -942,6 +948,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -1114,11 +1127,24 @@
           "primaryKey": false,
           "notNull": true
         },
+        "summary": {
+          "name": "summary",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": true
+        },
         "image": {
           "name": "image",
           "type": "varchar(512)",
           "primaryKey": false,
           "notNull": false
+        },
+        "is_banner": {
+          "name": "is_banner",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "created_at": {
           "name": "created_at",
@@ -1216,6 +1242,104 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.notifications": {
+      "name": "notifications",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "type": {
+          "name": "type",
+          "type": "notification_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "notification_action",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipient_id": {
+          "name": "recipient_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "read_at": {
+          "name": "read_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "notifications_recipient_id_users_id_fk": {
+          "name": "notifications_recipient_id_users_id_fk",
+          "tableFrom": "notifications",
+          "tableTo": "users",
+          "columnsFrom": [
+            "recipient_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -1224,10 +1348,10 @@
       "schema": "public",
       "values": [
         "pending",
-        "approved",
+        "accepted",
         "rejected",
         "completed",
-        "withdrawn"
+        "submitted"
       ]
     },
     "public.program_role_type": {
@@ -1257,8 +1381,31 @@
       "values": [
         "pending",
         "completed",
-        "failed",
-        "revision_requested"
+        "rejected",
+        "submitted"
+      ]
+    },
+    "public.notification_action": {
+      "name": "notification_action",
+      "schema": "public",
+      "values": [
+        "created",
+        "accepted",
+        "rejected",
+        "submitted",
+        "completed",
+        "broadcast"
+      ]
+    },
+    "public.notification_type": {
+      "name": "notification_type",
+      "schema": "public",
+      "values": [
+        "program",
+        "application",
+        "milestone",
+        "comment",
+        "system"
       ]
     }
   },
