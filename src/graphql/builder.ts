@@ -45,6 +45,9 @@ const builder = new SchemaBuilder<{
     programBuilder: {
       applicationId: string;
     };
+    milestoneBuilder: {
+      milestoneId: string;
+    };
     programParticipant: {
       programId: string;
     };
@@ -82,6 +85,9 @@ const builder = new SchemaBuilder<{
       },
       programBuilder: async ({ applicationId }) => {
         return await context.server.auth.isProgramBuilder(context.request, applicationId);
+      },
+      milestoneBuilder: async ({ milestoneId }) => {
+        return await context.server.auth.isMilestoneBuilder(context.request, milestoneId);
       },
       programParticipant: async ({ programId }) => {
         const roles = await context.server.auth.getProgramRoles(context.request, programId);

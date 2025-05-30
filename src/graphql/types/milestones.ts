@@ -124,7 +124,7 @@ builder.mutationFields((t) => ({
     type: MilestoneType,
     authScopes: async (_, args) => ({
       admin: true,
-      programBuilder: { applicationId: args.input.id },
+      milestoneBuilder: { milestoneId: args.input.id },
     }),
     args: {
       input: t.arg({ type: UpdateMilestoneInput, required: true }),

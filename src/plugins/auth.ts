@@ -1,6 +1,7 @@
 import {
   type User as DbUser,
   applicationsTable,
+  milestonesTable,
   programUserRolesTable,
   usersTable,
 } from '@/db/schemas';
@@ -81,6 +82,15 @@ export class AuthHandler {
       .where(eq(applicationsTable.id, applicationId));
     if (!application) return false;
     return this.isUserInProgramRole(request, application.programId, 'builder');
+  }
+
+  async isMilestoneBuilder(request: FastifyRequest, milestoneId: string): Promise<boolean> {
+    const [milestone] = await this.server.db
+      .select()
+      .from(milestonesTable)
+      .where(eq(milestonesTable.id, milestoneId));
+    if (!milestone) return false;
+    return this.isProgramBuilder(request, milestone.applicationId);
   }
 
   async getProgramRoles(request: FastifyRequest, programId: string): Promise<string[]> {
