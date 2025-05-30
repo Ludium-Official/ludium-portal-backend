@@ -14,6 +14,7 @@ import type {
 } from '@/graphql/types/milestones';
 import type { Context, Root } from '@/types';
 import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
+import BigNumber from 'bignumber.js';
 import { and, asc, count, eq, inArray, lt } from 'drizzle-orm';
 
 export async function getMilestoneResolver(_root: Root, args: { id: string }, ctx: Context) {
