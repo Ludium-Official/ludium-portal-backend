@@ -1,4 +1,10 @@
-import { type User as DbUser, programUserRolesTable, usersTable } from '@/db/schemas';
+import {
+  type User as DbUser,
+  applicationsTable,
+  milestonesTable,
+  programUserRolesTable,
+  usersTable,
+} from '@/db/schemas';
 import type { Context } from '@/types';
 import { and, eq } from 'drizzle-orm';
 import type { FastifyError, FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';
@@ -69,8 +75,22 @@ export class AuthHandler {
     return this.isUserInProgramRole(request, programId, 'validator');
   }
 
-  async isProgramBuilder(request: FastifyRequest, programId: string): Promise<boolean> {
-    return this.isUserInProgramRole(request, programId, 'builder');
+  async isProgramBuilder(request: FastifyRequest, applicationId: string): Promise<boolean> {
+    const [application] = await this.server.db
+      .select()
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, applicationId));
+    if (!application) return false;
+    return this.isUserInProgramRole(request, application.programId, 'builder');
+  }
+
+  async isMilestoneBuilder(request: FastifyRequest, milestoneId: string): Promise<boolean> {
+    const [milestone] = await this.server.db
+      .select()
+      .from(milestonesTable)
+      .where(eq(milestonesTable.id, milestoneId));
+    if (!milestone) return false;
+    return this.isProgramBuilder(request, milestone.applicationId);
   }
 
   async getProgramRoles(request: FastifyRequest, programId: string): Promise<string[]> {

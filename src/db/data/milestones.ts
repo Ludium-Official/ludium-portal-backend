@@ -21,6 +21,7 @@ export function createMilestones(
       price: '2',
       currency: 'ETH',
       status: 'pending',
+      sortOrder: 1,
       links: [
         { url: 'https://example.com/docs', title: 'Documentation' },
         { url: 'https://example.com/plan', title: 'Project Plan' },
@@ -35,6 +36,7 @@ export function createMilestones(
       price: '5',
       currency: 'ETH',
       status: 'pending',
+      sortOrder: 2,
       links: [
         { url: 'https://github.com/example/repo', title: 'Source Code' },
         { url: 'https://example.com/docs/api', title: 'API Documentation' },
@@ -49,6 +51,7 @@ export function createMilestones(
       price: '3',
       currency: 'ETH',
       status: 'pending',
+      sortOrder: 3,
       links: [
         { url: 'https://example.com/demo', title: 'Demo' },
         { url: 'https://example.com/test-report', title: 'Test Report' },

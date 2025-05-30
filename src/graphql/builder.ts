@@ -43,7 +43,10 @@ const builder = new SchemaBuilder<{
       programId: string;
     };
     programBuilder: {
-      programId: string;
+      applicationId: string;
+    };
+    milestoneBuilder: {
+      milestoneId: string;
     };
     programParticipant: {
       programId: string;
@@ -80,8 +83,11 @@ const builder = new SchemaBuilder<{
       programValidator: async ({ programId }) => {
         return await context.server.auth.isProgramValidator(context.request, programId);
       },
-      programBuilder: async ({ programId }) => {
-        return await context.server.auth.isProgramBuilder(context.request, programId);
+      programBuilder: async ({ applicationId }) => {
+        return await context.server.auth.isProgramBuilder(context.request, applicationId);
+      },
+      milestoneBuilder: async ({ milestoneId }) => {
+        return await context.server.auth.isMilestoneBuilder(context.request, milestoneId);
       },
       programParticipant: async ({ programId }) => {
         const roles = await context.server.auth.getProgramRoles(context.request, programId);
