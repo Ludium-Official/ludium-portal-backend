@@ -14,7 +14,7 @@ import type {
 } from '@/graphql/types/milestones';
 import type { Context, Root } from '@/types';
 import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
-import { asc, count, eq } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, lt } from 'drizzle-orm';
 
 export async function getMilestoneResolver(_root: Root, args: { id: string }, ctx: Context) {
   const [milestone] = await ctx.db
@@ -63,7 +63,7 @@ export function getMilestonesByApplicationIdResolver(
     .select()
     .from(milestonesTable)
     .where(eq(milestonesTable.applicationId, args.applicationId))
-    .orderBy(asc(milestonesTable.createdAt));
+    .orderBy(asc(milestonesTable.sortOrder));
 }
 
 export function updateMilestoneResolver(
@@ -92,6 +92,59 @@ export function updateMilestoneResolver(
           linkId: link.id,
         })),
       );
+    }
+
+    if (args.input.price) {
+      // const get program id from milestone
+      const [milestone] = await t
+        .select({ applicationId: milestonesTable.applicationId })
+        .from(milestonesTable)
+        .where(eq(milestonesTable.id, args.input.id));
+
+      const [application] = await t
+        .select({ programId: applicationsTable.programId })
+        .from(applicationsTable)
+        .where(eq(applicationsTable.id, milestone.applicationId));
+
+      const [program] = await t
+        .select({ id: programsTable.id, price: programsTable.price })
+        .from(programsTable)
+        .where(eq(programsTable.id, application.programId));
+
+      const applications = await t
+        .select({ price: applicationsTable.price })
+        .from(applicationsTable)
+        .where(
+          and(
+            eq(applicationsTable.programId, program.id),
+            inArray(applicationsTable.status, ['accepted', 'completed', 'submitted']),
+          ),
+        );
+
+      const milestones = await t
+        .select({ price: milestonesTable.price })
+        .from(milestonesTable)
+        .where(
+          and(
+            eq(milestonesTable.applicationId, milestone.applicationId),
+            inArray(milestonesTable.status, ['pending', 'completed', 'submitted']),
+          ),
+        );
+
+      const milestonesTotalPrice = milestones.reduce((acc, m) => {
+        return acc.plus(new BigNumber(m.price));
+      }, new BigNumber(0));
+
+      const applicationsTotalPrice = applications.reduce((acc, a) => {
+        return acc.plus(new BigNumber(a.price));
+      }, new BigNumber(0));
+
+      if (applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price))) {
+        ctx.server.log.error(
+          'The total price of the applications is greater than the program price',
+        );
+        t.rollback();
+      }
     }
 
     const [milestone] = await t
@@ -216,6 +269,31 @@ export function checkMilestoneResolver(
       .select({ applicantId: applicationsTable.applicantId })
       .from(applicationsTable)
       .where(eq(applicationsTable.id, milestone.applicationId));
+
+    const applicationMilestones = await t
+      .select({ status: milestonesTable.status })
+      .from(milestonesTable)
+      .where(eq(milestonesTable.applicationId, milestone.applicationId));
+    if (applicationMilestones.every((m) => m.status === 'completed')) {
+      await t
+        .update(applicationsTable)
+        .set({ status: 'completed' })
+        .where(eq(applicationsTable.id, milestone.applicationId));
+    }
+
+    const previousMilestones = await t
+      .select({ status: milestonesTable.status })
+      .from(milestonesTable)
+      .where(
+        and(
+          eq(milestonesTable.applicationId, milestone.applicationId),
+          lt(milestonesTable.sortOrder, milestone.sortOrder),
+        ),
+      );
+
+    if (!previousMilestones.every((m) => m.status === 'completed')) {
+      throw new Error('Previous milestones must be accepted');
+    }
 
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'milestone',

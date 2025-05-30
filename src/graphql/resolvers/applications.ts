@@ -15,7 +15,7 @@ import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
 import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
 import BigNumber from 'bignumber.js';
-import { and, asc, count, desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
 
 export async function getApplicationsResolver(
   _root: Root,
@@ -192,14 +192,19 @@ export function createApplicationResolver(
     }
 
     if (!validAndNotEmptyArray(milestones)) {
+      ctx.server.log.error('Milestones are required');
       t.rollback();
-      throw new Error('Milestones are required');
     }
 
     const applications = await t
       .select({ price: applicationsTable.price })
       .from(applicationsTable)
-      .where(eq(applicationsTable.programId, application.programId));
+      .where(
+        and(
+          eq(applicationsTable.programId, args.input.programId),
+          inArray(applicationsTable.status, ['accepted', 'completed', 'submitted']),
+        ),
+      );
 
     const milestonesTotalPrice = milestones.reduce((acc, m) => {
       return acc.plus(new BigNumber(m.price));
@@ -209,12 +214,9 @@ export function createApplicationResolver(
       return acc.plus(new BigNumber(a.price));
     }, new BigNumber(0));
 
-    if (
-      applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price)) ||
-      !validAndNotEmptyArray(milestones)
-    ) {
+    if (applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price))) {
+      ctx.server.log.error('The total price of the applications is greater than the program price');
       t.rollback();
-      throw new Error('The total price of the applications is greater than the program price');
     }
 
     if (program.validatorId) {
