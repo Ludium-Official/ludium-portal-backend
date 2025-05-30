@@ -122,7 +122,10 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   updateMilestone: t.field({
     type: MilestoneType,
-    authScopes: { admin: true },
+    authScopes: async (_, args) => ({
+      admin: true,
+      programBuilder: { applicationId: args.input.id },
+    }),
     args: {
       input: t.arg({ type: UpdateMilestoneInput, required: true }),
     },
