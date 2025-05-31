@@ -1,4 +1,4 @@
-import type { User as DBUser, Wallet as DBWallet } from '@/db/schemas';
+import type { User as DBUser } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
@@ -7,13 +7,12 @@ import {
   getProfileResolver,
   getUserAvatarResolver,
   getUserByIdResolver,
-  getUserWalletResolver,
   getUsersResolver,
   updateProfileResolver,
   updateUserResolver,
 } from '@/graphql/resolvers/users';
+import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
-import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -27,6 +26,10 @@ export const User = builder.objectRef<DBUser>('User').implement({
     organizationName: t.exposeString('organizationName', { nullable: true }),
     image: t.exposeString('image', { nullable: true }),
     about: t.exposeString('about', { nullable: true }),
+    summary: t.exposeString('summary'),
+    loginType: t.exposeString('loginType', { nullable: true }),
+    walletAddress: t.exposeString('walletAddress', { nullable: true }),
+    isAdmin: t.exposeBoolean('isAdmin'),
     links: t.field({
       type: [Link],
       nullable: true,
@@ -36,11 +39,6 @@ export const User = builder.objectRef<DBUser>('User').implement({
       type: 'Upload',
       nullable: true,
       resolve: async (user, _args, ctx) => getUserAvatarResolver({}, { userId: user.id }, ctx),
-    }),
-    wallet: t.field({
-      type: Wallet,
-      nullable: true,
-      resolve: async (user, _args, ctx) => getUserWalletResolver({}, { userId: user.id }, ctx),
     }),
   }),
 });
@@ -54,14 +52,6 @@ export const PaginatedUsersType = builder
     }),
   });
 
-export const Wallet = builder.objectRef<DBWallet>('Wallet').implement({
-  fields: (t) => ({
-    walletId: t.exposeString('walletId'),
-    address: t.exposeString('address'),
-    network: t.exposeString('network'),
-  }),
-});
-
 /* -------------------------------------------------------------------------- */
 /*                                   Inputs                                   */
 /* -------------------------------------------------------------------------- */
@@ -74,7 +64,10 @@ export const UserInput = builder.inputType('UserInput', {
     organizationName: t.string(),
     image: t.field({ type: 'Upload' }),
     about: t.string(),
+    summary: t.string(),
     links: t.field({ type: [LinkInput] }),
+    loginType: t.string(),
+    walletAddress: t.string(),
   }),
 });
 
@@ -83,10 +76,14 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
     id: t.id({ required: true }),
     firstName: t.string(),
     lastName: t.string(),
+    email: t.string({ validate: { email: true } }),
     organizationName: t.string(),
     image: t.field({ type: 'Upload' }),
     about: t.string(),
+    summary: t.string(),
     links: t.field({ type: [LinkInput] }),
+    loginType: t.string(),
+    walletAddress: t.string(),
   }),
 });
 

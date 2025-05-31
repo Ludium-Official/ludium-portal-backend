@@ -1,9 +1,8 @@
-import type { Milestone as DBMilestone } from '@/db/schemas';
+import { type Milestone as DBMilestone, milestoneStatuses } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getLinksByMilestoneIdResolver } from '@/graphql/resolvers/links';
 import {
   checkMilestoneResolver,
-  createMilestonesResolver,
   getMilestoneResolver,
   getMilestonesResolver,
   submitMilestoneResolver,
@@ -17,7 +16,7 @@ import BigNumber from 'bignumber.js';
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
 export const MilestoneStatusEnum = builder.enumType('MilestoneStatus', {
-  values: ['pending', 'completed', 'failed', 'revision_requested'] as const,
+  values: milestoneStatuses,
 });
 
 export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').implement({
@@ -53,7 +52,6 @@ export const PaginatedMilestonesType = builder
 /* -------------------------------------------------------------------------- */
 export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
   fields: (t) => ({
-    applicationId: t.string({ required: true }),
     title: t.string({ required: true }),
     description: t.string(),
     price: t.string({
@@ -122,17 +120,12 @@ builder.queryFields((t) => ({
 }));
 
 builder.mutationFields((t) => ({
-  createMilestones: t.field({
-    type: [MilestoneType],
-    authScopes: { user: true },
-    args: {
-      input: t.arg({ type: [CreateMilestoneInput], required: true }),
-    },
-    resolve: createMilestonesResolver,
-  }),
   updateMilestone: t.field({
     type: MilestoneType,
-    authScopes: { admin: true },
+    authScopes: async (_, args) => ({
+      admin: true,
+      milestoneBuilder: { milestoneId: args.input.id },
+    }),
     args: {
       input: t.arg({ type: UpdateMilestoneInput, required: true }),
     },

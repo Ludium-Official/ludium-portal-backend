@@ -8,14 +8,15 @@ type Application {
   name: String
   price: String
   status: ApplicationStatus
+  summary: String
 }
 
 enum ApplicationStatus {
-  approved
+  accepted
   completed
   pending
   rejected
-  withdrawn
+  submitted
 }
 
 input CheckMilestoneInput {
@@ -42,9 +43,11 @@ input CreateApplicationInput {
   content: String!
   links: [LinkInput!]
   metadata: JSON
+  milestones: [CreateMilestoneInput!]!
   name: String!
   price: String!
   programId: String!
+  summary: String
 }
 
 input CreateCommentInput {
@@ -54,7 +57,6 @@ input CreateCommentInput {
 }
 
 input CreateMilestoneInput {
-  applicationId: String!
   currency: String! = "ETH"
   description: String
   links: [LinkInput!]
@@ -65,7 +67,9 @@ input CreateMilestoneInput {
 input CreatePostInput {
   content: String!
   image: Upload
+  isBanner: Boolean
   keywords: [ID!]
+  summary: String!
   title: String!
 }
 
@@ -76,6 +80,7 @@ input CreateProgramInput {
   keywords: [ID!]
   links: [LinkInput!]
   name: String!
+  network: String
   price: String!
   summary: String
   validatorId: ID!
@@ -128,28 +133,29 @@ type Milestone {
 
 enum MilestoneStatus {
   completed
-  failed
   pending
-  revision_requested
+  rejected
+  submitted
 }
 
 type Mutation {
+  acceptApplication(id: ID!): Application
   acceptProgram(id: ID!): Program
-  approveApplication(id: ID!): Application
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
   createComment(input: CreateCommentInput!): Comment
-  createMilestones(input: [CreateMilestoneInput!]!): [Milestone!]
   createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
-  denyApplication(id: ID!): Application
-  login(address: String, email: String!, network: String, userId: ID!, walletId: String): String
-  publishProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
+  login(email: String, loginType: String!, walletAddress: String!): String
+  markAllNotificationsAsRead: Boolean
+  markNotificationAsRead(id: ID!): Boolean
+  rejectApplication(id: ID!): Application
   rejectProgram(id: ID!): Program
   submitMilestone(input: SubmitMilestoneInput!): Milestone
+  submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   updateApplication(input: UpdateApplicationInput!): Application
   updateComment(input: UpdateCommentInput!): Comment
   updateMilestone(input: UpdateMilestoneInput!): Milestone
@@ -157,6 +163,34 @@ type Mutation {
   updateProfile(input: UserUpdateInput!): User
   updateProgram(input: UpdateProgramInput!): Program
   updateUser(input: UserUpdateInput!): User
+}
+
+type Notification {
+  action: NotificationAction
+  content: String
+  entityId: ID
+  id: ID
+  metadata: JSON
+  readAt: Date
+  title: String
+  type: NotificationType
+}
+
+enum NotificationAction {
+  accepted
+  broadcast
+  completed
+  created
+  rejected
+  submitted
+}
+
+enum NotificationType {
+  application
+  comment
+  milestone
+  program
+  system
 }
 
 type PaginatedApplications {
@@ -203,6 +237,7 @@ type Post {
   id: ID
   image: String
   keywords: [Keyword!]
+  summary: String
   title: String
 }
 
@@ -217,21 +252,35 @@ type Program {
   keywords: [Keyword!]
   links: [Link!]
   name: String
+  network: String
   price: String
-  status: String
+  status: ProgramStatus
   summary: String
+  txHash: String
   validator: User
+}
+
+enum ProgramStatus {
+  cancelled
+  closed
+  completed
+  draft
+  payment_required
+  published
 }
 
 type Query {
   application(id: ID!): Application
   applications(pagination: PaginationInput): PaginatedApplications
+  banner: Post
   comment(id: ID!): Comment
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
   commentsByPost(postId: ID!): [Comment!]
+  countNotifications: Int
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
+  notifications: [Notification!]
   post(id: ID!): Post
   posts(pagination: PaginationInput): PaginatedPosts
   profile: User
@@ -252,6 +301,11 @@ input SubmitMilestoneInput {
   links: [LinkInput!]
 }
 
+type Subscription {
+  countNotifications: Int
+  notifications: [Notification!]
+}
+
 input UpdateApplicationInput {
   content: String
   id: String!
@@ -259,6 +313,7 @@ input UpdateApplicationInput {
   metadata: JSON
   name: String
   status: ApplicationStatus
+  summary: String
 }
 
 input UpdateCommentInput {
@@ -280,7 +335,9 @@ input UpdatePostInput {
   content: String
   id: ID!
   image: Upload
+  isBanner: Boolean
   keywords: [ID!]
+  summary: String
   title: String
 }
 
@@ -292,8 +349,9 @@ input UpdateProgramInput {
   keywords: [ID!]
   links: [LinkInput!]
   name: String
+  network: String
   price: String
-  status: String
+  status: ProgramStatus
   summary: String
   validatorId: ID
 }
@@ -307,10 +365,13 @@ type User {
   firstName: String
   id: ID
   image: String
+  isAdmin: Boolean
   lastName: String
   links: [Link!]
+  loginType: String
   organizationName: String
-  wallet: Wallet
+  summary: String
+  walletAddress: String
 }
 
 input UserInput {
@@ -320,22 +381,23 @@ input UserInput {
   image: Upload
   lastName: String
   links: [LinkInput!]
+  loginType: String
   organizationName: String
   password: String!
+  summary: String
+  walletAddress: String
 }
 
 input UserUpdateInput {
   about: String
+  email: String
   firstName: String
   id: ID!
   image: Upload
   lastName: String
   links: [LinkInput!]
+  loginType: String
   organizationName: String
-}
-
-type Wallet {
-  address: String
-  network: String
-  walletId: String
+  summary: String
+  walletAddress: String
 }

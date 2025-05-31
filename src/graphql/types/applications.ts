@@ -1,12 +1,15 @@
-import type { Application as DBApplication } from '@/db/schemas';
-import { applicationsTable } from '@/db/schemas';
+import {
+  type Application as DBApplication,
+  applicationStatuses,
+  applicationsTable,
+} from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
-  approveApplicationResolver,
+  acceptApplicationResolver,
   createApplicationResolver,
-  denyApplicationResolver,
   getApplicationResolver,
   getApplicationsResolver,
+  rejectApplicationResolver,
   updateApplicationResolver,
 } from '@/graphql/resolvers/applications';
 import { getLinksByApplicationIdResolver } from '@/graphql/resolvers/links';
@@ -14,7 +17,7 @@ import { getMilestonesByApplicationIdResolver } from '@/graphql/resolvers/milest
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
-import { MilestoneType } from '@/graphql/types/milestones';
+import { CreateMilestoneInput, MilestoneType } from '@/graphql/types/milestones';
 import { User } from '@/graphql/types/users';
 import BigNumber from 'bignumber.js';
 import { eq } from 'drizzle-orm';
@@ -23,7 +26,7 @@ import { eq } from 'drizzle-orm';
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
 export const ApplicationStatusEnum = builder.enumType('ApplicationStatus', {
-  values: ['pending', 'approved', 'rejected', 'completed', 'withdrawn'] as const,
+  values: applicationStatuses,
 });
 
 export const ApplicationType = builder.objectRef<DBApplication>('Application').implement({
@@ -35,6 +38,7 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
     }),
     name: t.exposeString('name', { nullable: true }),
     content: t.exposeString('content', { nullable: true }),
+    summary: t.exposeString('summary', { nullable: true }),
     price: t.exposeString('price'),
     metadata: t.field({
       type: 'JSON',
@@ -82,6 +86,7 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
     programId: t.string({ required: true }),
     name: t.string({ required: true }),
     content: t.string({ required: true }),
+    summary: t.string(),
     metadata: t.field({ type: 'JSON' }),
     links: t.field({ type: [LinkInput], required: false }),
     price: t.string({
@@ -92,6 +97,7 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
         },
       },
     }),
+    milestones: t.field({ type: [CreateMilestoneInput], required: true }),
   }),
 });
 
@@ -100,6 +106,7 @@ export const UpdateApplicationInput = builder.inputType('UpdateApplicationInput'
     id: t.string({ required: true }),
     name: t.string(),
     content: t.string(),
+    summary: t.string(),
     metadata: t.field({ type: 'JSON' }),
     status: t.field({ type: ApplicationStatusEnum }),
     links: t.field({ type: [LinkInput] }),
@@ -139,14 +146,14 @@ builder.mutationFields((t) => ({
     type: ApplicationType,
     authScopes: (_, args) => ({
       admin: true,
-      programBuilder: { programId: args.input.id },
+      programBuilder: { applicationId: args.input.id },
     }),
     args: {
       input: t.arg({ type: UpdateApplicationInput, required: true }),
     },
     resolve: updateApplicationResolver,
   }),
-  approveApplication: t.field({
+  acceptApplication: t.field({
     type: ApplicationType,
     authScopes: async (_, args, ctx) => {
       const applicationId = args.id;
@@ -166,9 +173,9 @@ builder.mutationFields((t) => ({
     args: {
       id: t.arg.id({ required: true }),
     },
-    resolve: approveApplicationResolver,
+    resolve: acceptApplicationResolver,
   }),
-  denyApplication: t.field({
+  rejectApplication: t.field({
     type: ApplicationType,
     authScopes: async (_, args, ctx) => {
       const applicationId = args.id;
@@ -188,6 +195,6 @@ builder.mutationFields((t) => ({
     args: {
       id: t.arg.id({ required: true }),
     },
-    resolve: denyApplicationResolver,
+    resolve: rejectApplicationResolver,
   }),
 }));

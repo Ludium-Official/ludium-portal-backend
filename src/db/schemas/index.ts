@@ -4,7 +4,7 @@ export * from './programs';
 export * from './applications';
 export * from './keywords';
 export * from './milestones';
-export * from './wallet';
 export * from './links';
 export * from './posts';
 export * from './comments';
+export * from './notifications';

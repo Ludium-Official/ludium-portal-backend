@@ -1,15 +1,16 @@
 import {
+  type User,
   filesTable,
   linksTable,
   programUserRolesTable,
   usersTable,
   usersToLinksTable,
-  walletTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
-import { validAndNotEmptyArray } from '@/utils/common';
+import { requireUser } from '@/utils';
+import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
 import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
 
 export async function getUsersResolver(
@@ -85,7 +86,7 @@ export async function getUsersResolver(
 
     const users = userWithCounts.map((result) => result.user);
 
-    const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable);
+    const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable).where(where);
     return { data: users, count: totalCount.count };
   }
 
@@ -122,15 +123,7 @@ export async function getUserResolver(_root: Root, args: { id: string }, ctx: Co
 
   const [user] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.id));
 
-  return { ...user, wallet: await getUserWalletResolver({}, { userId: user.id }, ctx) };
-}
-
-export async function getUserWalletResolver(_root: Root, args: { userId: string }, ctx: Context) {
-  const [wallet] = await ctx.db
-    .select()
-    .from(walletTable)
-    .where(eq(walletTable.userId, args.userId));
-  return wallet;
+  return user;
 }
 
 export function createUserResolver(
@@ -256,12 +249,8 @@ export function deleteUserResolver(_root: Root, args: { id: string }, ctx: Conte
 }
 
 export async function getProfileResolver(_root: Root, _args: Args, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
-  const wallet = await getUserWalletResolver({}, { userId: user.id }, ctx);
-  return { ...user, wallet };
+  const user = requireUser(ctx);
+  return user;
 }
 
 export function updateProfileResolver(
@@ -269,16 +258,15 @@ export function updateProfileResolver(
   args: { input: typeof UserUpdateInput.$inferInput },
   ctx: Context,
 ) {
-  const loggedinUser = ctx.server.auth.getUser(ctx.request);
-  if (!loggedinUser) {
-    throw new Error('User not found');
-  }
+  const loggedinUser = requireUser(ctx);
 
   if (loggedinUser.id !== args.input.id && !loggedinUser.isAdmin) {
     throw new Error('Unauthorized');
   }
 
   const { links, ...userData } = args.input;
+
+  const filteredUserData = filterEmptyValues<User>(userData);
 
   return ctx.db.transaction(async (t) => {
     if (userData.image) {
@@ -300,10 +288,7 @@ export function updateProfileResolver(
     const [user] = await t
       .update(usersTable)
       .set({
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        organizationName: userData.organizationName,
-        about: userData.about,
+        ...filteredUserData,
         links: links as { url: string; title: string }[],
       })
       .where(eq(usersTable.id, loggedinUser.id))

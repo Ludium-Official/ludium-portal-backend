@@ -1,17 +1,23 @@
-import { type User as DbUser, programUserRolesTable, usersTable } from '@/db/schemas';
+import {
+  type User as DbUser,
+  applicationsTable,
+  milestonesTable,
+  programUserRolesTable,
+  usersTable,
+} from '@/db/schemas';
 import type { Context } from '@/types';
 import { and, eq } from 'drizzle-orm';
 import type { FastifyError, FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 
 export interface RequestAuth {
-  identity?: { id?: number };
+  identity?: { id?: string };
   user?: DbUser | null;
 }
 
-interface DecodedToken {
+export interface DecodedToken {
   payload: {
-    id: number;
+    id: string;
   };
   iat: number;
 }
@@ -69,8 +75,22 @@ export class AuthHandler {
     return this.isUserInProgramRole(request, programId, 'validator');
   }
 
-  async isProgramBuilder(request: FastifyRequest, programId: string): Promise<boolean> {
-    return this.isUserInProgramRole(request, programId, 'builder');
+  async isProgramBuilder(request: FastifyRequest, applicationId: string): Promise<boolean> {
+    const [application] = await this.server.db
+      .select()
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, applicationId));
+    if (!application) return false;
+    return this.isUserInProgramRole(request, application.programId, 'builder');
+  }
+
+  async isMilestoneBuilder(request: FastifyRequest, milestoneId: string): Promise<boolean> {
+    const [milestone] = await this.server.db
+      .select()
+      .from(milestonesTable)
+      .where(eq(milestonesTable.id, milestoneId));
+    if (!milestone) return false;
+    return this.isProgramBuilder(request, milestone.applicationId);
   }
 
   async getProgramRoles(request: FastifyRequest, programId: string): Promise<string[]> {
@@ -88,6 +108,18 @@ export class AuthHandler {
       );
 
     return programRoles.map((role) => role.roleType);
+  }
+
+  async getUserForSubscription(decodedToken: DecodedToken) {
+    const userId = decodedToken.payload.id;
+    const [user] = await this.server.db
+      .selectDistinct()
+      .from(usersTable)
+      .where(eq(usersTable.id, userId));
+    if (!user) {
+      throw new Error('Websocket User not found');
+    }
+    return user;
   }
 }
 

@@ -12,11 +12,9 @@ builder.mutationFields((t) => ({
   login: t.field({
     type: 'String',
     args: {
-      email: t.arg.string({ required: true }),
-      userId: t.arg.id({ required: true }),
-      walletId: t.arg.string(),
-      network: t.arg.string(),
-      address: t.arg.string(),
+      walletAddress: t.arg.string({ required: true }),
+      loginType: t.arg.string({ required: true }),
+      email: t.arg.string(),
     },
     resolve: loginResolver,
   }),

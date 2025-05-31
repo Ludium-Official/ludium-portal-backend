@@ -2,6 +2,7 @@ import type { Post as DBPost } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
   createPostResolver,
+  getBannerPostResolver,
   getPostKeywordsByPostIdResolver,
   getPostResolver,
   getPostsResolver,
@@ -19,6 +20,7 @@ export const PostType = builder.objectRef<DBPost>('Post').implement({
     id: t.exposeID('id'),
     title: t.exposeString('title'),
     content: t.exposeString('content'),
+    summary: t.exposeString('summary'),
     image: t.exposeString('image'),
     author: t.field({
       type: User,
@@ -49,7 +51,9 @@ export const CreatePostInput = builder.inputType('CreatePostInput', {
   fields: (t) => ({
     title: t.string({ required: true }),
     content: t.string({ required: true }),
+    summary: t.string({ required: true }),
     keywords: t.idList(),
+    isBanner: t.boolean(),
     image: t.field({ type: 'Upload' }),
   }),
 });
@@ -59,6 +63,8 @@ export const UpdatePostInput = builder.inputType('UpdatePostInput', {
     id: t.id({ required: true }),
     title: t.string(),
     content: t.string(),
+    summary: t.string(),
+    isBanner: t.boolean(),
     keywords: t.idList(),
     image: t.field({ type: 'Upload' }),
   }),
@@ -81,6 +87,10 @@ builder.queryFields((t) => ({
       id: t.arg.id({ required: true }),
     },
     resolve: getPostResolver,
+  }),
+  banner: t.field({
+    type: PostType,
+    resolve: getBannerPostResolver,
   }),
 }));
 

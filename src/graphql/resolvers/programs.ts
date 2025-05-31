@@ -1,3 +1,4 @@
+import { NETWORKS } from '@/constants';
 import {
   type NewProgram,
   type Program,
@@ -8,12 +9,11 @@ import {
   programsTable,
   programsToKeywordsTable,
   programsToLinksTable,
-  walletTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
-import { filterEmptyValues, isInSameScope, validAndNotEmptyArray } from '@/utils';
+import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
 import { and, asc, count, desc, eq, ilike, inArray, or } from 'drizzle-orm';
 
 export async function getProgramsResolver(
@@ -120,7 +120,10 @@ export async function getProgramsResolver(
     };
   }
 
-  const [totalCount] = await ctx.db.select({ count: count() }).from(programsTable);
+  const [totalCount] = await ctx.db
+    .select({ count: count() })
+    .from(programsTable)
+    .where(and(...filterConditions));
 
   return {
     data,
@@ -169,18 +172,12 @@ export function createProgramResolver(
 ) {
   const { keywords, links, ...inputData } = args.input;
 
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
-    const [validatorWallet] = await t
-      .select()
-      .from(walletTable)
-      .where(eq(walletTable.userId, inputData.validatorId));
-    if (!validatorWallet) {
-      throw new Error('Validator wallet not found');
+    // Validate network
+    if (inputData.network && !NETWORKS.includes(inputData.network)) {
+      throw new Error('Invalid network');
     }
 
     // Create a properly typed object for the database insert
@@ -196,6 +193,7 @@ export function createProgramResolver(
       creatorId: user.id,
       validatorId: inputData.validatorId,
       status: 'draft',
+      network: inputData.network,
     };
 
     const [program] = await t.insert(programsTable).values(insertData).returning();
@@ -241,6 +239,14 @@ export function createProgramResolver(
       );
     }
 
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'created',
+      recipientId: inputData.validatorId,
+      entityId: program.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
     return program;
   });
 }
@@ -250,10 +256,7 @@ export function updateProgramResolver(
   args: { input: typeof UpdateProgramInput.$inferInput },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   const { keywords, links, ...inputData } = args.input;
 
@@ -269,6 +272,11 @@ export function updateProgramResolver(
     });
     if (!hasAccess) {
       throw new Error('You are not allowed to update this program');
+    }
+
+    // Validate network
+    if (programData.network && !NETWORKS.includes(programData.network)) {
+      throw new Error('Invalid network');
     }
 
     // check program status
@@ -321,10 +329,7 @@ export function updateProgramResolver(
 }
 
 export async function deleteProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   const hasAccess = await isInSameScope({
     scope: 'program_creator',
@@ -341,10 +346,7 @@ export async function deleteProgramResolver(_root: Root, args: { id: string }, c
 }
 
 export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
@@ -370,15 +372,20 @@ export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Co
       .where(eq(programsTable.id, args.id))
       .returning();
 
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'accepted',
+      recipientId: program.creatorId,
+      entityId: program.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
     return program;
   });
 }
 
 export function rejectProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
@@ -397,6 +404,14 @@ export function rejectProgramResolver(_root: Root, args: { id: string }, ctx: Co
       .where(eq(programsTable.id, args.id))
       .returning();
 
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'rejected',
+      recipientId: program.creatorId,
+      entityId: program.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
     return program;
   });
 }
@@ -406,10 +421,7 @@ export function publishProgramResolver(
   args: { id: string; educhainProgramId: number; txHash: string },
   ctx: Context,
 ) {
-  const user = ctx.server.auth.getUser(ctx.request);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
     const hasAccess = await isInSameScope({
@@ -427,6 +439,14 @@ export function publishProgramResolver(
       .set({ status: 'published', educhainProgramId: args.educhainProgramId, txHash: args.txHash })
       .where(eq(programsTable.id, args.id))
       .returning();
+
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'submitted',
+      recipientId: program.creatorId,
+      entityId: program.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
 
     return program;
   });

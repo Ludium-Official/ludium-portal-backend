@@ -11,11 +11,13 @@ export class FileManager {
   server: FastifyInstance;
   storage: Storage;
   bucket: Bucket;
+  maxFileSize: number;
 
   constructor(server: FastifyInstance) {
     this.server = server;
     this.storage = new Storage();
     this.bucket = this.storage.bucket(server.config.STORAGE_BUCKET);
+    this.maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
   }
 
   private uploadFileToStorage = (file: UploadFile, path: string): Promise<string> => {
@@ -26,8 +28,24 @@ export class FileManager {
         .digest('hex')}${extname(file.filename)}`;
       const bucketFile = this.bucket.file(fullPath);
 
-      file
-        .createReadStream()
+      let uploadedSize = 0;
+      const stream = file.createReadStream();
+
+      stream.on('data', (chunk: Buffer) => {
+        uploadedSize += chunk.length;
+
+        if (uploadedSize > this.maxFileSize) {
+          stream.destroy();
+          reject(
+            new Error(
+              `File size exceeds ${(this.maxFileSize / 1024 / 1024).toFixed(0)}MB limit. File size: ${(uploadedSize / 1024 / 1024).toFixed(2)}MB`,
+            ),
+          );
+          return;
+        }
+      });
+
+      stream
         .pipe(
           bucketFile.createWriteStream({
             metadata: {
