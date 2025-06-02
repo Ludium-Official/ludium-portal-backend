@@ -39,6 +39,7 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
     educhainProgramId: t.exposeInt('educhainProgramId'),
     txHash: t.exposeString('txHash'),
     network: t.exposeString('network'),
+    rejectionReason: t.exposeString('rejectionReason'),
     deadline: t.field({
       type: 'Date',
       resolve: (program) => (program.deadline ? new Date(program.deadline) : null),
@@ -207,6 +208,7 @@ builder.mutationFields((t) => ({
     authScopes: { user: true },
     args: {
       id: t.arg.id({ required: true }),
+      rejectionReason: t.arg.string({ required: false }),
     },
     resolve: rejectProgramResolver,
   }),

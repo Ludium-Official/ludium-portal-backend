@@ -7,6 +7,7 @@ type Application {
   milestones: [Milestone!]
   name: String
   price: String
+  rejectionReason: String
   status: ApplicationStatus
   summary: String
 }
@@ -152,8 +153,8 @@ type Mutation {
   login(email: String, loginType: String!, walletAddress: String!): String
   markAllNotificationsAsRead: Boolean
   markNotificationAsRead(id: ID!): Boolean
-  rejectApplication(id: ID!): Application
-  rejectProgram(id: ID!): Program
+  rejectApplication(id: ID!, rejectionReason: String): Application
+  rejectProgram(id: ID!, rejectionReason: String): Program
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   updateApplication(input: UpdateApplicationInput!): Application
@@ -254,6 +255,7 @@ type Program {
   name: String
   network: String
   price: String
+  rejectionReason: String
   status: ProgramStatus
   summary: String
   txHash: String

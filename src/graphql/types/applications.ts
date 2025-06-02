@@ -40,6 +40,7 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
     content: t.exposeString('content', { nullable: true }),
     summary: t.exposeString('summary', { nullable: true }),
     price: t.exposeString('price'),
+    rejectionReason: t.exposeString('rejectionReason', { nullable: true }),
     metadata: t.field({
       type: 'JSON',
       nullable: true,
@@ -194,6 +195,7 @@ builder.mutationFields((t) => ({
     },
     args: {
       id: t.arg.id({ required: true }),
+      rejectionReason: t.arg.string({ required: false }),
     },
     resolve: rejectApplicationResolver,
   }),
