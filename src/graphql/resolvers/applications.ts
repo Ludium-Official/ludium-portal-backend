@@ -320,7 +320,11 @@ export function acceptApplicationResolver(_root: Root, args: { id: string }, ctx
   });
 }
 
-export function rejectApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
+export function rejectApplicationResolver(
+  _root: Root,
+  args: { id: string; rejectionReason?: string | null },
+  ctx: Context,
+) {
   const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
@@ -336,7 +340,10 @@ export function rejectApplicationResolver(_root: Root, args: { id: string }, ctx
 
     const [application] = await t
       .update(applicationsTable)
-      .set({ status: 'rejected' })
+      .set({
+        status: 'rejected',
+        ...(args.rejectionReason && { rejectionReason: args.rejectionReason }),
+      })
       .where(eq(applicationsTable.id, args.id))
       .returning();
 

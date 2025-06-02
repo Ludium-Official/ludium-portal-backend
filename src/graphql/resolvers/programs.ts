@@ -384,7 +384,11 @@ export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Co
   });
 }
 
-export function rejectProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
+export function rejectProgramResolver(
+  _root: Root,
+  args: { id: string; rejectionReason?: string | null },
+  ctx: Context,
+) {
   const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
@@ -400,7 +404,11 @@ export function rejectProgramResolver(_root: Root, args: { id: string }, ctx: Co
 
     const [program] = await t
       .update(programsTable)
-      .set({ status: 'draft', validatorId: null })
+      .set({
+        status: 'draft',
+        validatorId: null,
+        ...(args.rejectionReason && { rejectionReason: args.rejectionReason }),
+      })
       .where(eq(programsTable.id, args.id))
       .returning();
 

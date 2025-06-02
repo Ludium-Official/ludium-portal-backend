@@ -33,6 +33,7 @@ export const applicationsTable = pgTable('applications', {
   summary: varchar('summary', { length: 512 }),
   metadata: jsonb('metadata'),
   price: varchar('price', { length: 256 }).default('0').notNull(),
+  rejectionReason: text('rejection_reason'),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
