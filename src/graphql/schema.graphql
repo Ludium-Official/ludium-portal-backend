@@ -22,6 +22,7 @@ enum ApplicationStatus {
 
 input CheckMilestoneInput {
   id: String!
+  rejectionReason: String
   status: CheckMilestoneStatus!
 }
 
@@ -128,6 +129,7 @@ type Milestone {
   id: ID
   links: [Link!]
   price: String
+  rejectionReason: String
   status: MilestoneStatus
   title: String
 }
