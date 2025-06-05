@@ -33,6 +33,7 @@ export const milestonesTable = pgTable('milestones', {
   status: milestoneStatusEnum('status').default('pending').notNull(),
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
   sortOrder: integer('sort_order').notNull().default(0),
+  rejectionReason: text('rejection_reason'),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

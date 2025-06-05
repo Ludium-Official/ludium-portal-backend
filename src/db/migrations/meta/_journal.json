@@ -15,6 +15,13 @@
       "when": 1748844346043,
       "tag": "0001_young_zeigeist",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1749014517723,
+      "tag": "0002_overrated_stellaris",
+      "breakpoints": true
     }
   ]
 }
