@@ -198,6 +198,7 @@ export function submitMilestoneResolver(
       .set({
         status: 'submitted',
         description: args.input.description,
+        rejectionReason: null,
       })
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
@@ -262,7 +263,10 @@ export function checkMilestoneResolver(
 
     const [milestone] = await t
       .update(milestonesTable)
-      .set({ status: args.input.status })
+      .set({
+        status: args.input.status,
+        ...(args.input.rejectionReason && { rejectionReason: args.input.rejectionReason }),
+      })
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
 

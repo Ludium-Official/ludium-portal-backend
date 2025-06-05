@@ -26,6 +26,7 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
     description: t.exposeString('description', { nullable: true }),
     price: t.exposeString('price'),
     currency: t.exposeString('currency'),
+    rejectionReason: t.exposeString('rejectionReason', { nullable: true }),
     status: t.field({
       type: MilestoneStatusEnum,
       resolve: (milestone) => milestone.status,
@@ -87,6 +88,7 @@ export const CheckMilestoneInput = builder.inputType('CheckMilestoneInput', {
   fields: (t) => ({
     id: t.string({ required: true }),
     status: t.field({ type: CheckMilestoneStatusEnum, required: true }),
+    rejectionReason: t.string(),
   }),
 });
 
