@@ -105,21 +105,6 @@ export class FileManager {
   makeFullUrl(filePath: string): string {
     return `https://storage.googleapis.com/${this.server.config.STORAGE_BUCKET}/${filePath}`;
   }
-
-  async generateSignedUrl(lessonId: string) {
-    const expires = 60 * 1000 * 30; // 30 minutes
-    const filePath = `dashboard/recordings/${lessonId}.mp4`;
-    const bucketUrl = this.makeFullUrl(filePath);
-
-    const [signedUrl] = await this.bucket.file(filePath).getSignedUrl({
-      version: 'v4',
-      contentType: 'video/mp4',
-      action: 'write',
-      expires: Date.now() + expires,
-    });
-
-    return { signedUrl, bucketUrl };
-  }
 }
 
 const fileManagerPlugin: FastifyPluginAsync = fp(

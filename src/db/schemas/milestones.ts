@@ -13,7 +13,13 @@ import {
 import { applicationsTable } from './applications';
 import { linksTable } from './links';
 
-export const milestoneStatuses = ['pending', 'completed', 'rejected', 'submitted'] as const;
+export const milestoneStatuses = [
+  'draft',
+  'pending',
+  'completed',
+  'rejected',
+  'submitted',
+] as const;
 export const milestoneStatusEnum = pgEnum('milestone_status', milestoneStatuses);
 
 // Milestones table

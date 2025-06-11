@@ -136,6 +136,7 @@ type Milestone {
 
 enum MilestoneStatus {
   completed
+  draft
   pending
   rejected
   submitted
@@ -303,6 +304,12 @@ input SubmitMilestoneInput {
   description: String
   id: String!
   links: [LinkInput!]
+  status: SubmitMilestoneStatus!
+}
+
+enum SubmitMilestoneStatus {
+  draft
+  submitted
 }
 
 type Subscription {
@@ -369,11 +376,11 @@ type User {
   firstName: String
   id: ID
   image: String
-  isAdmin: Boolean
   lastName: String
   links: [Link!]
   loginType: String
   organizationName: String
+  role: UserRole
   summary: String
   walletAddress: String
 }
@@ -390,6 +397,12 @@ input UserInput {
   password: String!
   summary: String
   walletAddress: String
+}
+
+enum UserRole {
+  admin
+  superadmin
+  user
 }
 
 input UserUpdateInput {

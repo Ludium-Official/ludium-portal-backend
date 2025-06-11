@@ -35,7 +35,11 @@ export class AuthHandler {
   }
 
   isAdmin(request: FastifyRequest) {
-    return Boolean(request.auth?.user?.isAdmin);
+    return Boolean(request.auth?.user?.role?.endsWith('admin'));
+  }
+
+  isSuperAdmin(request: FastifyRequest) {
+    return Boolean(request.auth?.user?.role === 'superadmin');
   }
 
   getUser(request: FastifyRequest) {

@@ -196,7 +196,7 @@ export function submitMilestoneResolver(
     const [milestone] = await t
       .update(milestonesTable)
       .set({
-        status: 'submitted',
+        status: args.input.status,
         description: args.input.description,
         rejectionReason: null,
       })
