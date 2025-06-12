@@ -7,6 +7,19 @@ import { eq } from 'drizzle-orm';
 import type { FastifyInstance, FastifyPluginAsync, FastifyPluginOptions } from 'fastify';
 import fp from 'fastify-plugin';
 
+const allowedFileExtensions = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+  '.svg',
+  '.pdf',
+  '.docx',
+  '.ppt',
+  '.zip',
+];
+
 export class FileManager {
   server: FastifyInstance;
   storage: Storage;
@@ -26,6 +39,12 @@ export class FileManager {
       const fullPath = `${path}/${hash
         .update(file.filename + Date.now())
         .digest('hex')}${extname(file.filename)}`;
+
+      if (!allowedFileExtensions.includes(extname(file.filename))) {
+        reject(new Error('File extension not allowed'));
+        return;
+      }
+
       const bucketFile = this.bucket.file(fullPath);
 
       let uploadedSize = 0;
