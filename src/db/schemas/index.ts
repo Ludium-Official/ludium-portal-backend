@@ -8,3 +8,4 @@ export * from './links';
 export * from './posts';
 export * from './comments';
 export * from './notifications';
+export * from './carousel';
