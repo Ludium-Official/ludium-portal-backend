@@ -36,6 +36,7 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
       resolve: async (milestone, _args, ctx) =>
         getLinksByMilestoneIdResolver({}, { milestoneId: milestone.id }, ctx),
     }),
+    file: t.exposeString('file', { nullable: true }),
   }),
 });
 
@@ -102,6 +103,7 @@ export const SubmitMilestoneInput = builder.inputType('SubmitMilestoneInput', {
     status: t.field({ type: SubmitMilestoneStatusEnum, required: true }),
     description: t.string(),
     links: t.field({ type: [LinkInput] }),
+    file: t.field({ type: 'Upload' }),
   }),
 });
 

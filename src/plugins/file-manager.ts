@@ -84,7 +84,7 @@ export class FileManager {
   uploadFile = async (params: {
     file: Promise<UploadFile>;
     userId: string;
-    type: 'user' | 'post';
+    type: 'user' | 'post' | 'milestone';
     entityId?: string;
   }): Promise<string> => {
     let path = '';
@@ -94,6 +94,10 @@ export class FileManager {
         break;
       case 'post':
         path = `posts/${params.entityId}/`;
+        break;
+      case 'milestone':
+        path = `milestones/${params.entityId}/`;
+        break;
     }
 
     const filePromise = await params.file;

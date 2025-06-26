@@ -182,7 +182,7 @@ export async function updatePostResolver(
       .where(eq(postsTable.id, args.input.id))
       .returning();
 
-    if (user.id !== post?.authorId && !user.isAdmin) {
+    if (user.id !== post?.authorId && !user.role?.endsWith('admin')) {
       throw new Error('You are not the author of this post');
     }
 

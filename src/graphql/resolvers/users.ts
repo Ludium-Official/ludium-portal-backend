@@ -260,7 +260,7 @@ export function updateProfileResolver(
 ) {
   const loggedinUser = requireUser(ctx);
 
-  if (loggedinUser.id !== args.input.id && !loggedinUser.isAdmin) {
+  if (loggedinUser.id !== args.input.id && !loggedinUser.role?.endsWith('admin')) {
     throw new Error('Unauthorized');
   }
 

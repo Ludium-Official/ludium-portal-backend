@@ -40,6 +40,7 @@ export const milestonesTable = pgTable('milestones', {
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
   sortOrder: integer('sort_order').notNull().default(0),
   rejectionReason: text('rejection_reason'),
+  file: varchar('file', { length: 512 }),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

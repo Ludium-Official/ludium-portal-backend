@@ -1,6 +1,7 @@
 import {
   type MilestoneUpdate,
   applicationsTable,
+  filesTable,
   linksTable,
   milestonesTable,
   milestonesToLinksTable,
@@ -174,6 +175,26 @@ export function submitMilestoneResolver(
     });
     if (!hasAccess) {
       throw new Error('You are not allowed to submit this milestone');
+    }
+
+    if (args.input.file) {
+      const [avatar] = await t
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.uploadedById, user.id));
+      if (avatar) {
+        await ctx.server.fileManager.deleteFile(avatar.id);
+      }
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: args.input.file,
+        userId: user.id,
+        type: 'milestone',
+        entityId: args.input.id,
+      });
+      await t
+        .update(milestonesTable)
+        .set({ file: fileUrl })
+        .where(eq(milestonesTable.id, args.input.id));
     }
 
     // handle links
