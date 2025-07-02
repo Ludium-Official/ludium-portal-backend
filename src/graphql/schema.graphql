@@ -20,6 +20,21 @@ enum ApplicationStatus {
   submitted
 }
 
+type CarouselItem {
+  displayOrder: Int
+  id: ID
+  isActive: Boolean
+  itemId: String
+  itemType: CarouselItemType
+}
+
+union CarouselItemData = Post | Program
+
+enum CarouselItemType {
+  post
+  program
+}
+
 input CheckMilestoneInput {
   id: String!
   rejectionReason: String
@@ -50,6 +65,13 @@ input CreateApplicationInput {
   price: String!
   programId: String!
   summary: String
+}
+
+input CreateCarouselItemInput {
+  displayOrder: Int!
+  isActive: Boolean!
+  itemId: String!
+  itemType: CarouselItemType!
 }
 
 input CreateCommentInput {
@@ -97,6 +119,15 @@ scalar Date
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
 scalar DateTime
+
+type EnrichedCarouselItem {
+  data: CarouselItemData
+  displayOrder: Int
+  id: ID
+  isActive: Boolean
+  itemId: String
+  itemType: CarouselItemType
+}
 
 input FilterInput {
   field: String!
@@ -148,10 +179,12 @@ type Mutation {
   acceptProgram(id: ID!): Program
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
+  createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
   createComment(input: CreateCommentInput!): Comment
   createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
+  deleteCarouselItem(id: ID!): CarouselItem
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
   login(email: String, loginType: String!, walletAddress: String!): String
@@ -159,9 +192,11 @@ type Mutation {
   markNotificationAsRead(id: ID!): Boolean
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
+  reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   updateApplication(input: UpdateApplicationInput!): Application
+  updateCarouselItem(input: UpdateCarouselItemInput!): CarouselItem
   updateComment(input: UpdateCommentInput!): Comment
   updateMilestone(input: UpdateMilestoneInput!): Milestone
   updatePost(input: UpdatePostInput!): Post
@@ -279,6 +314,7 @@ type Query {
   application(id: ID!): Application
   applications(pagination: PaginationInput): PaginatedApplications
   banner: Post
+  carouselItems: [EnrichedCarouselItem!]
   comment(id: ID!): Comment
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
   commentsByPost(postId: ID!): [Comment!]
@@ -294,6 +330,11 @@ type Query {
   programs(pagination: PaginationInput): PaginatedPrograms
   user(id: ID!): User
   users(pagination: PaginationInput): PaginatedUsers
+}
+
+input ReorderCarouselItemInput {
+  displayOrder: Int!
+  id: String!
 }
 
 enum SortEnum {
@@ -327,6 +368,14 @@ input UpdateApplicationInput {
   name: String
   status: ApplicationStatus
   summary: String
+}
+
+input UpdateCarouselItemInput {
+  displayOrder: Int
+  id: String!
+  isActive: Boolean
+  itemId: String
+  itemType: CarouselItemType
 }
 
 input UpdateCommentInput {
