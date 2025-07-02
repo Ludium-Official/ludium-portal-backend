@@ -126,6 +126,7 @@ input LinkInput {
 type Milestone {
   currency: String
   description: String
+  file: String
   id: ID
   links: [Link!]
   price: String
@@ -302,6 +303,7 @@ enum SortEnum {
 
 input SubmitMilestoneInput {
   description: String
+  file: Upload
   id: String!
   links: [LinkInput!]
   status: SubmitMilestoneStatus!
