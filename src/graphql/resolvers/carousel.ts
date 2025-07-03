@@ -73,6 +73,27 @@ export async function createCarouselItemResolver(
     throw new Error('This item is already in the active carousel');
   }
 
+  // Validate displayOrder for active items to avoid unique constraint issues
+  let finalDisplayOrder = args.input.displayOrder;
+  if (args.input.isActive) {
+    const existingDisplayOrder = activeItems.find(
+      (item) => item.displayOrder === args.input.displayOrder,
+    );
+
+    if (existingDisplayOrder) {
+      // Find the next available display order
+      const usedOrders = activeItems.map((item) => item.displayOrder).sort((a, b) => a - b);
+      finalDisplayOrder = 1;
+      for (const order of usedOrders) {
+        if (finalDisplayOrder === order) {
+          finalDisplayOrder++;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
   // Verify the referenced item exists
   if (args.input.itemType === 'program') {
     const [program] = await ctx.db
@@ -98,6 +119,7 @@ export async function createCarouselItemResolver(
     .insert(carouselItemsTable)
     .values({
       ...args.input,
+      displayOrder: finalDisplayOrder,
       createdBy: user.id,
     })
     .returning();
