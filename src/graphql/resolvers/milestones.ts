@@ -188,8 +188,6 @@ export function submitMilestoneResolver(
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: args.input.file,
         userId: user.id,
-        type: 'milestone',
-        entityId: args.input.id,
       });
       await t
         .update(milestonesTable)

@@ -33,10 +33,10 @@ export class FileManager {
     this.maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
   }
 
-  private uploadFileToStorage = (file: UploadFile, path: string): Promise<string> => {
+  private uploadFileToStorage = (file: UploadFile): Promise<string> => {
     return new Promise((resolve, reject) => {
       const hash = createHash('md5');
-      const fullPath = `${path}/${hash
+      const fullPath = `${hash
         .update(file.filename + Date.now())
         .digest('hex')}${extname(file.filename)}`;
 
@@ -84,24 +84,9 @@ export class FileManager {
   uploadFile = async (params: {
     file: Promise<UploadFile>;
     userId: string;
-    type: 'user' | 'post' | 'milestone';
-    entityId?: string;
   }): Promise<string> => {
-    let path = '';
-    switch (params.type) {
-      case 'user':
-        path = `users/${params.userId}/`;
-        break;
-      case 'post':
-        path = `posts/${params.entityId}/`;
-        break;
-      case 'milestone':
-        path = `milestones/${params.entityId}/`;
-        break;
-    }
-
     const filePromise = await params.file;
-    const filePath = await this.uploadFileToStorage(filePromise, path);
+    const filePath = await this.uploadFileToStorage(filePromise);
     const { filename, mimetype } = filePromise;
     const [createdFile] = await this.server.db
       .insert(filesTable)

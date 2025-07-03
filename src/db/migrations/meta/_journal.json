@@ -36,6 +36,13 @@
       "when": 1751423680837,
       "tag": "0004_hard_nebula",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1751508568918,
+      "tag": "0005_strange_invisible_woman",
+      "breakpoints": true
     }
   ]
 }

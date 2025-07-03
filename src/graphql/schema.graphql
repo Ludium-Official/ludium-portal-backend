@@ -91,7 +91,6 @@ input CreateMilestoneInput {
 input CreatePostInput {
   content: String!
   image: Upload
-  isBanner: Boolean
   keywords: [ID!]
   summary: String!
   title: String!
@@ -101,6 +100,7 @@ input CreateProgramInput {
   currency: String
   deadline: String!
   description: String
+  image: Upload
   keywords: [ID!]
   links: [LinkInput!]
   name: String!
@@ -289,6 +289,7 @@ type Program {
   description: String
   educhainProgramId: Int
   id: ID
+  image: String
   keywords: [Keyword!]
   links: [Link!]
   name: String
@@ -313,7 +314,6 @@ enum ProgramStatus {
 type Query {
   application(id: ID!): Application
   applications(pagination: PaginationInput): PaginatedApplications
-  banner: Post
   carouselItems: [EnrichedCarouselItem!]
   comment(id: ID!): Comment
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
@@ -397,7 +397,6 @@ input UpdatePostInput {
   content: String
   id: ID!
   image: Upload
-  isBanner: Boolean
   keywords: [ID!]
   summary: String
   title: String
@@ -408,6 +407,7 @@ input UpdateProgramInput {
   deadline: String
   description: String
   id: ID!
+  image: Upload
   keywords: [ID!]
   links: [LinkInput!]
   name: String

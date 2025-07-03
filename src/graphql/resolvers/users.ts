@@ -146,7 +146,6 @@ export function createUserResolver(
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: userData.image,
         userId: user.id,
-        type: 'user',
       });
       await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, user.id));
     }
@@ -195,7 +194,6 @@ export function updateUserResolver(
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: userData.image,
         userId: userData.id,
-        type: 'user',
       });
       await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, userData.id));
     }
@@ -280,7 +278,6 @@ export function updateProfileResolver(
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: userData.image,
         userId: loggedinUser.id,
-        type: 'user',
       });
       await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, loggedinUser.id));
     }

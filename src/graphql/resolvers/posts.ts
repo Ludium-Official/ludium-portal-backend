@@ -7,7 +7,7 @@ import {
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreatePostInput, UpdatePostInput } from '@/graphql/types/posts';
-import type { Args, Context, Root } from '@/types';
+import type { Context, Root } from '@/types';
 import { filterEmptyValues, requireUser, validAndNotEmptyArray } from '@/utils';
 import { and, asc, count, desc, eq, ilike, inArray } from 'drizzle-orm';
 
@@ -76,16 +76,6 @@ export async function getPostResolver(_root: Root, args: { id: string }, ctx: Co
   return post;
 }
 
-export async function getBannerPostResolver(_root: Root, _args: Args, ctx: Context) {
-  const [post] = await ctx.db
-    .select()
-    .from(postsTable)
-    .where(eq(postsTable.isBanner, true))
-    .orderBy(desc(postsTable.createdAt))
-    .limit(1);
-  return post;
-}
-
 export async function getPostKeywordsByPostIdResolver(
   _root: Root,
   args: { postId: string },
@@ -130,18 +120,16 @@ export async function createPostResolver(
       .returning();
 
     if (image) {
-      const [avatar] = await t
+      const [imageFile] = await t
         .select()
         .from(filesTable)
         .where(eq(filesTable.uploadedById, user.id));
-      if (avatar) {
-        await ctx.server.fileManager.deleteFile(avatar.id);
+      if (imageFile) {
+        await ctx.server.fileManager.deleteFile(imageFile.id);
       }
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: image,
         userId: user.id,
-        type: 'post',
-        entityId: post.id,
       });
       await t.update(postsTable).set({ image: fileUrl }).where(eq(postsTable.id, post.id));
     }
@@ -173,9 +161,6 @@ export async function updatePostResolver(
   const postData = filterEmptyValues<Post>(args.input);
 
   return ctx.db.transaction(async (t) => {
-    if (postData.isBanner === true) {
-      await t.update(postsTable).set({ isBanner: false }).where(eq(postsTable.isBanner, true));
-    }
     const [post] = await t
       .update(postsTable)
       .set(postData)
@@ -208,8 +193,6 @@ export async function updatePostResolver(
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: args.input.image,
         userId: user.id,
-        type: 'post',
-        entityId: post.id,
       });
       await t.update(postsTable).set({ image: fileUrl }).where(eq(postsTable.id, post.id));
     }
