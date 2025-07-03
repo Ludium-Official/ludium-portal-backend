@@ -6,6 +6,7 @@ import { programsTable } from './programs';
 import { usersTable } from './users';
 
 export const applicationStatuses = [
+  'draft',
   'pending',
   'accepted',
   'rejected',

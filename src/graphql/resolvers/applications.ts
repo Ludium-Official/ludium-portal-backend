@@ -136,7 +136,7 @@ export function createApplicationResolver(
       .values({
         ...args.input,
         applicantId: user.id,
-        status: 'pending',
+        status: args.input.status,
       })
       .returning();
 
