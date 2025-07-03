@@ -80,7 +80,6 @@ export const CreateCarouselItemInput = builder.inputType('CreateCarouselItemInpu
   fields: (t) => ({
     itemType: t.field({ type: CarouselItemTypeEnum, required: true }),
     itemId: t.string({ required: true }),
-    displayOrder: t.int({ required: true }),
     isActive: t.boolean({ required: true }),
   }),
 });

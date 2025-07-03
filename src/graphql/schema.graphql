@@ -68,7 +68,6 @@ input CreateApplicationInput {
 }
 
 input CreateCarouselItemInput {
-  displayOrder: Int!
   isActive: Boolean!
   itemId: String!
   itemType: CarouselItemType!
