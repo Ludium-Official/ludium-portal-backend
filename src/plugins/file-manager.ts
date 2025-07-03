@@ -7,6 +7,19 @@ import { eq } from 'drizzle-orm';
 import type { FastifyInstance, FastifyPluginAsync, FastifyPluginOptions } from 'fastify';
 import fp from 'fastify-plugin';
 
+const allowedFileExtensions = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+  '.svg',
+  '.pdf',
+  '.docx',
+  '.ppt',
+  '.zip',
+];
+
 export class FileManager {
   server: FastifyInstance;
   storage: Storage;
@@ -20,12 +33,18 @@ export class FileManager {
     this.maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
   }
 
-  private uploadFileToStorage = (file: UploadFile, path: string): Promise<string> => {
+  private uploadFileToStorage = (file: UploadFile): Promise<string> => {
     return new Promise((resolve, reject) => {
       const hash = createHash('md5');
-      const fullPath = `${path}/${hash
+      const fullPath = `${hash
         .update(file.filename + Date.now())
         .digest('hex')}${extname(file.filename)}`;
+
+      if (!allowedFileExtensions.includes(extname(file.filename))) {
+        reject(new Error('File extension not allowed'));
+        return;
+      }
+
       const bucketFile = this.bucket.file(fullPath);
 
       let uploadedSize = 0;
@@ -65,20 +84,9 @@ export class FileManager {
   uploadFile = async (params: {
     file: Promise<UploadFile>;
     userId: string;
-    type: 'user' | 'post';
-    entityId?: string;
   }): Promise<string> => {
-    let path = '';
-    switch (params.type) {
-      case 'user':
-        path = `users/${params.userId}/`;
-        break;
-      case 'post':
-        path = `posts/${params.entityId}/`;
-    }
-
     const filePromise = await params.file;
-    const filePath = await this.uploadFileToStorage(filePromise, path);
+    const filePath = await this.uploadFileToStorage(filePromise);
     const { filename, mimetype } = filePromise;
     const [createdFile] = await this.server.db
       .insert(filesTable)
@@ -104,21 +112,6 @@ export class FileManager {
 
   makeFullUrl(filePath: string): string {
     return `https://storage.googleapis.com/${this.server.config.STORAGE_BUCKET}/${filePath}`;
-  }
-
-  async generateSignedUrl(lessonId: string) {
-    const expires = 60 * 1000 * 30; // 30 minutes
-    const filePath = `dashboard/recordings/${lessonId}.mp4`;
-    const bucketUrl = this.makeFullUrl(filePath);
-
-    const [signedUrl] = await this.bucket.file(filePath).getSignedUrl({
-      version: 'v4',
-      contentType: 'video/mp4',
-      action: 'write',
-      expires: Date.now() + expires,
-    });
-
-    return { signedUrl, bucketUrl };
   }
 }
 

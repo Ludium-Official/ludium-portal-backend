@@ -36,6 +36,7 @@ const builder = new SchemaBuilder<{
   AuthScopes: {
     user: boolean;
     admin: boolean;
+    superadmin: boolean;
     programSponsor: {
       programId: string;
     };
@@ -77,6 +78,7 @@ const builder = new SchemaBuilder<{
     authScopes: async (context) => ({
       user: context.server.auth.isUser(context.request),
       admin: context.server.auth.isAdmin(context.request),
+      superadmin: context.server.auth.isSuperAdmin(context.request),
       programSponsor: async ({ programId }) => {
         return await context.server.auth.isProgramSponsor(context.request, programId);
       },

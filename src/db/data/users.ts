@@ -7,7 +7,7 @@ export const users: NewUser[] = [
     email: 'admin@example.com',
     organizationName: 'Admin Organization',
     about: 'Admin user with full access',
-    isAdmin: true,
+    role: 'admin',
     image: 'https://ui-avatars.com/api/?name=Admin&background=random',
     links: [
       { url: 'https://github.com/admin', title: 'GitHub' },

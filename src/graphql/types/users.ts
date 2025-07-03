@@ -1,4 +1,4 @@
-import type { User as DBUser } from '@/db/schemas';
+import { type User as DBUser, userRoles } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
@@ -17,6 +17,10 @@ import { Link, LinkInput } from '@/graphql/types/links';
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
+export const UserRoleEnum = builder.enumType('UserRole', {
+  values: userRoles,
+});
+
 export const User = builder.objectRef<DBUser>('User').implement({
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -29,7 +33,7 @@ export const User = builder.objectRef<DBUser>('User').implement({
     summary: t.exposeString('summary'),
     loginType: t.exposeString('loginType', { nullable: true }),
     walletAddress: t.exposeString('walletAddress', { nullable: true }),
-    isAdmin: t.exposeBoolean('isAdmin'),
+    role: t.expose('role', { type: UserRoleEnum }),
     links: t.field({
       type: [Link],
       nullable: true,

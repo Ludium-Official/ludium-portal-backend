@@ -1,7 +1,7 @@
 import { relations } from 'drizzle-orm';
 import {
-  boolean,
   jsonb,
+  pgEnum,
   pgTable,
   primaryKey,
   text,
@@ -15,6 +15,9 @@ import { linksTable } from './links';
 import { postsTable } from './posts';
 import { programUserRolesTable, programsTable } from './programs';
 
+export const userRoles = ['user', 'admin', 'superadmin'] as const;
+export const userRolesEnum = pgEnum('user_roles', userRoles);
+
 export const usersTable = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   firstName: varchar('first_name', { length: 256 }),
@@ -26,8 +29,8 @@ export const usersTable = pgTable('users', {
   about: text('about'),
   summary: varchar('summary', { length: 512 }),
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
-  isAdmin: boolean('is_admin').default(false),
   loginType: varchar('login_type', { length: 256 }),
+  role: userRolesEnum('role').default('user'),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

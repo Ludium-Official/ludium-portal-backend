@@ -50,7 +50,7 @@ async function seed() {
     if (insertedUsers.length > 0) {
       await db
         .update(usersTable)
-        .set({ isAdmin: true })
+        .set({ role: 'admin' })
         .where(eq(usersTable.id, insertedUsers[0].id));
       console.log('✅ Set first user as admin');
     }

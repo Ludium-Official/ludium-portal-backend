@@ -3,6 +3,7 @@ import {
   type NewProgram,
   type Program,
   applicationsTable,
+  filesTable,
   keywordsTable,
   linksTable,
   programUserRolesTable,
@@ -197,6 +198,20 @@ export function createProgramResolver(
     };
 
     const [program] = await t.insert(programsTable).values(insertData).returning();
+    if (inputData.image) {
+      const [imageFile] = await t
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.uploadedById, user.id));
+      if (imageFile) {
+        await ctx.server.fileManager.deleteFile(imageFile.id);
+      }
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: inputData.image,
+        userId: user.id,
+      });
+      await t.update(programsTable).set({ image: fileUrl }).where(eq(programsTable.id, program.id));
+    }
 
     // Add creator as program sponsor (auto-confirmed)
     await t.insert(programUserRolesTable).values({
@@ -286,6 +301,24 @@ export function updateProgramResolver(
       .where(eq(programsTable.id, args.input.id));
     if (programStatus.status === 'published' && programData.price) {
       throw new Error('You are not allowed to update the price of a published program');
+    }
+
+    if (inputData.image) {
+      const [imageFile] = await t
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.uploadedById, user.id));
+      if (imageFile) {
+        await ctx.server.fileManager.deleteFile(imageFile.id);
+      }
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: inputData.image,
+        userId: user.id,
+      });
+      await t
+        .update(programsTable)
+        .set({ image: fileUrl })
+        .where(eq(programsTable.id, args.input.id));
     }
 
     // handle keywords

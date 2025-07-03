@@ -73,6 +73,7 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       resolve: async (program, _args, ctx) =>
         getApplicationsByProgramIdResolver({}, { programId: program.id }, ctx),
     }),
+    image: t.exposeString('image'),
   }),
 });
 
@@ -113,6 +114,7 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
     links: t.field({ type: [LinkInput] }),
     validatorId: t.id({ required: true }),
     network: t.string(),
+    image: t.field({ type: 'Upload' }),
   }),
 });
 
@@ -136,6 +138,7 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     status: t.field({ type: ProgramStatusEnum }),
     validatorId: t.id(),
     network: t.string(),
+    image: t.field({ type: 'Upload' }),
   }),
 });
 

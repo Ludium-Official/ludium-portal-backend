@@ -13,7 +13,13 @@ import {
 import { applicationsTable } from './applications';
 import { linksTable } from './links';
 
-export const milestoneStatuses = ['pending', 'completed', 'rejected', 'submitted'] as const;
+export const milestoneStatuses = [
+  'draft',
+  'pending',
+  'completed',
+  'rejected',
+  'submitted',
+] as const;
 export const milestoneStatusEnum = pgEnum('milestone_status', milestoneStatuses);
 
 // Milestones table
@@ -34,6 +40,7 @@ export const milestonesTable = pgTable('milestones', {
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
   sortOrder: integer('sort_order').notNull().default(0),
   rejectionReason: text('rejection_reason'),
+  file: varchar('file', { length: 512 }),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
