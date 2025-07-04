@@ -11,6 +11,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
+import { commentsTable } from './comments';
 import { keywordsTable } from './keywords';
 import { linksTable } from './links';
 import { usersTable } from './users';
@@ -69,6 +70,7 @@ export const programRelations = relations(programsTable, ({ one, many }) => ({
   applications: many(applicationsTable),
   programsToKeywords: many(programsToKeywordsTable),
   userRoles: many(programUserRolesTable),
+  comments: many(commentsTable),
 }));
 
 // Keywords

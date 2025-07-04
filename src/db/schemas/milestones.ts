@@ -11,6 +11,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
+import { commentsTable } from './comments';
 import { linksTable } from './links';
 
 export const milestoneStatuses = [
@@ -51,11 +52,12 @@ export const milestonesTable = pgTable('milestones', {
 });
 
 // Milestone relations
-export const milestoneRelations = relations(milestonesTable, ({ one }) => ({
+export const milestoneRelations = relations(milestonesTable, ({ one, many }) => ({
   application: one(applicationsTable, {
     fields: [milestonesTable.applicationId],
     references: [applicationsTable.id],
   }),
+  comments: many(commentsTable),
 }));
 
 // Links

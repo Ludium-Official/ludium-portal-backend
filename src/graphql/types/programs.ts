@@ -1,6 +1,7 @@
 import { type Program as DBProgram, programStatuses, programVisibilities } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getApplicationsByProgramIdResolver } from '@/graphql/resolvers/applications';
+import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
 import { getLinksByProgramIdResolver } from '@/graphql/resolvers/links';
 import {
   acceptProgramResolver,
@@ -17,6 +18,7 @@ import {
 } from '@/graphql/resolvers/programs';
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { ApplicationType } from '@/graphql/types/applications';
+import { CommentType } from '@/graphql/types/comments';
 import { KeywordType, PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { User } from '@/graphql/types/users';
@@ -81,6 +83,15 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       type: [ApplicationType],
       resolve: async (program, _args, ctx) =>
         getApplicationsByProgramIdResolver({}, { programId: program.id }, ctx),
+    }),
+    comments: t.field({
+      type: [CommentType],
+      resolve: async (program, _args, ctx) =>
+        getCommentsByCommentableResolver(
+          {},
+          { commentableType: 'program', commentableId: program.id },
+          ctx,
+        ),
     }),
     image: t.exposeString('image'),
   }),

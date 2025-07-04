@@ -1,5 +1,6 @@
 import { type Milestone as DBMilestone, milestoneStatuses } from '@/db/schemas';
 import builder from '@/graphql/builder';
+import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
 import { getLinksByMilestoneIdResolver } from '@/graphql/resolvers/links';
 import {
   checkMilestoneResolver,
@@ -8,6 +9,7 @@ import {
   submitMilestoneResolver,
   updateMilestoneResolver,
 } from '@/graphql/resolvers/milestones';
+import { CommentType } from '@/graphql/types/comments';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import BigNumber from 'bignumber.js';
@@ -35,6 +37,15 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
       type: [Link],
       resolve: async (milestone, _args, ctx) =>
         getLinksByMilestoneIdResolver({}, { milestoneId: milestone.id }, ctx),
+    }),
+    comments: t.field({
+      type: [CommentType],
+      resolve: async (milestone, _args, ctx) =>
+        getCommentsByCommentableResolver(
+          {},
+          { commentableType: 'milestone', commentableId: milestone.id },
+          ctx,
+        ),
     }),
     file: t.exposeString('file', { nullable: true }),
   }),

@@ -391,11 +391,12 @@ async function seed() {
           // Process comments without parents first
           const topLevelComments = comments.filter((comment) => comment.parentIndex === undefined);
           const topLevelCommentValues = topLevelComments.map((comment, index) => {
-            const postId = insertedPosts[comment.postIndex].id;
+            const commentableId = insertedPosts[comment.commentableIndex].id;
             const authorId = userIds[comment.authorIndex % userIds.length];
 
             return {
-              postId,
+              commentableType: comment.commentableType,
+              commentableId,
               authorId,
               content: comment.content,
               parentId: null,
@@ -422,13 +423,14 @@ async function seed() {
           // Now process child comments
           const childComments = comments.filter((comment) => comment.parentIndex !== undefined);
           const childCommentValues = childComments.map((comment) => {
-            const postId = insertedPosts[comment.postIndex].id;
+            const commentableId = insertedPosts[comment.commentableIndex].id;
             const authorId = userIds[comment.authorIndex % userIds.length];
             const parentId =
               comment.parentIndex !== undefined ? commentIdMap[comment.parentIndex] : null;
 
             return {
-              postId,
+              commentableType: comment.commentableType,
+              commentableId,
               authorId,
               content: comment.content,
               parentId,

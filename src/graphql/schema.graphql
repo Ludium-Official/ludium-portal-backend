@@ -49,12 +49,19 @@ enum CheckMilestoneStatus {
 
 type Comment {
   author: User
+  commentableId: String
+  commentableType: String
   content: String
   createdAt: Date
   id: ID
   parent: Comment
-  post: Post
   replies: [Comment!]
+}
+
+enum CommentableTypeEnum {
+  milestone
+  post
+  program
 }
 
 input CreateApplicationInput {
@@ -76,9 +83,10 @@ input CreateCarouselItemInput {
 }
 
 input CreateCommentInput {
+  commentableId: ID!
+  commentableType: CommentableTypeEnum!
   content: String!
   parentId: ID
-  postId: ID!
 }
 
 input CreateMilestoneInput {
@@ -157,6 +165,7 @@ input LinkInput {
 }
 
 type Milestone {
+  comments: [Comment!]
   currency: String
   description: String
   file: String
@@ -276,6 +285,7 @@ input PaginationInput {
 
 type Post {
   author: User
+  comments: [Comment!]
   content: String
   createdAt: Date
   id: ID
@@ -287,6 +297,7 @@ type Post {
 
 type Program {
   applications: [Application!]
+  comments: [Comment!]
   creator: User
   currency: String
   deadline: Date
@@ -328,7 +339,7 @@ type Query {
   carouselItems: [EnrichedCarouselItem!]
   comment(id: ID!): Comment
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
-  commentsByPost(postId: ID!): [Comment!]
+  commentsByCommentable(commentableId: ID!, commentableType: CommentableTypeEnum!): [Comment!]
   countNotifications: Int
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
