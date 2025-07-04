@@ -15,6 +15,7 @@ type Application {
 enum ApplicationStatus {
   accepted
   completed
+  draft
   pending
   rejected
   submitted
@@ -64,6 +65,7 @@ input CreateApplicationInput {
   name: String!
   price: String!
   programId: String!
+  status: ApplicationStatus!
   summary: String
 }
 
@@ -107,6 +109,7 @@ input CreateProgramInput {
   price: String!
   summary: String
   validatorId: ID!
+  visibility: ProgramVisibility
 }
 
 """
@@ -186,6 +189,7 @@ type Mutation {
   deleteCarouselItem(id: ID!): CarouselItem
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
+  inviteUserToProgram(programId: ID!, userId: ID!): Program
   login(email: String, loginType: String!, walletAddress: String!): String
   markAllNotificationsAsRead: Boolean
   markNotificationAsRead(id: ID!): Boolean
@@ -220,6 +224,7 @@ enum NotificationAction {
   broadcast
   completed
   created
+  invited
   rejected
   submitted
 }
@@ -299,6 +304,7 @@ type Program {
   summary: String
   txHash: String
   validator: User
+  visibility: ProgramVisibility
 }
 
 enum ProgramStatus {
@@ -308,6 +314,12 @@ enum ProgramStatus {
   draft
   payment_required
   published
+}
+
+enum ProgramVisibility {
+  private
+  public
+  restricted
 }
 
 type Query {
@@ -415,6 +427,7 @@ input UpdateProgramInput {
   status: ProgramStatus
   summary: String
   validatorId: ID
+  visibility: ProgramVisibility
 }
 
 scalar Upload

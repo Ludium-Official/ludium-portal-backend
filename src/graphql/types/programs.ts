@@ -1,4 +1,4 @@
-import { type Program as DBProgram, programStatuses } from '@/db/schemas';
+import { type Program as DBProgram, programStatuses, programVisibilities } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getApplicationsByProgramIdResolver } from '@/graphql/resolvers/applications';
 import { getLinksByProgramIdResolver } from '@/graphql/resolvers/links';
@@ -10,6 +10,7 @@ import {
   getProgramKeywordsResolver,
   getProgramResolver,
   getProgramsResolver,
+  inviteUserToProgramResolver,
   publishProgramResolver,
   rejectProgramResolver,
   updateProgramResolver,
@@ -26,6 +27,10 @@ import BigNumber from 'bignumber.js';
 /* -------------------------------------------------------------------------- */
 export const ProgramStatusEnum = builder.enumType('ProgramStatus', {
   values: programStatuses,
+});
+
+export const ProgramVisibilityEnum = builder.enumType('ProgramVisibility', {
+  values: programVisibilities,
 });
 
 export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
@@ -57,6 +62,10 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
     status: t.field({
       type: ProgramStatusEnum,
       resolve: (program) => program.status,
+    }),
+    visibility: t.field({
+      type: ProgramVisibilityEnum,
+      resolve: (program) => program.visibility,
     }),
     creator: t.field({
       type: User,
@@ -114,6 +123,7 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
     links: t.field({ type: [LinkInput] }),
     validatorId: t.id({ required: true }),
     network: t.string(),
+    visibility: t.field({ type: ProgramVisibilityEnum }),
     image: t.field({ type: 'Upload' }),
   }),
 });
@@ -136,6 +146,7 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     keywords: t.idList(),
     links: t.field({ type: [LinkInput] }),
     status: t.field({ type: ProgramStatusEnum }),
+    visibility: t.field({ type: ProgramVisibilityEnum }),
     validatorId: t.id(),
     network: t.string(),
     image: t.field({ type: 'Upload' }),
@@ -227,5 +238,17 @@ builder.mutationFields((t) => ({
       txHash: t.arg.string({ required: true }),
     },
     resolve: publishProgramResolver,
+  }),
+  inviteUserToProgram: t.field({
+    type: ProgramType,
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.programId },
+      admin: true,
+    }),
+    args: {
+      programId: t.arg.id({ required: true }),
+      userId: t.arg.id({ required: true }),
+    },
+    resolve: inviteUserToProgramResolver,
   }),
 }));

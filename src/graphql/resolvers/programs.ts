@@ -14,7 +14,13 @@ import {
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
-import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
+import {
+  filterEmptyValues,
+  hasPrivateProgramAccess,
+  isInSameScope,
+  requireUser,
+  validAndNotEmptyArray,
+} from '@/utils';
 import { and, asc, count, desc, eq, ilike, inArray, or } from 'drizzle-orm';
 
 export async function getProgramsResolver(
@@ -86,6 +92,8 @@ export async function getProgramsResolver(
           programsTable.status,
           f.value as 'draft' | 'published' | 'closed' | 'completed' | 'cancelled',
         );
+      case 'visibility':
+        return eq(programsTable.visibility, f.value as 'private' | 'restricted' | 'public');
       case 'price':
         // sort by price, value can be 'asc' or 'desc'
         return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
@@ -96,12 +104,41 @@ export async function getProgramsResolver(
 
   const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
 
+  // Add visibility filtering based on user authentication
+  const user = ctx.user;
+  const visibilityConditions = [];
+
+  if (!user) {
+    // Non-authenticated users can only see public programs
+    visibilityConditions.push(eq(programsTable.visibility, 'public'));
+  } else {
+    // Authenticated users can see public and restricted programs, plus private programs they have access to
+    const publicAndRestricted = or(
+      eq(programsTable.visibility, 'public'),
+      eq(programsTable.visibility, 'restricted'),
+    );
+
+    // For private programs, include those where user is creator, validator, or has a role
+    const privateWithAccess = and(
+      eq(programsTable.visibility, 'private'),
+      or(
+        eq(programsTable.creatorId, user.id),
+        eq(programsTable.validatorId, user.id),
+        // We'll need to do a more complex query for user roles, handled below
+      ),
+    );
+
+    visibilityConditions.push(or(publicAndRestricted, privateWithAccess));
+  }
+
+  const allConditions = [...filterConditions, ...visibilityConditions];
+
   let data: Program[] = [];
-  if (filterConditions.length > 0) {
+  if (allConditions.length > 0) {
     data = await ctx.db
       .select()
       .from(programsTable)
-      .where(and(...filterConditions))
+      .where(and(...allConditions))
       .limit(limit)
       .offset(offset)
       .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
@@ -114,6 +151,26 @@ export async function getProgramsResolver(
       .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
   }
 
+  if (user) {
+    const userRoles = await ctx.db
+      .select()
+      .from(programUserRolesTable)
+      .where(eq(programUserRolesTable.userId, user.id));
+
+    const userProgramIds = new Set(userRoles.map((role) => role.programId));
+
+    data = data.filter((program) => {
+      if (program.visibility === 'private') {
+        return (
+          program.creatorId === user.id ||
+          program.validatorId === user.id ||
+          userProgramIds.has(program.id)
+        );
+      }
+      return true;
+    });
+  }
+
   if (!validAndNotEmptyArray(data)) {
     return {
       data: [],
@@ -124,7 +181,7 @@ export async function getProgramsResolver(
   const [totalCount] = await ctx.db
     .select({ count: count() })
     .from(programsTable)
-    .where(and(...filterConditions));
+    .where(and(...allConditions));
 
   return {
     data,
@@ -134,6 +191,20 @@ export async function getProgramsResolver(
 
 export async function getProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
   const [program] = await ctx.db.select().from(programsTable).where(eq(programsTable.id, args.id));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  // Check visibility access
+  if (program.visibility === 'private') {
+    const hasAccess = await hasPrivateProgramAccess(program.id, ctx.user?.id || null, ctx.db);
+    if (!hasAccess) {
+      throw new Error('You do not have access to this program');
+    }
+  } else if (program.visibility === 'restricted') {
+  }
+
   return program;
 }
 
@@ -194,6 +265,7 @@ export function createProgramResolver(
       creatorId: user.id,
       validatorId: inputData.validatorId,
       status: 'draft',
+      visibility: inputData.visibility || 'public',
       network: inputData.network,
     };
 
@@ -486,6 +558,74 @@ export function publishProgramResolver(
       action: 'submitted',
       recipientId: program.creatorId,
       entityId: program.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
+    return program;
+  });
+}
+
+export function inviteUserToProgramResolver(
+  _root: Root,
+  args: { programId: string; userId: string },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Check if user is the program creator
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: args.programId,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to invite users to this program');
+    }
+
+    // Check if program is private
+    const [program] = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, args.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    if (program.visibility !== 'private') {
+      throw new Error('You can only invite users to private programs');
+    }
+
+    // Check if user is already associated with this program
+    const existingRole = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, args.programId),
+          eq(programUserRolesTable.userId, args.userId),
+        ),
+      );
+
+    if (existingRole.length > 0) {
+      throw new Error('User is already associated with this program');
+    }
+
+    // Add user as builder to the program
+    await t.insert(programUserRolesTable).values({
+      programId: args.programId,
+      userId: args.userId,
+      roleType: 'builder',
+    });
+
+    // Send notification to the invited user
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'invited',
+      recipientId: args.userId,
+      entityId: args.programId,
     });
     await ctx.server.pubsub.publish('notificationsCount');
 

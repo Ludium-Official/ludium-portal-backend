@@ -25,6 +25,9 @@ export const programStatuses = [
 ] as const;
 export const programStatusEnum = pgEnum('program_status', programStatuses);
 
+export const programVisibilities = ['private', 'restricted', 'public'] as const;
+export const programVisibilityEnum = pgEnum('program_visibility', programVisibilities);
+
 export const programsTable = pgTable('programs', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 256 }).notNull().notNull(),
@@ -38,6 +41,7 @@ export const programsTable = pgTable('programs', {
     .references(() => usersTable.id, { onDelete: 'cascade' }),
   validatorId: uuid('validator_id').references(() => usersTable.id, { onDelete: 'set null' }),
   status: programStatusEnum('status').default('draft'),
+  visibility: programVisibilityEnum('visibility').default('public'),
   educhainProgramId: integer('educhain_id'),
   txHash: varchar('tx_hash', { length: 256 }),
   network: varchar('network', { length: 256 }).default('educhain'),
@@ -159,3 +163,4 @@ export type NewProgram = typeof programsTable.$inferInsert;
 export type ProgramUserRole = typeof programUserRolesTable.$inferSelect;
 export type NewProgramUserRole = typeof programUserRolesTable.$inferInsert;
 export type ProgramStatusEnum = (typeof programStatuses)[number];
+export type ProgramVisibilityEnum = (typeof programVisibilities)[number];
