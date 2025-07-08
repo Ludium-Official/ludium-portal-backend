@@ -91,6 +91,7 @@ input CreateCommentInput {
 
 input CreateMilestoneInput {
   currency: String! = "ETH"
+  deadline: Date!
   description: String
   links: [LinkInput!]
   price: String!
@@ -167,6 +168,7 @@ input LinkInput {
 type Milestone {
   comments: [Comment!]
   currency: String
+  deadline: Date
   description: String
   file: String
   id: ID
@@ -407,6 +409,7 @@ input UpdateCommentInput {
 
 input UpdateMilestoneInput {
   currency: String
+  deadline: Date
   description: String
   id: String!
   links: [LinkInput!]

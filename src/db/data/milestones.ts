@@ -26,6 +26,7 @@ export function createMilestones(
         { url: 'https://example.com/docs', title: 'Documentation' },
         { url: 'https://example.com/plan', title: 'Project Plan' },
       ],
+      deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
     });
 
     // Second milestone - Development
@@ -41,6 +42,7 @@ export function createMilestones(
         { url: 'https://github.com/example/repo', title: 'Source Code' },
         { url: 'https://example.com/docs/api', title: 'API Documentation' },
       ],
+      deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
     });
 
     // Third milestone - Testing & Delivery
@@ -56,6 +58,7 @@ export function createMilestones(
         { url: 'https://example.com/demo', title: 'Demo' },
         { url: 'https://example.com/test-report', title: 'Test Report' },
       ],
+      deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
     });
   }
 

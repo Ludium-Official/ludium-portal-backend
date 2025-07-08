@@ -290,6 +290,11 @@ async function seed() {
                 price: '2',
                 currency: 'ETH',
                 status: 'pending' as const,
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+                links: [
+                  { url: 'https://example.com/docs', title: 'Documentation' },
+                  { url: 'https://example.com/plan', title: 'Project Plan' },
+                ],
               });
 
               // Second milestone - Development
@@ -300,6 +305,11 @@ async function seed() {
                 price: '5',
                 currency: 'ETH',
                 status: 'pending' as const,
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+                links: [
+                  { url: 'https://github.com/example/repo', title: 'Source Code' },
+                  { url: 'https://example.com/docs/api', title: 'API Documentation' },
+                ],
               });
 
               // Third milestone - Testing & Delivery
@@ -310,6 +320,11 @@ async function seed() {
                 price: '3',
                 currency: 'ETH',
                 status: 'pending' as const,
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+                links: [
+                  { url: 'https://example.com/demo', title: 'Demo' },
+                  { url: 'https://example.com/test-report', title: 'Test Report' },
+                ],
               });
             }
 

@@ -105,7 +105,7 @@ export async function getProgramsResolver(
   const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
 
   // Add visibility filtering based on user authentication
-  const user = ctx.user;
+  const user = requireUser(ctx);
   const visibilityConditions = [];
 
   if (!user) {

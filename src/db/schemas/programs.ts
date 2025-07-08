@@ -48,6 +48,8 @@ export const programsTable = pgTable('programs', {
   network: varchar('network', { length: 256 }).default('educhain'),
   rejectionReason: text('rejection_reason'),
   image: varchar('image', { length: 512 }),
+
+  // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()

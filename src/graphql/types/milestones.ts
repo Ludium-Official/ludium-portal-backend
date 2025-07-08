@@ -48,6 +48,10 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
         ),
     }),
     file: t.exposeString('file', { nullable: true }),
+    deadline: t.field({
+      type: 'Date',
+      resolve: (milestone) => (milestone.deadline ? new Date(milestone.deadline) : null),
+    }),
   }),
 });
 
@@ -77,6 +81,7 @@ export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
     }),
     currency: t.string({ required: true, defaultValue: 'ETH' }),
     links: t.field({ type: [LinkInput] }),
+    deadline: t.field({ type: 'Date', required: true }),
   }),
 });
 
@@ -89,6 +94,7 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
     currency: t.string(),
     status: t.field({ type: MilestoneStatusEnum }),
     links: t.field({ type: [LinkInput] }),
+    deadline: t.field({ type: 'Date' }),
   }),
 });
 
