@@ -43,7 +43,6 @@ export const usersTable = pgTable('users', {
 export const userRelations = relations(usersTable, ({ many }) => ({
   files: many(filesTable),
   createdPrograms: many(programsTable, { relationName: 'program_creator' }),
-  validatedPrograms: many(programsTable, { relationName: 'program_validator' }),
   applications: many(applicationsTable),
   programRoles: many(programUserRolesTable),
   posts: many(postsTable),

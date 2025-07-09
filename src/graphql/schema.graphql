@@ -117,7 +117,6 @@ input CreateProgramInput {
   network: String
   price: String!
   summary: String
-  validatorId: ID!
   visibility: ProgramVisibility
 }
 
@@ -190,6 +189,7 @@ enum MilestoneStatus {
 type Mutation {
   acceptApplication(id: ID!): Application
   acceptProgram(id: ID!): Program
+  assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
   createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
@@ -206,6 +206,7 @@ type Mutation {
   markNotificationAsRead(id: ID!): Boolean
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
+  removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
@@ -316,7 +317,7 @@ type Program {
   status: ProgramStatus
   summary: String
   txHash: String
-  validator: User
+  validators: [User!]
   visibility: ProgramVisibility
 }
 
@@ -440,7 +441,6 @@ input UpdateProgramInput {
   price: String
   status: ProgramStatus
   summary: String
-  validatorId: ID
   visibility: ProgramVisibility
 }
 

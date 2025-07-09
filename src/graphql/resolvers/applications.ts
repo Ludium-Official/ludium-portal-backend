@@ -16,6 +16,7 @@ import type { Context, Root } from '@/types';
 import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
 import BigNumber from 'bignumber.js';
 import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
+import { getValidatorsByProgramIdResolver } from './users';
 
 export async function getApplicationsResolver(
   _root: Root,
@@ -116,7 +117,6 @@ export function createApplicationResolver(
     const [program] = await t
       .select({
         creatorId: programsTable.creatorId,
-        validatorId: programsTable.validatorId,
         id: programsTable.id,
         price: programsTable.price,
       })
@@ -127,7 +127,13 @@ export function createApplicationResolver(
       throw new Error('You are already a sponsor of this program');
     }
 
-    if (program.validatorId === user.id) {
+    const validators = await getValidatorsByProgramIdResolver(
+      {},
+      { programId: args.input.programId },
+      ctx,
+    );
+    const validatorIds = validators.map((v) => v.id);
+    if (validatorIds.includes(user.id)) {
       throw new Error('You are already a validator of this program');
     }
 
@@ -224,13 +230,15 @@ export function createApplicationResolver(
       t.rollback();
     }
 
-    if (program.validatorId) {
-      await ctx.server.pubsub.publish('notifications', t, {
-        type: 'application',
-        action: 'created',
-        recipientId: program.validatorId,
-        entityId: application.id,
-      });
+    if (validatorIds.length > 0) {
+      for (const validatorId of validatorIds) {
+        await ctx.server.pubsub.publish('notifications', t, {
+          type: 'application',
+          action: 'created',
+          recipientId: validatorId,
+          entityId: application.id,
+        });
+      }
       await ctx.server.pubsub.publish('notificationsCount');
     }
 

@@ -37,8 +37,22 @@ export async function getProgramsResolver(
     switch (f.field) {
       case 'creatorId':
         return eq(programsTable.creatorId, f.value);
-      case 'validatorId':
-        return eq(programsTable.validatorId, f.value);
+      case 'validatorId': {
+        // Get programs where user has validator role
+        const validatorPrograms = await ctx.db
+          .select({ programId: programUserRolesTable.programId })
+          .from(programUserRolesTable)
+          .where(
+            and(
+              eq(programUserRolesTable.userId, f.value),
+              eq(programUserRolesTable.roleType, 'validator'),
+            ),
+          );
+        return inArray(
+          programsTable.id,
+          validatorPrograms.map((p) => p.programId),
+        );
+      }
       case 'applicantId': {
         const applications = await ctx.db
           .select()
@@ -51,7 +65,6 @@ export async function getProgramsResolver(
       }
       case 'userId': {
         const creatorCondition = eq(programsTable.creatorId, f.value);
-        const validatorCondition = eq(programsTable.validatorId, f.value);
 
         const userRoles = await ctx.db
           .select()
@@ -63,7 +76,7 @@ export async function getProgramsResolver(
           .from(applicationsTable)
           .where(eq(applicationsTable.applicantId, f.value));
 
-        const conditions = [creatorCondition, validatorCondition];
+        const conditions = [creatorCondition];
 
         if (userRoles.length > 0) {
           conditions.push(
@@ -118,13 +131,12 @@ export async function getProgramsResolver(
       eq(programsTable.visibility, 'restricted'),
     );
 
-    // For private programs, include those where user is creator, validator, or has a role
+    // For private programs, include those where user is creator or has a role
     const privateWithAccess = and(
       eq(programsTable.visibility, 'private'),
       or(
         eq(programsTable.creatorId, user.id),
-        eq(programsTable.validatorId, user.id),
-        // We'll need to do a more complex query for user roles, handled below
+        // User roles are handled in the filter below
       ),
     );
 
@@ -161,11 +173,7 @@ export async function getProgramsResolver(
 
     data = data.filter((program) => {
       if (program.visibility === 'private') {
-        return (
-          program.creatorId === user.id ||
-          program.validatorId === user.id ||
-          userProgramIds.has(program.id)
-        );
+        return program.creatorId === user.id || userProgramIds.has(program.id);
       }
       return true;
     });
@@ -263,7 +271,6 @@ export function createProgramResolver(
         ? new Date(inputData.deadline).toISOString()
         : new Date().toISOString(),
       creatorId: user.id,
-      validatorId: inputData.validatorId,
       status: 'draft',
       visibility: inputData.visibility || 'public',
       network: inputData.network,
@@ -325,14 +332,6 @@ export function createProgramResolver(
         })),
       );
     }
-
-    await ctx.server.pubsub.publish('notifications', t, {
-      type: 'program',
-      action: 'created',
-      recipientId: inputData.validatorId,
-      entityId: program.id,
-    });
-    await ctx.server.pubsub.publish('notificationsCount');
 
     return program;
   });
@@ -511,7 +510,6 @@ export function rejectProgramResolver(
       .update(programsTable)
       .set({
         status: 'draft',
-        validatorId: null,
         ...(args.rejectionReason && { rejectionReason: args.rejectionReason }),
       })
       .where(eq(programsTable.id, args.id))
@@ -625,6 +623,124 @@ export function inviteUserToProgramResolver(
       type: 'program',
       action: 'invited',
       recipientId: args.userId,
+      entityId: args.programId,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
+    return program;
+  });
+}
+
+export function assignValidatorToProgramResolver(
+  _root: Root,
+  args: { programId: string; validatorId: string },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Check if user is the program creator
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: args.programId,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to assign validators to this program');
+    }
+
+    // Check if program exists
+    const [program] = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, args.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    // Check if user is already a validator for this program
+    const existingValidator = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, args.programId),
+          eq(programUserRolesTable.userId, args.validatorId),
+          eq(programUserRolesTable.roleType, 'validator'),
+        ),
+      );
+
+    if (existingValidator.length > 0) {
+      throw new Error('User is already a validator for this program');
+    }
+
+    // Add user as validator to the program
+    await t.insert(programUserRolesTable).values({
+      programId: args.programId,
+      userId: args.validatorId,
+      roleType: 'validator',
+    });
+
+    // Send notification to the assigned validator
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'created',
+      recipientId: args.validatorId,
+      entityId: args.programId,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
+    return program;
+  });
+}
+
+export function removeValidatorFromProgramResolver(
+  _root: Root,
+  args: { programId: string; validatorId: string },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Check if user is the program creator
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: args.programId,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to remove validators from this program');
+    }
+
+    // Check if program exists
+    const [program] = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, args.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    // Remove the validator role
+    await t
+      .delete(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, args.programId),
+          eq(programUserRolesTable.userId, args.validatorId),
+          eq(programUserRolesTable.roleType, 'validator'),
+        ),
+      );
+
+    // Send notification to the removed validator
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'rejected',
+      recipientId: args.validatorId,
       entityId: args.programId,
     });
     await ctx.server.pubsub.publish('notificationsCount');

@@ -10,11 +10,11 @@ export async function hasPrivateProgramAccess(
 ): Promise<boolean> {
   if (!userId) return false;
 
-  // Check if user is creator, validator, or has a role in the program
+  // Check if user is creator or has a role in the program
   const [program] = await db.select().from(programsTable).where(eq(programsTable.id, programId));
   if (!program) return false;
 
-  if (program.creatorId === userId || program.validatorId === userId) {
+  if (program.creatorId === userId) {
     return true;
   }
 

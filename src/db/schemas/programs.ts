@@ -40,7 +40,6 @@ export const programsTable = pgTable('programs', {
   creatorId: uuid('creator_id')
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
-  validatorId: uuid('validator_id').references(() => usersTable.id, { onDelete: 'set null' }),
   status: programStatusEnum('status').default('draft'),
   visibility: programVisibilityEnum('visibility').default('public'),
   educhainProgramId: integer('educhain_id'),
@@ -63,11 +62,6 @@ export const programRelations = relations(programsTable, ({ one, many }) => ({
     fields: [programsTable.creatorId],
     references: [usersTable.id],
     relationName: 'program_creator',
-  }),
-  validator: one(usersTable, {
-    fields: [programsTable.validatorId],
-    references: [usersTable.id],
-    relationName: 'program_validator',
   }),
   applications: many(applicationsTable),
   programsToKeywords: many(programsToKeywordsTable),
