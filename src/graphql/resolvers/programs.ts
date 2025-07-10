@@ -125,11 +125,12 @@ export async function getProgramsResolver(
     // Non-authenticated users can only see public programs
     visibilityConditions.push(eq(programsTable.visibility, 'public'));
   } else {
-    // Authenticated users can see public and restricted programs, plus private programs they have access to
-    const publicAndRestricted = or(
-      eq(programsTable.visibility, 'public'),
-      eq(programsTable.visibility, 'restricted'),
-    );
+    // Authenticated users can see:
+    // - Public programs (always visible in listing)
+    // - Private programs they have access to (creator or have a role)
+    // - Restricted programs are NOT shown in the programs listing (only accessible via direct URL)
+
+    const publicPrograms = eq(programsTable.visibility, 'public');
 
     // For private programs, include those where user is creator or has a role
     const privateWithAccess = and(
@@ -140,7 +141,7 @@ export async function getProgramsResolver(
       ),
     );
 
-    visibilityConditions.push(or(publicAndRestricted, privateWithAccess));
+    visibilityConditions.push(or(publicPrograms, privateWithAccess));
   }
 
   const allConditions = [...filterConditions, ...visibilityConditions];
@@ -204,14 +205,17 @@ export async function getProgramResolver(_root: Root, args: { id: string }, ctx:
     throw new Error('Program not found');
   }
 
-  // Check visibility access
+  // Check visibility access based on program visibility rules:
+  // - Public: Anyone can access
+  // - Restricted: Anyone can access if they know the URL (no additional checks needed)
+  // - Private: Only invited builders and program creators/validators can access
   if (program.visibility === 'private') {
     const hasAccess = await hasPrivateProgramAccess(program.id, ctx.user?.id || null, ctx.db);
     if (!hasAccess) {
       throw new Error('You do not have access to this program');
     }
-  } else if (program.visibility === 'restricted') {
   }
+  // No additional checks needed for 'restricted' and 'public' programs
 
   return program;
 }
@@ -582,7 +586,7 @@ export function inviteUserToProgramResolver(
       throw new Error('You are not allowed to invite users to this program');
     }
 
-    // Check if program is private
+    // Check if program exists
     const [program] = await t
       .select()
       .from(programsTable)
@@ -590,10 +594,6 @@ export function inviteUserToProgramResolver(
 
     if (!program) {
       throw new Error('Program not found');
-    }
-
-    if (program.visibility !== 'private') {
-      throw new Error('You can only invite users to private programs');
     }
 
     // Check if user is already associated with this program

@@ -13,7 +13,13 @@ import {
 import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
-import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
+import {
+  canApplyToProgram,
+  filterEmptyValues,
+  isInSameScope,
+  requireUser,
+  validAndNotEmptyArray,
+} from '@/utils';
 import BigNumber from 'bignumber.js';
 import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
 import { getValidatorsByProgramIdResolver } from './users';
@@ -119,9 +125,14 @@ export function createApplicationResolver(
         creatorId: programsTable.creatorId,
         id: programsTable.id,
         price: programsTable.price,
+        visibility: programsTable.visibility,
       })
       .from(programsTable)
       .where(eq(programsTable.id, args.input.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
 
     if (program.creatorId === user.id) {
       throw new Error('You are already a sponsor of this program');
@@ -135,6 +146,12 @@ export function createApplicationResolver(
     const validatorIds = validators.map((v) => v.id);
     if (validatorIds.includes(user.id)) {
       throw new Error('You are already a validator of this program');
+    }
+
+    // Check if user can apply to this program based on visibility rules
+    const applicationAccess = await canApplyToProgram(args.input.programId, user.id, t);
+    if (!applicationAccess.canApply) {
+      throw new Error(applicationAccess.reason || 'You cannot apply to this program');
     }
 
     const [application] = await t

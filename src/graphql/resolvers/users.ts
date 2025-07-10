@@ -150,6 +150,30 @@ export async function getValidatorsByProgramIdResolver(
   return validatorUsers.filter((user) => user !== null);
 }
 
+export async function getInvitedBuildersByProgramIdResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  const builders = await ctx.db
+    .select({ userId: programUserRolesTable.userId })
+    .from(programUserRolesTable)
+    .where(
+      and(
+        eq(programUserRolesTable.programId, args.programId),
+        eq(programUserRolesTable.roleType, 'builder'),
+      ),
+    );
+
+  if (builders.length === 0) return [];
+
+  const builderUsers = await Promise.all(
+    builders.map((builder) => getUserResolver({}, { id: builder.userId }, ctx)),
+  );
+
+  return builderUsers.filter((user) => user !== null);
+}
+
 export function createUserResolver(
   _root: Root,
   args: { input: typeof UserInput.$inferInput },

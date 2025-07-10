@@ -308,6 +308,7 @@ type Program {
   educhainProgramId: Int
   id: ID
   image: String
+  invitedBuilders: [User!]
   keywords: [Keyword!]
   links: [Link!]
   name: String
