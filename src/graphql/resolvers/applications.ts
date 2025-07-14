@@ -13,9 +13,16 @@ import {
 import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
-import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
+import {
+  canApplyToProgram,
+  filterEmptyValues,
+  isInSameScope,
+  requireUser,
+  validAndNotEmptyArray,
+} from '@/utils';
 import BigNumber from 'bignumber.js';
 import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
+import { getValidatorsByProgramIdResolver } from './users';
 
 export async function getApplicationsResolver(
   _root: Root,
@@ -116,19 +123,35 @@ export function createApplicationResolver(
     const [program] = await t
       .select({
         creatorId: programsTable.creatorId,
-        validatorId: programsTable.validatorId,
         id: programsTable.id,
         price: programsTable.price,
+        visibility: programsTable.visibility,
       })
       .from(programsTable)
       .where(eq(programsTable.id, args.input.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
 
     if (program.creatorId === user.id) {
       throw new Error('You are already a sponsor of this program');
     }
 
-    if (program.validatorId === user.id) {
+    const validators = await getValidatorsByProgramIdResolver(
+      {},
+      { programId: args.input.programId },
+      ctx,
+    );
+    const validatorIds = validators.map((v) => v.id);
+    if (validatorIds.includes(user.id)) {
       throw new Error('You are already a validator of this program');
+    }
+
+    // Check if user can apply to this program based on visibility rules
+    const applicationAccess = await canApplyToProgram(args.input.programId, user.id, t);
+    if (!applicationAccess.canApply) {
+      throw new Error(applicationAccess.reason || 'You cannot apply to this program');
     }
 
     const [application] = await t
@@ -136,7 +159,7 @@ export function createApplicationResolver(
       .values({
         ...args.input,
         applicantId: user.id,
-        status: 'pending',
+        status: args.input.status,
       })
       .returning();
 
@@ -166,7 +189,12 @@ export function createApplicationResolver(
       const { links, ...inputData } = milestone;
       const [newMilestone] = await t
         .insert(milestonesTable)
-        .values({ ...inputData, sortOrder, applicationId: application.id })
+        .values({
+          ...inputData,
+          sortOrder,
+          applicationId: application.id,
+          deadline: inputData.deadline.toISOString(),
+        })
         .returning();
       // handle links
       if (links) {
@@ -219,13 +247,15 @@ export function createApplicationResolver(
       t.rollback();
     }
 
-    if (program.validatorId) {
-      await ctx.server.pubsub.publish('notifications', t, {
-        type: 'application',
-        action: 'created',
-        recipientId: program.validatorId,
-        entityId: application.id,
-      });
+    if (validatorIds.length > 0) {
+      for (const validatorId of validatorIds) {
+        await ctx.server.pubsub.publish('notifications', t, {
+          type: 'application',
+          action: 'created',
+          recipientId: validatorId,
+          entityId: application.id,
+        });
+      }
       await ctx.server.pubsub.publish('notificationsCount');
     }
 

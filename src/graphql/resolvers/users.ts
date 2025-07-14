@@ -126,6 +126,54 @@ export async function getUserResolver(_root: Root, args: { id: string }, ctx: Co
   return user;
 }
 
+export async function getValidatorsByProgramIdResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  const validators = await ctx.db
+    .select({ userId: programUserRolesTable.userId })
+    .from(programUserRolesTable)
+    .where(
+      and(
+        eq(programUserRolesTable.programId, args.programId),
+        eq(programUserRolesTable.roleType, 'validator'),
+      ),
+    );
+
+  if (validators.length === 0) return [];
+
+  const validatorUsers = await Promise.all(
+    validators.map((validator) => getUserResolver({}, { id: validator.userId }, ctx)),
+  );
+
+  return validatorUsers.filter((user) => user !== null);
+}
+
+export async function getInvitedBuildersByProgramIdResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  const builders = await ctx.db
+    .select({ userId: programUserRolesTable.userId })
+    .from(programUserRolesTable)
+    .where(
+      and(
+        eq(programUserRolesTable.programId, args.programId),
+        eq(programUserRolesTable.roleType, 'builder'),
+      ),
+    );
+
+  if (builders.length === 0) return [];
+
+  const builderUsers = await Promise.all(
+    builders.map((builder) => getUserResolver({}, { id: builder.userId }, ctx)),
+  );
+
+  return builderUsers.filter((user) => user !== null);
+}
+
 export function createUserResolver(
   _root: Root,
   args: { input: typeof UserInput.$inferInput },

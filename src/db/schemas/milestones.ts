@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import {
+  date,
   integer,
   jsonb,
   pgEnum,
@@ -11,6 +12,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
+import { commentsTable } from './comments';
 import { linksTable } from './links';
 
 export const milestoneStatuses = [
@@ -41,6 +43,7 @@ export const milestonesTable = pgTable('milestones', {
   sortOrder: integer('sort_order').notNull().default(0),
   rejectionReason: text('rejection_reason'),
   file: varchar('file', { length: 512 }),
+  deadline: date('deadline').notNull(),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
@@ -51,11 +54,12 @@ export const milestonesTable = pgTable('milestones', {
 });
 
 // Milestone relations
-export const milestoneRelations = relations(milestonesTable, ({ one }) => ({
+export const milestoneRelations = relations(milestonesTable, ({ one, many }) => ({
   application: one(applicationsTable, {
     fields: [milestonesTable.applicationId],
     references: [applicationsTable.id],
   }),
+  comments: many(commentsTable),
 }));
 
 // Links

@@ -1,5 +1,6 @@
 import { type Milestone as DBMilestone, milestoneStatuses } from '@/db/schemas';
 import builder from '@/graphql/builder';
+import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
 import { getLinksByMilestoneIdResolver } from '@/graphql/resolvers/links';
 import {
   checkMilestoneResolver,
@@ -8,6 +9,7 @@ import {
   submitMilestoneResolver,
   updateMilestoneResolver,
 } from '@/graphql/resolvers/milestones';
+import { CommentType } from '@/graphql/types/comments';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import BigNumber from 'bignumber.js';
@@ -36,7 +38,20 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
       resolve: async (milestone, _args, ctx) =>
         getLinksByMilestoneIdResolver({}, { milestoneId: milestone.id }, ctx),
     }),
+    comments: t.field({
+      type: [CommentType],
+      resolve: async (milestone, _args, ctx) =>
+        getCommentsByCommentableResolver(
+          {},
+          { commentableType: 'milestone', commentableId: milestone.id },
+          ctx,
+        ),
+    }),
     file: t.exposeString('file', { nullable: true }),
+    deadline: t.field({
+      type: 'Date',
+      resolve: (milestone) => (milestone.deadline ? new Date(milestone.deadline) : null),
+    }),
   }),
 });
 
@@ -66,6 +81,7 @@ export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
     }),
     currency: t.string({ required: true, defaultValue: 'ETH' }),
     links: t.field({ type: [LinkInput] }),
+    deadline: t.field({ type: 'Date', required: true }),
   }),
 });
 
@@ -78,6 +94,7 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
     currency: t.string(),
     status: t.field({ type: MilestoneStatusEnum }),
     links: t.field({ type: [LinkInput] }),
+    deadline: t.field({ type: 'Date' }),
   }),
 });
 

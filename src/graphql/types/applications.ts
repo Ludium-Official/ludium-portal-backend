@@ -99,6 +99,7 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
       },
     }),
     milestones: t.field({ type: [CreateMilestoneInput], required: true }),
+    status: t.field({ type: ApplicationStatusEnum, required: true }),
   }),
 });
 

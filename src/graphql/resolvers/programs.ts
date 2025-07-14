@@ -14,7 +14,13 @@ import {
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
-import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
+import {
+  filterEmptyValues,
+  hasPrivateProgramAccess,
+  isInSameScope,
+  requireUser,
+  validAndNotEmptyArray,
+} from '@/utils';
 import { and, asc, count, desc, eq, ilike, inArray, or } from 'drizzle-orm';
 
 export async function getProgramsResolver(
@@ -31,8 +37,22 @@ export async function getProgramsResolver(
     switch (f.field) {
       case 'creatorId':
         return eq(programsTable.creatorId, f.value);
-      case 'validatorId':
-        return eq(programsTable.validatorId, f.value);
+      case 'validatorId': {
+        // Get programs where user has validator role
+        const validatorPrograms = await ctx.db
+          .select({ programId: programUserRolesTable.programId })
+          .from(programUserRolesTable)
+          .where(
+            and(
+              eq(programUserRolesTable.userId, f.value),
+              eq(programUserRolesTable.roleType, 'validator'),
+            ),
+          );
+        return inArray(
+          programsTable.id,
+          validatorPrograms.map((p) => p.programId),
+        );
+      }
       case 'applicantId': {
         const applications = await ctx.db
           .select()
@@ -45,7 +65,6 @@ export async function getProgramsResolver(
       }
       case 'userId': {
         const creatorCondition = eq(programsTable.creatorId, f.value);
-        const validatorCondition = eq(programsTable.validatorId, f.value);
 
         const userRoles = await ctx.db
           .select()
@@ -57,7 +76,7 @@ export async function getProgramsResolver(
           .from(applicationsTable)
           .where(eq(applicationsTable.applicantId, f.value));
 
-        const conditions = [creatorCondition, validatorCondition];
+        const conditions = [creatorCondition];
 
         if (userRoles.length > 0) {
           conditions.push(
@@ -86,6 +105,8 @@ export async function getProgramsResolver(
           programsTable.status,
           f.value as 'draft' | 'published' | 'closed' | 'completed' | 'cancelled',
         );
+      case 'visibility':
+        return eq(programsTable.visibility, f.value as 'private' | 'restricted' | 'public');
       case 'price':
         // sort by price, value can be 'asc' or 'desc'
         return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
@@ -96,12 +117,41 @@ export async function getProgramsResolver(
 
   const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
 
+  // Add visibility filtering based on user authentication
+  const user = requireUser(ctx);
+  const visibilityConditions = [];
+
+  if (!user) {
+    // Non-authenticated users can only see public programs
+    visibilityConditions.push(eq(programsTable.visibility, 'public'));
+  } else {
+    // Authenticated users can see:
+    // - Public programs (always visible in listing)
+    // - Private programs they have access to (creator or have a role)
+    // - Restricted programs are NOT shown in the programs listing (only accessible via direct URL)
+
+    const publicPrograms = eq(programsTable.visibility, 'public');
+
+    // For private programs, include those where user is creator or has a role
+    const privateWithAccess = and(
+      eq(programsTable.visibility, 'private'),
+      or(
+        eq(programsTable.creatorId, user.id),
+        // User roles are handled in the filter below
+      ),
+    );
+
+    visibilityConditions.push(or(publicPrograms, privateWithAccess));
+  }
+
+  const allConditions = [...filterConditions, ...visibilityConditions];
+
   let data: Program[] = [];
-  if (filterConditions.length > 0) {
+  if (allConditions.length > 0) {
     data = await ctx.db
       .select()
       .from(programsTable)
-      .where(and(...filterConditions))
+      .where(and(...allConditions))
       .limit(limit)
       .offset(offset)
       .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
@@ -114,6 +164,22 @@ export async function getProgramsResolver(
       .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
   }
 
+  if (user) {
+    const userRoles = await ctx.db
+      .select()
+      .from(programUserRolesTable)
+      .where(eq(programUserRolesTable.userId, user.id));
+
+    const userProgramIds = new Set(userRoles.map((role) => role.programId));
+
+    data = data.filter((program) => {
+      if (program.visibility === 'private') {
+        return program.creatorId === user.id || userProgramIds.has(program.id);
+      }
+      return true;
+    });
+  }
+
   if (!validAndNotEmptyArray(data)) {
     return {
       data: [],
@@ -124,7 +190,7 @@ export async function getProgramsResolver(
   const [totalCount] = await ctx.db
     .select({ count: count() })
     .from(programsTable)
-    .where(and(...filterConditions));
+    .where(and(...allConditions));
 
   return {
     data,
@@ -134,6 +200,23 @@ export async function getProgramsResolver(
 
 export async function getProgramResolver(_root: Root, args: { id: string }, ctx: Context) {
   const [program] = await ctx.db.select().from(programsTable).where(eq(programsTable.id, args.id));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  // Check visibility access based on program visibility rules:
+  // - Public: Anyone can access
+  // - Restricted: Anyone can access if they know the URL (no additional checks needed)
+  // - Private: Only invited builders and program creators/validators can access
+  if (program.visibility === 'private') {
+    const hasAccess = await hasPrivateProgramAccess(program.id, ctx.user?.id || null, ctx.db);
+    if (!hasAccess) {
+      throw new Error('You do not have access to this program');
+    }
+  }
+  // No additional checks needed for 'restricted' and 'public' programs
+
   return program;
 }
 
@@ -192,8 +275,8 @@ export function createProgramResolver(
         ? new Date(inputData.deadline).toISOString()
         : new Date().toISOString(),
       creatorId: user.id,
-      validatorId: inputData.validatorId,
       status: 'draft',
+      visibility: inputData.visibility || 'public',
       network: inputData.network,
     };
 
@@ -253,14 +336,6 @@ export function createProgramResolver(
         })),
       );
     }
-
-    await ctx.server.pubsub.publish('notifications', t, {
-      type: 'program',
-      action: 'created',
-      recipientId: inputData.validatorId,
-      entityId: program.id,
-    });
-    await ctx.server.pubsub.publish('notificationsCount');
 
     return program;
   });
@@ -439,7 +514,6 @@ export function rejectProgramResolver(
       .update(programsTable)
       .set({
         status: 'draft',
-        validatorId: null,
         ...(args.rejectionReason && { rejectionReason: args.rejectionReason }),
       })
       .where(eq(programsTable.id, args.id))
@@ -486,6 +560,188 @@ export function publishProgramResolver(
       action: 'submitted',
       recipientId: program.creatorId,
       entityId: program.id,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
+    return program;
+  });
+}
+
+export function inviteUserToProgramResolver(
+  _root: Root,
+  args: { programId: string; userId: string },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Check if user is the program creator
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: args.programId,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to invite users to this program');
+    }
+
+    // Check if program exists
+    const [program] = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, args.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    // Check if user is already associated with this program
+    const existingRole = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, args.programId),
+          eq(programUserRolesTable.userId, args.userId),
+        ),
+      );
+
+    if (existingRole.length > 0) {
+      throw new Error('User is already associated with this program');
+    }
+
+    // Add user as builder to the program
+    await t.insert(programUserRolesTable).values({
+      programId: args.programId,
+      userId: args.userId,
+      roleType: 'builder',
+    });
+
+    // Send notification to the invited user
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'invited',
+      recipientId: args.userId,
+      entityId: args.programId,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
+    return program;
+  });
+}
+
+export function assignValidatorToProgramResolver(
+  _root: Root,
+  args: { programId: string; validatorId: string },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Check if user is the program creator
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: args.programId,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to assign validators to this program');
+    }
+
+    // Check if program exists
+    const [program] = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, args.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    // Check if user is already a validator for this program
+    const existingValidator = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, args.programId),
+          eq(programUserRolesTable.userId, args.validatorId),
+          eq(programUserRolesTable.roleType, 'validator'),
+        ),
+      );
+
+    if (existingValidator.length > 0) {
+      throw new Error('User is already a validator for this program');
+    }
+
+    // Add user as validator to the program
+    await t.insert(programUserRolesTable).values({
+      programId: args.programId,
+      userId: args.validatorId,
+      roleType: 'validator',
+    });
+
+    // Send notification to the assigned validator
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'created',
+      recipientId: args.validatorId,
+      entityId: args.programId,
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
+    return program;
+  });
+}
+
+export function removeValidatorFromProgramResolver(
+  _root: Root,
+  args: { programId: string; validatorId: string },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Check if user is the program creator
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: args.programId,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to remove validators from this program');
+    }
+
+    // Check if program exists
+    const [program] = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, args.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    // Remove the validator role
+    await t
+      .delete(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, args.programId),
+          eq(programUserRolesTable.userId, args.validatorId),
+          eq(programUserRolesTable.roleType, 'validator'),
+        ),
+      );
+
+    // Send notification to the removed validator
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'rejected',
+      recipientId: args.validatorId,
+      entityId: args.programId,
     });
     await ctx.server.pubsub.publish('notificationsCount');
 

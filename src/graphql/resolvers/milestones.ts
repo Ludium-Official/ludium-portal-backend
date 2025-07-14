@@ -17,6 +17,7 @@ import type { Context, Root } from '@/types';
 import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
 import BigNumber from 'bignumber.js';
 import { and, asc, count, eq, inArray, lt } from 'drizzle-orm';
+import { getValidatorsByProgramIdResolver } from './users';
 
 export async function getMilestoneResolver(_root: Root, args: { id: string }, ctx: Context) {
   const [milestone] = await ctx.db
@@ -237,24 +238,26 @@ export function submitMilestoneResolver(
         .where(eq(applicationsTable.id, milestone.applicationId));
     }
 
-    // TODO: Refactor this
     const [application] = await t
       .select({ programId: applicationsTable.programId })
       .from(applicationsTable)
       .where(eq(applicationsTable.id, milestone.applicationId));
 
-    const [program] = await t
-      .select({ validatorId: programsTable.validatorId })
-      .from(programsTable)
-      .where(eq(programsTable.id, application.programId));
+    const validators = await getValidatorsByProgramIdResolver(
+      {},
+      { programId: application.programId },
+      ctx,
+    );
 
-    if (program.validatorId) {
-      await ctx.server.pubsub.publish('notifications', t, {
-        type: 'milestone',
-        action: 'submitted',
-        recipientId: program.validatorId,
-        entityId: milestone.id,
-      });
+    if (validators.length > 0) {
+      for (const validator of validators) {
+        await ctx.server.pubsub.publish('notifications', t, {
+          type: 'milestone',
+          action: 'submitted',
+          recipientId: validator.id,
+          entityId: milestone.id,
+        });
+      }
       await ctx.server.pubsub.publish('notificationsCount');
     }
 

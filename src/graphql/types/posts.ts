@@ -1,5 +1,6 @@
 import type { Post as DBPost } from '@/db/schemas';
 import builder from '@/graphql/builder';
+import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
 import {
   createPostResolver,
   getPostKeywordsByPostIdResolver,
@@ -8,6 +9,7 @@ import {
   updatePostResolver,
 } from '@/graphql/resolvers/posts';
 import { getUserResolver } from '@/graphql/resolvers/users';
+import { CommentType } from '@/graphql/types/comments';
 import { KeywordType, PaginationInput } from '@/graphql/types/common';
 import { User } from '@/graphql/types/users';
 
@@ -29,6 +31,15 @@ export const PostType = builder.objectRef<DBPost>('Post').implement({
       type: [KeywordType],
       resolve: async (post, _args, ctx) =>
         getPostKeywordsByPostIdResolver({}, { postId: post.id }, ctx),
+    }),
+    comments: t.field({
+      type: [CommentType],
+      resolve: async (post, _args, ctx) =>
+        getCommentsByCommentableResolver(
+          {},
+          { commentableType: 'post', commentableId: post.id },
+          ctx,
+        ),
     }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
   }),

@@ -11,6 +11,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
+import { commentsTable } from './comments';
 import { keywordsTable } from './keywords';
 import { linksTable } from './links';
 import { usersTable } from './users';
@@ -25,6 +26,9 @@ export const programStatuses = [
 ] as const;
 export const programStatusEnum = pgEnum('program_status', programStatuses);
 
+export const programVisibilities = ['private', 'restricted', 'public'] as const;
+export const programVisibilityEnum = pgEnum('program_visibility', programVisibilities);
+
 export const programsTable = pgTable('programs', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 256 }).notNull().notNull(),
@@ -36,13 +40,15 @@ export const programsTable = pgTable('programs', {
   creatorId: uuid('creator_id')
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
-  validatorId: uuid('validator_id').references(() => usersTable.id, { onDelete: 'set null' }),
   status: programStatusEnum('status').default('draft'),
+  visibility: programVisibilityEnum('visibility').default('public'),
   educhainProgramId: integer('educhain_id'),
   txHash: varchar('tx_hash', { length: 256 }),
   network: varchar('network', { length: 256 }).default('educhain'),
   rejectionReason: text('rejection_reason'),
   image: varchar('image', { length: 512 }),
+
+  // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
@@ -57,14 +63,10 @@ export const programRelations = relations(programsTable, ({ one, many }) => ({
     references: [usersTable.id],
     relationName: 'program_creator',
   }),
-  validator: one(usersTable, {
-    fields: [programsTable.validatorId],
-    references: [usersTable.id],
-    relationName: 'program_validator',
-  }),
   applications: many(applicationsTable),
   programsToKeywords: many(programsToKeywordsTable),
   userRoles: many(programUserRolesTable),
+  comments: many(commentsTable),
 }));
 
 // Keywords
@@ -159,3 +161,4 @@ export type NewProgram = typeof programsTable.$inferInsert;
 export type ProgramUserRole = typeof programUserRolesTable.$inferSelect;
 export type NewProgramUserRole = typeof programUserRolesTable.$inferInsert;
 export type ProgramStatusEnum = (typeof programStatuses)[number];
+export type ProgramVisibilityEnum = (typeof programVisibilities)[number];

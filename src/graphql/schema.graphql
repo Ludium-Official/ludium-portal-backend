@@ -15,6 +15,7 @@ type Application {
 enum ApplicationStatus {
   accepted
   completed
+  draft
   pending
   rejected
   submitted
@@ -48,12 +49,19 @@ enum CheckMilestoneStatus {
 
 type Comment {
   author: User
+  commentableId: String
+  commentableType: String
   content: String
   createdAt: Date
   id: ID
   parent: Comment
-  post: Post
   replies: [Comment!]
+}
+
+enum CommentableTypeEnum {
+  milestone
+  post
+  program
 }
 
 input CreateApplicationInput {
@@ -64,6 +72,7 @@ input CreateApplicationInput {
   name: String!
   price: String!
   programId: String!
+  status: ApplicationStatus!
   summary: String
 }
 
@@ -74,13 +83,15 @@ input CreateCarouselItemInput {
 }
 
 input CreateCommentInput {
+  commentableId: ID!
+  commentableType: CommentableTypeEnum!
   content: String!
   parentId: ID
-  postId: ID!
 }
 
 input CreateMilestoneInput {
   currency: String! = "ETH"
+  deadline: Date!
   description: String
   links: [LinkInput!]
   price: String!
@@ -106,7 +117,7 @@ input CreateProgramInput {
   network: String
   price: String!
   summary: String
-  validatorId: ID!
+  visibility: ProgramVisibility
 }
 
 """
@@ -154,7 +165,9 @@ input LinkInput {
 }
 
 type Milestone {
+  comments: [Comment!]
   currency: String
+  deadline: Date
   description: String
   file: String
   id: ID
@@ -176,6 +189,7 @@ enum MilestoneStatus {
 type Mutation {
   acceptApplication(id: ID!): Application
   acceptProgram(id: ID!): Program
+  assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
   createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
@@ -186,11 +200,13 @@ type Mutation {
   deleteCarouselItem(id: ID!): CarouselItem
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
+  inviteUserToProgram(programId: ID!, userId: ID!): Program
   login(email: String, loginType: String!, walletAddress: String!): String
   markAllNotificationsAsRead: Boolean
   markNotificationAsRead(id: ID!): Boolean
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
+  removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
@@ -220,6 +236,7 @@ enum NotificationAction {
   broadcast
   completed
   created
+  invited
   rejected
   submitted
 }
@@ -271,6 +288,7 @@ input PaginationInput {
 
 type Post {
   author: User
+  comments: [Comment!]
   content: String
   createdAt: Date
   id: ID
@@ -282,6 +300,7 @@ type Post {
 
 type Program {
   applications: [Application!]
+  comments: [Comment!]
   creator: User
   currency: String
   deadline: Date
@@ -289,6 +308,7 @@ type Program {
   educhainProgramId: Int
   id: ID
   image: String
+  invitedBuilders: [User!]
   keywords: [Keyword!]
   links: [Link!]
   name: String
@@ -298,7 +318,8 @@ type Program {
   status: ProgramStatus
   summary: String
   txHash: String
-  validator: User
+  validators: [User!]
+  visibility: ProgramVisibility
 }
 
 enum ProgramStatus {
@@ -310,13 +331,19 @@ enum ProgramStatus {
   published
 }
 
+enum ProgramVisibility {
+  private
+  public
+  restricted
+}
+
 type Query {
   application(id: ID!): Application
   applications(pagination: PaginationInput): PaginatedApplications
   carouselItems: [EnrichedCarouselItem!]
   comment(id: ID!): Comment
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
-  commentsByPost(postId: ID!): [Comment!]
+  commentsByCommentable(commentableId: ID!, commentableType: CommentableTypeEnum!): [Comment!]
   countNotifications: Int
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
@@ -384,6 +411,7 @@ input UpdateCommentInput {
 
 input UpdateMilestoneInput {
   currency: String
+  deadline: Date
   description: String
   id: String!
   links: [LinkInput!]
@@ -414,7 +442,7 @@ input UpdateProgramInput {
   price: String
   status: ProgramStatus
   summary: String
-  validatorId: ID
+  visibility: ProgramVisibility
 }
 
 scalar Upload

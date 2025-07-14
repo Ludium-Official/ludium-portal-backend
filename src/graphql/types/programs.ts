@@ -1,21 +1,30 @@
-import { type Program as DBProgram, programStatuses } from '@/db/schemas';
+import { type Program as DBProgram, programStatuses, programVisibilities } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getApplicationsByProgramIdResolver } from '@/graphql/resolvers/applications';
+import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
 import { getLinksByProgramIdResolver } from '@/graphql/resolvers/links';
 import {
   acceptProgramResolver,
+  assignValidatorToProgramResolver,
   createProgramResolver,
   deleteProgramResolver,
   getProgramKeywordsByProgramIdResolver,
   getProgramKeywordsResolver,
   getProgramResolver,
   getProgramsResolver,
+  inviteUserToProgramResolver,
   publishProgramResolver,
   rejectProgramResolver,
+  removeValidatorFromProgramResolver,
   updateProgramResolver,
 } from '@/graphql/resolvers/programs';
-import { getUserResolver } from '@/graphql/resolvers/users';
+import {
+  getInvitedBuildersByProgramIdResolver,
+  getUserResolver,
+  getValidatorsByProgramIdResolver,
+} from '@/graphql/resolvers/users';
 import { ApplicationType } from '@/graphql/types/applications';
+import { CommentType } from '@/graphql/types/comments';
 import { KeywordType, PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { User } from '@/graphql/types/users';
@@ -26,6 +35,10 @@ import BigNumber from 'bignumber.js';
 /* -------------------------------------------------------------------------- */
 export const ProgramStatusEnum = builder.enumType('ProgramStatus', {
   values: programStatuses,
+});
+
+export const ProgramVisibilityEnum = builder.enumType('ProgramVisibility', {
+  values: programVisibilities,
 });
 
 export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
@@ -58,20 +71,37 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       type: ProgramStatusEnum,
       resolve: (program) => program.status,
     }),
+    visibility: t.field({
+      type: ProgramVisibilityEnum,
+      resolve: (program) => program.visibility,
+    }),
     creator: t.field({
       type: User,
       resolve: async (program, _args, ctx) => getUserResolver({}, { id: program.creatorId }, ctx),
     }),
-    validator: t.field({
-      type: User,
-      nullable: true,
+    validators: t.field({
+      type: [User],
       resolve: async (program, _args, ctx) =>
-        getUserResolver({}, { id: program.validatorId ?? '' }, ctx),
+        getValidatorsByProgramIdResolver({}, { programId: program.id }, ctx),
+    }),
+    invitedBuilders: t.field({
+      type: [User],
+      resolve: async (program, _args, ctx) =>
+        getInvitedBuildersByProgramIdResolver({}, { programId: program.id }, ctx),
     }),
     applications: t.field({
       type: [ApplicationType],
       resolve: async (program, _args, ctx) =>
         getApplicationsByProgramIdResolver({}, { programId: program.id }, ctx),
+    }),
+    comments: t.field({
+      type: [CommentType],
+      resolve: async (program, _args, ctx) =>
+        getCommentsByCommentableResolver(
+          {},
+          { commentableType: 'program', commentableId: program.id },
+          ctx,
+        ),
     }),
     image: t.exposeString('image'),
   }),
@@ -112,8 +142,8 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
     deadline: t.string({ required: true }),
     keywords: t.idList(),
     links: t.field({ type: [LinkInput] }),
-    validatorId: t.id({ required: true }),
     network: t.string(),
+    visibility: t.field({ type: ProgramVisibilityEnum }),
     image: t.field({ type: 'Upload' }),
   }),
 });
@@ -136,7 +166,7 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     keywords: t.idList(),
     links: t.field({ type: [LinkInput] }),
     status: t.field({ type: ProgramStatusEnum }),
-    validatorId: t.id(),
+    visibility: t.field({ type: ProgramVisibilityEnum }),
     network: t.string(),
     image: t.field({ type: 'Upload' }),
   }),
@@ -227,5 +257,41 @@ builder.mutationFields((t) => ({
       txHash: t.arg.string({ required: true }),
     },
     resolve: publishProgramResolver,
+  }),
+  inviteUserToProgram: t.field({
+    type: ProgramType,
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.programId },
+      admin: true,
+    }),
+    args: {
+      programId: t.arg.id({ required: true }),
+      userId: t.arg.id({ required: true }),
+    },
+    resolve: inviteUserToProgramResolver,
+  }),
+  assignValidatorToProgram: t.field({
+    type: ProgramType,
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.programId },
+      admin: true,
+    }),
+    args: {
+      programId: t.arg.id({ required: true }),
+      validatorId: t.arg.id({ required: true }),
+    },
+    resolve: assignValidatorToProgramResolver,
+  }),
+  removeValidatorFromProgram: t.field({
+    type: ProgramType,
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.programId },
+      admin: true,
+    }),
+    args: {
+      programId: t.arg.id({ required: true }),
+      validatorId: t.arg.id({ required: true }),
+    },
+    resolve: removeValidatorFromProgramResolver,
   }),
 }));

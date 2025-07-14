@@ -1,6 +1,11 @@
-import { applicationsTable, milestonesTable, programsTable } from '@/db/schemas';
+import {
+  applicationsTable,
+  milestonesTable,
+  programUserRolesTable,
+  programsTable,
+} from '@/db/schemas';
 import type { DB } from '@/types/common';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 export async function isInSameScope(params: {
   db: DB;
@@ -28,12 +33,18 @@ export async function isInSameScope(params: {
       return true;
     }
     case 'program_validator': {
-      const [program] = await db
-        .select({ validatorId: programsTable.validatorId })
-        .from(programsTable)
-        .where(eq(programsTable.id, entityId));
+      const [validatorRole] = await db
+        .select()
+        .from(programUserRolesTable)
+        .where(
+          and(
+            eq(programUserRolesTable.programId, entityId),
+            eq(programUserRolesTable.userId, userId),
+            eq(programUserRolesTable.roleType, 'validator'),
+          ),
+        );
 
-      if (program.validatorId !== userId) {
+      if (!validatorRole) {
         return false;
       }
       return true;
@@ -45,12 +56,18 @@ export async function isInSameScope(params: {
         .from(applicationsTable)
         .where(eq(applicationsTable.id, entityId));
 
-      const [program] = await db
-        .select({ validatorId: programsTable.validatorId })
-        .from(programsTable)
-        .where(eq(programsTable.id, application.programId));
+      const [validatorRole] = await db
+        .select()
+        .from(programUserRolesTable)
+        .where(
+          and(
+            eq(programUserRolesTable.programId, application.programId),
+            eq(programUserRolesTable.userId, userId),
+            eq(programUserRolesTable.roleType, 'validator'),
+          ),
+        );
 
-      if (program.validatorId !== userId) {
+      if (!validatorRole) {
         return false;
       }
       return true;
@@ -95,12 +112,18 @@ export async function isInSameScope(params: {
         .from(applicationsTable)
         .where(eq(applicationsTable.id, milestone.applicationId));
 
-      const [program] = await db
-        .select({ validatorId: programsTable.validatorId })
-        .from(programsTable)
-        .where(eq(programsTable.id, application.programId));
+      const [validatorRole] = await db
+        .select()
+        .from(programUserRolesTable)
+        .where(
+          and(
+            eq(programUserRolesTable.programId, application.programId),
+            eq(programUserRolesTable.userId, userId),
+            eq(programUserRolesTable.roleType, 'validator'),
+          ),
+        );
 
-      if (program.validatorId !== userId) {
+      if (!validatorRole) {
         return false;
       }
       return true;
