@@ -5,7 +5,6 @@ import {
   linksTable,
   milestonesTable,
   milestonesToLinksTable,
-  programsTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type {
@@ -14,9 +13,16 @@ import type {
   UpdateMilestoneInput,
 } from '@/graphql/types/milestones';
 import type { Context, Root } from '@/types';
-import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
+import {
+  calculateMilestoneAmount,
+  filterEmptyValues,
+  isInSameScope,
+  requireUser,
+  validAndNotEmptyArray,
+  validateMilestonePercentages,
+} from '@/utils';
 import BigNumber from 'bignumber.js';
-import { and, asc, count, eq, inArray, lt } from 'drizzle-orm';
+import { and, asc, count, eq, lt } from 'drizzle-orm';
 import { getValidatorsByProgramIdResolver } from './users';
 
 export async function getMilestoneResolver(_root: Root, args: { id: string }, ctx: Context) {
@@ -97,57 +103,48 @@ export function updateMilestoneResolver(
       );
     }
 
-    if (args.input.price) {
-      // const get program id from milestone
+    // Validate percentage if provided
+    if (args.input.percentage) {
+      const percentage = new BigNumber(args.input.percentage);
+
+      // Validate percentage is between 0 and 100
+      if (percentage.isLessThan(0) || percentage.isGreaterThan(100)) {
+        ctx.server.log.error('Percentage must be between 0 and 100');
+        t.rollback();
+      }
+
+      // Get milestone and application info
       const [milestone] = await t
         .select({ applicationId: milestonesTable.applicationId })
         .from(milestonesTable)
         .where(eq(milestonesTable.id, args.input.id));
 
       const [application] = await t
-        .select({ programId: applicationsTable.programId })
+        .select({ programId: applicationsTable.programId, price: applicationsTable.price })
         .from(applicationsTable)
         .where(eq(applicationsTable.id, milestone.applicationId));
 
-      const [program] = await t
-        .select({ id: programsTable.id, price: programsTable.price })
-        .from(programsTable)
-        .where(eq(programsTable.id, application.programId));
-
-      const applications = await t
-        .select({ price: applicationsTable.price })
-        .from(applicationsTable)
-        .where(
-          and(
-            eq(applicationsTable.programId, program.id),
-            inArray(applicationsTable.status, ['accepted', 'completed', 'submitted']),
-          ),
-        );
-
+      // Get all milestones for this application
       const milestones = await t
-        .select({ price: milestonesTable.price })
+        .select({ id: milestonesTable.id, percentage: milestonesTable.percentage })
         .from(milestonesTable)
-        .where(
-          and(
-            eq(milestonesTable.applicationId, milestone.applicationId),
-            inArray(milestonesTable.status, ['pending', 'completed', 'submitted']),
-          ),
-        );
+        .where(eq(milestonesTable.applicationId, milestone.applicationId));
 
-      const milestonesTotalPrice = milestones.reduce((acc, m) => {
-        return acc.plus(new BigNumber(m.price));
-      }, new BigNumber(0));
+      // Calculate total percentage including the updated one
+      const updatedMilestones = milestones
+        .map((m) =>
+          m.id === args.input.id ? { ...m, percentage: args.input.percentage || '0' } : m,
+        )
+        .filter((m): m is { id: string; percentage: string } => m.percentage != null);
 
-      const applicationsTotalPrice = applications.reduce((acc, a) => {
-        return acc.plus(new BigNumber(a.price));
-      }, new BigNumber(0));
-
-      if (applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price))) {
-        ctx.server.log.error(
-          'The total price of the applications is greater than the program price',
-        );
+      if (!validateMilestonePercentages(updatedMilestones)) {
+        ctx.server.log.error('Total milestone percentages must equal 100%');
         t.rollback();
       }
+
+      // Calculate the actual price amount and update it
+      const calculatedAmount = calculateMilestoneAmount(args.input.percentage, application.price);
+      filteredData.price = calculatedAmount;
     }
 
     const [milestone] = await t

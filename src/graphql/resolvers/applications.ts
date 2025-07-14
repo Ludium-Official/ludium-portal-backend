@@ -14,11 +14,13 @@ import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/t
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
 import {
+  calculateMilestoneAmount,
   canApplyToProgram,
   filterEmptyValues,
   isInSameScope,
   requireUser,
   validAndNotEmptyArray,
+  validateMilestonePercentages,
 } from '@/utils';
 import BigNumber from 'bignumber.js';
 import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
@@ -184,13 +186,25 @@ export function createApplicationResolver(
       );
     }
 
+    // Validate milestone percentages sum to 100%
+    if (!validateMilestonePercentages(args.input.milestones)) {
+      ctx.server.log.error('Milestone percentages must sum to 100%');
+      t.rollback();
+    }
+
     let sortOrder = 0;
     for (const milestone of args.input.milestones) {
       const { links, ...inputData } = milestone;
+
+      // Calculate the actual price amount from percentage
+      const calculatedAmount = calculateMilestoneAmount(inputData.percentage, application.price);
+
       const [newMilestone] = await t
         .insert(milestonesTable)
         .values({
           ...inputData,
+          price: calculatedAmount,
+          percentage: inputData.percentage,
           sortOrder,
           applicationId: application.id,
           deadline: inputData.deadline.toISOString(),

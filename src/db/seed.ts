@@ -282,12 +282,13 @@ async function seed() {
             const milestonesData = [];
 
             for (const application of insertedApplications) {
-              // First milestone - Planning phase
+              // First milestone - Planning phase (20% of total)
               milestonesData.push({
                 applicationId: application.id,
                 title: 'Planning and Requirements',
                 description: 'Define project requirements, create detailed plan and architecture',
                 price: '2',
+                percentage: '20',
                 currency: 'ETH',
                 status: 'pending' as const,
                 deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
@@ -297,12 +298,13 @@ async function seed() {
                 ],
               });
 
-              // Second milestone - Development
+              // Second milestone - Development (50% of total)
               milestonesData.push({
                 applicationId: application.id,
                 title: 'Development',
                 description: 'Implementation of core functionality based on approved plans',
                 price: '5',
+                percentage: '50',
                 currency: 'ETH',
                 status: 'pending' as const,
                 deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
@@ -312,12 +314,13 @@ async function seed() {
                 ],
               });
 
-              // Third milestone - Testing & Delivery
+              // Third milestone - Testing & Delivery (30% of total)
               milestonesData.push({
                 applicationId: application.id,
                 title: 'Testing and Delivery',
                 description: 'Final testing, bug fixes, and project delivery',
                 price: '3',
+                percentage: '30',
                 currency: 'ETH',
                 status: 'pending' as const,
                 deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
