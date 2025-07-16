@@ -7,12 +7,14 @@ import {
   getProfileResolver,
   getUserAvatarResolver,
   getUserByIdResolver,
+  getUserProgramStatisticsResolver,
   getUsersResolver,
   updateProfileResolver,
   updateUserResolver,
 } from '@/graphql/resolvers/users';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
+import type { ProgramStatsByStatusType } from '@/types';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -20,6 +22,42 @@ import { Link, LinkInput } from '@/graphql/types/links';
 export const UserRoleEnum = builder.enumType('UserRole', {
   values: userRoles,
 });
+
+export const ProgramStatsByStatus = builder
+  .objectRef<ProgramStatsByStatusType>('ProgramStatsByStatus')
+  .implement({
+    fields: (t) => ({
+      notConfirmed: t.exposeInt('notConfirmed'),
+      confirmed: t.exposeInt('confirmed'),
+      published: t.exposeInt('published'),
+      paymentRequired: t.exposeInt('paymentRequired'),
+      completed: t.exposeInt('completed'),
+      refund: t.exposeInt('refund'),
+    }),
+  });
+
+export const UserProgramStatistics = builder
+  .objectRef<{
+    asSponsor: ProgramStatsByStatusType;
+    asValidator: ProgramStatsByStatusType;
+    asBuilder: ProgramStatsByStatusType;
+  }>('UserProgramStatistics')
+  .implement({
+    fields: (t) => ({
+      asSponsor: t.field({
+        type: ProgramStatsByStatus,
+        resolve: (parent) => parent.asSponsor,
+      }),
+      asValidator: t.field({
+        type: ProgramStatsByStatus,
+        resolve: (parent) => parent.asValidator,
+      }),
+      asBuilder: t.field({
+        type: ProgramStatsByStatus,
+        resolve: (parent) => parent.asBuilder,
+      }),
+    }),
+  });
 
 export const User = builder.objectRef<DBUser>('User').implement({
   fields: (t) => ({
@@ -43,6 +81,12 @@ export const User = builder.objectRef<DBUser>('User').implement({
       type: 'Upload',
       nullable: true,
       resolve: async (user, _args, ctx) => getUserAvatarResolver({}, { userId: user.id }, ctx),
+    }),
+    programStatistics: t.field({
+      type: UserProgramStatistics,
+      nullable: true,
+      resolve: async (user, _args, ctx) =>
+        getUserProgramStatisticsResolver({}, { userId: user.id }, ctx),
     }),
   }),
 });

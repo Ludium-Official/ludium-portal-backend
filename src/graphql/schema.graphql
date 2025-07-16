@@ -94,6 +94,7 @@ input CreateMilestoneInput {
   deadline: Date!
   description: String
   links: [LinkInput!]
+  percentage: String!
   price: String!
   title: String!
 }
@@ -172,6 +173,7 @@ type Milestone {
   file: String
   id: ID
   links: [Link!]
+  percentage: String
   price: String
   rejectionReason: String
   status: MilestoneStatus
@@ -322,6 +324,15 @@ type Program {
   visibility: ProgramVisibility
 }
 
+type ProgramStatsByStatus {
+  completed: Int
+  confirmed: Int
+  notConfirmed: Int
+  paymentRequired: Int
+  published: Int
+  refund: Int
+}
+
 enum ProgramStatus {
   cancelled
   closed
@@ -415,6 +426,7 @@ input UpdateMilestoneInput {
   description: String
   id: String!
   links: [LinkInput!]
+  percentage: String
   price: String
   status: MilestoneStatus
   title: String
@@ -458,6 +470,7 @@ type User {
   links: [Link!]
   loginType: String
   organizationName: String
+  programStatistics: UserProgramStatistics
   role: UserRole
   summary: String
   walletAddress: String
@@ -475,6 +488,12 @@ input UserInput {
   password: String!
   summary: String
   walletAddress: String
+}
+
+type UserProgramStatistics {
+  asBuilder: ProgramStatsByStatus
+  asSponsor: ProgramStatsByStatus
+  asValidator: ProgramStatsByStatus
 }
 
 enum UserRole {
