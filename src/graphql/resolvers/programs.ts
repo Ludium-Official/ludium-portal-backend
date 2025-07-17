@@ -254,7 +254,7 @@ export function createProgramResolver(
   args: { input: typeof CreateProgramInput.$inferInput },
   ctx: Context,
 ) {
-  const { keywords, links, ...inputData } = args.input;
+  const { keywords, links, validatorIds, ...inputData } = args.input;
 
   const user = requireUser(ctx);
 
@@ -262,6 +262,33 @@ export function createProgramResolver(
     // Validate network
     if (inputData.network && !NETWORKS.includes(inputData.network)) {
       throw new Error('Invalid network');
+    }
+
+    // For funding programs, validate dates
+    if (inputData.type === 'funding') {
+      if (
+        !inputData.applicationStartDate ||
+        !inputData.applicationEndDate ||
+        !inputData.fundingStartDate ||
+        !inputData.fundingEndDate
+      ) {
+        throw new Error('All dates are required for funding programs');
+      }
+
+      const appStart = new Date(inputData.applicationStartDate);
+      const appEnd = new Date(inputData.applicationEndDate);
+      const fundStart = new Date(inputData.fundingStartDate);
+      const fundEnd = new Date(inputData.fundingEndDate);
+
+      if (appStart >= appEnd) {
+        throw new Error('Application start date must be before end date');
+      }
+      if (fundStart >= fundEnd) {
+        throw new Error('Funding start date must be before end date');
+      }
+      if (appEnd > fundStart) {
+        throw new Error('Application end date must be before or equal to funding start date');
+      }
     }
 
     // Create a properly typed object for the database insert
@@ -278,9 +305,31 @@ export function createProgramResolver(
       status: 'draft',
       visibility: inputData.visibility || 'public',
       network: inputData.network,
+
+      // New funding fields
+      type: inputData.type || 'regular',
+      applicationStartDate: inputData.applicationStartDate,
+      applicationEndDate: inputData.applicationEndDate,
+      fundingStartDate: inputData.fundingStartDate,
+      fundingEndDate: inputData.fundingEndDate,
+      fundingCondition: inputData.fundingCondition || 'open',
+      maxFundingAmount: inputData.maxFundingAmount,
+      feePercentage: inputData.feePercentage || 300, // Default 3%
+      customFeePercentage: inputData.customFeePercentage,
+      tierSettings: inputData.tierSettings
+        ? {
+            bronze: inputData.tierSettings.bronze || undefined,
+            silver: inputData.tierSettings.silver || undefined,
+            gold: inputData.tierSettings.gold || undefined,
+            platinum: inputData.tierSettings.platinum || undefined,
+          }
+        : null,
+      contractAddress: inputData.contractAddress,
+      terms: inputData.terms || 'ETH',
     };
 
     const [program] = await t.insert(programsTable).values(insertData).returning();
+
     if (inputData.image) {
       const [imageFile] = await t
         .select()
@@ -302,6 +351,17 @@ export function createProgramResolver(
       userId: user.id,
       roleType: 'sponsor',
     });
+
+    // Handle validators for funding programs
+    if (inputData.type === 'funding' && validatorIds?.length) {
+      await t.insert(programUserRolesTable).values(
+        validatorIds.map((validatorId) => ({
+          programId: program.id,
+          userId: validatorId,
+          roleType: 'validator' as const,
+        })),
+      );
+    }
 
     // Handle keywords
     if (keywords?.length) {
@@ -378,6 +438,31 @@ export function updateProgramResolver(
       throw new Error('You are not allowed to update the price of a published program');
     }
 
+    // For funding programs, validate dates if provided
+    if (programStatus.type === 'funding' || inputData.type === 'funding') {
+      if (
+        inputData.applicationStartDate &&
+        inputData.applicationEndDate &&
+        inputData.fundingStartDate &&
+        inputData.fundingEndDate
+      ) {
+        const appStart = new Date(inputData.applicationStartDate);
+        const appEnd = new Date(inputData.applicationEndDate);
+        const fundStart = new Date(inputData.fundingStartDate);
+        const fundEnd = new Date(inputData.fundingEndDate);
+
+        if (appStart >= appEnd) {
+          throw new Error('Application start date must be before end date');
+        }
+        if (fundStart >= fundEnd) {
+          throw new Error('Funding start date must be before end date');
+        }
+        if (appEnd > fundStart) {
+          throw new Error('Application end date must be before or equal to funding start date');
+        }
+      }
+    }
+
     if (inputData.image) {
       const [imageFile] = await t
         .select()
@@ -409,6 +494,19 @@ export function updateProgramResolver(
 
     // Transform links if present
     const updateData: Partial<Program> = { ...programData };
+
+    // Handle tier settings properly
+    if (inputData.tierSettings !== undefined) {
+      updateData.tierSettings = inputData.tierSettings
+        ? {
+            bronze: inputData.tierSettings.bronze || undefined,
+            silver: inputData.tierSettings.silver || undefined,
+            gold: inputData.tierSettings.gold || undefined,
+            platinum: inputData.tierSettings.platinum || undefined,
+          }
+        : null;
+    }
+
     if (links) {
       // delete existing links
       await t.delete(programsToLinksTable).where(eq(programsToLinksTable.programId, args.input.id));

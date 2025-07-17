@@ -1,3 +1,8 @@
+input AddValidatorToInvestmentProgramInput {
+  programId: ID!
+  validatorId: ID!
+}
+
 type Application {
   applicant: User
   content: String
@@ -19,6 +24,16 @@ enum ApplicationStatus {
   pending
   rejected
   submitted
+}
+
+input ApproveInvestmentMilestoneInput {
+  milestoneId: ID!
+  txHash: String!
+}
+
+input BulkCreateInvestmentTierAssignmentInput {
+  assignments: [CreateInvestmentTierAssignmentInput!]!
+  projectId: ID!
 }
 
 type CarouselItem {
@@ -89,6 +104,55 @@ input CreateCommentInput {
   parentId: ID
 }
 
+input CreateInvestmentInput {
+  amount: String!
+  projectId: ID!
+  txHash: String
+}
+
+input CreateInvestmentMilestoneInput {
+  deadline: Date!
+  description: String
+  percentage: Int!
+  projectId: ID!
+  sortOrder: Int
+  title: String!
+}
+
+input CreateInvestmentProgramInput {
+  applicationEndTime: Date!
+  applicationStartTime: Date!
+  condition: InvestmentCondition!
+  contractAddress: String
+  description: String
+  feePercentage: Int
+  fundingEndTime: Date!
+  fundingStartTime: Date!
+  maxFundingPerProject: String!
+  name: String!
+  network: String
+  requiredApprovals: Int!
+  token: String!
+  validatorIds: [String!]!
+}
+
+input CreateInvestmentProjectInput {
+  description: String
+  fundingTarget: String!
+  milestones: [InvestmentMilestoneInput!]!
+  name: String!
+  programId: ID!
+  terms: [InvestmentTermsInput!]
+  walletAddress: String!
+}
+
+input CreateInvestmentTierAssignmentInput {
+  maxInvestment: String!
+  projectId: ID!
+  tierName: String!
+  userId: ID!
+}
+
 input CreateMilestoneInput {
   currency: String! = "ETH"
   deadline: Date!
@@ -145,6 +209,126 @@ input FilterInput {
   value: String!
 }
 
+type Investment {
+  amount: String
+  id: ID
+  project: InvestmentProject
+  reclaimTxHash: String
+  reclaimed: Boolean
+  reclaimedAt: Date
+  supporter: User
+  txHash: String
+}
+
+enum InvestmentCondition {
+  open
+  tier
+}
+
+type InvestmentMilestone {
+  amount: String
+  deadline: Date
+  description: String
+  id: ID
+  paidAt: Date
+  percentage: Int
+  project: InvestmentProject
+  sortOrder: Int
+  status: InvestmentMilestoneStatus
+  title: String
+}
+
+input InvestmentMilestoneInput {
+  deadline: Date!
+  description: String
+  percentage: Int!
+  sortOrder: Int
+  title: String!
+}
+
+enum InvestmentMilestoneStatus {
+  completed
+  failed
+  pending
+}
+
+type InvestmentProgram {
+  applicationEndTime: Date
+  applicationStartTime: Date
+  condition: InvestmentCondition
+  contractAddress: String
+  createdAt: Date
+  description: String
+  feeClaimed: Boolean
+  feePercentage: Int
+  fundingEndTime: Date
+  fundingStartTime: Date
+  id: ID
+  maxFundingPerProject: String
+  name: String
+  network: String
+  requiredApprovals: Int
+  status: InvestmentProgramStatus
+  token: String
+  totalFeeCollected: String
+  updatedAt: Date
+}
+
+enum InvestmentProgramStatus {
+  application_closed
+  application_ongoing
+  funding_ongoing
+  program_completed
+  project_ongoing
+  ready
+}
+
+type InvestmentProject {
+  approvalCount: Int
+  createdAt: Date
+  description: String
+  fundingSuccessful: Boolean
+  fundingTarget: String
+  id: ID
+  name: String
+  status: InvestmentProjectStatus
+  terms: [InvestmentTerms!]
+  totalFunded: String
+  totalPaidOut: String
+  updatedAt: Date
+  walletAddress: String
+}
+
+enum InvestmentProjectStatus {
+  funding_ongoing
+  project_completed
+  project_failed
+  project_ongoing
+  ready
+}
+
+type InvestmentTerms {
+  description: String
+  price: String
+  purchaseLimit: Int
+  title: String
+}
+
+input InvestmentTermsInput {
+  description: String!
+  price: String!
+  purchaseLimit: Int
+  title: String!
+}
+
+type InvestmentTierAssignment {
+  id: ID
+  maxInvestment: String
+  project: InvestmentProject
+  tierName: String
+  user: User
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -191,21 +375,29 @@ enum MilestoneStatus {
 type Mutation {
   acceptApplication(id: ID!): Application
   acceptProgram(id: ID!): Program
+  approveInvestmentMilestone(input: ApproveInvestmentMilestoneInput!): InvestmentMilestone
   assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
+  bulkCreateInvestmentTierAssignments(input: BulkCreateInvestmentTierAssignmentInput!): [InvestmentTierAssignment!]
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
   createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
   createComment(input: CreateCommentInput!): Comment
+  createInvestment(input: CreateInvestmentInput!): Investment
+  createInvestmentMilestone(input: CreateInvestmentMilestoneInput!): InvestmentMilestone
+  createInvestmentTierAssignment(input: CreateInvestmentTierAssignmentInput!): InvestmentTierAssignment
   createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
   deleteCarouselItem(id: ID!): CarouselItem
+  deleteInvestmentTierAssignment(id: ID!): Boolean
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
   inviteUserToProgram(programId: ID!, userId: ID!): Program
   login(email: String, loginType: String!, walletAddress: String!): String
   markAllNotificationsAsRead: Boolean
+  markInvestmentMilestoneFailed(milestoneId: ID!): InvestmentMilestone
   markNotificationAsRead(id: ID!): Boolean
+  reclaimInvestment(input: ReclaimInvestmentInput!): Investment
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
   removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
@@ -215,6 +407,8 @@ type Mutation {
   updateApplication(input: UpdateApplicationInput!): Application
   updateCarouselItem(input: UpdateCarouselItemInput!): CarouselItem
   updateComment(input: UpdateCommentInput!): Comment
+  updateInvestmentMilestone(input: UpdateInvestmentMilestoneInput!): InvestmentMilestone
+  updateInvestmentTierAssignment(input: UpdateInvestmentTierAssignmentInput!): InvestmentTierAssignment
   updateMilestone(input: UpdateMilestoneInput!): Milestone
   updatePost(input: UpdatePostInput!): Post
   updateProfile(input: UserUpdateInput!): User
@@ -259,6 +453,31 @@ type PaginatedApplications {
 type PaginatedComments {
   count: Int
   data: [Comment!]
+}
+
+type PaginatedInvestmentMilestones {
+  count: Int
+  data: [InvestmentMilestone!]
+}
+
+type PaginatedInvestmentPrograms {
+  count: Int
+  data: [InvestmentProgram!]
+}
+
+type PaginatedInvestmentProjects {
+  count: Int
+  data: [InvestmentProject!]
+}
+
+type PaginatedInvestmentTierAssignments {
+  count: Int
+  data: [InvestmentTierAssignment!]
+}
+
+type PaginatedInvestments {
+  count: Int
+  data: [Investment!]
 }
 
 type PaginatedMilestones {
@@ -356,6 +575,12 @@ type Query {
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
   commentsByCommentable(commentableId: ID!, commentableType: CommentableTypeEnum!): [Comment!]
   countNotifications: Int
+  investment(id: ID!): Investment
+  investmentMilestone(id: ID!): InvestmentMilestone
+  investmentMilestones(pagination: PaginationInput, projectId: ID): PaginatedInvestmentMilestones
+  investmentTierAssignment(id: ID!): InvestmentTierAssignment
+  investmentTierAssignments(pagination: PaginationInput, projectId: ID, userId: ID): PaginatedInvestmentTierAssignments
+  investments(pagination: PaginationInput, projectId: ID, supporterId: ID): PaginatedInvestments
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
@@ -367,6 +592,16 @@ type Query {
   programs(pagination: PaginationInput): PaginatedPrograms
   user(id: ID!): User
   users(pagination: PaginationInput): PaginatedUsers
+}
+
+input ReclaimInvestmentInput {
+  investmentId: ID!
+  txHash: String!
+}
+
+input RemoveValidatorFromInvestmentProgramInput {
+  programId: ID!
+  validatorId: ID!
 }
 
 input ReorderCarouselItemInput {
@@ -418,6 +653,47 @@ input UpdateCarouselItemInput {
 input UpdateCommentInput {
   content: String
   id: ID!
+}
+
+input UpdateInvestmentMilestoneInput {
+  deadline: Date
+  description: String
+  id: ID!
+  percentage: Int
+  sortOrder: Int
+  title: String
+}
+
+input UpdateInvestmentProgramInput {
+  applicationEndTime: Date
+  applicationStartTime: Date
+  condition: InvestmentCondition
+  contractAddress: String
+  description: String
+  feePercentage: Int
+  fundingEndTime: Date
+  fundingStartTime: Date
+  id: ID!
+  maxFundingPerProject: String
+  name: String
+  network: String
+  requiredApprovals: Int
+  token: String
+}
+
+input UpdateInvestmentProjectInput {
+  description: String
+  fundingTarget: String
+  id: ID!
+  name: String
+  terms: [InvestmentTermsInput!]
+  walletAddress: String
+}
+
+input UpdateInvestmentTierAssignmentInput {
+  id: ID!
+  maxInvestment: String
+  tierName: String
 }
 
 input UpdateMilestoneInput {
@@ -514,4 +790,9 @@ input UserUpdateInput {
   organizationName: String
   summary: String
   walletAddress: String
+}
+
+input ValidateInvestmentProjectInput {
+  approved: Boolean!
+  projectId: ID!
 }
