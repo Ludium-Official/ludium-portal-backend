@@ -208,6 +208,8 @@ src/scripts/data/*
 **.csv*
 bun.lockb
 pnpm-lock.yaml
+*.md
+!README.md
 
 # GCloud
 .gcloud

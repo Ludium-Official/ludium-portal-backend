@@ -99,7 +99,7 @@ export async function getProgramsResolver(
         return or(...conditions);
       }
       case 'name':
-        return ilike(programsTable.name, `%${f.value}%`);
+        return ilike(programsTable.name, `%${f.value ?? ''}%`);
       case 'status':
         return eq(
           programsTable.status,
@@ -118,7 +118,7 @@ export async function getProgramsResolver(
   const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
 
   // Add visibility filtering based on user authentication
-  const user = requireUser(ctx);
+  const user = ctx.server.auth.getUser(ctx.request);
   const visibilityConditions = [];
 
   if (!user) {

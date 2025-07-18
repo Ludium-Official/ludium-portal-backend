@@ -81,14 +81,6 @@ export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
         },
       },
     }),
-    price: t.string({
-      required: true,
-      validate: {
-        refine(value) {
-          return new BigNumber(value).isPositive();
-        },
-      },
-    }),
     currency: t.string({ required: true, defaultValue: 'ETH' }),
     links: t.field({ type: [LinkInput] }),
     deadline: t.field({ type: 'Date', required: true }),
@@ -108,7 +100,6 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
         },
       },
     }),
-    price: t.string(),
     currency: t.string(),
     status: t.field({ type: MilestoneStatusEnum }),
     links: t.field({ type: [LinkInput] }),
