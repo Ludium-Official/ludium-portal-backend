@@ -3,11 +3,8 @@ import type { Context } from '@/types';
 import BigNumber from 'bignumber.js';
 import { eq } from 'drizzle-orm';
 
-export function requireUser(ctx: Context): User {
-  if (!ctx.user) {
-    throw new Error('Authentication required');
-  }
-  return ctx.user;
+export function isPromise(value: unknown): value is Promise<unknown> {
+  return value != null && typeof value === 'object' && 'then' in value;
 }
 
 export function filterEmptyValues<T>(obj: Record<string, unknown>): Partial<T> {
