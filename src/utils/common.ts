@@ -3,6 +3,10 @@ import type { Context } from '@/types';
 import BigNumber from 'bignumber.js';
 import { eq } from 'drizzle-orm';
 
+export function isPromise(value: unknown): value is Promise<unknown> {
+  return value != null && typeof value === 'object' && 'then' in value;
+}
+
 export function filterEmptyValues<T>(obj: Record<string, unknown>): Partial<T> {
   return Object.fromEntries(
     Object.entries(obj).filter(([_, value]) => value !== undefined),
@@ -56,8 +60,4 @@ export function calculateMilestoneTotalAmount(
       return sum.plus(new BigNumber(milestoneAmount));
     }, new BigNumber(0))
     .toString();
-}
-
-export function isPromise(value: unknown): value is Promise<unknown> {
-  return value != null && typeof value === 'object' && 'then' in value;
 }

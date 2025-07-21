@@ -1,0 +1,1 @@
+ALTER TABLE "milestones" ADD COLUMN "percentage" numeric(5, 2) NOT NULL;

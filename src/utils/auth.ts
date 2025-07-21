@@ -3,13 +3,6 @@ import type { DecodedToken } from '@/plugins/auth';
 import type { Context, EnvConfig } from '@/types';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-export function requireUser(ctx: Context): User {
-  if (!ctx.user) {
-    throw new Error('Authentication required');
-  }
-  return ctx.user;
-}
-
 export async function authMiddleware(request: FastifyRequest, reply: FastifyReply) {
   const env = request.getEnvs() as EnvConfig;
 
@@ -24,6 +17,14 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
   }
 
   return reply.code(403).send();
+}
+
+export function requireUser(ctx: Context): User {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('Unauthorized');
+  }
+  return user;
 }
 
 export async function requireUserForSubscription(ctx: Context) {
