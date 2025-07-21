@@ -20,10 +20,11 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
 }
 
 export function requireUser(ctx: Context): User {
-  if (!ctx.user) {
-    throw new Error('Authentication required');
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    throw new Error('Unauthorized');
   }
-  return ctx.user;
+  return user;
 }
 
 export async function requireUserForSubscription(ctx: Context) {

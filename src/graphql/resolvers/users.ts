@@ -421,7 +421,7 @@ export function deleteUserResolver(_root: Root, args: { id: string }, ctx: Conte
 }
 
 export async function getProfileResolver(_root: Root, _args: Args, ctx: Context) {
-  const user = ctx.server.auth.getUser(ctx.request);
+  const user = requireUser(ctx);
   return user;
 }
 
