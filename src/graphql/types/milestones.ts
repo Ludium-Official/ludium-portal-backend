@@ -27,6 +27,7 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
     title: t.exposeString('title'),
     description: t.exposeString('description', { nullable: true }),
     price: t.exposeString('price'),
+    percentage: t.exposeString('percentage'),
     currency: t.exposeString('currency'),
     rejectionReason: t.exposeString('rejectionReason', { nullable: true }),
     status: t.field({
@@ -71,11 +72,12 @@ export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
   fields: (t) => ({
     title: t.string({ required: true }),
     description: t.string(),
-    price: t.string({
+    percentage: t.string({
       required: true,
       validate: {
         refine(value) {
-          return new BigNumber(value).isPositive();
+          const percentage = new BigNumber(value);
+          return percentage.isGreaterThan(0) && percentage.isLessThanOrEqualTo(100);
         },
       },
     }),
@@ -90,7 +92,14 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
     id: t.string({ required: true }),
     title: t.string(),
     description: t.string(),
-    price: t.string(),
+    percentage: t.string({
+      validate: {
+        refine(value) {
+          const percentage = new BigNumber(value);
+          return percentage.isGreaterThan(0) && percentage.isLessThanOrEqualTo(100);
+        },
+      },
+    }),
     currency: t.string(),
     status: t.field({ type: MilestoneStatusEnum }),
     links: t.field({ type: [LinkInput] }),

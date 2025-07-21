@@ -13,12 +13,13 @@ export function createMilestones(
 
   // Create 3 milestones for each application
   for (const application of applications) {
-    // First milestone - Planning phase
+    // First milestone - Planning phase (20% of total)
     milestones.push({
       applicationId: application.id,
       title: 'Planning and Requirements',
       description: 'Define project requirements, create detailed plan and architecture',
       price: '2',
+      percentage: '20',
       currency: 'ETH',
       status: 'pending',
       sortOrder: 1,
@@ -29,12 +30,13 @@ export function createMilestones(
       deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
     });
 
-    // Second milestone - Development
+    // Second milestone - Development (50% of total)
     milestones.push({
       applicationId: application.id,
       title: 'Development',
       description: 'Implementation of core functionality based on approved plans',
       price: '5',
+      percentage: '50',
       currency: 'ETH',
       status: 'pending',
       sortOrder: 2,
@@ -45,12 +47,13 @@ export function createMilestones(
       deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
     });
 
-    // Third milestone - Testing & Delivery
+    // Third milestone - Testing & Delivery (30% of total)
     milestones.push({
       applicationId: application.id,
       title: 'Testing and Delivery',
       description: 'Final testing, bug fixes, and project delivery',
       price: '3',
+      percentage: '30',
       currency: 'ETH',
       status: 'pending',
       sortOrder: 3,

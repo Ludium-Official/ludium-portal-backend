@@ -1,34 +1,63 @@
-import { BigNumber } from 'bignumber.js';
-
-export function parseId(id: number | string) {
-  return typeof id === 'string' ? Number.parseInt(id, 10) : id;
-}
-
-export function validAndNotEmptyArray<T>(arr: T[] | null | undefined): arr is T[] {
-  return arr != null && Array.isArray(arr) && arr.length > 0;
-}
-
-export function filterEmptyValues<T>(obj: Record<string, unknown>): T {
-  if (obj == null) {
-    return {} as T;
-  }
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => v !== null && v !== undefined),
-  ) as T;
-}
-
-export function formatPrice(price: string | number) {
-  try {
-    const priceValue = new BigNumber(price);
-    if (priceValue.isNegative()) {
-      throw new Error('Price cannot be negative');
-    }
-    return priceValue.toString();
-  } catch (_error) {
-    throw new Error('Invalid price format');
-  }
-}
+import { type User, usersTable } from '@/db/schemas';
+import type { Context } from '@/types';
+import BigNumber from 'bignumber.js';
+import { eq } from 'drizzle-orm';
 
 export function isPromise(value: unknown): value is Promise<unknown> {
   return value != null && typeof value === 'object' && 'then' in value;
+}
+
+export function filterEmptyValues<T>(obj: Record<string, unknown>): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, value]) => value !== undefined),
+  ) as Partial<T>;
+}
+
+export function validAndNotEmptyArray<T>(arr: T[]): boolean {
+  return Array.isArray(arr) && arr.length > 0;
+}
+
+export async function getUserById(ctx: Context, id: string): Promise<User | null> {
+  const [user] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, id));
+  return user || null;
+}
+
+/**
+ * Calculate milestone amount from percentage of application price
+ */
+export function calculateMilestoneAmount(
+  percentage: string | number,
+  applicationPrice: string,
+): string {
+  const percentageNum = new BigNumber(percentage);
+  const appPrice = new BigNumber(applicationPrice);
+  return percentageNum.multipliedBy(appPrice).dividedBy(100).toString();
+}
+
+/**
+ * Validate that milestone percentages sum to 100%
+ */
+export function validateMilestonePercentages(
+  milestones: { percentage: string | number }[],
+): boolean {
+  const totalPercentage = milestones.reduce((sum, milestone) => {
+    return sum.plus(new BigNumber(milestone.percentage));
+  }, new BigNumber(0));
+
+  return totalPercentage.isEqualTo(100);
+}
+
+/**
+ * Calculate total milestone amounts for an application
+ */
+export function calculateMilestoneTotalAmount(
+  milestones: { percentage: string | number }[],
+  applicationPrice: string,
+): string {
+  return milestones
+    .reduce((sum, milestone) => {
+      const milestoneAmount = calculateMilestoneAmount(milestone.percentage, applicationPrice);
+      return sum.plus(new BigNumber(milestoneAmount));
+    }, new BigNumber(0))
+    .toString();
 }

@@ -8,6 +8,13 @@
       "when": 1752464027666,
       "tag": "0000_dizzy_thundra",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1753090941913,
+      "tag": "0001_square_cerise",
+      "breakpoints": true
     }
   ]
 }

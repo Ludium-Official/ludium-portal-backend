@@ -3,6 +3,7 @@ import {
   filesTable,
   linksTable,
   programUserRolesTable,
+  programsTable,
   usersTable,
   usersToLinksTable,
 } from '@/db/schemas';
@@ -11,7 +12,7 @@ import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
 import { requireUser } from '@/utils';
 import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
-import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 
 export async function getUsersResolver(
   _root: Root,
@@ -172,6 +173,131 @@ export async function getInvitedBuildersByProgramIdResolver(
   );
 
   return builderUsers.filter((user) => user !== null);
+}
+
+export async function getUserProgramStatisticsResolver(
+  _root: Root,
+  args: { userId: string },
+  ctx: Context,
+) {
+  // Get all program roles for this user
+  const userRoles = await ctx.db
+    .select({
+      programId: programUserRolesTable.programId,
+      roleType: programUserRolesTable.roleType,
+    })
+    .from(programUserRolesTable)
+    .where(eq(programUserRolesTable.userId, args.userId));
+
+  if (userRoles.length === 0) {
+    const initStats = () => ({
+      notConfirmed: 0,
+      confirmed: 0,
+      published: 0,
+      paymentRequired: 0,
+      completed: 0,
+      refund: 0,
+    });
+    return {
+      asSponsor: initStats(),
+      asValidator: initStats(),
+      asBuilder: initStats(),
+    };
+  }
+
+  // Get program statuses for all user's programs
+  const programIds = userRoles.map((role) => role.programId);
+  const programs = await ctx.db
+    .select({
+      id: programsTable.id,
+      status: programsTable.status,
+    })
+    .from(programsTable)
+    .where(inArray(programsTable.id, programIds));
+
+  // Create a map of program ID to status
+  const programStatusMap = new Map(programs.map((p) => [p.id, p.status]));
+
+  // Combine roles with program statuses
+  const userProgramRoles = userRoles.map((role) => ({
+    ...role,
+    status: programStatusMap.get(role.programId) || 'draft',
+  }));
+
+  // Function to map database status to UI status
+  const mapStatusToUI = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return 'notConfirmed';
+      case 'payment_required':
+        return 'paymentRequired';
+      case 'published':
+        return 'published';
+      case 'completed':
+        return 'completed';
+      case 'cancelled':
+        return 'refund';
+      case 'closed':
+        return 'completed'; // Treating closed as completed
+      default:
+        return 'notConfirmed';
+    }
+  };
+
+  // Initialize statistics structure
+  const initStats = () => ({
+    notConfirmed: 0,
+    confirmed: 0,
+    published: 0,
+    paymentRequired: 0,
+    completed: 0,
+    refund: 0,
+  });
+
+  const asSponsor = initStats();
+  const asValidator = initStats();
+  const asBuilder = initStats();
+
+  // Process each program role
+  for (const role of userProgramRoles) {
+    const uiStatus = mapStatusToUI(role.status);
+
+    switch (role.roleType) {
+      case 'sponsor':
+        asSponsor[uiStatus]++;
+        break;
+      case 'validator':
+        asValidator[uiStatus]++;
+        break;
+      case 'builder':
+        asBuilder[uiStatus]++;
+        break;
+    }
+  }
+
+  // For confirmed status, we need to handle the special case
+  // Programs that are payment_required are considered "confirmed" by validators
+  for (const role of userProgramRoles) {
+    if (role.status === 'payment_required') {
+      switch (role.roleType) {
+        case 'sponsor':
+          asSponsor.confirmed++;
+          break;
+        case 'validator':
+          asValidator.confirmed++;
+          break;
+        case 'builder':
+          asBuilder.confirmed++;
+          break;
+      }
+    }
+  }
+
+  return {
+    asSponsor,
+    asValidator,
+    asBuilder,
+  };
 }
 
 export function createUserResolver(
