@@ -9,3 +9,4 @@ export * from './posts';
 export * from './comments';
 export * from './notifications';
 export * from './carousel';
+export * from './investments';

@@ -1,5 +1,14 @@
 import { relations } from 'drizzle-orm';
-import { jsonb, pgEnum, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { linksTable } from './links';
 import { milestonesTable } from './milestones';
 import { programsTable } from './programs';
@@ -35,6 +44,20 @@ export const applicationsTable = pgTable('applications', {
   metadata: jsonb('metadata'),
   price: varchar('price', { length: 256 }).default('0').notNull(),
   rejectionReason: text('rejection_reason'),
+
+  // Investment-specific fields (only used when program.type = 'funding')
+  fundingTarget: varchar('funding_target', { length: 256 }),
+  walletAddress: varchar('wallet_address', { length: 256 }),
+  investmentTerms:
+    jsonb('investment_terms').$type<
+      {
+        title: string;
+        description: string;
+        price: string;
+        purchaseLimit?: number;
+      }[]
+    >(),
+  fundingSuccessful: boolean('funding_successful').default(false),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

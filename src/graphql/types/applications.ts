@@ -2,6 +2,7 @@ import {
   type Application as DBApplication,
   applicationStatuses,
   applicationsTable,
+  investmentsTable,
 } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
@@ -20,7 +21,8 @@ import { Link, LinkInput } from '@/graphql/types/links';
 import { CreateMilestoneInput, MilestoneType } from '@/graphql/types/milestones';
 import { User } from '@/graphql/types/users';
 import BigNumber from 'bignumber.js';
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
+import { ApplicationRef, InvestmentRef } from './shared-refs';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -29,7 +31,7 @@ export const ApplicationStatusEnum = builder.enumType('ApplicationStatus', {
   values: applicationStatuses,
 });
 
-export const ApplicationType = builder.objectRef<DBApplication>('Application').implement({
+export const ApplicationType = ApplicationRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     status: t.field({
@@ -60,6 +62,46 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
       type: [Link],
       resolve: async (application, _args, ctx) =>
         getLinksByApplicationIdResolver({}, { applicationId: application.id }, ctx),
+    }),
+    // Investment-specific fields
+    fundingTarget: t.exposeString('fundingTarget', { nullable: true }),
+    walletAddress: t.exposeString('walletAddress', { nullable: true }),
+    fundingSuccessful: t.exposeBoolean('fundingSuccessful', { nullable: true }),
+    investmentTerms: t.field({
+      type: 'JSON',
+      nullable: true,
+      resolve: (application) => application.investmentTerms as unknown as JSON,
+    }),
+    currentFunding: t.field({
+      type: 'String',
+      nullable: true,
+      resolve: async (application, _args, ctx) => {
+        // Calculate current funding from investments
+        const result = await ctx.db
+          .select({
+            total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
+          })
+          .from(investmentsTable)
+          .where(
+            and(
+              eq(investmentsTable.applicationId, application.id),
+              eq(investmentsTable.status, 'confirmed'),
+            ),
+          );
+        return result[0]?.total || '0';
+      },
+    }),
+    investments: t.field({
+      type: [InvestmentRef],
+      nullable: true,
+      resolve: async (application, _args, ctx) => {
+        const investments = await ctx.db
+          .select()
+          .from(investmentsTable)
+          .where(eq(investmentsTable.applicationId, application.id))
+          .orderBy(desc(investmentsTable.createdAt));
+        return investments;
+      },
     }),
   }),
 });
@@ -100,6 +142,10 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
     }),
     milestones: t.field({ type: [CreateMilestoneInput], required: true }),
     status: t.field({ type: ApplicationStatusEnum, required: true }),
+    // Investment-specific fields
+    fundingTarget: t.string({ required: false }),
+    walletAddress: t.string({ required: false }),
+    investmentTerms: t.field({ type: 'JSON', required: false }),
   }),
 });
 
@@ -112,6 +158,11 @@ export const UpdateApplicationInput = builder.inputType('UpdateApplicationInput'
     metadata: t.field({ type: 'JSON' }),
     status: t.field({ type: ApplicationStatusEnum }),
     links: t.field({ type: [LinkInput] }),
+    // Investment-specific fields
+    fundingTarget: t.string({ required: false }),
+    walletAddress: t.string({ required: false }),
+    investmentTerms: t.field({ type: 'JSON', required: false }),
+    fundingSuccessful: t.boolean({ required: false }),
   }),
 });
 

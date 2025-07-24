@@ -119,7 +119,7 @@ export function createApplicationResolver(
   ctx: Context,
 ) {
   const user = requireUser(ctx);
-  const milestones: Milestone[] = [];
+  const createdMilestones: Milestone[] = [];
 
   return ctx.db.transaction(async (t) => {
     const [program] = await t
@@ -128,6 +128,7 @@ export function createApplicationResolver(
         id: programsTable.id,
         price: programsTable.price,
         visibility: programsTable.visibility,
+        type: programsTable.type,
       })
       .from(programsTable)
       .where(eq(programsTable.id, args.input.programId));
@@ -156,18 +157,33 @@ export function createApplicationResolver(
       throw new Error(applicationAccess.reason || 'You cannot apply to this program');
     }
 
-    const [application] = await t
-      .insert(applicationsTable)
-      .values({
-        ...args.input,
-        applicantId: user.id,
-        status: args.input.status,
-      })
-      .returning();
+    // Extract investment fields if this is a funding program
+    const { fundingTarget, walletAddress, investmentTerms, milestones, links, ...baseFields } =
+      args.input;
 
-    if (args.input.links) {
+    const baseApplicationData = {
+      ...baseFields,
+      applicantId: user.id,
+      programId: args.input.programId,
+      status: args.input.status,
+    };
+
+    // Build the complete application data with conditional fields
+    const applicationData =
+      program.type === 'funding'
+        ? {
+            ...baseApplicationData,
+            ...(fundingTarget && { fundingTarget }),
+            ...(walletAddress && { walletAddress }),
+            ...(investmentTerms && { investmentTerms }),
+          }
+        : baseApplicationData;
+
+    const [application] = await t.insert(applicationsTable).values(applicationData).returning();
+
+    if (links) {
       // insert links to links table and map to program
-      const filteredLinks = args.input.links.filter((link) => link.url);
+      const filteredLinks = links.filter((link) => link.url);
       const newLinks = await t
         .insert(linksTable)
         .values(
@@ -187,13 +203,13 @@ export function createApplicationResolver(
     }
 
     // Validate milestone percentages sum to 100%
-    if (!validateMilestonePercentages(args.input.milestones)) {
+    if (!validateMilestonePercentages(milestones)) {
       ctx.server.log.error('Milestone percentages must sum to 100%');
       t.rollback();
     }
 
     let sortOrder = 0;
-    for (const milestone of args.input.milestones) {
+    for (const milestone of milestones) {
       const { links, ...inputData } = milestone;
 
       // Calculate the actual price amount from percentage
@@ -229,11 +245,11 @@ export function createApplicationResolver(
           })),
         );
       }
-      milestones.push(newMilestone);
+      createdMilestones.push(newMilestone);
       sortOrder++;
     }
 
-    if (!validAndNotEmptyArray(milestones)) {
+    if (!validAndNotEmptyArray(createdMilestones)) {
       ctx.server.log.error('Milestones are required');
       t.rollback();
     }
@@ -248,7 +264,7 @@ export function createApplicationResolver(
         ),
       );
 
-    const milestonesTotalPrice = milestones.reduce((acc, m) => {
+    const milestonesTotalPrice = createdMilestones.reduce((acc, m) => {
       return acc.plus(new BigNumber(m.price));
     }, new BigNumber(0));
 
