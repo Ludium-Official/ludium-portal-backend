@@ -246,6 +246,19 @@ type Milestone {
   title: String
 }
 
+type MilestonePayout {
+  amount: String
+  createdAt: Date
+  errorMessage: String
+  id: ID
+  investment: Investment
+  milestone: Milestone
+  percentage: String
+  processedAt: Date
+  status: PayoutStatus
+  txHash: String
+}
+
 enum MilestoneStatus {
   completed
   draft
@@ -274,6 +287,7 @@ type Mutation {
   login(email: String, loginType: String!, walletAddress: String!): String
   markAllNotificationsAsRead: Boolean
   markNotificationAsRead(id: ID!): Boolean
+  processMilestonePayouts(input: ProcessPayoutsInput!): [MilestonePayout!]
   reclaimInvestment(input: ReclaimInvestmentInput!): Investment
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
@@ -336,6 +350,11 @@ type PaginatedInvestments {
   data: [Investment!]
 }
 
+type PaginatedMilestonePayouts {
+  count: Int
+  data: [MilestonePayout!]
+}
+
 type PaginatedMilestones {
   count: Int
   data: [Milestone!]
@@ -363,6 +382,13 @@ input PaginationInput {
   sort: SortEnum
 }
 
+enum PayoutStatus {
+  completed
+  failed
+  pending
+  processing
+}
+
 type Post {
   author: User
   comments: [Comment!]
@@ -373,6 +399,11 @@ type Post {
   keywords: [Keyword!]
   summary: String
   title: String
+}
+
+input ProcessPayoutsInput {
+  contractAddress: String!
+  milestoneId: ID!
 }
 
 type Program {
@@ -453,6 +484,8 @@ type Query {
   investments(pagination: PaginationInput, projectId: ID, supporterId: ID): PaginatedInvestments
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
+  milestonePayout(id: ID!): MilestonePayout
+  milestonePayouts(investmentId: ID, milestoneId: ID, pagination: PaginationInput, status: PayoutStatus): PaginatedMilestonePayouts
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
   notifications: [Notification!]
   post(id: ID!): Post

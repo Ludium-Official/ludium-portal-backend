@@ -1,10 +1,14 @@
 import {
   type MilestoneUpdate,
+  type NewMilestonePayout,
   applicationsTable,
   filesTable,
+  investmentsTable,
   linksTable,
+  milestonePayoutsTable,
   milestonesTable,
   milestonesToLinksTable,
+  programsTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type {
@@ -317,6 +321,60 @@ export function checkMilestoneResolver(
 
     if (!previousMilestones.every((m) => m.status === 'completed')) {
       throw new Error('Previous milestones must be accepted');
+    }
+
+    // For investment programs, create payout records when milestone is completed
+    if (args.input.status === 'completed') {
+      const [fullApplication] = await t
+        .select({
+          programId: applicationsTable.programId,
+        })
+        .from(applicationsTable)
+        .where(eq(applicationsTable.id, milestone.applicationId));
+
+      const [program] = await t
+        .select({
+          type: programsTable.type,
+        })
+        .from(programsTable)
+        .where(eq(programsTable.id, fullApplication.programId));
+
+      // Only create payouts for funding programs
+      if (program.type === 'funding') {
+        // Get all confirmed investments for this application
+        const investments = await t
+          .select()
+          .from(investmentsTable)
+          .where(
+            and(
+              eq(investmentsTable.applicationId, milestone.applicationId),
+              eq(investmentsTable.status, 'confirmed'),
+            ),
+          );
+
+        // Create payout records for each investment
+        const payouts: NewMilestonePayout[] = investments.map((investment) => {
+          // Calculate payout amount based on investment amount and milestone percentage
+          const investmentAmount = new BigNumber(investment.amount);
+          const milestonePercentage = new BigNumber(milestone.percentage);
+          const payoutAmount = investmentAmount
+            .multipliedBy(milestonePercentage)
+            .dividedBy(100)
+            .toFixed();
+
+          return {
+            milestoneId: milestone.id,
+            investmentId: investment.id,
+            amount: payoutAmount,
+            percentage: milestone.percentage,
+            status: 'pending',
+          };
+        });
+
+        if (payouts.length > 0) {
+          await t.insert(milestonePayoutsTable).values(payouts);
+        }
+      }
     }
 
     await ctx.server.pubsub.publish('notifications', t, {

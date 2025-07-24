@@ -9,6 +9,7 @@ import './shared-refs';
 import './applications';
 import './investments';
 import './milestones';
+import './milestone-payouts';
 import './auth';
 import './links';
 import './posts';
