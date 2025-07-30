@@ -110,6 +110,8 @@ export async function getProgramsResolver(
       case 'price':
         // sort by price, value can be 'asc' or 'desc'
         return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
+      case 'type':
+        return eq(programsTable.type, f.value as 'regular' | 'funding');
       default:
         return undefined;
     }
