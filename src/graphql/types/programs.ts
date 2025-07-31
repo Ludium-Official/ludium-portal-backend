@@ -5,6 +5,7 @@ import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
 import { getLinksByProgramIdResolver } from '@/graphql/resolvers/links';
 import {
   acceptProgramResolver,
+  addProgramKeywordResolver,
   assignValidatorToProgramResolver,
   createProgramResolver,
   deleteProgramResolver,
@@ -15,6 +16,7 @@ import {
   inviteUserToProgramResolver,
   publishProgramResolver,
   rejectProgramResolver,
+  removeProgramKeywordResolver,
   removeValidatorFromProgramResolver,
   updateProgramResolver,
 } from '@/graphql/resolvers/programs';
@@ -140,7 +142,7 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
     }),
     currency: t.string(),
     deadline: t.string({ required: true }),
-    keywords: t.idList(),
+    keywords: t.stringList(),
     links: t.field({ type: [LinkInput] }),
     network: t.string(),
     visibility: t.field({ type: ProgramVisibilityEnum }),
@@ -163,7 +165,7 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     }),
     currency: t.string(),
     deadline: t.string(),
-    keywords: t.idList(),
+    keywords: t.stringList(),
     links: t.field({ type: [LinkInput] }),
     status: t.field({ type: ProgramStatusEnum }),
     visibility: t.field({ type: ProgramVisibilityEnum }),
@@ -293,5 +295,29 @@ builder.mutationFields((t) => ({
       validatorId: t.arg.id({ required: true }),
     },
     resolve: removeValidatorFromProgramResolver,
+  }),
+  addProgramKeyword: t.field({
+    type: KeywordType,
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.programId },
+      admin: true,
+    }),
+    args: {
+      programId: t.arg.id({ required: true }),
+      keyword: t.arg.string({ required: true }),
+    },
+    resolve: addProgramKeywordResolver,
+  }),
+  removeProgramKeyword: t.field({
+    type: 'Boolean',
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.programId },
+      admin: true,
+    }),
+    args: {
+      programId: t.arg.id({ required: true }),
+      keyword: t.arg.string({ required: true }),
+    },
+    resolve: removeProgramKeywordResolver,
   }),
 }));

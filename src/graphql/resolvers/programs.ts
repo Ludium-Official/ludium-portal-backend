@@ -303,17 +303,40 @@ export function createProgramResolver(
       roleType: 'sponsor',
     });
 
-    // Handle keywords
+    // Handle keywords - create if they don't exist
     if (keywords?.length) {
-      await t
-        .insert(programsToKeywordsTable)
-        .values(
-          keywords.map((keyword) => ({
-            programId: program.id,
-            keywordId: keyword,
-          })),
-        )
-        .onConflictDoNothing();
+      const keywordIds = [];
+
+      for (const keywordName of keywords) {
+        // Check if keyword exists
+        let [existingKeyword] = await t
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.name, keywordName.trim()));
+
+        if (!existingKeyword) {
+          // Create new keyword
+          [existingKeyword] = await t
+            .insert(keywordsTable)
+            .values({ name: keywordName.trim() })
+            .returning();
+        }
+
+        keywordIds.push(existingKeyword.id);
+      }
+
+      // Link keywords to program
+      if (keywordIds.length > 0) {
+        await t
+          .insert(programsToKeywordsTable)
+          .values(
+            keywordIds.map((keywordId) => ({
+              programId: program.id,
+              keywordId,
+            })),
+          )
+          .onConflictDoNothing();
+      }
     }
 
     if (links) {
@@ -396,15 +419,45 @@ export function updateProgramResolver(
         .where(eq(programsTable.id, args.input.id));
     }
 
-    // handle keywords
+    // Handle keywords - create if they don't exist
     if (keywords) {
+      // Delete existing keyword associations
       await t
         .delete(programsToKeywordsTable)
         .where(eq(programsToKeywordsTable.programId, args.input.id));
-      await t
-        .insert(programsToKeywordsTable)
-        .values(keywords.map((keyword) => ({ programId: args.input.id, keywordId: keyword })))
-        .onConflictDoNothing();
+
+      const keywordIds = [];
+
+      for (const keywordName of keywords) {
+        // Check if keyword exists
+        let [existingKeyword] = await t
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.name, keywordName.trim()));
+
+        if (!existingKeyword) {
+          // Create new keyword
+          [existingKeyword] = await t
+            .insert(keywordsTable)
+            .values({ name: keywordName.trim() })
+            .returning();
+        }
+
+        keywordIds.push(existingKeyword.id);
+      }
+
+      // Link keywords to program
+      if (keywordIds.length > 0) {
+        await t
+          .insert(programsToKeywordsTable)
+          .values(
+            keywordIds.map((keywordId) => ({
+              programId: args.input.id,
+              keywordId,
+            })),
+          )
+          .onConflictDoNothing();
+      }
     }
 
     // Transform links if present
@@ -746,5 +799,94 @@ export function removeValidatorFromProgramResolver(
     await ctx.server.pubsub.publish('notificationsCount');
 
     return program;
+  });
+}
+
+export async function addProgramKeywordResolver(
+  _root: Root,
+  args: { programId: string; keyword: string },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Check if user has access to update the program
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: args.programId,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to modify keywords for this program');
+    }
+
+    // Check if keyword exists
+    let [existingKeyword] = await t
+      .select()
+      .from(keywordsTable)
+      .where(eq(keywordsTable.name, args.keyword.trim()));
+
+    if (!existingKeyword) {
+      // Create new keyword
+      [existingKeyword] = await t
+        .insert(keywordsTable)
+        .values({ name: args.keyword.trim() })
+        .returning();
+    }
+
+    // Link keyword to program
+    await t
+      .insert(programsToKeywordsTable)
+      .values({
+        programId: args.programId,
+        keywordId: existingKeyword.id,
+      })
+      .onConflictDoNothing();
+
+    return existingKeyword;
+  });
+}
+
+export async function removeProgramKeywordResolver(
+  _root: Root,
+  args: { programId: string; keyword: string },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Check if user has access to update the program
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: args.programId,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to modify keywords for this program');
+    }
+
+    // Find the keyword
+    const [existingKeyword] = await t
+      .select()
+      .from(keywordsTable)
+      .where(eq(keywordsTable.name, args.keyword.trim()));
+
+    if (!existingKeyword) {
+      throw new Error('Keyword not found');
+    }
+
+    // Remove the association
+    await t
+      .delete(programsToKeywordsTable)
+      .where(
+        and(
+          eq(programsToKeywordsTable.programId, args.programId),
+          eq(programsToKeywordsTable.keywordId, existingKeyword.id),
+        ),
+      );
+
+    return true;
   });
 }

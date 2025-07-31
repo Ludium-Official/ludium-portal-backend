@@ -111,7 +111,7 @@ input CreateProgramInput {
   deadline: String!
   description: String
   image: Upload
-  keywords: [ID!]
+  keywords: [String!]
   links: [LinkInput!]
   name: String!
   network: String
@@ -190,6 +190,7 @@ enum MilestoneStatus {
 type Mutation {
   acceptApplication(id: ID!): Application
   acceptProgram(id: ID!): Program
+  addProgramKeyword(keyword: String!, programId: ID!): Keyword
   assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
@@ -210,6 +211,7 @@ type Mutation {
   markNotificationAsRead(id: ID!): Boolean
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
+  removeProgramKeyword(keyword: String!, programId: ID!): Boolean
   removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
   submitMilestone(input: SubmitMilestoneInput!): Milestone
@@ -449,7 +451,7 @@ input UpdateProgramInput {
   description: String
   id: ID!
   image: Upload
-  keywords: [ID!]
+  keywords: [String!]
   links: [LinkInput!]
   name: String
   network: String
