@@ -5,7 +5,9 @@ import {
   createPostResolver,
   getPostKeywordsByPostIdResolver,
   getPostResolver,
+  getPostViewCountResolver,
   getPostsResolver,
+  incrementPostViewResolver,
   updatePostResolver,
 } from '@/graphql/resolvers/posts';
 import { getUserResolver } from '@/graphql/resolvers/users';
@@ -40,6 +42,10 @@ export const PostType = builder.objectRef<DBPost>('Post').implement({
           { commentableType: 'post', commentableId: post.id },
           ctx,
         ),
+    }),
+    viewCount: t.field({
+      type: 'Int',
+      resolve: async (post, _args, ctx) => getPostViewCountResolver({}, { postId: post.id }, ctx),
     }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
   }),
@@ -114,5 +120,13 @@ builder.mutationFields((t) => ({
       input: t.arg({ type: UpdatePostInput, required: true }),
     },
     resolve: updatePostResolver,
+  }),
+  incrementPostView: t.field({
+    type: 'Int',
+    description: 'Increment view count for a post and return the new count',
+    args: {
+      postId: t.arg.id({ required: true }),
+    },
+    resolve: incrementPostViewResolver,
   }),
 }));

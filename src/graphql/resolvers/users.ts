@@ -12,7 +12,7 @@ import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
 import { requireUser } from '@/utils';
 import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
-import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, isNotNull, or, sql } from 'drizzle-orm';
 
 export async function getUsersResolver(
   _root: Root,
@@ -26,6 +26,7 @@ export async function getUsersResolver(
 
   const sortByProjects = filter.some((f) => f.field === 'byNumberOfProjects');
   const sortDirection = filter.find((f) => f.field === 'byNumberOfProjects')?.value || 'desc';
+  const sortByNewest = filter.some((f) => f.field === 'byNewest');
 
   const filterPromises = filter.map(async (f) => {
     if (f.field === 'search') {
@@ -38,6 +39,10 @@ export async function getUsersResolver(
     }
 
     if (f.field === 'byNumberOfProjects') {
+      return undefined;
+    }
+
+    if (f.field === 'byNewest') {
       return undefined;
     }
 
@@ -57,7 +62,12 @@ export async function getUsersResolver(
 
   const conditions = await Promise.all(filterPromises);
   const validConditions = conditions.filter(Boolean);
-  const where = validConditions.length > 0 ? and(...validConditions) : undefined;
+
+  // Add default filter for users with email not null
+  const emailNotNullCondition = isNotNull(usersTable.email);
+  const allConditions = [...validConditions, emailNotNullCondition];
+
+  const where = allConditions.length > 0 ? and(...allConditions) : undefined;
 
   if (sortByProjects) {
     const subquery = ctx.db
@@ -91,7 +101,13 @@ export async function getUsersResolver(
     return { data: users, count: totalCount.count };
   }
 
-  const orderBy = sort === 'asc' ? asc(usersTable.createdAt) : desc(usersTable.createdAt);
+  // Determine the order based on filters
+  const orderBy = sortByNewest
+    ? desc(usersTable.createdAt)
+    : sort === 'asc'
+      ? asc(usersTable.createdAt)
+      : desc(usersTable.createdAt);
+
   const users = await ctx.db
     .select()
     .from(usersTable)
@@ -107,7 +123,7 @@ export async function getUsersResolver(
     };
   }
 
-  const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable);
+  const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable).where(where);
 
   return { data: users, count: totalCount.count };
 }
