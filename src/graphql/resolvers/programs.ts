@@ -572,17 +572,6 @@ export function rejectProgramResolver(
       .where(eq(programsTable.id, args.id))
       .returning();
 
-    // Remove the validator role from the user who rejected the program
-    await t
-      .delete(programUserRolesTable)
-      .where(
-        and(
-          eq(programUserRolesTable.programId, args.id),
-          eq(programUserRolesTable.userId, user.id),
-          eq(programUserRolesTable.roleType, 'validator'),
-        ),
-      );
-
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'program',
       action: 'rejected',
