@@ -46,15 +46,25 @@ export class FileManager {
       }
 
       const bucketFile = this.bucket.file(fullPath);
+      const bucketStream = bucketFile.createWriteStream({
+        metadata: {
+          contentType: file.mimetype,
+        },
+      });
 
       let uploadedSize = 0;
-      const stream = file.createReadStream();
+      const fileStream = file.createReadStream();
 
-      stream.on('data', (chunk: Buffer) => {
+      const cleanup = () => {
+        fileStream.destroy();
+        bucketStream.destroy();
+      };
+
+      fileStream.on('data', (chunk: Buffer) => {
         uploadedSize += chunk.length;
 
         if (uploadedSize > this.maxFileSize) {
-          stream.destroy();
+          cleanup();
           reject(
             new Error(
               `File size exceeds ${(this.maxFileSize / 1024 / 1024).toFixed(0)}MB limit. File size: ${(uploadedSize / 1024 / 1024).toFixed(2)}MB`,
@@ -64,20 +74,21 @@ export class FileManager {
         }
       });
 
-      stream
-        .pipe(
-          bucketFile.createWriteStream({
-            metadata: {
-              contentType: file.mimetype,
-            },
-          }),
-        )
-        .on('error', (error) => {
-          reject(error);
-        })
-        .on('finish', () => {
-          resolve(fullPath);
-        });
+      fileStream.on('error', (error) => {
+        cleanup();
+        reject(error);
+      });
+
+      bucketStream.on('error', (error) => {
+        cleanup();
+        reject(error);
+      });
+
+      bucketStream.on('finish', () => {
+        resolve(fullPath);
+      });
+
+      fileStream.pipe(bucketStream);
     });
   };
 
@@ -85,8 +96,24 @@ export class FileManager {
     file: Promise<UploadFile>;
     userId: string;
   }): Promise<string> => {
-    const filePromise = await params.file;
-    const filePath = await this.uploadFileToStorage(filePromise);
+    let filePromise: UploadFile;
+    try {
+      filePromise = await params.file;
+    } catch (error) {
+      throw new Error(
+        `Failed to receive file upload: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    let filePath: string;
+    try {
+      filePath = await this.uploadFileToStorage(filePromise);
+    } catch (error) {
+      throw new Error(
+        `Failed to upload file to storage: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
     const { filename, mimetype } = filePromise;
     const [createdFile] = await this.server.db
       .insert(filesTable)
