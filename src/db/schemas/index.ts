@@ -6,6 +6,7 @@ export * from './keywords';
 export * from './milestones';
 export * from './links';
 export * from './posts';
+export * from './post-views';
 export * from './comments';
 export * from './notifications';
 export * from './carousel';

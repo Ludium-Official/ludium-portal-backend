@@ -15,6 +15,13 @@
       "when": 1753090941913,
       "tag": "0001_square_cerise",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754304701784,
+      "tag": "0002_light_avengers",
+      "breakpoints": true
     }
   ]
 }

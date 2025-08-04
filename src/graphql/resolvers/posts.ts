@@ -2,6 +2,7 @@ import {
   type Post,
   filesTable,
   keywordsTable,
+  postViewsTable,
   postsTable,
   postsToKeywordsTable,
 } from '@/db/schemas';
@@ -199,4 +200,60 @@ export async function updatePostResolver(
 
     return post;
   });
+}
+
+export async function getPostViewCountResolver(
+  _root: Root,
+  args: { postId: string },
+  ctx: Context,
+) {
+  const [result] = await ctx.db
+    .select({ count: count() })
+    .from(postViewsTable)
+    .where(eq(postViewsTable.postId, args.postId));
+
+  return result?.count || 0;
+}
+
+export async function incrementPostViewResolver(
+  _root: Root,
+  args: { postId: string },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+  const ipAddress = ctx.request.ip || ctx.request.socket.remoteAddress || null;
+
+  // Check if post exists
+  const [post] = await ctx.db.select().from(postsTable).where(eq(postsTable.id, args.postId));
+
+  if (!post) {
+    throw new Error('Post not found');
+  }
+
+  // Check if this view already exists
+  const whereConditions = [eq(postViewsTable.postId, args.postId)];
+
+  if (user) {
+    whereConditions.push(eq(postViewsTable.userId, user.id));
+  } else if (ipAddress) {
+    whereConditions.push(eq(postViewsTable.ipAddress, ipAddress));
+  }
+
+  const existingView = await ctx.db
+    .select()
+    .from(postViewsTable)
+    .where(and(...whereConditions))
+    .limit(1);
+
+  if (existingView.length === 0) {
+    // Record new view
+    await ctx.db.insert(postViewsTable).values({
+      postId: args.postId,
+      userId: user?.id || null,
+      ipAddress,
+    });
+  }
+
+  // Return updated view count
+  return getPostViewCountResolver(_root, { postId: args.postId }, ctx);
 }
