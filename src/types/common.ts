@@ -1,4 +1,4 @@
-import type { Writable } from 'node:stream';
+import type { Readable } from 'node:stream';
 import type { ExtractTablesWithRelations } from 'drizzle-orm';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 import type { PostgresJsDatabase, PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
@@ -18,7 +18,7 @@ export type Args = NonNullable<unknown>;
 export interface UploadFile {
   filename: string;
   mimetype: string;
-  createReadStream: () => Writable;
+  createReadStream: () => Readable;
 }
 
 export type DB =

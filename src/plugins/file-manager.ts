@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { extname } from 'node:path';
+import type { Readable, Writable } from 'node:stream';
 import { filesTable } from '@/db/schemas/files';
 import type { UploadFile } from '@/types';
 import { type Bucket, Storage } from '@google-cloud/storage';
@@ -46,49 +47,77 @@ export class FileManager {
       }
 
       const bucketFile = this.bucket.file(fullPath);
-      const bucketStream = bucketFile.createWriteStream({
-        metadata: {
-          contentType: file.mimetype,
-        },
-      });
 
       let uploadedSize = 0;
-      const fileStream = file.createReadStream();
+      let cleaned = false;
+      let fileStream: Readable | null = null;
+      let bucketStream: Writable | null = null;
 
       const cleanup = () => {
-        fileStream.destroy();
-        bucketStream.destroy();
+        if (cleaned) return;
+        cleaned = true;
+
+        if (fileStream && !fileStream.destroyed) {
+          fileStream.destroy();
+        }
+        if (bucketStream && !bucketStream.destroyed) {
+          bucketStream.destroy();
+        }
       };
 
-      fileStream.on('data', (chunk: Buffer) => {
-        uploadedSize += chunk.length;
+      const uploadTimeout = setTimeout(() => {
+        cleanup();
+        reject(new Error('Upload timeout'));
+      }, 30000);
 
-        if (uploadedSize > this.maxFileSize) {
+      try {
+        fileStream = file.createReadStream();
+
+        bucketStream = bucketFile.createWriteStream({
+          metadata: {
+            contentType: file.mimetype,
+          },
+          resumable: false,
+        });
+
+        fileStream.on('data', (chunk: Buffer) => {
+          uploadedSize += chunk.length;
+
+          if (uploadedSize > this.maxFileSize) {
+            clearTimeout(uploadTimeout);
+            cleanup();
+            reject(
+              new Error(
+                `File size exceeds ${(this.maxFileSize / 1024 / 1024).toFixed(0)}MB limit. File size: ${(uploadedSize / 1024 / 1024).toFixed(2)}MB`,
+              ),
+            );
+          }
+        });
+
+        fileStream.on('error', (error) => {
+          clearTimeout(uploadTimeout);
           cleanup();
-          reject(
-            new Error(
-              `File size exceeds ${(this.maxFileSize / 1024 / 1024).toFixed(0)}MB limit. File size: ${(uploadedSize / 1024 / 1024).toFixed(2)}MB`,
-            ),
-          );
-          return;
-        }
-      });
+          reject(error);
+        });
 
-      fileStream.on('error', (error) => {
+        bucketStream.on('error', (error) => {
+          clearTimeout(uploadTimeout);
+          cleanup();
+          reject(error);
+        });
+
+        bucketStream.on('finish', () => {
+          clearTimeout(uploadTimeout);
+          cleanup();
+          resolve(fullPath);
+        });
+
+        fileStream.pipe(bucketStream);
+      } catch (error) {
+        clearTimeout(uploadTimeout);
         cleanup();
         reject(error);
-      });
-
-      bucketStream.on('error', (error) => {
-        cleanup();
-        reject(error);
-      });
-
-      bucketStream.on('finish', () => {
-        resolve(fullPath);
-      });
-
-      fileStream.pipe(bucketStream);
+      }
     });
   };
 
@@ -96,23 +125,8 @@ export class FileManager {
     file: Promise<UploadFile>;
     userId: string;
   }): Promise<string> => {
-    let filePromise: UploadFile;
-    try {
-      filePromise = await params.file;
-    } catch (error) {
-      throw new Error(
-        `Failed to receive file upload: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
-    let filePath: string;
-    try {
-      filePath = await this.uploadFileToStorage(filePromise);
-    } catch (error) {
-      throw new Error(
-        `Failed to upload file to storage: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
+    const filePromise = await params.file;
+    const filePath = await this.uploadFileToStorage(filePromise);
 
     const { filename, mimetype } = filePromise;
     const [createdFile] = await this.server.db
@@ -132,9 +146,20 @@ export class FileManager {
   deleteFile = async (id: string): Promise<void> => {
     const [dbFile] = await this.server.db.select().from(filesTable).where(eq(filesTable.id, id));
 
-    void this.bucket.file(dbFile.path).delete();
+    if (!dbFile) {
+      return;
+    }
 
-    void this.server.db.delete(filesTable).where(eq(filesTable.id, id));
+    try {
+      await this.bucket.file(dbFile.path).delete();
+    } catch (error) {
+      // Ignore 404 errors - file already deleted
+      if (!(error instanceof Error && 'code' in error && error.code === 404)) {
+        throw error;
+      }
+    }
+
+    await this.server.db.delete(filesTable).where(eq(filesTable.id, id));
   };
 
   makeFullUrl(filePath: string): string {
