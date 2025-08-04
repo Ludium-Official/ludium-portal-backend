@@ -220,7 +220,7 @@ export async function incrementPostViewResolver(
   args: { postId: string },
   ctx: Context,
 ) {
-  const user = ctx.user;
+  const user = requireUser(ctx);
   const ipAddress = ctx.request.ip || ctx.request.socket.remoteAddress || null;
 
   // Check if post exists

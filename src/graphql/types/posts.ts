@@ -123,7 +123,6 @@ builder.mutationFields((t) => ({
   }),
   incrementPostView: t.field({
     type: 'Int',
-    description: 'Increment view count for a post and return the new count',
     args: {
       postId: t.arg.id({ required: true }),
     },

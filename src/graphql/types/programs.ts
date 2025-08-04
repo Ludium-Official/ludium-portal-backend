@@ -141,7 +141,7 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
       },
     }),
     currency: t.string(),
-    deadline: t.string({ required: true }),
+    deadline: t.string(),
     keywords: t.stringList(),
     links: t.field({ type: [LinkInput] }),
     network: t.string(),

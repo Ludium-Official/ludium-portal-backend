@@ -108,7 +108,7 @@ input CreatePostInput {
 
 input CreateProgramInput {
   currency: String
-  deadline: String!
+  deadline: String
   description: String
   image: Upload
   keywords: [String!]
@@ -202,8 +202,6 @@ type Mutation {
   deleteCarouselItem(id: ID!): CarouselItem
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
-
-  """Increment view count for a post and return the new count"""
   incrementPostView(postId: ID!): Int
   inviteUserToProgram(programId: ID!, userId: ID!): Program
   login(email: String, loginType: String!, walletAddress: String!): String
