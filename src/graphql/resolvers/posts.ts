@@ -250,7 +250,7 @@ export async function incrementPostViewResolver(
     await ctx.db.insert(postViewsTable).values({
       postId: args.postId,
       userId: user?.id || null,
-      ipAddress: user ? null : ipAddress,
+      ipAddress,
     });
   }
 
