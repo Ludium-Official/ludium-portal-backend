@@ -5,4 +5,6 @@ export const NETWORKS = [
   'base-sepolia',
   'arbitrum',
   'arbitrum-sepolia',
+  'coredao',
+  'coredao-testnet',
 ];
