@@ -134,14 +134,14 @@ input CreateProgramInput {
   contractAddress: String
   currency: String
   customFeePercentage: Int
-  deadline: String!
+  deadline: String
   description: String
   feePercentage: Int
   fundingCondition: FundingCondition
   fundingEndDate: Date
   fundingStartDate: Date
   image: Upload
-  keywords: [ID!]
+  keywords: [String!]
   links: [LinkInput!]
   maxFundingAmount: String
   name: String!
@@ -270,6 +270,7 @@ enum MilestoneStatus {
 type Mutation {
   acceptApplication(id: ID!): Application
   acceptProgram(id: ID!): Program
+  addProgramKeyword(keyword: String!, programId: ID!): Keyword
   assignUserTier(input: AssignUserTierInput!): UserTierAssignment
   assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
   checkMilestone(input: CheckMilestoneInput!): Milestone
@@ -283,6 +284,7 @@ type Mutation {
   deleteCarouselItem(id: ID!): CarouselItem
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
+  incrementPostView(postId: ID!): Int
   inviteUserToProgram(programId: ID!, userId: ID!): Program
   login(email: String, loginType: String!, walletAddress: String!): String
   markAllNotificationsAsRead: Boolean
@@ -291,6 +293,7 @@ type Mutation {
   reclaimInvestment(input: ReclaimInvestmentInput!): Investment
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
+  removeProgramKeyword(keyword: String!, programId: ID!): Boolean
   removeUserTier(programId: ID!, userId: ID!): Boolean
   removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
@@ -399,6 +402,7 @@ type Post {
   keywords: [Keyword!]
   summary: String
   title: String
+  viewCount: Int
 }
 
 input ProcessPayoutsInput {
@@ -615,7 +619,7 @@ input UpdateProgramInput {
   fundingStartDate: Date
   id: ID!
   image: Upload
-  keywords: [ID!]
+  keywords: [String!]
   links: [LinkInput!]
   maxFundingAmount: String
   name: String

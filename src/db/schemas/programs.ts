@@ -44,7 +44,7 @@ export const investmentTierEnum = pgEnum('investment_tier', investmentTiers);
 
 export const programsTable = pgTable('programs', {
   id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 256 }).notNull().notNull(),
+  name: varchar('name', { length: 256 }).notNull(),
   summary: text('summary'),
   description: text('description'),
   price: varchar('price', { length: 256 }).notNull(),
