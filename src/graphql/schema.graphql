@@ -1,5 +1,6 @@
 type Application {
   applicant: User
+  comments: [Comment!]
   content: String
   id: ID
   links: [Link!]
@@ -59,6 +60,7 @@ type Comment {
 }
 
 enum CommentableTypeEnum {
+  application
   milestone
   post
   program

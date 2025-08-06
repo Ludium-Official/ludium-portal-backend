@@ -12,9 +12,11 @@ import {
   rejectApplicationResolver,
   updateApplicationResolver,
 } from '@/graphql/resolvers/applications';
+import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
 import { getLinksByApplicationIdResolver } from '@/graphql/resolvers/links';
 import { getMilestonesByApplicationIdResolver } from '@/graphql/resolvers/milestones';
 import { getUserResolver } from '@/graphql/resolvers/users';
+import { CommentType } from '@/graphql/types/comments';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { CreateMilestoneInput, MilestoneType } from '@/graphql/types/milestones';
@@ -60,6 +62,15 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
       type: [Link],
       resolve: async (application, _args, ctx) =>
         getLinksByApplicationIdResolver({}, { applicationId: application.id }, ctx),
+    }),
+    comments: t.field({
+      type: [CommentType],
+      resolve: async (application, _args, ctx) =>
+        getCommentsByCommentableResolver(
+          {},
+          { commentableId: application.id, commentableType: 'application' },
+          ctx,
+        ),
     }),
   }),
 });

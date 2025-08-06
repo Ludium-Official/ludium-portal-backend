@@ -59,7 +59,7 @@ export const PaginatedCommentsType = builder
 /* -------------------------------------------------------------------------- */
 
 export const CommentableTypeEnum = builder.enumType('CommentableTypeEnum', {
-  values: ['post', 'program', 'milestone'] as const,
+  values: ['post', 'program', 'milestone', 'application'] as const,
 });
 
 export const CreateCommentInput = builder.inputType('CreateCommentInput', {

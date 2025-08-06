@@ -1,5 +1,5 @@
 {
-  "id": "1e3ce278-c333-464d-827c-3cc4b0b2cc33",
+  "id": "f16ec027-e584-4727-b305-0b78260bf66e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1620,7 +1620,8 @@
       "values": [
         "post",
         "program",
-        "milestone"
+        "milestone",
+        "application"
       ]
     },
     "public.user_roles": {
