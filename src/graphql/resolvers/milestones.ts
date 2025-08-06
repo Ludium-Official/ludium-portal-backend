@@ -109,8 +109,9 @@ export function updateMilestoneResolver(
 
       // Validate percentage is between 0 and 100
       if (percentage.isLessThan(0) || percentage.isGreaterThan(100)) {
-        ctx.server.log.error('Percentage must be between 0 and 100');
-        t.rollback();
+        throw new Error(
+          `Milestone percentage must be between 0 and 100. Received: ${percentage.toFixed()}%`,
+        );
       }
 
       // Get milestone and application info
@@ -138,8 +139,10 @@ export function updateMilestoneResolver(
         .filter((m): m is { id: string; percentage: string } => m.percentage != null);
 
       if (!validateMilestonePercentages(updatedMilestones)) {
-        ctx.server.log.error('Total milestone percentages must equal 100%');
-        t.rollback();
+        const totalPercentage = updatedMilestones.reduce((sum, m) => sum + Number(m.percentage), 0);
+        throw new Error(
+          `Milestone payout percentages must add up to exactly 100%. Current total: ${totalPercentage}%. Please adjust the percentages.`,
+        );
       }
 
       // Calculate the actual price amount and update it

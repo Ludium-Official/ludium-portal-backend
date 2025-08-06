@@ -188,8 +188,9 @@ export function createApplicationResolver(
 
     // Validate milestone percentages sum to 100%
     if (!validateMilestonePercentages(args.input.milestones)) {
-      ctx.server.log.error('Milestone percentages must sum to 100%');
-      t.rollback();
+      throw new Error(
+        'Milestone payout percentages must add up to exactly 100%. Please adjust the percentages.',
+      );
     }
 
     let sortOrder = 0;
@@ -234,8 +235,7 @@ export function createApplicationResolver(
     }
 
     if (!validAndNotEmptyArray(milestones)) {
-      ctx.server.log.error('Milestones are required');
-      t.rollback();
+      throw new Error('At least one milestone is required for the application.');
     }
 
     const applications = await t
@@ -257,8 +257,9 @@ export function createApplicationResolver(
     }, new BigNumber(0));
 
     if (applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price))) {
-      ctx.server.log.error('The total price of the applications is greater than the program price');
-      t.rollback();
+      throw new Error(
+        `The total price of all applications (${applicationsTotalPrice.plus(milestonesTotalPrice).toFixed()}) exceeds the program budget (${program.price}). Please reduce the application price.`,
+      );
     }
 
     if (validatorIds.length > 0) {
