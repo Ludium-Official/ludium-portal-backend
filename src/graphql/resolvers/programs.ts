@@ -125,11 +125,20 @@ export async function getProgramsResolver(
 
   // Check if visibility filter was explicitly provided
   const hasVisibilityFilter = filter.some((f) => f.field === 'visibility');
+  const user = ctx.server.auth.getUser(ctx.request);
 
-  // Only add visibility filtering if no explicit visibility filter was provided
-  // When no visibility filter is provided, return all programs (no restrictions)
-  // This allows admins or other authorized users to see all programs when needed
-  const visibilityConditions = hasVisibilityFilter ? [] : [];
+  // Build visibility conditions based on whether a filter was provided
+  const visibilityConditions = [];
+
+  if (!hasVisibilityFilter) {
+    // No visibility filter provided - return all programs the user can access
+    // This means all public programs, plus private programs they have access to
+    if (!user) {
+      // Non-authenticated users can only see public programs
+      visibilityConditions.push(eq(programsTable.visibility, 'public'));
+    }
+  }
+  // If visibility filter is provided, it's already in filterConditions
 
   const allConditions = [...filterConditions, ...visibilityConditions];
 
@@ -151,10 +160,25 @@ export async function getProgramsResolver(
       .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
   }
 
-  // Only apply post-query filtering if no visibility filter was provided
-  // When visibility filter is provided, we return all programs matching the query
-  if (!hasVisibilityFilter) {
-    // No additional filtering - return all programs
+  // Apply access control for private programs
+  if (user && !hasVisibilityFilter) {
+    // Get user's roles to check validator access
+    const userRoles = await ctx.db
+      .select()
+      .from(programUserRolesTable)
+      .where(eq(programUserRolesTable.userId, user.id));
+
+    const userProgramIds = new Set(userRoles.map((role) => role.programId));
+
+    // Filter out private programs the user doesn't have access to
+    data = data.filter((program) => {
+      if (program.visibility === 'private') {
+        // Allow access if user is creator or has a role (validator, etc.)
+        return program.creatorId === user.id || userProgramIds.has(program.id);
+      }
+      // Public and restricted programs are visible
+      return true;
+    });
   }
 
   if (!validAndNotEmptyArray(data)) {
