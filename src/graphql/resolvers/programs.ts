@@ -123,32 +123,13 @@ export async function getProgramsResolver(
 
   const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
 
-  // Add visibility filtering based on user authentication
-  const user = ctx.server.auth.getUser(ctx.request);
-  const visibilityConditions = [];
+  // Check if visibility filter was explicitly provided
+  const hasVisibilityFilter = filter.some((f) => f.field === 'visibility');
 
-  if (!user) {
-    // Non-authenticated users can only see public programs
-    visibilityConditions.push(eq(programsTable.visibility, 'public'));
-  } else {
-    // Authenticated users can see:
-    // - Public programs (always visible in listing)
-    // - Private programs they have access to (creator or have a role)
-    // - Restricted programs are NOT shown in the programs listing (only accessible via direct URL)
-
-    const publicPrograms = eq(programsTable.visibility, 'public');
-
-    // For private programs, include those where user is creator or has a role
-    const privateWithAccess = and(
-      eq(programsTable.visibility, 'private'),
-      or(
-        eq(programsTable.creatorId, user.id),
-        // User roles are handled in the filter below
-      ),
-    );
-
-    visibilityConditions.push(or(publicPrograms, privateWithAccess));
-  }
+  // Only add visibility filtering if no explicit visibility filter was provided
+  // When no visibility filter is provided, return all programs (no restrictions)
+  // This allows admins or other authorized users to see all programs when needed
+  const visibilityConditions = hasVisibilityFilter ? [] : [];
 
   const allConditions = [...filterConditions, ...visibilityConditions];
 
@@ -170,20 +151,10 @@ export async function getProgramsResolver(
       .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
   }
 
-  if (user) {
-    const userRoles = await ctx.db
-      .select()
-      .from(programUserRolesTable)
-      .where(eq(programUserRolesTable.userId, user.id));
-
-    const userProgramIds = new Set(userRoles.map((role) => role.programId));
-
-    data = data.filter((program) => {
-      if (program.visibility === 'private') {
-        return program.creatorId === user.id || userProgramIds.has(program.id);
-      }
-      return true;
-    });
+  // Only apply post-query filtering if no visibility filter was provided
+  // When visibility filter is provided, we return all programs matching the query
+  if (!hasVisibilityFilter) {
+    // No additional filtering - return all programs
   }
 
   if (!validAndNotEmptyArray(data)) {
