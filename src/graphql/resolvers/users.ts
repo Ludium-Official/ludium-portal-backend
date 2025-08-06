@@ -1,10 +1,12 @@
 import {
   type User,
   filesTable,
+  keywordsTable,
   linksTable,
   programUserRolesTable,
   programsTable,
   usersTable,
+  usersToKeywordsTable,
   usersToLinksTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
@@ -164,6 +166,7 @@ export async function getValidatorsByProgramIdResolver(
     validators.map((validator) => getUserResolver({}, { id: validator.userId }, ctx)),
   );
 
+  // add to set to remove duplicates
   return validatorUsers.filter((user) => user !== null);
 }
 
@@ -321,7 +324,7 @@ export function createUserResolver(
   args: { input: typeof UserInput.$inferInput },
   ctx: Context,
 ) {
-  const { links, ...userData } = args.input;
+  const { links, keywords, ...userData } = args.input;
 
   return ctx.db.transaction(async (t) => {
     const [user] = await t
@@ -361,6 +364,40 @@ export function createUserResolver(
       );
     }
 
+    if (keywords) {
+      const keywordIds = [];
+
+      for (const keyword of keywords) {
+        let existingKeyword = await t
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.name, keyword.toLowerCase().trim()))
+          .then((results) => results[0]);
+
+        if (!existingKeyword) {
+          const [newKeyword] = await t
+            .insert(keywordsTable)
+            .values({ name: keyword.toLowerCase().trim() })
+            .returning();
+          existingKeyword = newKeyword;
+        }
+
+        keywordIds.push(existingKeyword.id);
+      }
+
+      if (keywordIds.length > 0) {
+        await t
+          .insert(usersToKeywordsTable)
+          .values(
+            keywordIds.map((keywordId) => ({
+              userId: user.id,
+              keywordId,
+            })),
+          )
+          .onConflictDoNothing();
+      }
+    }
+
     return user;
   });
 }
@@ -370,7 +407,7 @@ export function updateUserResolver(
   args: { input: typeof UserUpdateInput.$inferInput },
   ctx: Context,
 ) {
-  const { links, ...userData } = args.input;
+  const { links, keywords, ...userData } = args.input;
 
   return ctx.db.transaction(async (t) => {
     if (userData.image) {
@@ -422,6 +459,43 @@ export function updateUserResolver(
           linkId: link.id,
         })),
       );
+    }
+
+    if (keywords) {
+      // Delete existing keyword associations
+      await t.delete(usersToKeywordsTable).where(eq(usersToKeywordsTable.userId, args.input.id));
+
+      const keywordIds = [];
+
+      for (const keyword of keywords) {
+        let existingKeyword = await t
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.name, keyword.toLowerCase().trim()))
+          .then((results) => results[0]);
+
+        if (!existingKeyword) {
+          const [newKeyword] = await t
+            .insert(keywordsTable)
+            .values({ name: keyword.toLowerCase().trim() })
+            .returning();
+          existingKeyword = newKeyword;
+        }
+
+        keywordIds.push(existingKeyword.id);
+      }
+
+      if (keywordIds.length > 0) {
+        await t
+          .insert(usersToKeywordsTable)
+          .values(
+            keywordIds.map((keywordId) => ({
+              userId: args.input.id,
+              keywordId,
+            })),
+          )
+          .onConflictDoNothing();
+      }
     }
 
     return user;
@@ -529,4 +603,98 @@ export async function getUserAvatarResolver(_root: Root, args: { userId: string 
       return bucketFile.createReadStream();
     },
   } as unknown as UploadFile;
+}
+
+export async function getUserKeywordsByUserIdResolver(
+  _root: Root,
+  args: { userId: string },
+  ctx: Context,
+) {
+  const keywordRelations = await ctx.db
+    .select()
+    .from(usersToKeywordsTable)
+    .where(eq(usersToKeywordsTable.userId, args.userId));
+
+  if (!keywordRelations.length) return [];
+
+  const keywordIds = keywordRelations.map((r) => r.keywordId);
+  const keywords = await ctx.db
+    .select()
+    .from(keywordsTable)
+    .where(inArray(keywordsTable.id, keywordIds));
+
+  return keywords;
+}
+
+export async function addUserKeywordResolver(
+  _root: Root,
+  args: { userId: string; keyword: string },
+  ctx: Context,
+) {
+  return await ctx.db.transaction(async (t) => {
+    const [user] = await t.select().from(usersTable).where(eq(usersTable.id, args.userId));
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    let existingKeyword = await t
+      .select()
+      .from(keywordsTable)
+      .where(eq(keywordsTable.name, args.keyword.toLowerCase().trim()))
+      .then((results) => results[0]);
+
+    if (!existingKeyword) {
+      const [newKeyword] = await t
+        .insert(keywordsTable)
+        .values({ name: args.keyword.toLowerCase().trim() })
+        .returning();
+      existingKeyword = newKeyword;
+    }
+
+    await t
+      .insert(usersToKeywordsTable)
+      .values({
+        userId: args.userId,
+        keywordId: existingKeyword.id,
+      })
+      .onConflictDoNothing();
+
+    return existingKeyword;
+  });
+}
+
+export async function removeUserKeywordResolver(
+  _root: Root,
+  args: { userId: string; keyword: string },
+  ctx: Context,
+) {
+  return await ctx.db.transaction(async (t) => {
+    const [user] = await t.select().from(usersTable).where(eq(usersTable.id, args.userId));
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const existingKeyword = await t
+      .select()
+      .from(keywordsTable)
+      .where(eq(keywordsTable.name, args.keyword.toLowerCase().trim()))
+      .then((results) => results[0]);
+
+    if (!existingKeyword) {
+      throw new Error('Keyword not found');
+    }
+
+    await t
+      .delete(usersToKeywordsTable)
+      .where(
+        and(
+          eq(usersToKeywordsTable.userId, args.userId),
+          eq(usersToKeywordsTable.keywordId, existingKeyword.id),
+        ),
+      );
+
+    return true;
+  });
 }

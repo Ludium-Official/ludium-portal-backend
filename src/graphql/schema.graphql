@@ -44,7 +44,7 @@ input CheckMilestoneInput {
 
 enum CheckMilestoneStatus {
   completed
-  pending
+  rejected
 }
 
 type Comment {
@@ -191,6 +191,7 @@ type Mutation {
   acceptApplication(id: ID!): Application
   acceptProgram(id: ID!): Program
   addProgramKeyword(keyword: String!, programId: ID!): Keyword
+  addUserKeyword(keyword: String!, userId: ID!): Keyword
   assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
@@ -210,6 +211,7 @@ type Mutation {
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
   removeProgramKeyword(keyword: String!, programId: ID!): Boolean
+  removeUserKeyword(keyword: String!, userId: ID!): Boolean
   removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
   submitMilestone(input: SubmitMilestoneInput!): Milestone
@@ -468,6 +470,7 @@ type User {
   firstName: String
   id: ID
   image: String
+  keywords: [Keyword!]
   lastName: String
   links: [Link!]
   loginType: String
@@ -483,6 +486,7 @@ input UserInput {
   email: String!
   firstName: String
   image: Upload
+  keywords: [String!]
   lastName: String
   links: [LinkInput!]
   loginType: String
@@ -510,6 +514,7 @@ input UserUpdateInput {
   firstName: String
   id: ID!
   image: Upload
+  keywords: [String!]
   lastName: String
   links: [LinkInput!]
   loginType: String

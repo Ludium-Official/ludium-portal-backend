@@ -1,5 +1,5 @@
 {
-  "id": "2f94f494-5474-44d0-a0ca-b163ee817fd6",
+  "id": "1e3ce278-c333-464d-827c-3cc4b0b2cc33",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -546,6 +546,66 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.users_to_keywords": {
+      "name": "users_to_keywords",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "keyword_id": {
+          "name": "keyword_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "users_to_keywords_user_id_users_id_fk": {
+          "name": "users_to_keywords_user_id_users_id_fk",
+          "tableFrom": "users_to_keywords",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "users_to_keywords_keyword_id_keywords_id_fk": {
+          "name": "users_to_keywords_keyword_id_keywords_id_fk",
+          "tableFrom": "users_to_keywords",
+          "tableTo": "keywords",
+          "columnsFrom": [
+            "keyword_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "users_to_keywords_user_id_keyword_id_pk": {
+          "name": "users_to_keywords_user_id_keyword_id_pk",
+          "columns": [
+            "user_id",
+            "keyword_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.users_to_links": {
       "name": "users_to_links",
       "schema": "",
@@ -1027,6 +1087,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "percentage": {
+          "name": "percentage",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
         "currency": {
           "name": "currency",
           "type": "varchar(10)",
@@ -1346,6 +1412,80 @@
           "columns": [
             "post_id",
             "keyword_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.post_views": {
+      "name": "post_views",
+      "schema": "",
+      "columns": {
+        "post_id": {
+          "name": "post_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "varchar(45)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "viewed_at": {
+          "name": "viewed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "post_views_post_id_posts_id_fk": {
+          "name": "post_views_post_id_posts_id_fk",
+          "tableFrom": "post_views",
+          "tableTo": "posts",
+          "columnsFrom": [
+            "post_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "post_views_user_id_users_id_fk": {
+          "name": "post_views_user_id_users_id_fk",
+          "tableFrom": "post_views",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "post_views_pkey": {
+          "name": "post_views_pkey",
+          "columns": [
+            "post_id",
+            "user_id",
+            "ip_address"
           ]
         }
       },

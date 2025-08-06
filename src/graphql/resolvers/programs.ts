@@ -21,7 +21,7 @@ import {
   requireUser,
   validAndNotEmptyArray,
 } from '@/utils';
-import { and, asc, count, desc, eq, ilike, inArray, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, ilike, inArray, lt, or } from 'drizzle-orm';
 
 export async function getProgramsResolver(
   _root: Root,
@@ -110,6 +110,12 @@ export async function getProgramsResolver(
       case 'price':
         // sort by price, value can be 'asc' or 'desc'
         return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
+      case 'imminent':
+        // Only programs with a deadline within 7 days should be shown
+        return and(
+          gt(programsTable.deadline, new Date().toISOString()),
+          lt(programsTable.deadline, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
+        );
       default:
         return undefined;
     }

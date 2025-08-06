@@ -321,7 +321,7 @@ export function checkMilestoneResolver(
 
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'milestone',
-      action: args.input.status === 'pending' ? 'rejected' : 'accepted',
+      action: args.input.status === 'rejected' ? 'rejected' : 'accepted',
       recipientId: application.applicantId,
       entityId: milestone.id,
     });

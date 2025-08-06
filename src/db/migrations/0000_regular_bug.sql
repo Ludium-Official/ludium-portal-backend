@@ -82,6 +82,12 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_wallet_address_unique" UNIQUE("wallet_address")
 );
 --> statement-breakpoint
+CREATE TABLE "users_to_keywords" (
+	"user_id" uuid NOT NULL,
+	"keyword_id" uuid NOT NULL,
+	CONSTRAINT "users_to_keywords_user_id_keyword_id_pk" PRIMARY KEY("user_id","keyword_id")
+);
+--> statement-breakpoint
 CREATE TABLE "users_to_links" (
 	"user_id" uuid NOT NULL,
 	"link_id" uuid NOT NULL,
@@ -143,6 +149,7 @@ CREATE TABLE "milestones" (
 	"title" varchar(256) NOT NULL,
 	"description" text,
 	"price" varchar(256) NOT NULL,
+	"percentage" numeric(5, 2) NOT NULL,
 	"currency" varchar(10) DEFAULT 'ETH',
 	"status" "milestone_status" DEFAULT 'pending' NOT NULL,
 	"links" jsonb,
@@ -185,6 +192,14 @@ CREATE TABLE "posts_to_keywords" (
 	CONSTRAINT "posts_to_keywords_post_id_keyword_id_pk" PRIMARY KEY("post_id","keyword_id")
 );
 --> statement-breakpoint
+CREATE TABLE "post_views" (
+	"post_id" uuid NOT NULL,
+	"user_id" uuid,
+	"ip_address" varchar(45),
+	"viewed_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "post_views_pkey" PRIMARY KEY("post_id","user_id","ip_address")
+);
+--> statement-breakpoint
 CREATE TABLE "notifications" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"type" "notification_type" NOT NULL,
@@ -206,6 +221,8 @@ ALTER TABLE "applications_to_links" ADD CONSTRAINT "applications_to_links_link_i
 ALTER TABLE "carousel_items" ADD CONSTRAINT "carousel_items_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "comments" ADD CONSTRAINT "comments_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "files" ADD CONSTRAINT "files_uploaded_by_id_users_id_fk" FOREIGN KEY ("uploaded_by_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "users_to_keywords" ADD CONSTRAINT "users_to_keywords_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "users_to_keywords" ADD CONSTRAINT "users_to_keywords_keyword_id_keywords_id_fk" FOREIGN KEY ("keyword_id") REFERENCES "public"."keywords"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "users_to_links" ADD CONSTRAINT "users_to_links_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "users_to_links" ADD CONSTRAINT "users_to_links_link_id_links_id_fk" FOREIGN KEY ("link_id") REFERENCES "public"."links"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "program_user_roles" ADD CONSTRAINT "program_user_roles_program_id_programs_id_fk" FOREIGN KEY ("program_id") REFERENCES "public"."programs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -221,4 +238,6 @@ ALTER TABLE "milestones_to_links" ADD CONSTRAINT "milestones_to_links_link_id_li
 ALTER TABLE "posts" ADD CONSTRAINT "posts_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts_to_keywords" ADD CONSTRAINT "posts_to_keywords_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts_to_keywords" ADD CONSTRAINT "posts_to_keywords_keyword_id_keywords_id_fk" FOREIGN KEY ("keyword_id") REFERENCES "public"."keywords"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "post_views" ADD CONSTRAINT "post_views_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "post_views" ADD CONSTRAINT "post_views_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_recipient_id_users_id_fk" FOREIGN KEY ("recipient_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;

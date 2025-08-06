@@ -108,7 +108,7 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
 });
 
 export const CheckMilestoneStatusEnum = builder.enumType('CheckMilestoneStatus', {
-  values: ['pending', 'completed'] as const,
+  values: ['completed', 'rejected'] as const,
 });
 
 export const CheckMilestoneInput = builder.inputType('CheckMilestoneInput', {
