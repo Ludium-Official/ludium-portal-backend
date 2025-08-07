@@ -118,6 +118,7 @@ input CreateProgramInput {
   name: String!
   network: String
   price: String!
+  status: ProgramStatus = draft
   summary: String
   visibility: ProgramVisibility
 }

@@ -146,6 +146,7 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
     links: t.field({ type: [LinkInput] }),
     network: t.string(),
     visibility: t.field({ type: ProgramVisibilityEnum }),
+    status: t.field({ type: ProgramStatusEnum, defaultValue: 'draft' }),
     image: t.field({ type: 'Upload' }),
   }),
 });
