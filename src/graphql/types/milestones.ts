@@ -71,10 +71,11 @@ export const PaginatedMilestonesType = builder
 /* -------------------------------------------------------------------------- */
 export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
   fields: (t) => ({
-    title: t.string(),
-    description: t.string(),
-    summary: t.string(),
+    title: t.string({ required: false }),
+    description: t.string({ required: false }),
+    summary: t.string({ required: false }),
     percentage: t.string({
+      required: false,
       validate: {
         refine(value) {
           if (!value) return true; // Allow undefined/null for optional field
@@ -83,9 +84,9 @@ export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
         },
       },
     }),
-    currency: t.string({ defaultValue: 'ETH' }),
-    links: t.field({ type: [LinkInput] }),
-    deadline: t.field({ type: 'Date' }),
+    currency: t.string({ required: false, defaultValue: 'ETH' }),
+    links: t.field({ type: [LinkInput], required: false }),
+    deadline: t.field({ type: 'Date', required: false }),
   }),
 });
 
