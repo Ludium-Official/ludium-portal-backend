@@ -104,8 +104,9 @@ export function updateMilestoneResolver(
       throw new Error('Application not found');
     }
 
-    // Check if user is a builder in this program or an admin
+    // Check if user is the applicant, a builder in this program, or an admin
     const isAdmin = user.role?.endsWith('admin');
+    const isApplicant = application.applicantId === user.id;
 
     const [builderRole] = await t
       .select()
@@ -118,9 +119,9 @@ export function updateMilestoneResolver(
         ),
       );
 
-    if (!isAdmin && !builderRole) {
+    if (!isAdmin && !builderRole && !isApplicant) {
       throw new Error(
-        'You are not allowed to update this milestone. Only builders and admins can update milestones.',
+        'You are not allowed to update this milestone. Only the applicant, builders, and admins can update milestones.',
       );
     }
     // handle links
