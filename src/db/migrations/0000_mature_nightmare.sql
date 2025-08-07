@@ -148,6 +148,7 @@ CREATE TABLE "milestones" (
 	"application_id" uuid NOT NULL,
 	"title" varchar(256) NOT NULL,
 	"description" text,
+	"summary" varchar(512),
 	"price" varchar(256) NOT NULL,
 	"percentage" numeric(5, 2) NOT NULL,
 	"currency" varchar(10) DEFAULT 'ETH',

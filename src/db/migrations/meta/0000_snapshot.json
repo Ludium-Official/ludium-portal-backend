@@ -1,5 +1,5 @@
 {
-  "id": "81873281-0335-4c02-8fdb-35eaa81a8f35",
+  "id": "e993ac20-d76f-41fa-befe-3e1349155726",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1078,6 +1078,12 @@
         "description": {
           "name": "description",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "varchar(512)",
           "primaryKey": false,
           "notNull": false
         },

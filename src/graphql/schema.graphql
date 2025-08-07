@@ -97,6 +97,7 @@ input CreateMilestoneInput {
   description: String
   links: [LinkInput!]
   percentage: String!
+  summary: String
   title: String!
 }
 
@@ -179,6 +180,7 @@ type Milestone {
   price: String
   rejectionReason: String
   status: MilestoneStatus
+  summary: String
   title: String
 }
 
@@ -438,6 +440,7 @@ input UpdateMilestoneInput {
   links: [LinkInput!]
   percentage: String
   status: MilestoneStatus
+  summary: String
   title: String
 }
 
