@@ -18,7 +18,9 @@ import { usersTable } from './users';
 
 export const programStatuses = [
   'draft',
+  'pending',
   'payment_required',
+  'rejected',
   'published',
   'closed',
   'completed',

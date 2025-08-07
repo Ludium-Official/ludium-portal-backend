@@ -346,7 +346,9 @@ enum ProgramStatus {
   completed
   draft
   payment_required
+  pending
   published
+  rejected
 }
 
 enum ProgramVisibility {

@@ -526,7 +526,7 @@ export function updateProfileResolver(
     throw new Error('Unauthorized');
   }
 
-  const { links, ...userData } = args.input;
+  const { links, keywords, ...userData } = args.input;
 
   const filteredUserData = filterEmptyValues<User>(userData);
 
@@ -577,6 +577,43 @@ export function updateProfileResolver(
           linkId: link.id,
         })),
       );
+    }
+
+    if (keywords) {
+      // Delete existing keyword associations
+      await t.delete(usersToKeywordsTable).where(eq(usersToKeywordsTable.userId, loggedinUser.id));
+
+      const keywordIds = [];
+
+      for (const keyword of keywords) {
+        let existingKeyword = await t
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.name, keyword.toLowerCase().trim()))
+          .then((results) => results[0]);
+
+        if (!existingKeyword) {
+          const [newKeyword] = await t
+            .insert(keywordsTable)
+            .values({ name: keyword.toLowerCase().trim() })
+            .returning();
+          existingKeyword = newKeyword;
+        }
+
+        keywordIds.push(existingKeyword.id);
+      }
+
+      if (keywordIds.length > 0) {
+        await t
+          .insert(usersToKeywordsTable)
+          .values(
+            keywordIds.map((keywordId) => ({
+              userId: loggedinUser.id,
+              keywordId,
+            })),
+          )
+          .onConflictDoNothing();
+      }
     }
 
     return user;

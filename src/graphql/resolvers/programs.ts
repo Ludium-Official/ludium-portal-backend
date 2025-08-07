@@ -519,22 +519,24 @@ export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Co
   const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
-    const hasAccess = await isInSameScope({
-      scope: 'program_validator',
-      userId: user.id,
-      entityId: args.id,
-      db: t,
-    });
-    if (!hasAccess) {
+    // Check if user already has validator role
+    const existingValidatorRole = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, args.id),
+          eq(programUserRolesTable.userId, user.id),
+          eq(programUserRolesTable.roleType, 'validator'),
+        ),
+      );
+
+    if (!existingValidatorRole.length) {
+      // User doesn't have validator role, so they can't accept the program
       throw new Error('You are not allowed to accept this program');
     }
 
-    // Add validator
-    await t.insert(programUserRolesTable).values({
-      programId: args.id,
-      userId: user.id,
-      roleType: 'validator',
-    });
+    // User already has validator role, no need to insert again
 
     const [program] = await t
       .update(programsTable)

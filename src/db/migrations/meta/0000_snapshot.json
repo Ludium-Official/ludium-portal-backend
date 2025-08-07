@@ -1,5 +1,5 @@
 {
-  "id": "f16ec027-e584-4727-b305-0b78260bf66e",
+  "id": "81873281-0335-4c02-8fdb-35eaa81a8f35",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1647,7 +1647,9 @@
       "schema": "public",
       "values": [
         "draft",
+        "pending",
         "payment_required",
+        "rejected",
         "published",
         "closed",
         "completed",

@@ -3,7 +3,7 @@ CREATE TYPE "public"."carousel_item_type" AS ENUM('program', 'post');--> stateme
 CREATE TYPE "public"."commentable_type" AS ENUM('post', 'program', 'milestone', 'application');--> statement-breakpoint
 CREATE TYPE "public"."user_roles" AS ENUM('user', 'admin', 'superadmin');--> statement-breakpoint
 CREATE TYPE "public"."program_role_type" AS ENUM('sponsor', 'validator', 'builder');--> statement-breakpoint
-CREATE TYPE "public"."program_status" AS ENUM('draft', 'payment_required', 'published', 'closed', 'completed', 'cancelled');--> statement-breakpoint
+CREATE TYPE "public"."program_status" AS ENUM('draft', 'pending', 'payment_required', 'rejected', 'published', 'closed', 'completed', 'cancelled');--> statement-breakpoint
 CREATE TYPE "public"."program_visibility" AS ENUM('private', 'restricted', 'public');--> statement-breakpoint
 CREATE TYPE "public"."milestone_status" AS ENUM('draft', 'pending', 'completed', 'rejected', 'submitted');--> statement-breakpoint
 CREATE TYPE "public"."notification_action" AS ENUM('created', 'accepted', 'rejected', 'submitted', 'completed', 'broadcast', 'invited');--> statement-breakpoint
