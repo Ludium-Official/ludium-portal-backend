@@ -159,7 +159,12 @@ export function createApplicationResolver(
     const [application] = await t
       .insert(applicationsTable)
       .values({
-        ...args.input,
+        programId: args.input.programId,
+        name: args.input.name,
+        content: args.input.content || '',
+        summary: args.input.summary,
+        price: args.input.price,
+        metadata: args.input.metadata,
         applicantId: user.id,
         status: args.input.status,
       })
@@ -186,56 +191,60 @@ export function createApplicationResolver(
       );
     }
 
-    // Validate milestone percentages sum to 100%
-    if (!validateMilestonePercentages(args.input.milestones)) {
-      throw new Error(
-        'Milestone payout percentages must add up to exactly 100%. Please adjust the percentages.',
-      );
-    }
-
-    let sortOrder = 0;
-    for (const milestone of args.input.milestones) {
-      const { links, ...inputData } = milestone;
-
-      // Calculate the actual price amount from percentage
-      const calculatedAmount = calculateMilestoneAmount(inputData.percentage, application.price);
-
-      const [newMilestone] = await t
-        .insert(milestonesTable)
-        .values({
-          ...inputData,
-          price: calculatedAmount,
-          percentage: inputData.percentage,
-          sortOrder,
-          applicationId: application.id,
-          deadline: inputData.deadline.toISOString(),
-        })
-        .returning();
-      // handle links
-      if (links) {
-        const filteredLinks = links.filter((link) => link.url);
-        const newLinks = await t
-          .insert(linksTable)
-          .values(
-            filteredLinks.map((link) => ({
-              url: link.url as string,
-              title: link.title as string,
-            })),
-          )
-          .returning();
-        await t.insert(milestonesToLinksTable).values(
-          newLinks.map((link) => ({
-            milestoneId: newMilestone.id,
-            linkId: link.id,
-          })),
+    // Only process milestones if they are provided
+    if (args.input.milestones && args.input.milestones.length > 0) {
+      // Validate milestone percentages sum to 100%
+      if (!validateMilestonePercentages(args.input.milestones)) {
+        throw new Error(
+          'Milestone payout percentages must add up to exactly 100%. Please adjust the percentages.',
         );
       }
-      milestones.push(newMilestone);
-      sortOrder++;
+
+      let sortOrder = 0;
+      for (const milestone of args.input.milestones) {
+        const { links, ...inputData } = milestone;
+
+        // Calculate the actual price amount from percentage
+        const calculatedAmount = calculateMilestoneAmount(inputData.percentage, application.price);
+
+        const [newMilestone] = await t
+          .insert(milestonesTable)
+          .values({
+            ...inputData,
+            price: calculatedAmount,
+            percentage: inputData.percentage,
+            sortOrder,
+            applicationId: application.id,
+            deadline: inputData.deadline.toISOString(),
+          })
+          .returning();
+        // handle links
+        if (links) {
+          const filteredLinks = links.filter((link) => link.url);
+          const newLinks = await t
+            .insert(linksTable)
+            .values(
+              filteredLinks.map((link) => ({
+                url: link.url as string,
+                title: link.title as string,
+              })),
+            )
+            .returning();
+          await t.insert(milestonesToLinksTable).values(
+            newLinks.map((link) => ({
+              milestoneId: newMilestone.id,
+              linkId: link.id,
+            })),
+          );
+        }
+        milestones.push(newMilestone);
+        sortOrder++;
+      }
     }
 
-    if (!validAndNotEmptyArray(milestones)) {
-      throw new Error('At least one milestone is required for the application.');
+    // Only require milestones for non-draft applications
+    if (args.input.status !== 'draft' && !validAndNotEmptyArray(milestones)) {
+      throw new Error('At least one milestone is required for submitted applications.');
     }
 
     const applications = await t
@@ -248,21 +257,25 @@ export function createApplicationResolver(
         ),
       );
 
-    const milestonesTotalPrice = milestones.reduce((acc, m) => {
-      return acc.plus(new BigNumber(m.price));
-    }, new BigNumber(0));
+    // Only validate budget for non-draft applications with milestones
+    if (milestones.length > 0) {
+      const milestonesTotalPrice = milestones.reduce((acc, m) => {
+        return acc.plus(new BigNumber(m.price));
+      }, new BigNumber(0));
 
-    const applicationsTotalPrice = applications.reduce((acc, a) => {
-      return acc.plus(new BigNumber(a.price));
-    }, new BigNumber(0));
+      const applicationsTotalPrice = applications.reduce((acc, a) => {
+        return acc.plus(new BigNumber(a.price));
+      }, new BigNumber(0));
 
-    if (applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price))) {
-      throw new Error(
-        `The total price of all applications (${applicationsTotalPrice.plus(milestonesTotalPrice).toFixed()}) exceeds the program budget (${program.price}). Please reduce the application price.`,
-      );
+      if (applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price))) {
+        throw new Error(
+          `The total price of all applications (${applicationsTotalPrice.plus(milestonesTotalPrice).toFixed()}) exceeds the program budget (${program.price}). Please reduce the application price.`,
+        );
+      }
     }
 
-    if (validatorIds.length > 0) {
+    // Only notify validators for non-draft applications
+    if (args.input.status !== 'draft' && validatorIds.length > 0) {
       for (const validatorId of validatorIds) {
         await ctx.server.pubsub.publish('notifications', t, {
           type: 'application',

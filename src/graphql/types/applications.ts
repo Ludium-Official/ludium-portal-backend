@@ -97,10 +97,10 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
   fields: (t) => ({
     programId: t.string({ required: true }),
     name: t.string({ required: true }),
-    content: t.string({ required: true }),
+    content: t.string(),
     summary: t.string(),
     metadata: t.field({ type: 'JSON' }),
-    links: t.field({ type: [LinkInput], required: false }),
+    links: t.field({ type: [LinkInput] }),
     price: t.string({
       required: true,
       validate: {
@@ -109,7 +109,7 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
         },
       },
     }),
-    milestones: t.field({ type: [CreateMilestoneInput], required: true }),
+    milestones: t.field({ type: [CreateMilestoneInput] }),
     status: t.field({ type: ApplicationStatusEnum, required: true }),
   }),
 });

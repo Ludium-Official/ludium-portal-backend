@@ -67,10 +67,10 @@ enum CommentableTypeEnum {
 }
 
 input CreateApplicationInput {
-  content: String!
+  content: String
   links: [LinkInput!]
   metadata: JSON
-  milestones: [CreateMilestoneInput!]!
+  milestones: [CreateMilestoneInput!]
   name: String!
   price: String!
   programId: String!
