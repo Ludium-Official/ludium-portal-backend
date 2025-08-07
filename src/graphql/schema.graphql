@@ -53,7 +53,7 @@ type Comment {
   commentableId: String
   commentableType: String
   content: String
-  createdAt: Date
+  createdAt: DateTime
   id: ID
   parent: Comment
   replies: [Comment!]

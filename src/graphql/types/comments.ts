@@ -34,7 +34,7 @@ CommentType.implement({
         parent.parentId === null ? null : getCommentResolver({}, { id: parent.parentId }, ctx),
     }),
     createdAt: t.field({
-      type: 'Date',
+      type: 'DateTime',
       resolve: (parent) => parent.createdAt,
     }),
     replies: t.field({
