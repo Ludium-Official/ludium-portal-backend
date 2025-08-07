@@ -157,10 +157,7 @@ builder.mutationFields((t) => ({
   }),
   updateApplication: t.field({
     type: ApplicationType,
-    authScopes: (_, args) => ({
-      admin: true,
-      programBuilder: { applicationId: args.input.id },
-    }),
+    authScopes: { user: true },
     args: {
       input: t.arg({ type: UpdateApplicationInput, required: true }),
     },
