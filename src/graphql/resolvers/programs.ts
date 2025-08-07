@@ -577,7 +577,7 @@ export function rejectProgramResolver(
     const [program] = await t
       .update(programsTable)
       .set({
-        status: 'draft',
+        status: 'rejected',
         ...(args.rejectionReason && { rejectionReason: args.rejectionReason }),
       })
       .where(eq(programsTable.id, args.id))
