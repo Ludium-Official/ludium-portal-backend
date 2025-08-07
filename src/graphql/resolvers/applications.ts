@@ -288,17 +288,37 @@ export function updateApplicationResolver(
   const filteredData = filterEmptyValues<ApplicationUpdate>(args.input);
 
   return ctx.db.transaction(async (t) => {
-    const hasAccess = await isInSameScope({
-      scope: 'application_builder',
-      userId: user.id,
-      entityId: args.input.id,
-      db: t,
-    });
-    if (!hasAccess) {
-      throw new Error('You are not allowed to update this application');
+    // Get the application to find the program
+    const [application] = await t
+      .select()
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, args.input.id));
+
+    if (!application) {
+      throw new Error('Application not found');
     }
 
-    const [application] = await t
+    // Check if user is a builder in this program or an admin
+    const isAdmin = user.role?.endsWith('admin');
+
+    const [builderRole] = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, application.programId),
+          eq(programUserRolesTable.userId, user.id),
+          eq(programUserRolesTable.roleType, 'builder'),
+        ),
+      );
+
+    if (!isAdmin && !builderRole) {
+      throw new Error(
+        'You are not allowed to update this application. Only builders and admins can update applications.',
+      );
+    }
+
+    const [updatedApplication] = await t
       .update(applicationsTable)
       .set(filteredData)
       .where(eq(applicationsTable.id, args.input.id))
@@ -323,13 +343,13 @@ export function updateApplicationResolver(
 
       await t.insert(applicationsToLinksTable).values(
         newLinks.map((link) => ({
-          applicationId: application.id,
+          applicationId: updatedApplication.id,
           linkId: link.id,
         })),
       );
     }
 
-    return application;
+    return updatedApplication;
   });
 }
 
@@ -345,12 +365,26 @@ export function acceptApplicationResolver(_root: Root, args: { id: string }, ctx
       throw new Error('Application not found');
     }
 
-    // Add applicant as program builder (auto-confirmed)
-    await t.insert(programUserRolesTable).values({
-      programId: application.programId,
-      userId: application.applicantId,
-      roleType: 'builder',
-    });
+    // Check if builder role already exists
+    const existingRole = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, application.programId),
+          eq(programUserRolesTable.userId, application.applicantId),
+          eq(programUserRolesTable.roleType, 'builder'),
+        ),
+      );
+
+    if (existingRole.length === 0) {
+      // Add applicant as program builder (auto-confirmed)
+      await t.insert(programUserRolesTable).values({
+        programId: application.programId,
+        userId: application.applicantId,
+        roleType: 'builder',
+      });
+    }
 
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'application',

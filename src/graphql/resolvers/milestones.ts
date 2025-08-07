@@ -5,6 +5,7 @@ import {
   linksTable,
   milestonesTable,
   milestonesToLinksTable,
+  programUserRolesTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type {
@@ -80,9 +81,48 @@ export function updateMilestoneResolver(
   args: { input: typeof UpdateMilestoneInput.$inferInput },
   ctx: Context,
 ) {
+  const user = requireUser(ctx);
   const filteredData = filterEmptyValues<MilestoneUpdate>(args.input);
 
   return ctx.db.transaction(async (t) => {
+    // Get the milestone and application to find the program
+    const [milestone] = await t
+      .select()
+      .from(milestonesTable)
+      .where(eq(milestonesTable.id, args.input.id));
+
+    if (!milestone) {
+      throw new Error('Milestone not found');
+    }
+
+    const [application] = await t
+      .select()
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, milestone.applicationId));
+
+    if (!application) {
+      throw new Error('Application not found');
+    }
+
+    // Check if user is a builder in this program or an admin
+    const isAdmin = user.role?.endsWith('admin');
+
+    const [builderRole] = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, application.programId),
+          eq(programUserRolesTable.userId, user.id),
+          eq(programUserRolesTable.roleType, 'builder'),
+        ),
+      );
+
+    if (!isAdmin && !builderRole) {
+      throw new Error(
+        'You are not allowed to update this milestone. Only builders and admins can update milestones.',
+      );
+    }
     // handle links
     if (args.input.links) {
       const filteredLinks = args.input.links.filter((link) => link.url);
@@ -150,13 +190,13 @@ export function updateMilestoneResolver(
       filteredData.price = calculatedAmount;
     }
 
-    const [milestone] = await t
+    const [updatedMilestone] = await t
       .update(milestonesTable)
       .set(filteredData)
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
 
-    return milestone;
+    return updatedMilestone;
   });
 }
 
