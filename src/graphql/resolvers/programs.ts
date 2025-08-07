@@ -284,7 +284,7 @@ export function createProgramResolver(
         ? new Date(inputData.deadline).toISOString()
         : new Date().toISOString(),
       creatorId: user.id,
-      status: 'draft',
+      status: inputData.status,
       visibility: inputData.visibility || 'public',
       network: inputData.network,
     };
