@@ -193,29 +193,35 @@ export function createApplicationResolver(
 
     // Only process milestones if they are provided
     if (args.input.milestones && args.input.milestones.length > 0) {
-      // Validate milestone percentages sum to 100%
-      if (!validateMilestonePercentages(args.input.milestones)) {
-        throw new Error(
-          'Milestone payout percentages must add up to exactly 100%. Please adjust the percentages.',
-        );
-      }
-
       let sortOrder = 0;
       for (const milestone of args.input.milestones) {
-        const { links, ...inputData } = milestone;
+        // Skip milestones with incomplete required data
+        if (
+          !milestone.title ||
+          !milestone.percentage ||
+          !milestone.deadline ||
+          !milestone.currency
+        ) {
+          continue;
+        }
+
+        const { links, title, percentage, deadline, currency, description, summary } = milestone;
 
         // Calculate the actual price amount from percentage
-        const calculatedAmount = calculateMilestoneAmount(inputData.percentage, application.price);
+        const calculatedAmount = calculateMilestoneAmount(percentage, application.price);
 
         const [newMilestone] = await t
           .insert(milestonesTable)
           .values({
-            ...inputData,
+            title,
+            description: description || null,
+            summary: summary || null,
+            percentage,
+            currency,
             price: calculatedAmount,
-            percentage: inputData.percentage,
             sortOrder,
             applicationId: application.id,
-            deadline: inputData.deadline.toISOString(),
+            deadline: deadline.toISOString(),
           })
           .returning();
         // handle links
@@ -239,6 +245,16 @@ export function createApplicationResolver(
         }
         milestones.push(newMilestone);
         sortOrder++;
+      }
+
+      // Validate milestone percentages sum to 100% after collecting valid milestones
+      if (
+        milestones.length > 0 &&
+        !validateMilestonePercentages(milestones as Array<{ percentage: string }>)
+      ) {
+        throw new Error(
+          'Milestone payout percentages must add up to exactly 100%. Please adjust the percentages.',
+        );
       }
     }
 

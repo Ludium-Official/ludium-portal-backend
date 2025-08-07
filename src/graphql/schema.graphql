@@ -92,13 +92,13 @@ input CreateCommentInput {
 }
 
 input CreateMilestoneInput {
-  currency: String! = "ETH"
-  deadline: Date!
+  currency: String = "ETH"
+  deadline: Date
   description: String
   links: [LinkInput!]
-  percentage: String!
+  percentage: String
   summary: String
-  title: String!
+  title: String
 }
 
 input CreatePostInput {
