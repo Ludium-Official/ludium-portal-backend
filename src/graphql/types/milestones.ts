@@ -77,6 +77,7 @@ export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
     percentage: t.string({
       validate: {
         refine(value) {
+          if (!value) return true; // Allow undefined/null for optional field
           const percentage = new BigNumber(value);
           return percentage.isGreaterThan(0) && percentage.isLessThanOrEqualTo(100);
         },
@@ -97,6 +98,7 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
     percentage: t.string({
       validate: {
         refine(value) {
+          if (!value) return true; // Allow undefined/null for optional field
           const percentage = new BigNumber(value);
           return percentage.isGreaterThan(0) && percentage.isLessThanOrEqualTo(100);
         },
