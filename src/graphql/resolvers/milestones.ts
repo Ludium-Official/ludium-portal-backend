@@ -5,6 +5,7 @@ import {
   linksTable,
   milestonesTable,
   milestonesToLinksTable,
+  programUserRolesTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type {
@@ -80,9 +81,49 @@ export function updateMilestoneResolver(
   args: { input: typeof UpdateMilestoneInput.$inferInput },
   ctx: Context,
 ) {
+  const user = requireUser(ctx);
   const filteredData = filterEmptyValues<MilestoneUpdate>(args.input);
 
   return ctx.db.transaction(async (t) => {
+    // Get the milestone and application to find the program
+    const [milestone] = await t
+      .select()
+      .from(milestonesTable)
+      .where(eq(milestonesTable.id, args.input.id));
+
+    if (!milestone) {
+      throw new Error('Milestone not found');
+    }
+
+    const [application] = await t
+      .select()
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, milestone.applicationId));
+
+    if (!application) {
+      throw new Error('Application not found');
+    }
+
+    // Check if user is the applicant, a builder in this program, or an admin
+    const isAdmin = user.role?.endsWith('admin');
+    const isApplicant = application.applicantId === user.id;
+
+    const [builderRole] = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, application.programId),
+          eq(programUserRolesTable.userId, user.id),
+          eq(programUserRolesTable.roleType, 'builder'),
+        ),
+      );
+
+    if (!isAdmin && !builderRole && !isApplicant) {
+      throw new Error(
+        'You are not allowed to update this milestone. Only the applicant, builders, and admins can update milestones.',
+      );
+    }
     // handle links
     if (args.input.links) {
       const filteredLinks = args.input.links.filter((link) => link.url);
@@ -109,8 +150,9 @@ export function updateMilestoneResolver(
 
       // Validate percentage is between 0 and 100
       if (percentage.isLessThan(0) || percentage.isGreaterThan(100)) {
-        ctx.server.log.error('Percentage must be between 0 and 100');
-        t.rollback();
+        throw new Error(
+          `Milestone percentage must be between 0 and 100. Received: ${percentage.toFixed()}%`,
+        );
       }
 
       // Get milestone and application info
@@ -138,8 +180,10 @@ export function updateMilestoneResolver(
         .filter((m): m is { id: string; percentage: string } => m.percentage != null);
 
       if (!validateMilestonePercentages(updatedMilestones)) {
-        ctx.server.log.error('Total milestone percentages must equal 100%');
-        t.rollback();
+        const totalPercentage = updatedMilestones.reduce((sum, m) => sum + Number(m.percentage), 0);
+        throw new Error(
+          `Milestone payout percentages must add up to exactly 100%. Current total: ${totalPercentage}%. Please adjust the percentages.`,
+        );
       }
 
       // Calculate the actual price amount and update it
@@ -147,13 +191,13 @@ export function updateMilestoneResolver(
       filteredData.price = calculatedAmount;
     }
 
-    const [milestone] = await t
+    const [updatedMilestone] = await t
       .update(milestonesTable)
       .set(filteredData)
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
 
-    return milestone;
+    return updatedMilestone;
   });
 }
 
@@ -321,7 +365,7 @@ export function checkMilestoneResolver(
 
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'milestone',
-      action: args.input.status === 'pending' ? 'rejected' : 'accepted',
+      action: args.input.status === 'rejected' ? 'rejected' : 'accepted',
       recipientId: application.applicantId,
       entityId: milestone.id,
     });

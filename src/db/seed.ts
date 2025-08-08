@@ -423,11 +423,25 @@ async function seed() {
           });
 
           if (topLevelCommentValues.length > 0) {
-            const insertedTopLevelComments = await db
-              .insert(commentsTable)
-              .values(topLevelCommentValues.map(({ originalIndex, ...rest }) => rest))
-              .returning()
-              .onConflictDoNothing();
+            // Insert comments individually with slight time differences
+            const insertedTopLevelComments = [];
+            for (const comment of topLevelCommentValues) {
+              const { originalIndex, ...commentData } = comment;
+              // Add a small offset to createdAt to ensure unique timestamps
+              const [inserted] = await db
+                .insert(commentsTable)
+                .values({
+                  ...commentData,
+                  createdAt: new Date(
+                    Date.now() - (topLevelCommentValues.length - originalIndex) * 1000,
+                  ),
+                })
+                .returning()
+                .onConflictDoNothing();
+              if (inserted) {
+                insertedTopLevelComments.push(inserted);
+              }
+            }
 
             // Store the mapping of original indices to inserted IDs
             for (let i = 0; i < insertedTopLevelComments.length; i++) {
@@ -456,11 +470,23 @@ async function seed() {
           });
 
           if (childCommentValues.length > 0) {
-            const insertedChildComments = await db
-              .insert(commentsTable)
-              .values(childCommentValues)
-              .returning()
-              .onConflictDoNothing();
+            // Insert child comments individually with slight time differences
+            const insertedChildComments = [];
+            for (let i = 0; i < childCommentValues.length; i++) {
+              const commentData = childCommentValues[i];
+              // Add a small offset to createdAt to ensure unique timestamps
+              const [inserted] = await db
+                .insert(commentsTable)
+                .values({
+                  ...commentData,
+                  createdAt: new Date(Date.now() - (childCommentValues.length - i) * 500),
+                })
+                .returning()
+                .onConflictDoNothing();
+              if (inserted) {
+                insertedChildComments.push(inserted);
+              }
+            }
 
             console.log(`✅ Added ${insertedChildComments.length} reply comments`);
           }

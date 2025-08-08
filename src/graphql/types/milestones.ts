@@ -26,6 +26,7 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
     id: t.exposeID('id'),
     title: t.exposeString('title'),
     description: t.exposeString('description', { nullable: true }),
+    summary: t.exposeString('summary', { nullable: true }),
     price: t.exposeString('price'),
     percentage: t.exposeString('percentage'),
     currency: t.exposeString('currency'),
@@ -71,18 +72,20 @@ export const PaginatedMilestonesType = builder
 export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
   fields: (t) => ({
     title: t.string({ required: true }),
-    description: t.string(),
+    description: t.string({ required: true }),
+    summary: t.string({ required: true }),
     percentage: t.string({
       required: true,
       validate: {
         refine(value) {
+          if (!value) return true; // Allow undefined/null for optional field
           const percentage = new BigNumber(value);
           return percentage.isGreaterThan(0) && percentage.isLessThanOrEqualTo(100);
         },
       },
     }),
     currency: t.string({ required: true, defaultValue: 'ETH' }),
-    links: t.field({ type: [LinkInput] }),
+    links: t.field({ type: [LinkInput], required: false }),
     deadline: t.field({ type: 'Date', required: true }),
   }),
 });
@@ -92,9 +95,11 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
     id: t.string({ required: true }),
     title: t.string(),
     description: t.string(),
+    summary: t.string(),
     percentage: t.string({
       validate: {
         refine(value) {
+          if (!value) return true; // Allow undefined/null for optional field
           const percentage = new BigNumber(value);
           return percentage.isGreaterThan(0) && percentage.isLessThanOrEqualTo(100);
         },
@@ -108,7 +113,7 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
 });
 
 export const CheckMilestoneStatusEnum = builder.enumType('CheckMilestoneStatus', {
-  values: ['pending', 'completed'] as const,
+  values: ['completed', 'rejected'] as const,
 });
 
 export const CheckMilestoneInput = builder.inputType('CheckMilestoneInput', {
@@ -157,10 +162,7 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   updateMilestone: t.field({
     type: MilestoneType,
-    authScopes: async (_, args) => ({
-      admin: true,
-      milestoneBuilder: { milestoneId: args.input.id },
-    }),
+    authScopes: { user: true },
     args: {
       input: t.arg({ type: UpdateMilestoneInput, required: true }),
     },

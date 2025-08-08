@@ -21,7 +21,7 @@ import {
   requireUser,
   validAndNotEmptyArray,
 } from '@/utils';
-import { and, asc, count, desc, eq, ilike, inArray, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, ilike, inArray, lt, or } from 'drizzle-orm';
 
 export async function getProgramsResolver(
   _root: Root,
@@ -103,13 +103,19 @@ export async function getProgramsResolver(
       case 'status':
         return eq(
           programsTable.status,
-          f.value as 'draft' | 'published' | 'closed' | 'completed' | 'cancelled',
+          f.value as 'published' | 'closed' | 'completed' | 'cancelled',
         );
       case 'visibility':
         return eq(programsTable.visibility, f.value as 'private' | 'restricted' | 'public');
       case 'price':
         // sort by price, value can be 'asc' or 'desc'
         return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
+      case 'imminent':
+        // Only programs with a deadline within 7 days should be shown
+        return and(
+          gt(programsTable.deadline, new Date().toISOString()),
+          lt(programsTable.deadline, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
+        );
       default:
         return undefined;
     }
@@ -117,32 +123,22 @@ export async function getProgramsResolver(
 
   const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
 
-  // Add visibility filtering based on user authentication
+  // Check if visibility filter was explicitly provided
+  const hasVisibilityFilter = filter.some((f) => f.field === 'visibility');
   const user = ctx.server.auth.getUser(ctx.request);
+
+  // Build visibility conditions based on whether a filter was provided
   const visibilityConditions = [];
 
-  if (!user) {
-    // Non-authenticated users can only see public programs
-    visibilityConditions.push(eq(programsTable.visibility, 'public'));
-  } else {
-    // Authenticated users can see:
-    // - Public programs (always visible in listing)
-    // - Private programs they have access to (creator or have a role)
-    // - Restricted programs are NOT shown in the programs listing (only accessible via direct URL)
-
-    const publicPrograms = eq(programsTable.visibility, 'public');
-
-    // For private programs, include those where user is creator or has a role
-    const privateWithAccess = and(
-      eq(programsTable.visibility, 'private'),
-      or(
-        eq(programsTable.creatorId, user.id),
-        // User roles are handled in the filter below
-      ),
-    );
-
-    visibilityConditions.push(or(publicPrograms, privateWithAccess));
+  if (!hasVisibilityFilter) {
+    // No visibility filter provided - return all programs the user can access
+    // This means all public programs, plus private programs they have access to
+    if (!user) {
+      // Non-authenticated users can only see public programs
+      visibilityConditions.push(eq(programsTable.visibility, 'public'));
+    }
   }
+  // If visibility filter is provided, it's already in filterConditions
 
   const allConditions = [...filterConditions, ...visibilityConditions];
 
@@ -164,7 +160,9 @@ export async function getProgramsResolver(
       .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
   }
 
-  if (user) {
+  // Apply access control for private programs
+  if (user && !hasVisibilityFilter) {
+    // Get user's roles to check validator access
     const userRoles = await ctx.db
       .select()
       .from(programUserRolesTable)
@@ -172,10 +170,13 @@ export async function getProgramsResolver(
 
     const userProgramIds = new Set(userRoles.map((role) => role.programId));
 
+    // Filter out private programs the user doesn't have access to
     data = data.filter((program) => {
       if (program.visibility === 'private') {
+        // Allow access if user is creator or has a role (validator, etc.)
         return program.creatorId === user.id || userProgramIds.has(program.id);
       }
+      // Public and restricted programs are visible
       return true;
     });
   }
@@ -210,7 +211,15 @@ export async function getProgramResolver(_root: Root, args: { id: string }, ctx:
   // - Restricted: Anyone can access if they know the URL (no additional checks needed)
   // - Private: Only invited builders and program creators/validators can access
   if (program.visibility === 'private') {
-    const hasAccess = await hasPrivateProgramAccess(program.id, ctx.user?.id || null, ctx.db);
+    const user = ctx.server.auth.getUser(ctx.request);
+
+    // Check if user is the creator first (fast path)
+    if (user && program.creatorId === user.id) {
+      return program; // Creator always has access
+    }
+
+    // Check for other access (validator, builder roles)
+    const hasAccess = await hasPrivateProgramAccess(program.id, user?.id || null, ctx.db);
     if (!hasAccess) {
       throw new Error('You do not have access to this program');
     }
@@ -275,7 +284,7 @@ export function createProgramResolver(
         ? new Date(inputData.deadline).toISOString()
         : new Date().toISOString(),
       creatorId: user.id,
-      status: 'draft',
+      status: inputData.status,
       visibility: inputData.visibility || 'public',
       network: inputData.network,
     };
@@ -510,22 +519,24 @@ export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Co
   const user = requireUser(ctx);
 
   return ctx.db.transaction(async (t) => {
-    const hasAccess = await isInSameScope({
-      scope: 'program_validator',
-      userId: user.id,
-      entityId: args.id,
-      db: t,
-    });
-    if (!hasAccess) {
+    // Check if user already has validator role
+    const existingValidatorRole = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, args.id),
+          eq(programUserRolesTable.userId, user.id),
+          eq(programUserRolesTable.roleType, 'validator'),
+        ),
+      );
+
+    if (!existingValidatorRole.length) {
+      // User doesn't have validator role, so they can't accept the program
       throw new Error('You are not allowed to accept this program');
     }
 
-    // Add validator
-    await t.insert(programUserRolesTable).values({
-      programId: args.id,
-      userId: user.id,
-      roleType: 'validator',
-    });
+    // User already has validator role, no need to insert again
 
     const [program] = await t
       .update(programsTable)
@@ -566,7 +577,7 @@ export function rejectProgramResolver(
     const [program] = await t
       .update(programsTable)
       .set({
-        status: 'draft',
+        status: 'rejected',
         ...(args.rejectionReason && { rejectionReason: args.rejectionReason }),
       })
       .where(eq(programsTable.id, args.id))

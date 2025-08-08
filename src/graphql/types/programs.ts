@@ -141,12 +141,13 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
       },
     }),
     currency: t.string(),
-    deadline: t.string(),
-    keywords: t.stringList(),
+    deadline: t.string({ required: true }),
+    keywords: t.stringList({ required: true }),
     links: t.field({ type: [LinkInput] }),
-    network: t.string(),
+    network: t.string({ required: true }),
     visibility: t.field({ type: ProgramVisibilityEnum }),
-    image: t.field({ type: 'Upload' }),
+    status: t.field({ type: ProgramStatusEnum, defaultValue: 'pending' }),
+    image: t.field({ type: 'Upload', required: true }),
   }),
 });
 

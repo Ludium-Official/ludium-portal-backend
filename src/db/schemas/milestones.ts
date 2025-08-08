@@ -37,6 +37,7 @@ export const milestonesTable = pgTable('milestones', {
   // Milestone details
   title: varchar('title', { length: 256 }).notNull(),
   description: text('description'),
+  summary: varchar('summary', { length: 512 }),
   price: varchar('price', { length: 256 }).notNull(),
   percentage: numeric('percentage', { precision: 5, scale: 2 }).notNull(),
   currency: varchar('currency', { length: 10 }).default('ETH'),

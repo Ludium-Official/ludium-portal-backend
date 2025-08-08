@@ -2,17 +2,20 @@ import { type User as DBUser, userRoles } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
+  addUserKeywordResolver,
   createUserResolver,
   deleteUserResolver,
   getProfileResolver,
   getUserAvatarResolver,
   getUserByIdResolver,
+  getUserKeywordsByUserIdResolver,
   getUserProgramStatisticsResolver,
   getUsersResolver,
+  removeUserKeywordResolver,
   updateProfileResolver,
   updateUserResolver,
 } from '@/graphql/resolvers/users';
-import { PaginationInput } from '@/graphql/types/common';
+import { KeywordType, PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import type { ProgramStatsByStatusType } from '@/types';
 
@@ -88,6 +91,12 @@ export const User = builder.objectRef<DBUser>('User').implement({
       resolve: async (user, _args, ctx) =>
         getUserProgramStatisticsResolver({}, { userId: user.id }, ctx),
     }),
+    keywords: t.field({
+      type: [KeywordType],
+      nullable: true,
+      resolve: async (user, _args, ctx) =>
+        getUserKeywordsByUserIdResolver({}, { userId: user.id }, ctx),
+    }),
   }),
 });
 
@@ -114,6 +123,7 @@ export const UserInput = builder.inputType('UserInput', {
     about: t.string(),
     summary: t.string(),
     links: t.field({ type: [LinkInput] }),
+    keywords: t.stringList(),
     loginType: t.string(),
     walletAddress: t.string(),
   }),
@@ -130,6 +140,7 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
     about: t.string(),
     summary: t.string(),
     links: t.field({ type: [LinkInput] }),
+    keywords: t.stringList(),
     loginType: t.string(),
     walletAddress: t.string(),
   }),
@@ -192,5 +203,29 @@ builder.mutationFields((t) => ({
       input: t.arg({ type: UserUpdateInput, required: true }),
     },
     resolve: updateProfileResolver,
+  }),
+  addUserKeyword: t.field({
+    type: KeywordType,
+    authScopes: (_, args) => ({
+      self: { userId: args.userId },
+      admin: true,
+    }),
+    args: {
+      userId: t.arg.id({ required: true }),
+      keyword: t.arg.string({ required: true }),
+    },
+    resolve: addUserKeywordResolver,
+  }),
+  removeUserKeyword: t.field({
+    type: 'Boolean',
+    authScopes: (_, args) => ({
+      self: { userId: args.userId },
+      admin: true,
+    }),
+    args: {
+      userId: t.arg.id({ required: true }),
+      keyword: t.arg.string({ required: true }),
+    },
+    resolve: removeUserKeywordResolver,
   }),
 }));

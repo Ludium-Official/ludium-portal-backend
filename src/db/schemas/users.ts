@@ -11,6 +11,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
 import { filesTable } from './files';
+import { keywordsTable } from './keywords';
 import { linksTable } from './links';
 import { postsTable } from './posts';
 import { programUserRolesTable, programsTable } from './programs';
@@ -46,6 +47,7 @@ export const userRelations = relations(usersTable, ({ many }) => ({
   applications: many(applicationsTable),
   programRoles: many(programUserRolesTable),
   posts: many(postsTable),
+  usersToKeywords: many(usersToKeywordsTable),
 }));
 
 // Links
@@ -70,6 +72,31 @@ export const usersToLinksRelations = relations(usersToLinksTable, ({ one }) => (
   link: one(linksTable, {
     fields: [usersToLinksTable.linkId],
     references: [linksTable.id],
+  }),
+}));
+
+// Keywords
+export const usersToKeywordsTable = pgTable(
+  'users_to_keywords',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => usersTable.id, { onDelete: 'cascade' }),
+    keywordId: uuid('keyword_id')
+      .notNull()
+      .references(() => keywordsTable.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.keywordId] })],
+);
+
+export const usersToKeywordsRelations = relations(usersToKeywordsTable, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [usersToKeywordsTable.userId],
+    references: [usersTable.id],
+  }),
+  keyword: one(keywordsTable, {
+    fields: [usersToKeywordsTable.keywordId],
+    references: [keywordsTable.id],
   }),
 }));
 
