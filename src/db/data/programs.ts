@@ -29,7 +29,7 @@ export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
     price: '10',
     currency: 'ETH',
     deadline: '2024-01-31',
-    status: 'draft',
+    status: 'pending',
   },
   {
     name: 'NFT Art Marketplace Development',
@@ -49,7 +49,7 @@ export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
     price: '15',
     currency: 'ETH',
     deadline: '2024-02-28',
-    status: 'draft',
+    status: 'pending',
   },
 ];
 

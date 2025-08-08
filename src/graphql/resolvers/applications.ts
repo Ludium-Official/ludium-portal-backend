@@ -259,7 +259,7 @@ export function createApplicationResolver(
     }
 
     // Only require milestones for non-draft applications
-    if (args.input.status !== 'draft' && !validAndNotEmptyArray(milestones)) {
+    if (!validAndNotEmptyArray(milestones)) {
       throw new Error('At least one milestone is required for submitted applications.');
     }
 
@@ -291,7 +291,7 @@ export function createApplicationResolver(
     }
 
     // Only notify validators for non-draft applications
-    if (args.input.status !== 'draft' && validatorIds.length > 0) {
+    if (validatorIds.length > 0) {
       for (const validatorId of validatorIds) {
         await ctx.server.pubsub.publish('notifications', t, {
           type: 'application',

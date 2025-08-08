@@ -103,7 +103,7 @@ export async function getProgramsResolver(
       case 'status':
         return eq(
           programsTable.status,
-          f.value as 'draft' | 'published' | 'closed' | 'completed' | 'cancelled',
+          f.value as 'published' | 'closed' | 'completed' | 'cancelled',
         );
       case 'visibility':
         return eq(programsTable.visibility, f.value as 'private' | 'restricted' | 'public');

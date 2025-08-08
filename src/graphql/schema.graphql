@@ -16,7 +16,6 @@ type Application {
 enum ApplicationStatus {
   accepted
   completed
-  draft
   pending
   rejected
   submitted
@@ -67,15 +66,15 @@ enum CommentableTypeEnum {
 }
 
 input CreateApplicationInput {
-  content: String
+  content: String!
   links: [LinkInput!]
   metadata: JSON
-  milestones: [CreateMilestoneInput!]
+  milestones: [CreateMilestoneInput!]!
   name: String!
   price: String!
   programId: String!
   status: ApplicationStatus!
-  summary: String
+  summary: String!
 }
 
 input CreateCarouselItemInput {
@@ -92,13 +91,13 @@ input CreateCommentInput {
 }
 
 input CreateMilestoneInput {
-  currency: String = "ETH"
-  deadline: Date
-  description: String
+  currency: String! = "ETH"
+  deadline: Date!
+  description: String!
   links: [LinkInput!]
-  percentage: String
-  summary: String
-  title: String
+  percentage: String!
+  summary: String!
+  title: String!
 }
 
 input CreatePostInput {
@@ -111,15 +110,15 @@ input CreatePostInput {
 
 input CreateProgramInput {
   currency: String
-  deadline: String
+  deadline: String!
   description: String
-  image: Upload
-  keywords: [String!]
+  image: Upload!
+  keywords: [String!]!
   links: [LinkInput!]
   name: String!
-  network: String
+  network: String!
   price: String!
-  status: ProgramStatus = draft
+  status: ProgramStatus = pending
   summary: String
   visibility: ProgramVisibility
 }
@@ -347,7 +346,6 @@ enum ProgramStatus {
   cancelled
   closed
   completed
-  draft
   payment_required
   pending
   published
