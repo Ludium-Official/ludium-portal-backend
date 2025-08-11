@@ -16,6 +16,7 @@ import type { Context, Root } from '@/types';
 import {
   calculateMilestoneAmount,
   canApplyToProgram,
+  checkAndUpdateProgramStatus,
   filterEmptyValues,
   isInSameScope,
   requireUser,
@@ -303,6 +304,11 @@ export function createApplicationResolver(
       await ctx.server.pubsub.publish('notificationsCount');
     }
 
+    // Check if program budget is fully allocated after creating an accepted application
+    if (application.status === 'accepted') {
+      await checkAndUpdateProgramStatus(application.programId, t);
+    }
+
     return application;
   });
 }
@@ -379,6 +385,15 @@ export function updateApplicationResolver(
       );
     }
 
+    // Check if program budget is fully allocated after updating an application
+    if (
+      updatedApplication.status === 'accepted' ||
+      updatedApplication.status === 'completed' ||
+      updatedApplication.status === 'submitted'
+    ) {
+      await checkAndUpdateProgramStatus(updatedApplication.programId, t);
+    }
+
     return updatedApplication;
   });
 }
@@ -415,6 +430,9 @@ export function acceptApplicationResolver(_root: Root, args: { id: string }, ctx
         roleType: 'builder',
       });
     }
+
+    // Check if program budget is fully allocated and update status if needed
+    await checkAndUpdateProgramStatus(application.programId, t);
 
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'application',

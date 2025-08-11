@@ -214,3 +214,7 @@ pnpm-lock.yaml
 # GCloud
 .gcloud
 .gcp.json
+
+# Database dumps
+ludiumdev
+ludiumprod
