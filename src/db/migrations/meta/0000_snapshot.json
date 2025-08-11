@@ -1,5 +1,5 @@
 {
-  "id": "e993ac20-d76f-41fa-befe-3e1349155726",
+  "id": "0dab87f5-2b91-481a-b932-9369f6c689da",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -806,7 +806,7 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false,
-          "default": "'draft'"
+          "default": "'pending'"
         },
         "visibility": {
           "name": "visibility",
@@ -1604,7 +1604,6 @@
       "name": "application_status",
       "schema": "public",
       "values": [
-        "draft",
         "pending",
         "accepted",
         "rejected",
@@ -1652,7 +1651,6 @@
       "name": "program_status",
       "schema": "public",
       "values": [
-        "draft",
         "pending",
         "payment_required",
         "rejected",

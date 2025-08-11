@@ -291,13 +291,6 @@ export function createProgramResolver(
 
     const [program] = await t.insert(programsTable).values(insertData).returning();
     if (inputData.image) {
-      const [imageFile] = await t
-        .select()
-        .from(filesTable)
-        .where(eq(filesTable.uploadedById, user.id));
-      if (imageFile) {
-        await ctx.server.fileManager.deleteFile(imageFile.id);
-      }
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: inputData.image,
         userId: user.id,

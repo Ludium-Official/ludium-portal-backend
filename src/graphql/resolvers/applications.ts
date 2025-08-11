@@ -16,6 +16,7 @@ import type { Context, Root } from '@/types';
 import {
   calculateMilestoneAmount,
   canApplyToProgram,
+  checkAndUpdateProgramStatus,
   filterEmptyValues,
   isInSameScope,
   requireUser,
@@ -99,14 +100,105 @@ export async function getApplicationResolver(_root: Root, args: { id: string }, 
     .select()
     .from(applicationsTable)
     .where(eq(applicationsTable.id, args.id));
+
+  if (!application) {
+    throw new Error('Application not found');
+  }
+
+  // Get the program to check its visibility
+  const [program] = await ctx.db
+    .select({
+      visibility: programsTable.visibility,
+      creatorId: programsTable.creatorId,
+    })
+    .from(programsTable)
+    .where(eq(programsTable.id, application.programId));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  // Check if user can access this application based on program visibility
+  // Public and restricted: Anyone can view applications
+  // Private: Only program participants can view applications
+  if (program.visibility === 'private') {
+    const user = ctx.server.auth.getUser(ctx.request);
+
+    // Allow access if:
+    // 1. User is the applicant
+    // 2. User is the program creator
+    // 3. User has a role in the program (validator, builder)
+    if (user) {
+      if (application.applicantId === user.id || program.creatorId === user.id) {
+        return application;
+      }
+
+      // Check if user has any role in the program
+      const userRole = await ctx.db
+        .select()
+        .from(programUserRolesTable)
+        .where(
+          and(
+            eq(programUserRolesTable.programId, application.programId),
+            eq(programUserRolesTable.userId, user.id),
+          ),
+        );
+
+      if (userRole.length > 0) {
+        return application;
+      }
+    }
+
+    throw new Error('You do not have access to this application');
+  }
+
   return application;
 }
 
-export function getApplicationsByProgramIdResolver(
+export async function getApplicationsByProgramIdResolver(
   _root: Root,
   args: { programId: string },
   ctx: Context,
 ) {
+  // First check if the user can access this program
+  const [program] = await ctx.db
+    .select({
+      visibility: programsTable.visibility,
+      creatorId: programsTable.creatorId,
+    })
+    .from(programsTable)
+    .where(eq(programsTable.id, args.programId));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  // For private programs, check if user has access
+  if (program.visibility === 'private') {
+    const user = ctx.server.auth.getUser(ctx.request);
+
+    if (!user) {
+      throw new Error('Authentication required to view applications for private programs');
+    }
+
+    // Check if user is the creator or has a role in the program
+    if (program.creatorId !== user.id) {
+      const userRole = await ctx.db
+        .select()
+        .from(programUserRolesTable)
+        .where(
+          and(
+            eq(programUserRolesTable.programId, args.programId),
+            eq(programUserRolesTable.userId, user.id),
+          ),
+        );
+
+      if (userRole.length === 0) {
+        throw new Error('You do not have access to view applications for this private program');
+      }
+    }
+  }
+
   return ctx.db
     .select()
     .from(applicationsTable)
@@ -303,6 +395,11 @@ export function createApplicationResolver(
       await ctx.server.pubsub.publish('notificationsCount');
     }
 
+    // Check if program budget is fully allocated after creating an accepted application
+    if (application.status === 'accepted') {
+      await checkAndUpdateProgramStatus(application.programId, t);
+    }
+
     return application;
   });
 }
@@ -379,6 +476,15 @@ export function updateApplicationResolver(
       );
     }
 
+    // Check if program budget is fully allocated after updating an application
+    if (
+      updatedApplication.status === 'accepted' ||
+      updatedApplication.status === 'completed' ||
+      updatedApplication.status === 'submitted'
+    ) {
+      await checkAndUpdateProgramStatus(updatedApplication.programId, t);
+    }
+
     return updatedApplication;
   });
 }
@@ -415,6 +521,9 @@ export function acceptApplicationResolver(_root: Root, args: { id: string }, ctx
         roleType: 'builder',
       });
     }
+
+    // Check if program budget is fully allocated and update status if needed
+    await checkAndUpdateProgramStatus(application.programId, t);
 
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'application',
