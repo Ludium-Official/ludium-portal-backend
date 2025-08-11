@@ -16,6 +16,7 @@ import type {
 import type { Context, Root } from '@/types';
 import {
   calculateMilestoneAmount,
+  checkAndUpdateProgramStatus,
   filterEmptyValues,
   isInSameScope,
   requireUser,
@@ -270,6 +271,7 @@ export function submitMilestoneResolver(
       .from(milestonesTable)
       .where(eq(milestonesTable.applicationId, milestone.applicationId));
 
+    let applicationCompleted = false;
     if (applicationMilestones.every((m) => m.status === 'completed')) {
       await t
         .update(applicationsTable)
@@ -277,6 +279,7 @@ export function submitMilestoneResolver(
           status: 'completed',
         })
         .where(eq(applicationsTable.id, milestone.applicationId));
+      applicationCompleted = true;
     }
 
     const [application] = await t
@@ -300,6 +303,11 @@ export function submitMilestoneResolver(
         });
       }
       await ctx.server.pubsub.publish('notificationsCount');
+    }
+
+    // Check if program budget is fully allocated after application completion
+    if (applicationCompleted) {
+      await checkAndUpdateProgramStatus(application.programId, t);
     }
 
     return milestone;
@@ -342,11 +350,14 @@ export function checkMilestoneResolver(
       .select({ status: milestonesTable.status })
       .from(milestonesTable)
       .where(eq(milestonesTable.applicationId, milestone.applicationId));
+
+    let applicationCompleted = false;
     if (applicationMilestones.every((m) => m.status === 'completed')) {
       await t
         .update(applicationsTable)
         .set({ status: 'completed' })
         .where(eq(applicationsTable.id, milestone.applicationId));
+      applicationCompleted = true;
     }
 
     const previousMilestones = await t
@@ -370,6 +381,16 @@ export function checkMilestoneResolver(
       entityId: milestone.id,
     });
     await ctx.server.pubsub.publish('notificationsCount');
+
+    // Check if program budget is fully allocated after application completion
+    if (applicationCompleted && args.input.status === 'completed') {
+      const [fullApplication] = await t
+        .select({ programId: applicationsTable.programId })
+        .from(applicationsTable)
+        .where(eq(applicationsTable.id, milestone.applicationId));
+
+      await checkAndUpdateProgramStatus(fullApplication.programId, t);
+    }
 
     return milestone;
   });

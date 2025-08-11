@@ -1,7 +1,8 @@
 import { programsTable } from '@/db/schemas';
-import { programUserRolesTable } from '@/db/schemas';
+import { applicationsTable, programUserRolesTable } from '@/db/schemas';
 import type { DB } from '@/types';
-import { and, eq } from 'drizzle-orm';
+import BigNumber from 'bignumber.js';
+import { and, eq, inArray } from 'drizzle-orm';
 
 export async function hasPrivateProgramAccess(
   programId: string,
@@ -130,4 +131,50 @@ export async function canApplyToProgram(
   }
 
   return { canApply: false, reason: 'Invalid program visibility' };
+}
+
+// Calculate total allocated funds across all accepted applications for a program
+export async function calculateAllocatedFunds(programId: string, db: DB): Promise<BigNumber> {
+  const applications = await db
+    .select({ price: applicationsTable.price })
+    .from(applicationsTable)
+    .where(
+      and(
+        eq(applicationsTable.programId, programId),
+        inArray(applicationsTable.status, ['accepted', 'completed', 'submitted']),
+      ),
+    );
+
+  return applications.reduce((sum, app) => sum.plus(new BigNumber(app.price)), new BigNumber(0));
+}
+
+// Check if program budget is fully allocated and update status if needed
+export async function checkAndUpdateProgramStatus(programId: string, db: DB): Promise<boolean> {
+  const [program] = await db
+    .select({ price: programsTable.price, status: programsTable.status })
+    .from(programsTable)
+    .where(eq(programsTable.id, programId));
+
+  if (
+    !program ||
+    program.status === 'completed' ||
+    program.status === 'cancelled' ||
+    program.status === 'closed'
+  ) {
+    return false;
+  }
+
+  const allocatedFunds = await calculateAllocatedFunds(programId, db);
+  const programBudget = new BigNumber(program.price);
+
+  // Check if all funds are allocated (>= 95% to account for rounding)
+  if (programBudget.gt(0) && allocatedFunds.gte(programBudget.times(0.95))) {
+    await db
+      .update(programsTable)
+      .set({ status: 'completed' })
+      .where(eq(programsTable.id, programId));
+    return true;
+  }
+
+  return false;
 }
