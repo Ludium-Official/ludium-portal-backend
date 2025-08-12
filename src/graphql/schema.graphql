@@ -1,12 +1,8 @@
 type Application {
   applicant: User
+  comments: [Comment!]
   content: String
-  currentFunding: String
-  fundingSuccessful: Boolean
-  fundingTarget: String
   id: ID
-  investmentTerms: JSON
-  investments: [Investment!]
   links: [Link!]
   metadata: JSON
   milestones: [Milestone!]
@@ -15,23 +11,14 @@ type Application {
   rejectionReason: String
   status: ApplicationStatus
   summary: String
-  walletAddress: String
 }
 
 enum ApplicationStatus {
   accepted
   completed
-  draft
   pending
   rejected
   submitted
-}
-
-input AssignUserTierInput {
-  maxInvestmentAmount: String!
-  programId: ID!
-  tier: InvestmentTier!
-  userId: ID!
 }
 
 type CarouselItem {
@@ -57,7 +44,7 @@ input CheckMilestoneInput {
 
 enum CheckMilestoneStatus {
   completed
-  pending
+  rejected
 }
 
 type Comment {
@@ -65,13 +52,14 @@ type Comment {
   commentableId: String
   commentableType: String
   content: String
-  createdAt: Date
+  createdAt: DateTime
   id: ID
   parent: Comment
   replies: [Comment!]
 }
 
 enum CommentableTypeEnum {
+  application
   milestone
   post
   program
@@ -79,8 +67,6 @@ enum CommentableTypeEnum {
 
 input CreateApplicationInput {
   content: String!
-  fundingTarget: String
-  investmentTerms: JSON
   links: [LinkInput!]
   metadata: JSON
   milestones: [CreateMilestoneInput!]!
@@ -88,8 +74,7 @@ input CreateApplicationInput {
   price: String!
   programId: String!
   status: ApplicationStatus!
-  summary: String
-  walletAddress: String
+  summary: String!
 }
 
 input CreateCarouselItemInput {
@@ -105,18 +90,13 @@ input CreateCommentInput {
   parentId: ID
 }
 
-input CreateInvestmentInput {
-  amount: String!
-  projectId: ID!
-  txHash: String
-}
-
 input CreateMilestoneInput {
   currency: String! = "ETH"
   deadline: Date!
-  description: String
+  description: String!
   links: [LinkInput!]
   percentage: String!
+  summary: String!
   title: String!
 }
 
@@ -129,29 +109,17 @@ input CreatePostInput {
 }
 
 input CreateProgramInput {
-  applicationEndDate: Date
-  applicationStartDate: Date
-  contractAddress: String
   currency: String
-  customFeePercentage: Int
-  deadline: String
+  deadline: String!
   description: String
-  feePercentage: Int
-  fundingCondition: FundingCondition
-  fundingEndDate: Date
-  fundingStartDate: Date
-  image: Upload
-  keywords: [String!]
+  image: Upload!
+  keywords: [String!]!
   links: [LinkInput!]
-  maxFundingAmount: String
   name: String!
-  network: String
+  network: String!
   price: String!
+  status: ProgramStatus = pending
   summary: String
-  terms: String
-  tierSettings: TierSettingsInput
-  type: ProgramType
-  validatorIds: [ID!]
   visibility: ProgramVisibility
 }
 
@@ -177,38 +145,6 @@ type EnrichedCarouselItem {
 input FilterInput {
   field: String!
   value: String!
-}
-
-enum FundingCondition {
-  open
-  tier
-}
-
-type Investment {
-  amount: String
-  id: ID
-  project: Application
-  reclaimTxHash: String
-  reclaimed: Boolean
-  reclaimedAt: Date
-  status: InvestmentStatus
-  supporter: User
-  tier: String
-  txHash: String
-}
-
-enum InvestmentStatus {
-  confirmed
-  failed
-  pending
-  refunded
-}
-
-enum InvestmentTier {
-  bronze
-  gold
-  platinum
-  silver
 }
 
 """
@@ -243,20 +179,8 @@ type Milestone {
   price: String
   rejectionReason: String
   status: MilestoneStatus
+  summary: String
   title: String
-}
-
-type MilestonePayout {
-  amount: String
-  createdAt: Date
-  errorMessage: String
-  id: ID
-  investment: Investment
-  milestone: Milestone
-  percentage: String
-  processedAt: Date
-  status: PayoutStatus
-  txHash: String
 }
 
 enum MilestoneStatus {
@@ -271,13 +195,12 @@ type Mutation {
   acceptApplication(id: ID!): Application
   acceptProgram(id: ID!): Program
   addProgramKeyword(keyword: String!, programId: ID!): Keyword
-  assignUserTier(input: AssignUserTierInput!): UserTierAssignment
+  addUserKeyword(keyword: String!, userId: ID!): Keyword
   assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
   createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
   createComment(input: CreateCommentInput!): Comment
-  createInvestment(input: CreateInvestmentInput!): Investment
   createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
@@ -289,12 +212,10 @@ type Mutation {
   login(email: String, loginType: String!, walletAddress: String!): String
   markAllNotificationsAsRead: Boolean
   markNotificationAsRead(id: ID!): Boolean
-  processMilestonePayouts(input: ProcessPayoutsInput!): [MilestonePayout!]
-  reclaimInvestment(input: ReclaimInvestmentInput!): Investment
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
   removeProgramKeyword(keyword: String!, programId: ID!): Boolean
-  removeUserTier(programId: ID!, userId: ID!): Boolean
+  removeUserKeyword(keyword: String!, userId: ID!): Boolean
   removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
   submitMilestone(input: SubmitMilestoneInput!): Milestone
@@ -348,16 +269,6 @@ type PaginatedComments {
   data: [Comment!]
 }
 
-type PaginatedInvestments {
-  count: Int
-  data: [Investment!]
-}
-
-type PaginatedMilestonePayouts {
-  count: Int
-  data: [MilestonePayout!]
-}
-
 type PaginatedMilestones {
   count: Int
   data: [Milestone!]
@@ -385,13 +296,6 @@ input PaginationInput {
   sort: SortEnum
 }
 
-enum PayoutStatus {
-  completed
-  failed
-  pending
-  processing
-}
-
 type Post {
   author: User
   comments: [Comment!]
@@ -405,44 +309,26 @@ type Post {
   viewCount: Int
 }
 
-input ProcessPayoutsInput {
-  contractAddress: String!
-  milestoneId: ID!
-}
-
 type Program {
-  applicationEndDate: Date
-  applicationStartDate: Date
   applications: [Application!]
   comments: [Comment!]
-  contractAddress: String
   creator: User
   currency: String
-  customFeePercentage: Int
   deadline: Date
   description: String
   educhainProgramId: Int
-  feePercentage: Int
-  fundingCondition: FundingCondition
-  fundingEndDate: Date
-  fundingStartDate: Date
   id: ID
   image: String
   invitedBuilders: [User!]
   keywords: [Keyword!]
   links: [Link!]
-  maxFundingAmount: String
   name: String
   network: String
   price: String
   rejectionReason: String
   status: ProgramStatus
   summary: String
-  terms: String
-  tierAssignments: [UserTierAssignment!]
-  tierSettings: TierSettings
   txHash: String
-  type: ProgramType
   validators: [User!]
   visibility: ProgramVisibility
 }
@@ -460,14 +346,10 @@ enum ProgramStatus {
   cancelled
   closed
   completed
-  draft
   payment_required
+  pending
   published
-}
-
-enum ProgramType {
-  funding
-  regular
+  rejected
 }
 
 enum ProgramVisibility {
@@ -484,12 +366,8 @@ type Query {
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
   commentsByCommentable(commentableId: ID!, commentableType: CommentableTypeEnum!): [Comment!]
   countNotifications: Int
-  investment(id: ID!): Investment
-  investments(pagination: PaginationInput, projectId: ID, supporterId: ID): PaginatedInvestments
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
-  milestonePayout(id: ID!): MilestonePayout
-  milestonePayouts(investmentId: ID, milestoneId: ID, pagination: PaginationInput, status: PayoutStatus): PaginatedMilestonePayouts
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
   notifications: [Notification!]
   post(id: ID!): Post
@@ -499,11 +377,6 @@ type Query {
   programs(pagination: PaginationInput): PaginatedPrograms
   user(id: ID!): User
   users(pagination: PaginationInput): PaginatedUsers
-}
-
-input ReclaimInvestmentInput {
-  investmentId: ID!
-  txHash: String!
 }
 
 input ReorderCarouselItemInput {
@@ -534,42 +407,14 @@ type Subscription {
   notifications: [Notification!]
 }
 
-type TierConfig {
-  enabled: Boolean
-  maxAmount: String
-}
-
-input TierConfigInput {
-  enabled: Boolean!
-  maxAmount: String!
-}
-
-type TierSettings {
-  bronze: TierConfig
-  gold: TierConfig
-  platinum: TierConfig
-  silver: TierConfig
-}
-
-input TierSettingsInput {
-  bronze: TierConfigInput
-  gold: TierConfigInput
-  platinum: TierConfigInput
-  silver: TierConfigInput
-}
-
 input UpdateApplicationInput {
   content: String
-  fundingSuccessful: Boolean
-  fundingTarget: String
   id: String!
-  investmentTerms: JSON
   links: [LinkInput!]
   metadata: JSON
   name: String
   status: ApplicationStatus
   summary: String
-  walletAddress: String
 }
 
 input UpdateCarouselItemInput {
@@ -593,6 +438,7 @@ input UpdateMilestoneInput {
   links: [LinkInput!]
   percentage: String
   status: MilestoneStatus
+  summary: String
   title: String
 }
 
@@ -606,30 +452,18 @@ input UpdatePostInput {
 }
 
 input UpdateProgramInput {
-  applicationEndDate: Date
-  applicationStartDate: Date
-  contractAddress: String
   currency: String
-  customFeePercentage: Int
   deadline: String
   description: String
-  feePercentage: Int
-  fundingCondition: FundingCondition
-  fundingEndDate: Date
-  fundingStartDate: Date
   id: ID!
   image: Upload
   keywords: [String!]
   links: [LinkInput!]
-  maxFundingAmount: String
   name: String
   network: String
   price: String
   status: ProgramStatus
   summary: String
-  terms: String
-  tierSettings: TierSettingsInput
-  type: ProgramType
   visibility: ProgramVisibility
 }
 
@@ -642,6 +476,7 @@ type User {
   firstName: String
   id: ID
   image: String
+  keywords: [Keyword!]
   lastName: String
   links: [Link!]
   loginType: String
@@ -657,6 +492,7 @@ input UserInput {
   email: String!
   firstName: String
   image: Upload
+  keywords: [String!]
   lastName: String
   links: [LinkInput!]
   loginType: String
@@ -678,23 +514,13 @@ enum UserRole {
   user
 }
 
-type UserTierAssignment {
-  createdAt: Date
-  id: ID
-  maxInvestmentAmount: String
-  program: Program
-  programId: String
-  tier: InvestmentTier
-  user: User
-  userId: String
-}
-
 input UserUpdateInput {
   about: String
   email: String
   firstName: String
   id: ID!
   image: Upload
+  keywords: [String!]
   lastName: String
   links: [LinkInput!]
   loginType: String

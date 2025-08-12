@@ -78,7 +78,7 @@ export async function isInSameScope(params: {
         .from(applicationsTable)
         .where(eq(applicationsTable.id, entityId));
 
-      if (application.applicantId !== userId) {
+      if (!application || application.applicantId !== userId) {
         return false;
       }
       return true;
@@ -90,12 +90,16 @@ export async function isInSameScope(params: {
         .from(milestonesTable)
         .where(eq(milestonesTable.id, entityId));
 
+      if (!milestone) {
+        return false;
+      }
+
       const [application] = await db
         .select({ applicantId: applicationsTable.applicantId })
         .from(applicationsTable)
         .where(eq(applicationsTable.id, milestone.applicationId));
 
-      if (application.applicantId !== userId) {
+      if (!application || application.applicantId !== userId) {
         return false;
       }
       return true;

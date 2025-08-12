@@ -1,12 +1,13 @@
 import { relations } from 'drizzle-orm';
 import { pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { applicationsTable } from './applications';
 import { milestonesTable } from './milestones';
 import { postsTable } from './posts';
 import { programsTable } from './programs';
 import { usersTable } from './users';
 
 // Define the commentable types
-export const commentableTypes = ['post', 'program', 'milestone'] as const;
+export const commentableTypes = ['post', 'program', 'milestone', 'application'] as const;
 export const commentableTypeEnum = pgEnum('commentable_type', commentableTypes);
 
 export const commentsTable = pgTable('comments', {
@@ -41,6 +42,10 @@ export const commentsRelations = relations(commentsTable, ({ one }) => ({
   milestone: one(milestonesTable, {
     fields: [commentsTable.commentableId],
     references: [milestonesTable.id],
+  }),
+  application: one(applicationsTable, {
+    fields: [commentsTable.commentableId],
+    references: [applicationsTable.id],
   }),
   parent: one(commentsTable, {
     fields: [commentsTable.parentId],

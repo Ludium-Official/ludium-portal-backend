@@ -18,8 +18,9 @@ import { linksTable } from './links';
 import { usersTable } from './users';
 
 export const programStatuses = [
-  'draft',
+  'pending',
   'payment_required',
+  'rejected',
   'published',
   'closed',
   'completed',
@@ -53,7 +54,7 @@ export const programsTable = pgTable('programs', {
   creatorId: uuid('creator_id')
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
-  status: programStatusEnum('status').default('draft'),
+  status: programStatusEnum('status').default('pending'),
   visibility: programVisibilityEnum('visibility').default('public'),
   educhainProgramId: integer('educhain_id'),
   txHash: varchar('tx_hash', { length: 256 }),

@@ -2,7 +2,6 @@ import {
   type Application as DBApplication,
   applicationStatuses,
   applicationsTable,
-  investmentsTable,
 } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
@@ -13,16 +12,17 @@ import {
   rejectApplicationResolver,
   updateApplicationResolver,
 } from '@/graphql/resolvers/applications';
+import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
 import { getLinksByApplicationIdResolver } from '@/graphql/resolvers/links';
 import { getMilestonesByApplicationIdResolver } from '@/graphql/resolvers/milestones';
 import { getUserResolver } from '@/graphql/resolvers/users';
+import { CommentType } from '@/graphql/types/comments';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { CreateMilestoneInput, MilestoneType } from '@/graphql/types/milestones';
 import { User } from '@/graphql/types/users';
 import BigNumber from 'bignumber.js';
-import { and, desc, eq, sql } from 'drizzle-orm';
-import { ApplicationRef, InvestmentRef } from './shared-refs';
+import { eq } from 'drizzle-orm';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -31,7 +31,7 @@ export const ApplicationStatusEnum = builder.enumType('ApplicationStatus', {
   values: applicationStatuses,
 });
 
-export const ApplicationType = ApplicationRef.implement({
+export const ApplicationType = builder.objectRef<DBApplication>('Application').implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     status: t.field({
@@ -63,45 +63,14 @@ export const ApplicationType = ApplicationRef.implement({
       resolve: async (application, _args, ctx) =>
         getLinksByApplicationIdResolver({}, { applicationId: application.id }, ctx),
     }),
-    // Investment-specific fields
-    fundingTarget: t.exposeString('fundingTarget', { nullable: true }),
-    walletAddress: t.exposeString('walletAddress', { nullable: true }),
-    fundingSuccessful: t.exposeBoolean('fundingSuccessful', { nullable: true }),
-    investmentTerms: t.field({
-      type: 'JSON',
-      nullable: true,
-      resolve: (application) => application.investmentTerms as unknown as JSON,
-    }),
-    currentFunding: t.field({
-      type: 'String',
-      nullable: true,
-      resolve: async (application, _args, ctx) => {
-        // Calculate current funding from investments
-        const result = await ctx.db
-          .select({
-            total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
-          })
-          .from(investmentsTable)
-          .where(
-            and(
-              eq(investmentsTable.applicationId, application.id),
-              eq(investmentsTable.status, 'confirmed'),
-            ),
-          );
-        return result[0]?.total || '0';
-      },
-    }),
-    investments: t.field({
-      type: [InvestmentRef],
-      nullable: true,
-      resolve: async (application, _args, ctx) => {
-        const investments = await ctx.db
-          .select()
-          .from(investmentsTable)
-          .where(eq(investmentsTable.applicationId, application.id))
-          .orderBy(desc(investmentsTable.createdAt));
-        return investments;
-      },
+    comments: t.field({
+      type: [CommentType],
+      resolve: async (application, _args, ctx) =>
+        getCommentsByCommentableResolver(
+          {},
+          { commentableId: application.id, commentableType: 'application' },
+          ctx,
+        ),
     }),
   }),
 });
@@ -129,9 +98,9 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
     programId: t.string({ required: true }),
     name: t.string({ required: true }),
     content: t.string({ required: true }),
-    summary: t.string(),
+    summary: t.string({ required: true }),
     metadata: t.field({ type: 'JSON' }),
-    links: t.field({ type: [LinkInput], required: false }),
+    links: t.field({ type: [LinkInput] }),
     price: t.string({
       required: true,
       validate: {
@@ -142,10 +111,6 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
     }),
     milestones: t.field({ type: [CreateMilestoneInput], required: true }),
     status: t.field({ type: ApplicationStatusEnum, required: true }),
-    // Investment-specific fields
-    fundingTarget: t.string({ required: false }),
-    walletAddress: t.string({ required: false }),
-    investmentTerms: t.field({ type: 'JSON', required: false }),
   }),
 });
 
@@ -158,11 +123,6 @@ export const UpdateApplicationInput = builder.inputType('UpdateApplicationInput'
     metadata: t.field({ type: 'JSON' }),
     status: t.field({ type: ApplicationStatusEnum }),
     links: t.field({ type: [LinkInput] }),
-    // Investment-specific fields
-    fundingTarget: t.string({ required: false }),
-    walletAddress: t.string({ required: false }),
-    investmentTerms: t.field({ type: 'JSON', required: false }),
-    fundingSuccessful: t.boolean({ required: false }),
   }),
 });
 
@@ -197,10 +157,7 @@ builder.mutationFields((t) => ({
   }),
   updateApplication: t.field({
     type: ApplicationType,
-    authScopes: (_, args) => ({
-      admin: true,
-      programBuilder: { applicationId: args.input.id },
-    }),
+    authScopes: { user: true },
     args: {
       input: t.arg({ type: UpdateApplicationInput, required: true }),
     },

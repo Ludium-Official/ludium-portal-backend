@@ -9,13 +9,13 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
+import { commentsTable } from './comments';
 import { linksTable } from './links';
 import { milestonesTable } from './milestones';
 import { programsTable } from './programs';
 import { usersTable } from './users';
 
 export const applicationStatuses = [
-  'draft',
   'pending',
   'accepted',
   'rejected',
@@ -78,6 +78,7 @@ export const applicationRelations = relations(applicationsTable, ({ one, many })
     references: [usersTable.id],
   }),
   milestones: many(milestonesTable),
+  comments: many(commentsTable),
 }));
 
 // Links

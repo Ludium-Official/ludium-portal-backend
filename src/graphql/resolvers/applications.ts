@@ -16,6 +16,7 @@ import type { Context, Root } from '@/types';
 import {
   calculateMilestoneAmount,
   canApplyToProgram,
+  checkAndUpdateProgramStatus,
   filterEmptyValues,
   isInSameScope,
   requireUser,
@@ -99,14 +100,105 @@ export async function getApplicationResolver(_root: Root, args: { id: string }, 
     .select()
     .from(applicationsTable)
     .where(eq(applicationsTable.id, args.id));
+
+  if (!application) {
+    throw new Error('Application not found');
+  }
+
+  // Get the program to check its visibility
+  const [program] = await ctx.db
+    .select({
+      visibility: programsTable.visibility,
+      creatorId: programsTable.creatorId,
+    })
+    .from(programsTable)
+    .where(eq(programsTable.id, application.programId));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  // Check if user can access this application based on program visibility
+  // Public and restricted: Anyone can view applications
+  // Private: Only program participants can view applications
+  if (program.visibility === 'private') {
+    const user = ctx.server.auth.getUser(ctx.request);
+
+    // Allow access if:
+    // 1. User is the applicant
+    // 2. User is the program creator
+    // 3. User has a role in the program (validator, builder)
+    if (user) {
+      if (application.applicantId === user.id || program.creatorId === user.id) {
+        return application;
+      }
+
+      // Check if user has any role in the program
+      const userRole = await ctx.db
+        .select()
+        .from(programUserRolesTable)
+        .where(
+          and(
+            eq(programUserRolesTable.programId, application.programId),
+            eq(programUserRolesTable.userId, user.id),
+          ),
+        );
+
+      if (userRole.length > 0) {
+        return application;
+      }
+    }
+
+    throw new Error('You do not have access to this application');
+  }
+
   return application;
 }
 
-export function getApplicationsByProgramIdResolver(
+export async function getApplicationsByProgramIdResolver(
   _root: Root,
   args: { programId: string },
   ctx: Context,
 ) {
+  // First check if the user can access this program
+  const [program] = await ctx.db
+    .select({
+      visibility: programsTable.visibility,
+      creatorId: programsTable.creatorId,
+    })
+    .from(programsTable)
+    .where(eq(programsTable.id, args.programId));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  // For private programs, check if user has access
+  if (program.visibility === 'private') {
+    const user = ctx.server.auth.getUser(ctx.request);
+
+    if (!user) {
+      throw new Error('Authentication required to view applications for private programs');
+    }
+
+    // Check if user is the creator or has a role in the program
+    if (program.creatorId !== user.id) {
+      const userRole = await ctx.db
+        .select()
+        .from(programUserRolesTable)
+        .where(
+          and(
+            eq(programUserRolesTable.programId, args.programId),
+            eq(programUserRolesTable.userId, user.id),
+          ),
+        );
+
+      if (userRole.length === 0) {
+        throw new Error('You do not have access to view applications for this private program');
+      }
+    }
+  }
+
   return ctx.db
     .select()
     .from(applicationsTable)
@@ -119,7 +211,7 @@ export function createApplicationResolver(
   ctx: Context,
 ) {
   const user = requireUser(ctx);
-  const createdMilestones: Milestone[] = [];
+  const milestones: Milestone[] = [];
 
   return ctx.db.transaction(async (t) => {
     const [program] = await t
@@ -128,7 +220,6 @@ export function createApplicationResolver(
         id: programsTable.id,
         price: programsTable.price,
         visibility: programsTable.visibility,
-        type: programsTable.type,
       })
       .from(programsTable)
       .where(eq(programsTable.id, args.input.programId));
@@ -157,33 +248,23 @@ export function createApplicationResolver(
       throw new Error(applicationAccess.reason || 'You cannot apply to this program');
     }
 
-    // Extract investment fields if this is a funding program
-    const { fundingTarget, walletAddress, investmentTerms, milestones, links, ...baseFields } =
-      args.input;
+    const [application] = await t
+      .insert(applicationsTable)
+      .values({
+        programId: args.input.programId,
+        name: args.input.name,
+        content: args.input.content || '',
+        summary: args.input.summary,
+        price: args.input.price,
+        metadata: args.input.metadata,
+        applicantId: user.id,
+        status: args.input.status,
+      })
+      .returning();
 
-    const baseApplicationData = {
-      ...baseFields,
-      applicantId: user.id,
-      programId: args.input.programId,
-      status: args.input.status,
-    };
-
-    // Build the complete application data with conditional fields
-    const applicationData =
-      program.type === 'funding'
-        ? {
-            ...baseApplicationData,
-            ...(fundingTarget && { fundingTarget }),
-            ...(walletAddress && { walletAddress }),
-            ...(investmentTerms && { investmentTerms }),
-          }
-        : baseApplicationData;
-
-    const [application] = await t.insert(applicationsTable).values(applicationData).returning();
-
-    if (links) {
+    if (args.input.links) {
       // insert links to links table and map to program
-      const filteredLinks = links.filter((link) => link.url);
+      const filteredLinks = args.input.links.filter((link) => link.url);
       const newLinks = await t
         .insert(linksTable)
         .values(
@@ -202,56 +283,76 @@ export function createApplicationResolver(
       );
     }
 
-    // Validate milestone percentages sum to 100%
-    if (!validateMilestonePercentages(milestones)) {
-      ctx.server.log.error('Milestone percentages must sum to 100%');
-      t.rollback();
-    }
+    // Only process milestones if they are provided
+    if (args.input.milestones && args.input.milestones.length > 0) {
+      let sortOrder = 0;
+      for (const milestone of args.input.milestones) {
+        // Skip milestones with incomplete required data
+        if (
+          !milestone.title ||
+          !milestone.percentage ||
+          !milestone.deadline ||
+          !milestone.currency
+        ) {
+          continue;
+        }
 
-    let sortOrder = 0;
-    for (const milestone of milestones) {
-      const { links, ...inputData } = milestone;
+        const { links, title, percentage, deadline, currency, description, summary } = milestone;
 
-      // Calculate the actual price amount from percentage
-      const calculatedAmount = calculateMilestoneAmount(inputData.percentage, application.price);
+        // Calculate the actual price amount from percentage
+        const calculatedAmount = calculateMilestoneAmount(percentage, application.price);
 
-      const [newMilestone] = await t
-        .insert(milestonesTable)
-        .values({
-          ...inputData,
-          price: calculatedAmount,
-          percentage: inputData.percentage,
-          sortOrder,
-          applicationId: application.id,
-          deadline: inputData.deadline.toISOString(),
-        })
-        .returning();
-      // handle links
-      if (links) {
-        const filteredLinks = links.filter((link) => link.url);
-        const newLinks = await t
-          .insert(linksTable)
-          .values(
-            filteredLinks.map((link) => ({
-              url: link.url as string,
-              title: link.title as string,
-            })),
-          )
+        const [newMilestone] = await t
+          .insert(milestonesTable)
+          .values({
+            title,
+            description: description || null,
+            summary: summary || null,
+            percentage,
+            currency,
+            price: calculatedAmount,
+            sortOrder,
+            applicationId: application.id,
+            deadline: deadline.toISOString(),
+          })
           .returning();
-        await t.insert(milestonesToLinksTable).values(
-          newLinks.map((link) => ({
-            milestoneId: newMilestone.id,
-            linkId: link.id,
-          })),
+        // handle links
+        if (links) {
+          const filteredLinks = links.filter((link) => link.url);
+          const newLinks = await t
+            .insert(linksTable)
+            .values(
+              filteredLinks.map((link) => ({
+                url: link.url as string,
+                title: link.title as string,
+              })),
+            )
+            .returning();
+          await t.insert(milestonesToLinksTable).values(
+            newLinks.map((link) => ({
+              milestoneId: newMilestone.id,
+              linkId: link.id,
+            })),
+          );
+        }
+        milestones.push(newMilestone);
+        sortOrder++;
+      }
+
+      // Validate milestone percentages sum to 100% after collecting valid milestones
+      if (
+        milestones.length > 0 &&
+        !validateMilestonePercentages(milestones as Array<{ percentage: string }>)
+      ) {
+        throw new Error(
+          'Milestone payout percentages must add up to exactly 100%. Please adjust the percentages.',
         );
       }
-      createdMilestones.push(newMilestone);
-      sortOrder++;
     }
 
-    if (!validAndNotEmptyArray(createdMilestones)) {
-      ctx.server.log.error('Milestones are required');
-      t.rollback();
+    // Only require milestones for non-draft applications
+    if (!validAndNotEmptyArray(milestones)) {
+      throw new Error('At least one milestone is required for submitted applications.');
     }
 
     const applications = await t
@@ -264,19 +365,24 @@ export function createApplicationResolver(
         ),
       );
 
-    const milestonesTotalPrice = createdMilestones.reduce((acc, m) => {
-      return acc.plus(new BigNumber(m.price));
-    }, new BigNumber(0));
+    // Only validate budget for non-draft applications with milestones
+    if (milestones.length > 0) {
+      const milestonesTotalPrice = milestones.reduce((acc, m) => {
+        return acc.plus(new BigNumber(m.price));
+      }, new BigNumber(0));
 
-    const applicationsTotalPrice = applications.reduce((acc, a) => {
-      return acc.plus(new BigNumber(a.price));
-    }, new BigNumber(0));
+      const applicationsTotalPrice = applications.reduce((acc, a) => {
+        return acc.plus(new BigNumber(a.price));
+      }, new BigNumber(0));
 
-    if (applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price))) {
-      ctx.server.log.error('The total price of the applications is greater than the program price');
-      t.rollback();
+      if (applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price))) {
+        throw new Error(
+          `The total price of all applications (${applicationsTotalPrice.plus(milestonesTotalPrice).toFixed()}) exceeds the program budget (${program.price}). Please reduce the application price.`,
+        );
+      }
     }
 
+    // Only notify validators for non-draft applications
     if (validatorIds.length > 0) {
       for (const validatorId of validatorIds) {
         await ctx.server.pubsub.publish('notifications', t, {
@@ -287,6 +393,11 @@ export function createApplicationResolver(
         });
       }
       await ctx.server.pubsub.publish('notificationsCount');
+    }
+
+    // Check if program budget is fully allocated after creating an accepted application
+    if (application.status === 'accepted') {
+      await checkAndUpdateProgramStatus(application.programId, t);
     }
 
     return application;
@@ -303,17 +414,38 @@ export function updateApplicationResolver(
   const filteredData = filterEmptyValues<ApplicationUpdate>(args.input);
 
   return ctx.db.transaction(async (t) => {
-    const hasAccess = await isInSameScope({
-      scope: 'application_builder',
-      userId: user.id,
-      entityId: args.input.id,
-      db: t,
-    });
-    if (!hasAccess) {
-      throw new Error('You are not allowed to update this application');
+    // Get the application to find the program
+    const [application] = await t
+      .select()
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, args.input.id));
+
+    if (!application) {
+      throw new Error('Application not found');
     }
 
-    const [application] = await t
+    // Check if user is the applicant, a builder in this program, or an admin
+    const isAdmin = user.role?.endsWith('admin');
+    const isApplicant = application.applicantId === user.id;
+
+    const [builderRole] = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, application.programId),
+          eq(programUserRolesTable.userId, user.id),
+          eq(programUserRolesTable.roleType, 'builder'),
+        ),
+      );
+
+    if (!isAdmin && !builderRole && !isApplicant) {
+      throw new Error(
+        'You are not allowed to update this application. Only the applicant, builders, and admins can update applications.',
+      );
+    }
+
+    const [updatedApplication] = await t
       .update(applicationsTable)
       .set(filteredData)
       .where(eq(applicationsTable.id, args.input.id))
@@ -338,13 +470,22 @@ export function updateApplicationResolver(
 
       await t.insert(applicationsToLinksTable).values(
         newLinks.map((link) => ({
-          applicationId: application.id,
+          applicationId: updatedApplication.id,
           linkId: link.id,
         })),
       );
     }
 
-    return application;
+    // Check if program budget is fully allocated after updating an application
+    if (
+      updatedApplication.status === 'accepted' ||
+      updatedApplication.status === 'completed' ||
+      updatedApplication.status === 'submitted'
+    ) {
+      await checkAndUpdateProgramStatus(updatedApplication.programId, t);
+    }
+
+    return updatedApplication;
   });
 }
 
@@ -360,12 +501,29 @@ export function acceptApplicationResolver(_root: Root, args: { id: string }, ctx
       throw new Error('Application not found');
     }
 
-    // Add applicant as program builder (auto-confirmed)
-    await t.insert(programUserRolesTable).values({
-      programId: application.programId,
-      userId: application.applicantId,
-      roleType: 'builder',
-    });
+    // Check if builder role already exists
+    const existingRole = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, application.programId),
+          eq(programUserRolesTable.userId, application.applicantId),
+          eq(programUserRolesTable.roleType, 'builder'),
+        ),
+      );
+
+    if (existingRole.length === 0) {
+      // Add applicant as program builder (auto-confirmed)
+      await t.insert(programUserRolesTable).values({
+        programId: application.programId,
+        userId: application.applicantId,
+        roleType: 'builder',
+      });
+    }
+
+    // Check if program budget is fully allocated and update status if needed
+    await checkAndUpdateProgramStatus(application.programId, t);
 
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'application',

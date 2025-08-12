@@ -34,7 +34,7 @@ CommentType.implement({
         parent.parentId === null ? null : getCommentResolver({}, { id: parent.parentId }, ctx),
     }),
     createdAt: t.field({
-      type: 'Date',
+      type: 'DateTime',
       resolve: (parent) => parent.createdAt,
     }),
     replies: t.field({
@@ -59,7 +59,7 @@ export const PaginatedCommentsType = builder
 /* -------------------------------------------------------------------------- */
 
 export const CommentableTypeEnum = builder.enumType('CommentableTypeEnum', {
-  values: ['post', 'program', 'milestone'] as const,
+  values: ['post', 'program', 'milestone', 'application'] as const,
 });
 
 export const CreateCommentInput = builder.inputType('CreateCommentInput', {

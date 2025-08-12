@@ -1,13 +1,4 @@
-import {
-  type Program as DBProgram,
-  fundingConditions,
-  investmentTiers,
-  programStatuses,
-  programTypes,
-  programVisibilities,
-  programsTable,
-  userTierAssignmentsTable,
-} from '@/db/schemas';
+import { type Program as DBProgram, programStatuses, programVisibilities } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getApplicationsByProgramIdResolver } from '@/graphql/resolvers/applications';
 import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
@@ -40,7 +31,6 @@ import { KeywordType, PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { User } from '@/graphql/types/users';
 import BigNumber from 'bignumber.js';
-import { and, eq } from 'drizzle-orm';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -51,64 +41,6 @@ export const ProgramStatusEnum = builder.enumType('ProgramStatus', {
 
 export const ProgramVisibilityEnum = builder.enumType('ProgramVisibility', {
   values: programVisibilities,
-});
-
-export const ProgramTypeEnum = builder.enumType('ProgramType', {
-  values: programTypes,
-});
-
-export const FundingConditionEnum = builder.enumType('FundingCondition', {
-  values: fundingConditions,
-});
-
-export const InvestmentTierEnum = builder.enumType('InvestmentTier', {
-  values: investmentTiers,
-});
-
-// Define tier config object reference first
-export const TierConfigType = builder.objectRef<{
-  enabled: boolean;
-  maxAmount: string;
-}>('TierConfig');
-
-TierConfigType.implement({
-  fields: (t) => ({
-    enabled: t.exposeBoolean('enabled'),
-    maxAmount: t.exposeString('maxAmount'),
-  }),
-});
-
-// Tier settings for funding programs
-export const TierSettingsType = builder.objectRef<{
-  bronze?: { enabled: boolean; maxAmount: string };
-  silver?: { enabled: boolean; maxAmount: string };
-  gold?: { enabled: boolean; maxAmount: string };
-  platinum?: { enabled: boolean; maxAmount: string };
-}>('TierSettings');
-
-TierSettingsType.implement({
-  fields: (t) => ({
-    bronze: t.field({
-      type: TierConfigType,
-      nullable: true,
-      resolve: (parent) => parent.bronze || null,
-    }),
-    silver: t.field({
-      type: TierConfigType,
-      nullable: true,
-      resolve: (parent) => parent.silver || null,
-    }),
-    gold: t.field({
-      type: TierConfigType,
-      nullable: true,
-      resolve: (parent) => parent.gold || null,
-    }),
-    platinum: t.field({
-      type: TierConfigType,
-      nullable: true,
-      resolve: (parent) => parent.platinum || null,
-    }),
-  }),
 });
 
 export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
@@ -174,62 +106,6 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
         ),
     }),
     image: t.exposeString('image'),
-
-    // New funding/investment fields
-    type: t.field({
-      type: ProgramTypeEnum,
-      resolve: (program) => program.type,
-    }),
-    applicationStartDate: t.field({
-      type: 'Date',
-      nullable: true,
-      resolve: (program) => program.applicationStartDate,
-    }),
-    applicationEndDate: t.field({
-      type: 'Date',
-      nullable: true,
-      resolve: (program) => program.applicationEndDate,
-    }),
-    fundingStartDate: t.field({
-      type: 'Date',
-      nullable: true,
-      resolve: (program) => program.fundingStartDate,
-    }),
-    fundingEndDate: t.field({
-      type: 'Date',
-      nullable: true,
-      resolve: (program) => program.fundingEndDate,
-    }),
-    fundingCondition: t.field({
-      type: FundingConditionEnum,
-      nullable: true,
-      resolve: (program) => program.fundingCondition,
-    }),
-    maxFundingAmount: t.exposeString('maxFundingAmount'),
-    feePercentage: t.exposeInt('feePercentage'),
-    customFeePercentage: t.exposeInt('customFeePercentage'),
-    tierSettings: t.field({
-      type: TierSettingsType,
-      nullable: true,
-      resolve: (program) => program.tierSettings,
-    }),
-    contractAddress: t.exposeString('contractAddress'),
-    terms: t.exposeString('terms'),
-
-    // Tier assignments for funding programs
-    tierAssignments: t.field({
-      type: [UserTierAssignmentType],
-      resolve: async (program, _args, ctx) => {
-        if (program.type !== 'funding') return [];
-
-        const assignments = await ctx.db
-          .select()
-          .from(userTierAssignmentsTable)
-          .where(eq(userTierAssignmentsTable.programId, program.id));
-
-        return assignments;
-      },
-    }),
   }),
 });
 
@@ -248,72 +124,9 @@ export const PaginatedProgramsType = builder
     }),
   });
 
-// User tier assignment for funding programs
-export const UserTierAssignmentType = builder.objectRef<{
-  id: string;
-  programId: string;
-  userId: string;
-  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
-  maxInvestmentAmount: string;
-  createdAt: Date;
-}>('UserTierAssignment');
-
-UserTierAssignmentType.implement({
-  fields: (t) => ({
-    id: t.exposeID('id'),
-    programId: t.exposeString('programId'),
-    userId: t.exposeString('userId'),
-    tier: t.field({
-      type: InvestmentTierEnum,
-      resolve: (assignment) => assignment.tier,
-    }),
-    maxInvestmentAmount: t.exposeString('maxInvestmentAmount'),
-    user: t.field({
-      type: User,
-      resolve: async (assignment, _args, ctx) =>
-        getUserResolver({}, { id: assignment.userId }, ctx),
-    }),
-    program: t.field({
-      type: ProgramType,
-      resolve: async (assignment, _args, ctx) =>
-        getProgramResolver({}, { id: assignment.programId }, ctx),
-    }),
-    createdAt: t.field({
-      type: 'Date',
-      resolve: (assignment) => assignment.createdAt,
-    }),
-  }),
-});
-
-export const AssignUserTierInput = builder.inputType('AssignUserTierInput', {
-  fields: (t) => ({
-    programId: t.id({ required: true }),
-    userId: t.id({ required: true }),
-    tier: t.field({ type: InvestmentTierEnum, required: true }),
-    maxInvestmentAmount: t.string({ required: true }),
-  }),
-});
-
 /* -------------------------------------------------------------------------- */
 /*                                   Inputs                                   */
 /* -------------------------------------------------------------------------- */
-
-export const TierConfigInput = builder.inputType('TierConfigInput', {
-  fields: (t) => ({
-    enabled: t.boolean({ required: true }),
-    maxAmount: t.string({ required: true }),
-  }),
-});
-
-export const TierSettingsInput = builder.inputType('TierSettingsInput', {
-  fields: (t) => ({
-    bronze: t.field({ type: TierConfigInput, required: false }),
-    silver: t.field({ type: TierConfigInput, required: false }),
-    gold: t.field({ type: TierConfigInput, required: false }),
-    platinum: t.field({ type: TierConfigInput, required: false }),
-  }),
-});
-
 export const CreateProgramInput = builder.inputType('CreateProgramInput', {
   fields: (t) => ({
     name: t.string({ required: true }),
@@ -328,27 +141,13 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
       },
     }),
     currency: t.string(),
-    deadline: t.string(),
-    keywords: t.stringList(),
+    deadline: t.string({ required: true }),
+    keywords: t.stringList({ required: true }),
     links: t.field({ type: [LinkInput] }),
-    network: t.string(),
+    network: t.string({ required: true }),
     visibility: t.field({ type: ProgramVisibilityEnum }),
-    image: t.field({ type: 'Upload' }),
-
-    // New funding/investment fields
-    type: t.field({ type: ProgramTypeEnum, required: false }),
-    applicationStartDate: t.field({ type: 'Date', required: false }),
-    applicationEndDate: t.field({ type: 'Date', required: false }),
-    fundingStartDate: t.field({ type: 'Date', required: false }),
-    fundingEndDate: t.field({ type: 'Date', required: false }),
-    fundingCondition: t.field({ type: FundingConditionEnum, required: false }),
-    maxFundingAmount: t.string({ required: false }),
-    feePercentage: t.int({ required: false }),
-    customFeePercentage: t.int({ required: false }),
-    tierSettings: t.field({ type: TierSettingsInput, required: false }),
-    contractAddress: t.string({ required: false }),
-    terms: t.string({ required: false }),
-    validatorIds: t.idList({ required: false }), // For funding programs
+    status: t.field({ type: ProgramStatusEnum, defaultValue: 'pending' }),
+    image: t.field({ type: 'Upload', required: true }),
   }),
 });
 
@@ -373,20 +172,6 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     visibility: t.field({ type: ProgramVisibilityEnum }),
     network: t.string(),
     image: t.field({ type: 'Upload' }),
-
-    // New funding/investment fields
-    type: t.field({ type: ProgramTypeEnum, required: false }),
-    applicationStartDate: t.field({ type: 'Date', required: false }),
-    applicationEndDate: t.field({ type: 'Date', required: false }),
-    fundingStartDate: t.field({ type: 'Date', required: false }),
-    fundingEndDate: t.field({ type: 'Date', required: false }),
-    fundingCondition: t.field({ type: FundingConditionEnum, required: false }),
-    maxFundingAmount: t.string({ required: false }),
-    feePercentage: t.int({ required: false }),
-    customFeePercentage: t.int({ required: false }),
-    tierSettings: t.field({ type: TierSettingsInput, required: false }),
-    contractAddress: t.string({ required: false }),
-    terms: t.string({ required: false }),
   }),
 });
 
@@ -535,85 +320,5 @@ builder.mutationFields((t) => ({
       keyword: t.arg.string({ required: true }),
     },
     resolve: removeProgramKeywordResolver,
-  }),
-  assignUserTier: t.field({
-    type: UserTierAssignmentType,
-    authScopes: (_, args) => ({
-      programSponsor: { programId: args.input.programId },
-      admin: true,
-    }),
-    args: {
-      input: t.arg({ type: AssignUserTierInput, required: true }),
-    },
-    resolve: async (_root, args, ctx) => {
-      const { programId, userId, tier, maxInvestmentAmount } = args.input;
-
-      // Check if program exists and is a funding program
-      const [program] = await ctx.db
-        .select()
-        .from(programsTable)
-        .where(eq(programsTable.id, programId));
-
-      if (!program) {
-        throw new Error('Program not found');
-      }
-
-      if (program.type !== 'funding') {
-        throw new Error('Tier assignments are only available for funding programs');
-      }
-
-      // Check if user already has a tier assignment for this program
-      const [existingAssignment] = await ctx.db
-        .select()
-        .from(userTierAssignmentsTable)
-        .where(
-          and(
-            eq(userTierAssignmentsTable.programId, programId),
-            eq(userTierAssignmentsTable.userId, userId),
-          ),
-        );
-
-      if (existingAssignment) {
-        // Update existing assignment
-        const [updatedAssignment] = await ctx.db
-          .update(userTierAssignmentsTable)
-          .set({ tier, maxInvestmentAmount })
-          .where(eq(userTierAssignmentsTable.id, existingAssignment.id))
-          .returning();
-
-        return updatedAssignment;
-      }
-
-      // Create new assignment
-      const [newAssignment] = await ctx.db
-        .insert(userTierAssignmentsTable)
-        .values({ programId, userId, tier, maxInvestmentAmount })
-        .returning();
-
-      return newAssignment;
-    },
-  }),
-  removeUserTier: t.field({
-    type: 'Boolean',
-    authScopes: (_, args) => ({
-      programSponsor: { programId: args.programId },
-      admin: true,
-    }),
-    args: {
-      programId: t.arg.id({ required: true }),
-      userId: t.arg.id({ required: true }),
-    },
-    resolve: async (_root, args, ctx) => {
-      await ctx.db
-        .delete(userTierAssignmentsTable)
-        .where(
-          and(
-            eq(userTierAssignmentsTable.programId, args.programId),
-            eq(userTierAssignmentsTable.userId, args.userId),
-          ),
-        );
-
-      return true;
-    },
   }),
 }));
