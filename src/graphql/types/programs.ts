@@ -43,6 +43,14 @@ export const ProgramVisibilityEnum = builder.enumType('ProgramVisibility', {
   values: programVisibilities,
 });
 
+export const ProgramTypeEnum = builder.enumType('ProgramType', {
+  values: ['regular', 'funding'] as const,
+});
+
+export const FundingConditionEnum = builder.enumType('FundingCondition', {
+  values: ['open', 'tier'] as const,
+});
+
 export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -106,6 +114,40 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
         ),
     }),
     image: t.exposeString('image'),
+
+    // Investment/Funding fields
+    type: t.field({
+      type: ProgramTypeEnum,
+      resolve: (program) => program.type,
+    }),
+    applicationStartDate: t.field({
+      type: 'DateTime',
+      resolve: (program) => program.applicationStartDate,
+    }),
+    applicationEndDate: t.field({
+      type: 'DateTime',
+      resolve: (program) => program.applicationEndDate,
+    }),
+    fundingStartDate: t.field({
+      type: 'DateTime',
+      resolve: (program) => program.fundingStartDate,
+    }),
+    fundingEndDate: t.field({
+      type: 'DateTime',
+      resolve: (program) => program.fundingEndDate,
+    }),
+    fundingCondition: t.field({
+      type: FundingConditionEnum,
+      resolve: (program) => program.fundingCondition,
+    }),
+    tierSettings: t.field({
+      type: 'JSON',
+      nullable: true,
+      resolve: (program) =>
+        program.tierSettings ? JSON.parse(JSON.stringify(program.tierSettings)) : null,
+    }),
+    feePercentage: t.exposeInt('feePercentage'),
+    customFeePercentage: t.exposeInt('customFeePercentage'),
   }),
 });
 
@@ -148,6 +190,17 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
     visibility: t.field({ type: ProgramVisibilityEnum }),
     status: t.field({ type: ProgramStatusEnum, defaultValue: 'pending' }),
     image: t.field({ type: 'Upload', required: true }),
+
+    // Investment/Funding fields
+    type: t.field({ type: ProgramTypeEnum, defaultValue: 'regular' }),
+    applicationStartDate: t.field({ type: 'DateTime' }),
+    applicationEndDate: t.field({ type: 'DateTime' }),
+    fundingStartDate: t.field({ type: 'DateTime' }),
+    fundingEndDate: t.field({ type: 'DateTime' }),
+    fundingCondition: t.field({ type: FundingConditionEnum }),
+    tierSettings: t.field({ type: 'JSON' }),
+    feePercentage: t.int(),
+    customFeePercentage: t.int(),
   }),
 });
 
@@ -172,6 +225,17 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     visibility: t.field({ type: ProgramVisibilityEnum }),
     network: t.string(),
     image: t.field({ type: 'Upload' }),
+
+    // Investment/Funding fields
+    type: t.field({ type: ProgramTypeEnum }),
+    applicationStartDate: t.field({ type: 'DateTime' }),
+    applicationEndDate: t.field({ type: 'DateTime' }),
+    fundingStartDate: t.field({ type: 'DateTime' }),
+    fundingEndDate: t.field({ type: 'DateTime' }),
+    fundingCondition: t.field({ type: FundingConditionEnum }),
+    tierSettings: t.field({ type: 'JSON' }),
+    feePercentage: t.int(),
+    customFeePercentage: t.int(),
   }),
 });
 

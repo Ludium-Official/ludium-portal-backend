@@ -285,6 +285,30 @@ export function createProgramResolver(
       status: inputData.status,
       visibility: inputData.visibility || 'public',
       network: inputData.network,
+
+      // Investment/Funding fields
+      type: inputData.type || 'regular',
+      applicationStartDate: inputData.applicationStartDate
+        ? new Date(inputData.applicationStartDate)
+        : undefined,
+      applicationEndDate: inputData.applicationEndDate
+        ? new Date(inputData.applicationEndDate)
+        : undefined,
+      fundingStartDate: inputData.fundingStartDate
+        ? new Date(inputData.fundingStartDate)
+        : undefined,
+      fundingEndDate: inputData.fundingEndDate ? new Date(inputData.fundingEndDate) : undefined,
+      fundingCondition: inputData.fundingCondition,
+      tierSettings: inputData.tierSettings
+        ? (inputData.tierSettings as {
+            bronze?: { enabled: boolean; maxAmount: string };
+            silver?: { enabled: boolean; maxAmount: string };
+            gold?: { enabled: boolean; maxAmount: string };
+            platinum?: { enabled: boolean; maxAmount: string };
+          })
+        : undefined,
+      feePercentage: inputData.feePercentage,
+      customFeePercentage: inputData.customFeePercentage,
     };
 
     const [program] = await t.insert(programsTable).values(insertData).returning();
