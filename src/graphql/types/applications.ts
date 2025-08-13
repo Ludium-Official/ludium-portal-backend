@@ -20,6 +20,7 @@ import { CommentType } from '@/graphql/types/comments';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { CreateMilestoneInput, MilestoneType } from '@/graphql/types/milestones';
+import { ApplicationRef } from '@/graphql/types/shared-refs';
 import { User } from '@/graphql/types/users';
 import BigNumber from 'bignumber.js';
 import { eq } from 'drizzle-orm';
@@ -31,7 +32,7 @@ export const ApplicationStatusEnum = builder.enumType('ApplicationStatus', {
   values: applicationStatuses,
 });
 
-export const ApplicationType = builder.objectRef<DBApplication>('Application').implement({
+export const ApplicationType = ApplicationRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     status: t.field({

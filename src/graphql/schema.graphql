@@ -90,6 +90,12 @@ input CreateCommentInput {
   parentId: ID
 }
 
+input CreateInvestmentInput {
+  amount: String!
+  projectId: ID!
+  txHash: String
+}
+
 input CreateMilestoneInput {
   currency: String! = "ETH"
   deadline: DateTime!
@@ -109,9 +115,16 @@ input CreatePostInput {
 }
 
 input CreateProgramInput {
+  applicationEndDate: DateTime
+  applicationStartDate: DateTime
   currency: String
+  customFeePercentage: Int
   deadline: DateTime!
   description: String
+  feePercentage: Int
+  fundingCondition: FundingCondition
+  fundingEndDate: DateTime
+  fundingStartDate: DateTime
   image: Upload!
   keywords: [String!]!
   links: [LinkInput!]
@@ -120,6 +133,8 @@ input CreateProgramInput {
   price: String!
   status: ProgramStatus = pending
   summary: String
+  tierSettings: JSON
+  type: ProgramType = regular
   visibility: ProgramVisibility
 }
 
@@ -145,6 +160,31 @@ type EnrichedCarouselItem {
 input FilterInput {
   field: String!
   value: String!
+}
+
+enum FundingCondition {
+  open
+  tier
+}
+
+type Investment {
+  amount: String
+  id: ID
+  project: Application
+  reclaimTxHash: String
+  reclaimed: Boolean
+  reclaimedAt: Date
+  status: InvestmentStatus
+  supporter: User
+  tier: String
+  txHash: String
+}
+
+enum InvestmentStatus {
+  confirmed
+  failed
+  pending
+  refunded
 }
 
 """
@@ -183,6 +223,19 @@ type Milestone {
   title: String
 }
 
+type MilestonePayout {
+  amount: String
+  createdAt: Date
+  errorMessage: String
+  id: ID
+  investment: Investment
+  milestone: Milestone
+  percentage: String
+  processedAt: Date
+  status: PayoutStatus
+  txHash: String
+}
+
 enum MilestoneStatus {
   completed
   draft
@@ -201,6 +254,7 @@ type Mutation {
   createApplication(input: CreateApplicationInput!): Application
   createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
   createComment(input: CreateCommentInput!): Comment
+  createInvestment(input: CreateInvestmentInput!): Investment
   createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
@@ -212,6 +266,8 @@ type Mutation {
   login(email: String, loginType: String!, walletAddress: String!): String
   markAllNotificationsAsRead: Boolean
   markNotificationAsRead(id: ID!): Boolean
+  processMilestonePayouts(input: ProcessPayoutsInput!): [MilestonePayout!]
+  reclaimInvestment(input: ReclaimInvestmentInput!): Investment
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
   removeProgramKeyword(keyword: String!, programId: ID!): Boolean
@@ -269,6 +325,16 @@ type PaginatedComments {
   data: [Comment!]
 }
 
+type PaginatedInvestments {
+  count: Int
+  data: [Investment!]
+}
+
+type PaginatedMilestonePayouts {
+  count: Int
+  data: [MilestonePayout!]
+}
+
 type PaginatedMilestones {
   count: Int
   data: [Milestone!]
@@ -296,6 +362,13 @@ input PaginationInput {
   sort: SortEnum
 }
 
+enum PayoutStatus {
+  completed
+  failed
+  pending
+  processing
+}
+
 type Post {
   author: User
   comments: [Comment!]
@@ -309,14 +382,26 @@ type Post {
   viewCount: Int
 }
 
+input ProcessPayoutsInput {
+  contractAddress: String!
+  milestoneId: ID!
+}
+
 type Program {
+  applicationEndDate: DateTime
+  applicationStartDate: DateTime
   applications: [Application!]
   comments: [Comment!]
   creator: User
   currency: String
+  customFeePercentage: Int
   deadline: DateTime
   description: String
   educhainProgramId: Int
+  feePercentage: Int
+  fundingCondition: FundingCondition
+  fundingEndDate: DateTime
+  fundingStartDate: DateTime
   id: ID
   image: String
   invitedBuilders: [User!]
@@ -328,7 +413,9 @@ type Program {
   rejectionReason: String
   status: ProgramStatus
   summary: String
+  tierSettings: JSON
   txHash: String
+  type: ProgramType
   validators: [User!]
   visibility: ProgramVisibility
 }
@@ -352,6 +439,11 @@ enum ProgramStatus {
   rejected
 }
 
+enum ProgramType {
+  funding
+  regular
+}
+
 enum ProgramVisibility {
   private
   public
@@ -366,8 +458,12 @@ type Query {
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
   commentsByCommentable(commentableId: ID!, commentableType: CommentableTypeEnum!): [Comment!]
   countNotifications: Int
+  investment(id: ID!): Investment
+  investments(pagination: PaginationInput, projectId: ID, supporterId: ID): PaginatedInvestments
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
+  milestonePayout(id: ID!): MilestonePayout
+  milestonePayouts(investmentId: ID, milestoneId: ID, pagination: PaginationInput, status: PayoutStatus): PaginatedMilestonePayouts
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
   notifications: [Notification!]
   post(id: ID!): Post
@@ -377,6 +473,11 @@ type Query {
   programs(pagination: PaginationInput): PaginatedPrograms
   user(id: ID!): User
   users(pagination: PaginationInput): PaginatedUsers
+}
+
+input ReclaimInvestmentInput {
+  investmentId: ID!
+  txHash: String!
 }
 
 input ReorderCarouselItemInput {
@@ -452,9 +553,16 @@ input UpdatePostInput {
 }
 
 input UpdateProgramInput {
+  applicationEndDate: DateTime
+  applicationStartDate: DateTime
   currency: String
+  customFeePercentage: Int
   deadline: DateTime
   description: String
+  feePercentage: Int
+  fundingCondition: FundingCondition
+  fundingEndDate: DateTime
+  fundingStartDate: DateTime
   id: ID!
   image: Upload
   keywords: [String!]
@@ -464,6 +572,8 @@ input UpdateProgramInput {
   price: String
   status: ProgramStatus
   summary: String
+  tierSettings: JSON
+  type: ProgramType
   visibility: ProgramVisibility
 }
 
