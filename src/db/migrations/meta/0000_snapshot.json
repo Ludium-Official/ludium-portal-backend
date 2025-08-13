@@ -1,5 +1,5 @@
 {
-  "id": "0dab87f5-2b91-481a-b932-9369f6c689da",
+  "id": "f2725573-ab7a-48e3-875d-a2c70133c25c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -790,7 +790,7 @@
         },
         "deadline": {
           "name": "deadline",
-          "type": "date",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true
         },
@@ -1141,7 +1141,7 @@
         },
         "deadline": {
           "name": "deadline",
-          "type": "date",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true
         },
