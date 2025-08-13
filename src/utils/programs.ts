@@ -148,10 +148,14 @@ export async function calculateAllocatedFunds(programId: string, db: DB): Promis
   return applications.reduce((sum, app) => sum.plus(new BigNumber(app.price)), new BigNumber(0));
 }
 
-// Check if program budget is fully allocated and update status if needed
+// Check if program should be marked as completed based on actual completion criteria
 export async function checkAndUpdateProgramStatus(programId: string, db: DB): Promise<boolean> {
   const [program] = await db
-    .select({ price: programsTable.price, status: programsTable.status })
+    .select({
+      price: programsTable.price,
+      status: programsTable.status,
+      deadline: programsTable.deadline,
+    })
     .from(programsTable)
     .where(eq(programsTable.id, programId));
 
@@ -164,16 +168,34 @@ export async function checkAndUpdateProgramStatus(programId: string, db: DB): Pr
     return false;
   }
 
-  const allocatedFunds = await calculateAllocatedFunds(programId, db);
-  const programBudget = new BigNumber(program.price);
+  // Program should only be marked as completed when:
+  // 1. Deadline has passed, OR
+  // 2. All applications are in 'completed' status
 
-  // Check if all funds are allocated (>= 95% to account for rounding)
-  if (programBudget.gt(0) && allocatedFunds.gte(programBudget.times(0.95))) {
+  // Check if deadline has passed
+  if (program.deadline && new Date() > new Date(program.deadline)) {
     await db
       .update(programsTable)
       .set({ status: 'completed' })
       .where(eq(programsTable.id, programId));
     return true;
+  }
+
+  // Check if all applications are completed
+  const applications = await db
+    .select({ status: applicationsTable.status })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.programId, programId));
+
+  if (applications.length > 0) {
+    const allCompleted = applications.every((app) => app.status === 'completed');
+    if (allCompleted) {
+      await db
+        .update(programsTable)
+        .set({ status: 'completed' })
+        .where(eq(programsTable.id, programId));
+      return true;
+    }
   }
 
   return false;

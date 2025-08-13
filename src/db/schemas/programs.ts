@@ -1,6 +1,5 @@
 import { relations } from 'drizzle-orm';
 import {
-  date,
   integer,
   pgEnum,
   pgTable,
@@ -37,7 +36,7 @@ export const programsTable = pgTable('programs', {
   description: text('description'),
   price: varchar('price', { length: 256 }).notNull(),
   currency: varchar('currency', { length: 10 }).default('ETH').notNull(),
-  deadline: date('deadline').notNull(),
+  deadline: timestamp('deadline').notNull(),
   creatorId: uuid('creator_id')
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
