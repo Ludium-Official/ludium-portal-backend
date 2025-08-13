@@ -313,7 +313,7 @@ export function createApplicationResolver(
             price: calculatedAmount,
             sortOrder,
             applicationId: application.id,
-            deadline: deadline.toISOString(),
+            deadline: deadline,
           })
           .returning();
         // handle links

@@ -122,7 +122,7 @@ CREATE TABLE "programs" (
 	"description" text,
 	"price" varchar(256) NOT NULL,
 	"currency" varchar(10) DEFAULT 'ETH' NOT NULL,
-	"deadline" date NOT NULL,
+	"deadline" timestamp NOT NULL,
 	"creator_id" uuid NOT NULL,
 	"status" "program_status" DEFAULT 'pending',
 	"visibility" "program_visibility" DEFAULT 'public',
@@ -191,7 +191,7 @@ CREATE TABLE "milestones" (
 	"sort_order" integer DEFAULT 0 NOT NULL,
 	"rejection_reason" text,
 	"file" varchar(512),
-	"deadline" date NOT NULL,
+	"deadline" timestamp NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );

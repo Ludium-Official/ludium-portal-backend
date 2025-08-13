@@ -113,8 +113,8 @@ export async function getProgramsResolver(
       case 'imminent':
         // Only programs with a deadline within 7 days should be shown
         return and(
-          gt(programsTable.deadline, new Date().toISOString()),
-          lt(programsTable.deadline, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
+          gt(programsTable.deadline, new Date()),
+          lt(programsTable.deadline, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
         );
       default:
         return undefined;
@@ -280,9 +280,7 @@ export function createProgramResolver(
       description: inputData.description,
       price: inputData.price || '0',
       currency: inputData.currency || 'ETH',
-      deadline: inputData.deadline
-        ? new Date(inputData.deadline).toISOString()
-        : new Date().toISOString(),
+      deadline: inputData.deadline ? new Date(inputData.deadline) : new Date(),
       creatorId: user.id,
       status: inputData.status,
       visibility: inputData.visibility || 'public',

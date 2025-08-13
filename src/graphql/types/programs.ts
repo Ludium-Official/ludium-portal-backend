@@ -56,7 +56,7 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
     network: t.exposeString('network'),
     rejectionReason: t.exposeString('rejectionReason'),
     deadline: t.field({
-      type: 'Date',
+      type: 'DateTime',
       resolve: (program) => (program.deadline ? new Date(program.deadline) : null),
     }),
     keywords: t.field({
@@ -141,7 +141,7 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
       },
     }),
     currency: t.string(),
-    deadline: t.string({ required: true }),
+    deadline: t.field({ type: 'DateTime', required: true }),
     keywords: t.stringList({ required: true }),
     links: t.field({ type: [LinkInput] }),
     network: t.string({ required: true }),
@@ -165,7 +165,7 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
       },
     }),
     currency: t.string(),
-    deadline: t.string(),
+    deadline: t.field({ type: 'DateTime' }),
     keywords: t.stringList(),
     links: t.field({ type: [LinkInput] }),
     status: t.field({ type: ProgramStatusEnum }),
