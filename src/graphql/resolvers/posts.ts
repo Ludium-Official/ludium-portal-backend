@@ -121,13 +121,6 @@ export async function createPostResolver(
       .returning();
 
     if (image) {
-      const [imageFile] = await t
-        .select()
-        .from(filesTable)
-        .where(eq(filesTable.uploadedById, user.id));
-      if (imageFile) {
-        await ctx.server.fileManager.deleteFile(imageFile.id);
-      }
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: image,
         userId: user.id,

@@ -139,14 +139,12 @@ async function seed() {
             {
               programId: program.id,
               userId: validatorId,
-              roleType: 'validator' as const, // Use roleType instead of role
-              isApproved: true,
+              roleType: 'validator' as const,
             },
             {
               programId: program.id,
               userId: builderId,
-              roleType: 'builder' as const, // Use roleType instead of role
-              isApproved: true,
+              roleType: 'builder' as const,
             },
           );
         }
@@ -291,7 +289,7 @@ async function seed() {
                 percentage: '20',
                 currency: 'ETH',
                 status: 'pending' as const,
-                deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
                 links: [
                   { url: 'https://example.com/docs', title: 'Documentation' },
                   { url: 'https://example.com/plan', title: 'Project Plan' },
@@ -307,7 +305,7 @@ async function seed() {
                 percentage: '50',
                 currency: 'ETH',
                 status: 'pending' as const,
-                deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
                 links: [
                   { url: 'https://github.com/example/repo', title: 'Source Code' },
                   { url: 'https://example.com/docs/api', title: 'API Documentation' },
@@ -323,7 +321,7 @@ async function seed() {
                 percentage: '30',
                 currency: 'ETH',
                 status: 'pending' as const,
-                deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
                 links: [
                   { url: 'https://example.com/demo', title: 'Demo' },
                   { url: 'https://example.com/test-report', title: 'Test Report' },

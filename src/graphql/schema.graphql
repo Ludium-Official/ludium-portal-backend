@@ -92,7 +92,7 @@ input CreateCommentInput {
 
 input CreateMilestoneInput {
   currency: String! = "ETH"
-  deadline: Date!
+  deadline: DateTime!
   description: String!
   links: [LinkInput!]
   percentage: String!
@@ -110,7 +110,7 @@ input CreatePostInput {
 
 input CreateProgramInput {
   currency: String
-  deadline: String!
+  deadline: DateTime!
   description: String
   image: Upload!
   keywords: [String!]!
@@ -170,7 +170,7 @@ input LinkInput {
 type Milestone {
   comments: [Comment!]
   currency: String
-  deadline: Date
+  deadline: DateTime
   description: String
   file: String
   id: ID
@@ -314,7 +314,7 @@ type Program {
   comments: [Comment!]
   creator: User
   currency: String
-  deadline: Date
+  deadline: DateTime
   description: String
   educhainProgramId: Int
   id: ID
@@ -432,7 +432,7 @@ input UpdateCommentInput {
 
 input UpdateMilestoneInput {
   currency: String
-  deadline: Date
+  deadline: DateTime
   description: String
   id: String!
   links: [LinkInput!]
@@ -453,7 +453,7 @@ input UpdatePostInput {
 
 input UpdateProgramInput {
   currency: String
-  deadline: String
+  deadline: DateTime
   description: String
   id: ID!
   image: Upload
