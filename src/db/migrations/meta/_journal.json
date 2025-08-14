@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1748426496597,
-      "tag": "0000_lyrical_nitro",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1748844346043,
-      "tag": "0001_young_zeigeist",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1749014517723,
-      "tag": "0002_overrated_stellaris",
+      "when": 1755071777081,
+      "tag": "0000_spicy_rockslide",
       "breakpoints": true
     }
   ]

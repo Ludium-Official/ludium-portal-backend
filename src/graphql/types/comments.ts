@@ -4,25 +4,26 @@ import {
   createCommentResolver,
   getCommentRepliesResolver,
   getCommentResolver,
-  getCommentsByPostResolver,
+  getCommentsByCommentableResolver,
   getCommentsResolver,
   updateCommentResolver,
 } from '@/graphql/resolvers/comments';
-import { getPostResolver } from '@/graphql/resolvers/posts';
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { PaginationInput } from '@/graphql/types/common';
-import { PostType } from '@/graphql/types/posts';
 import { User } from '@/graphql/types/users';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
+
 export const CommentType = builder.objectRef<DBComment>('Comment');
 
 CommentType.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     content: t.exposeString('content'),
+    commentableType: t.exposeString('commentableType'),
+    commentableId: t.exposeString('commentableId'),
     author: t.field({
       type: User,
       resolve: (parent, _args, ctx) => getUserResolver({}, { id: parent.authorId }, ctx),
@@ -33,17 +34,13 @@ CommentType.implement({
         parent.parentId === null ? null : getCommentResolver({}, { id: parent.parentId }, ctx),
     }),
     createdAt: t.field({
-      type: 'Date',
+      type: 'DateTime',
       resolve: (parent) => parent.createdAt,
     }),
     replies: t.field({
       type: [CommentType],
       resolve: (parent, _args, ctx) =>
         parent.parentId === null ? getCommentRepliesResolver({}, { parentId: parent.id }, ctx) : [],
-    }),
-    post: t.field({
-      type: PostType,
-      resolve: (parent, _args, ctx) => getPostResolver({}, { id: parent.postId }, ctx),
     }),
   }),
 });
@@ -60,9 +57,15 @@ export const PaginatedCommentsType = builder
 /* -------------------------------------------------------------------------- */
 /*                                   Inputs                                   */
 /* -------------------------------------------------------------------------- */
+
+export const CommentableTypeEnum = builder.enumType('CommentableTypeEnum', {
+  values: ['post', 'program', 'milestone', 'application'] as const,
+});
+
 export const CreateCommentInput = builder.inputType('CreateCommentInput', {
   fields: (t) => ({
-    postId: t.id({ required: true }),
+    commentableType: t.field({ type: CommentableTypeEnum, required: true }),
+    commentableId: t.id({ required: true }),
     content: t.string({ required: true }),
     parentId: t.id({ required: false }),
   }),
@@ -87,12 +90,13 @@ builder.queryFields((t) => ({
     },
     resolve: getCommentsResolver,
   }),
-  commentsByPost: t.field({
+  commentsByCommentable: t.field({
     type: [CommentType],
     args: {
-      postId: t.arg.id({ required: true }),
+      commentableType: t.arg({ type: CommentableTypeEnum, required: true }),
+      commentableId: t.arg.id({ required: true }),
     },
-    resolve: getCommentsByPostResolver,
+    resolve: getCommentsByCommentableResolver,
   }),
   comment: t.field({
     type: CommentType,

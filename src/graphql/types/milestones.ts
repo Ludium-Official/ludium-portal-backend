@@ -1,5 +1,6 @@
 import { type Milestone as DBMilestone, milestoneStatuses } from '@/db/schemas';
 import builder from '@/graphql/builder';
+import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
 import { getLinksByMilestoneIdResolver } from '@/graphql/resolvers/links';
 import {
   checkMilestoneResolver,
@@ -8,6 +9,7 @@ import {
   submitMilestoneResolver,
   updateMilestoneResolver,
 } from '@/graphql/resolvers/milestones';
+import { CommentType } from '@/graphql/types/comments';
 import { PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
 import BigNumber from 'bignumber.js';
@@ -24,7 +26,9 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
     id: t.exposeID('id'),
     title: t.exposeString('title'),
     description: t.exposeString('description', { nullable: true }),
+    summary: t.exposeString('summary', { nullable: true }),
     price: t.exposeString('price'),
+    percentage: t.exposeString('percentage'),
     currency: t.exposeString('currency'),
     rejectionReason: t.exposeString('rejectionReason', { nullable: true }),
     status: t.field({
@@ -35,6 +39,20 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
       type: [Link],
       resolve: async (milestone, _args, ctx) =>
         getLinksByMilestoneIdResolver({}, { milestoneId: milestone.id }, ctx),
+    }),
+    comments: t.field({
+      type: [CommentType],
+      resolve: async (milestone, _args, ctx) =>
+        getCommentsByCommentableResolver(
+          {},
+          { commentableType: 'milestone', commentableId: milestone.id },
+          ctx,
+        ),
+    }),
+    file: t.exposeString('file', { nullable: true }),
+    deadline: t.field({
+      type: 'DateTime',
+      resolve: (milestone) => (milestone.deadline ? new Date(milestone.deadline) : null),
     }),
   }),
 });
@@ -54,17 +72,21 @@ export const PaginatedMilestonesType = builder
 export const CreateMilestoneInput = builder.inputType('CreateMilestoneInput', {
   fields: (t) => ({
     title: t.string({ required: true }),
-    description: t.string(),
-    price: t.string({
+    description: t.string({ required: true }),
+    summary: t.string({ required: true }),
+    percentage: t.string({
       required: true,
       validate: {
         refine(value) {
-          return new BigNumber(value).isPositive();
+          if (!value) return true; // Allow undefined/null for optional field
+          const percentage = new BigNumber(value);
+          return percentage.isGreaterThan(0) && percentage.isLessThanOrEqualTo(100);
         },
       },
     }),
     currency: t.string({ required: true, defaultValue: 'ETH' }),
-    links: t.field({ type: [LinkInput] }),
+    links: t.field({ type: [LinkInput], required: false }),
+    deadline: t.field({ type: 'DateTime', required: true }),
   }),
 });
 
@@ -73,15 +95,25 @@ export const UpdateMilestoneInput = builder.inputType('UpdateMilestoneInput', {
     id: t.string({ required: true }),
     title: t.string(),
     description: t.string(),
-    price: t.string(),
+    summary: t.string(),
+    percentage: t.string({
+      validate: {
+        refine(value) {
+          if (!value) return true; // Allow undefined/null for optional field
+          const percentage = new BigNumber(value);
+          return percentage.isGreaterThan(0) && percentage.isLessThanOrEqualTo(100);
+        },
+      },
+    }),
     currency: t.string(),
     status: t.field({ type: MilestoneStatusEnum }),
     links: t.field({ type: [LinkInput] }),
+    deadline: t.field({ type: 'DateTime' }),
   }),
 });
 
 export const CheckMilestoneStatusEnum = builder.enumType('CheckMilestoneStatus', {
-  values: ['pending', 'completed'] as const,
+  values: ['completed', 'rejected'] as const,
 });
 
 export const CheckMilestoneInput = builder.inputType('CheckMilestoneInput', {
@@ -92,11 +124,17 @@ export const CheckMilestoneInput = builder.inputType('CheckMilestoneInput', {
   }),
 });
 
+export const SubmitMilestoneStatusEnum = builder.enumType('SubmitMilestoneStatus', {
+  values: ['draft', 'submitted'] as const,
+});
+
 export const SubmitMilestoneInput = builder.inputType('SubmitMilestoneInput', {
   fields: (t) => ({
     id: t.string({ required: true }),
+    status: t.field({ type: SubmitMilestoneStatusEnum, required: true }),
     description: t.string(),
     links: t.field({ type: [LinkInput] }),
+    file: t.field({ type: 'Upload' }),
   }),
 });
 
@@ -124,10 +162,7 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   updateMilestone: t.field({
     type: MilestoneType,
-    authScopes: async (_, args) => ({
-      admin: true,
-      milestoneBuilder: { milestoneId: args.input.id },
-    }),
+    authScopes: { user: true },
     args: {
       input: t.arg({ type: UpdateMilestoneInput, required: true }),
     },

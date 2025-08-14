@@ -1,7 +1,7 @@
 import { relations } from 'drizzle-orm';
 import {
-  boolean,
   jsonb,
+  pgEnum,
   pgTable,
   primaryKey,
   text,
@@ -11,9 +11,13 @@ import {
 } from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
 import { filesTable } from './files';
+import { keywordsTable } from './keywords';
 import { linksTable } from './links';
 import { postsTable } from './posts';
 import { programUserRolesTable, programsTable } from './programs';
+
+export const userRoles = ['user', 'admin', 'superadmin'] as const;
+export const userRolesEnum = pgEnum('user_roles', userRoles);
 
 export const usersTable = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -26,8 +30,8 @@ export const usersTable = pgTable('users', {
   about: text('about'),
   summary: varchar('summary', { length: 512 }),
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
-  isAdmin: boolean('is_admin').default(false),
   loginType: varchar('login_type', { length: 256 }),
+  role: userRolesEnum('role').default('user'),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
@@ -40,10 +44,10 @@ export const usersTable = pgTable('users', {
 export const userRelations = relations(usersTable, ({ many }) => ({
   files: many(filesTable),
   createdPrograms: many(programsTable, { relationName: 'program_creator' }),
-  validatedPrograms: many(programsTable, { relationName: 'program_validator' }),
   applications: many(applicationsTable),
   programRoles: many(programUserRolesTable),
   posts: many(postsTable),
+  usersToKeywords: many(usersToKeywordsTable),
 }));
 
 // Links
@@ -68,6 +72,31 @@ export const usersToLinksRelations = relations(usersToLinksTable, ({ one }) => (
   link: one(linksTable, {
     fields: [usersToLinksTable.linkId],
     references: [linksTable.id],
+  }),
+}));
+
+// Keywords
+export const usersToKeywordsTable = pgTable(
+  'users_to_keywords',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => usersTable.id, { onDelete: 'cascade' }),
+    keywordId: uuid('keyword_id')
+      .notNull()
+      .references(() => keywordsTable.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.keywordId] })],
+);
+
+export const usersToKeywordsRelations = relations(usersToKeywordsTable, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [usersToKeywordsTable.userId],
+    references: [usersTable.id],
+  }),
+  keyword: one(keywordsTable, {
+    fields: [usersToKeywordsTable.keywordId],
+    references: [keywordsTable.id],
   }),
 }));
 

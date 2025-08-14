@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { boolean, pgTable, primaryKey, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, primaryKey, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { commentsTable } from './comments';
 import { keywordsTable } from './keywords';
 import { usersTable } from './users';
@@ -13,7 +13,6 @@ export const postsTable = pgTable('posts', {
   content: text('content').notNull(),
   summary: varchar('summary', { length: 512 }).notNull(),
   image: varchar('image', { length: 512 }),
-  isBanner: boolean('is_banner').notNull().default(false),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()

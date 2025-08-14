@@ -1,5 +1,6 @@
 type Application {
   applicant: User
+  comments: [Comment!]
   content: String
   id: ID
   links: [Link!]
@@ -20,6 +21,21 @@ enum ApplicationStatus {
   submitted
 }
 
+type CarouselItem {
+  displayOrder: Int
+  id: ID
+  isActive: Boolean
+  itemId: String
+  itemType: CarouselItemType
+}
+
+union CarouselItemData = Post | Program
+
+enum CarouselItemType {
+  post
+  program
+}
+
 input CheckMilestoneInput {
   id: String!
   rejectionReason: String
@@ -28,17 +44,25 @@ input CheckMilestoneInput {
 
 enum CheckMilestoneStatus {
   completed
-  pending
+  rejected
 }
 
 type Comment {
   author: User
+  commentableId: String
+  commentableType: String
   content: String
-  createdAt: Date
+  createdAt: DateTime
   id: ID
   parent: Comment
-  post: Post
   replies: [Comment!]
+}
+
+enum CommentableTypeEnum {
+  application
+  milestone
+  post
+  program
 }
 
 input CreateApplicationInput {
@@ -49,27 +73,36 @@ input CreateApplicationInput {
   name: String!
   price: String!
   programId: String!
-  summary: String
+  status: ApplicationStatus!
+  summary: String!
+}
+
+input CreateCarouselItemInput {
+  isActive: Boolean!
+  itemId: String!
+  itemType: CarouselItemType!
 }
 
 input CreateCommentInput {
+  commentableId: ID!
+  commentableType: CommentableTypeEnum!
   content: String!
   parentId: ID
-  postId: ID!
 }
 
 input CreateMilestoneInput {
   currency: String! = "ETH"
-  description: String
+  deadline: DateTime!
+  description: String!
   links: [LinkInput!]
-  price: String!
+  percentage: String!
+  summary: String!
   title: String!
 }
 
 input CreatePostInput {
   content: String!
   image: Upload
-  isBanner: Boolean
   keywords: [ID!]
   summary: String!
   title: String!
@@ -77,15 +110,17 @@ input CreatePostInput {
 
 input CreateProgramInput {
   currency: String
-  deadline: String!
+  deadline: DateTime!
   description: String
-  keywords: [ID!]
+  image: Upload!
+  keywords: [String!]!
   links: [LinkInput!]
   name: String!
-  network: String
+  network: String!
   price: String!
+  status: ProgramStatus = pending
   summary: String
-  validatorId: ID!
+  visibility: ProgramVisibility
 }
 
 """
@@ -97,6 +132,15 @@ scalar Date
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
 scalar DateTime
+
+type EnrichedCarouselItem {
+  data: CarouselItemData
+  displayOrder: Int
+  id: ID
+  isActive: Boolean
+  itemId: String
+  itemType: CarouselItemType
+}
 
 input FilterInput {
   field: String!
@@ -124,18 +168,24 @@ input LinkInput {
 }
 
 type Milestone {
+  comments: [Comment!]
   currency: String
+  deadline: DateTime
   description: String
+  file: String
   id: ID
   links: [Link!]
+  percentage: String
   price: String
   rejectionReason: String
   status: MilestoneStatus
+  summary: String
   title: String
 }
 
 enum MilestoneStatus {
   completed
+  draft
   pending
   rejected
   submitted
@@ -144,22 +194,34 @@ enum MilestoneStatus {
 type Mutation {
   acceptApplication(id: ID!): Application
   acceptProgram(id: ID!): Program
+  addProgramKeyword(keyword: String!, programId: ID!): Keyword
+  addUserKeyword(keyword: String!, userId: ID!): Keyword
+  assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
   checkMilestone(input: CheckMilestoneInput!): Milestone
   createApplication(input: CreateApplicationInput!): Application
+  createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
   createComment(input: CreateCommentInput!): Comment
   createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
+  deleteCarouselItem(id: ID!): CarouselItem
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
+  incrementPostView(postId: ID!): Int
+  inviteUserToProgram(programId: ID!, userId: ID!): Program
   login(email: String, loginType: String!, walletAddress: String!): String
   markAllNotificationsAsRead: Boolean
   markNotificationAsRead(id: ID!): Boolean
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
+  removeProgramKeyword(keyword: String!, programId: ID!): Boolean
+  removeUserKeyword(keyword: String!, userId: ID!): Boolean
+  removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
+  reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   updateApplication(input: UpdateApplicationInput!): Application
+  updateCarouselItem(input: UpdateCarouselItemInput!): CarouselItem
   updateComment(input: UpdateCommentInput!): Comment
   updateMilestone(input: UpdateMilestoneInput!): Milestone
   updatePost(input: UpdatePostInput!): Post
@@ -184,6 +246,7 @@ enum NotificationAction {
   broadcast
   completed
   created
+  invited
   rejected
   submitted
 }
@@ -235,6 +298,7 @@ input PaginationInput {
 
 type Post {
   author: User
+  comments: [Comment!]
   content: String
   createdAt: Date
   id: ID
@@ -242,16 +306,20 @@ type Post {
   keywords: [Keyword!]
   summary: String
   title: String
+  viewCount: Int
 }
 
 type Program {
   applications: [Application!]
+  comments: [Comment!]
   creator: User
   currency: String
-  deadline: Date
+  deadline: DateTime
   description: String
   educhainProgramId: Int
   id: ID
+  image: String
+  invitedBuilders: [User!]
   keywords: [Keyword!]
   links: [Link!]
   name: String
@@ -261,25 +329,42 @@ type Program {
   status: ProgramStatus
   summary: String
   txHash: String
-  validator: User
+  validators: [User!]
+  visibility: ProgramVisibility
+}
+
+type ProgramStatsByStatus {
+  completed: Int
+  confirmed: Int
+  notConfirmed: Int
+  paymentRequired: Int
+  published: Int
+  refund: Int
 }
 
 enum ProgramStatus {
   cancelled
   closed
   completed
-  draft
   payment_required
+  pending
   published
+  rejected
+}
+
+enum ProgramVisibility {
+  private
+  public
+  restricted
 }
 
 type Query {
   application(id: ID!): Application
   applications(pagination: PaginationInput): PaginatedApplications
-  banner: Post
+  carouselItems: [EnrichedCarouselItem!]
   comment(id: ID!): Comment
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
-  commentsByPost(postId: ID!): [Comment!]
+  commentsByCommentable(commentableId: ID!, commentableType: CommentableTypeEnum!): [Comment!]
   countNotifications: Int
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
@@ -294,6 +379,11 @@ type Query {
   users(pagination: PaginationInput): PaginatedUsers
 }
 
+input ReorderCarouselItemInput {
+  displayOrder: Int!
+  id: String!
+}
+
 enum SortEnum {
   asc
   desc
@@ -301,8 +391,15 @@ enum SortEnum {
 
 input SubmitMilestoneInput {
   description: String
+  file: Upload
   id: String!
   links: [LinkInput!]
+  status: SubmitMilestoneStatus!
+}
+
+enum SubmitMilestoneStatus {
+  draft
+  submitted
 }
 
 type Subscription {
@@ -320,6 +417,14 @@ input UpdateApplicationInput {
   summary: String
 }
 
+input UpdateCarouselItemInput {
+  displayOrder: Int
+  id: String!
+  isActive: Boolean
+  itemId: String
+  itemType: CarouselItemType
+}
+
 input UpdateCommentInput {
   content: String
   id: ID!
@@ -327,11 +432,13 @@ input UpdateCommentInput {
 
 input UpdateMilestoneInput {
   currency: String
+  deadline: DateTime
   description: String
   id: String!
   links: [LinkInput!]
-  price: String
+  percentage: String
   status: MilestoneStatus
+  summary: String
   title: String
 }
 
@@ -339,7 +446,6 @@ input UpdatePostInput {
   content: String
   id: ID!
   image: Upload
-  isBanner: Boolean
   keywords: [ID!]
   summary: String
   title: String
@@ -347,17 +453,18 @@ input UpdatePostInput {
 
 input UpdateProgramInput {
   currency: String
-  deadline: String
+  deadline: DateTime
   description: String
   id: ID!
-  keywords: [ID!]
+  image: Upload
+  keywords: [String!]
   links: [LinkInput!]
   name: String
   network: String
   price: String
   status: ProgramStatus
   summary: String
-  validatorId: ID
+  visibility: ProgramVisibility
 }
 
 scalar Upload
@@ -369,11 +476,13 @@ type User {
   firstName: String
   id: ID
   image: String
-  isAdmin: Boolean
+  keywords: [Keyword!]
   lastName: String
   links: [Link!]
   loginType: String
   organizationName: String
+  programStatistics: UserProgramStatistics
+  role: UserRole
   summary: String
   walletAddress: String
 }
@@ -383,6 +492,7 @@ input UserInput {
   email: String!
   firstName: String
   image: Upload
+  keywords: [String!]
   lastName: String
   links: [LinkInput!]
   loginType: String
@@ -392,12 +502,25 @@ input UserInput {
   walletAddress: String
 }
 
+type UserProgramStatistics {
+  asBuilder: ProgramStatsByStatus
+  asSponsor: ProgramStatsByStatus
+  asValidator: ProgramStatsByStatus
+}
+
+enum UserRole {
+  admin
+  superadmin
+  user
+}
+
 input UserUpdateInput {
   about: String
   email: String
   firstName: String
   id: ID!
   image: Upload
+  keywords: [String!]
   lastName: String
   links: [LinkInput!]
   loginType: String

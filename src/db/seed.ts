@@ -50,7 +50,7 @@ async function seed() {
     if (insertedUsers.length > 0) {
       await db
         .update(usersTable)
-        .set({ isAdmin: true })
+        .set({ role: 'admin' })
         .where(eq(usersTable.id, insertedUsers[0].id));
       console.log('✅ Set first user as admin');
     }
@@ -139,14 +139,12 @@ async function seed() {
             {
               programId: program.id,
               userId: validatorId,
-              roleType: 'validator' as const, // Use roleType instead of role
-              isApproved: true,
+              roleType: 'validator' as const,
             },
             {
               programId: program.id,
               userId: builderId,
-              roleType: 'builder' as const, // Use roleType instead of role
-              isApproved: true,
+              roleType: 'builder' as const,
             },
           );
         }
@@ -282,34 +280,52 @@ async function seed() {
             const milestonesData = [];
 
             for (const application of insertedApplications) {
-              // First milestone - Planning phase
+              // First milestone - Planning phase (20% of total)
               milestonesData.push({
                 applicationId: application.id,
                 title: 'Planning and Requirements',
                 description: 'Define project requirements, create detailed plan and architecture',
                 price: '2',
+                percentage: '20',
                 currency: 'ETH',
                 status: 'pending' as const,
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+                links: [
+                  { url: 'https://example.com/docs', title: 'Documentation' },
+                  { url: 'https://example.com/plan', title: 'Project Plan' },
+                ],
               });
 
-              // Second milestone - Development
+              // Second milestone - Development (50% of total)
               milestonesData.push({
                 applicationId: application.id,
                 title: 'Development',
                 description: 'Implementation of core functionality based on approved plans',
                 price: '5',
+                percentage: '50',
                 currency: 'ETH',
                 status: 'pending' as const,
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+                links: [
+                  { url: 'https://github.com/example/repo', title: 'Source Code' },
+                  { url: 'https://example.com/docs/api', title: 'API Documentation' },
+                ],
               });
 
-              // Third milestone - Testing & Delivery
+              // Third milestone - Testing & Delivery (30% of total)
               milestonesData.push({
                 applicationId: application.id,
                 title: 'Testing and Delivery',
                 description: 'Final testing, bug fixes, and project delivery',
                 price: '3',
+                percentage: '30',
                 currency: 'ETH',
                 status: 'pending' as const,
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+                links: [
+                  { url: 'https://example.com/demo', title: 'Demo' },
+                  { url: 'https://example.com/test-report', title: 'Test Report' },
+                ],
               });
             }
 
@@ -391,11 +407,12 @@ async function seed() {
           // Process comments without parents first
           const topLevelComments = comments.filter((comment) => comment.parentIndex === undefined);
           const topLevelCommentValues = topLevelComments.map((comment, index) => {
-            const postId = insertedPosts[comment.postIndex].id;
+            const commentableId = insertedPosts[comment.commentableIndex].id;
             const authorId = userIds[comment.authorIndex % userIds.length];
 
             return {
-              postId,
+              commentableType: comment.commentableType,
+              commentableId,
               authorId,
               content: comment.content,
               parentId: null,
@@ -404,11 +421,25 @@ async function seed() {
           });
 
           if (topLevelCommentValues.length > 0) {
-            const insertedTopLevelComments = await db
-              .insert(commentsTable)
-              .values(topLevelCommentValues.map(({ originalIndex, ...rest }) => rest))
-              .returning()
-              .onConflictDoNothing();
+            // Insert comments individually with slight time differences
+            const insertedTopLevelComments = [];
+            for (const comment of topLevelCommentValues) {
+              const { originalIndex, ...commentData } = comment;
+              // Add a small offset to createdAt to ensure unique timestamps
+              const [inserted] = await db
+                .insert(commentsTable)
+                .values({
+                  ...commentData,
+                  createdAt: new Date(
+                    Date.now() - (topLevelCommentValues.length - originalIndex) * 1000,
+                  ),
+                })
+                .returning()
+                .onConflictDoNothing();
+              if (inserted) {
+                insertedTopLevelComments.push(inserted);
+              }
+            }
 
             // Store the mapping of original indices to inserted IDs
             for (let i = 0; i < insertedTopLevelComments.length; i++) {
@@ -422,13 +453,14 @@ async function seed() {
           // Now process child comments
           const childComments = comments.filter((comment) => comment.parentIndex !== undefined);
           const childCommentValues = childComments.map((comment) => {
-            const postId = insertedPosts[comment.postIndex].id;
+            const commentableId = insertedPosts[comment.commentableIndex].id;
             const authorId = userIds[comment.authorIndex % userIds.length];
             const parentId =
               comment.parentIndex !== undefined ? commentIdMap[comment.parentIndex] : null;
 
             return {
-              postId,
+              commentableType: comment.commentableType,
+              commentableId,
               authorId,
               content: comment.content,
               parentId,
@@ -436,11 +468,23 @@ async function seed() {
           });
 
           if (childCommentValues.length > 0) {
-            const insertedChildComments = await db
-              .insert(commentsTable)
-              .values(childCommentValues)
-              .returning()
-              .onConflictDoNothing();
+            // Insert child comments individually with slight time differences
+            const insertedChildComments = [];
+            for (let i = 0; i < childCommentValues.length; i++) {
+              const commentData = childCommentValues[i];
+              // Add a small offset to createdAt to ensure unique timestamps
+              const [inserted] = await db
+                .insert(commentsTable)
+                .values({
+                  ...commentData,
+                  createdAt: new Date(Date.now() - (childCommentValues.length - i) * 500),
+                })
+                .returning()
+                .onConflictDoNothing();
+              if (inserted) {
+                insertedChildComments.push(inserted);
+              }
+            }
 
             console.log(`✅ Added ${insertedChildComments.length} reply comments`);
           }

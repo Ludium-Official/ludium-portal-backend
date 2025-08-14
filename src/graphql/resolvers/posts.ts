@@ -2,12 +2,13 @@ import {
   type Post,
   filesTable,
   keywordsTable,
+  postViewsTable,
   postsTable,
   postsToKeywordsTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreatePostInput, UpdatePostInput } from '@/graphql/types/posts';
-import type { Args, Context, Root } from '@/types';
+import type { Context, Root } from '@/types';
 import { filterEmptyValues, requireUser, validAndNotEmptyArray } from '@/utils';
 import { and, asc, count, desc, eq, ilike, inArray } from 'drizzle-orm';
 
@@ -76,16 +77,6 @@ export async function getPostResolver(_root: Root, args: { id: string }, ctx: Co
   return post;
 }
 
-export async function getBannerPostResolver(_root: Root, _args: Args, ctx: Context) {
-  const [post] = await ctx.db
-    .select()
-    .from(postsTable)
-    .where(eq(postsTable.isBanner, true))
-    .orderBy(desc(postsTable.createdAt))
-    .limit(1);
-  return post;
-}
-
 export async function getPostKeywordsByPostIdResolver(
   _root: Root,
   args: { postId: string },
@@ -130,18 +121,9 @@ export async function createPostResolver(
       .returning();
 
     if (image) {
-      const [avatar] = await t
-        .select()
-        .from(filesTable)
-        .where(eq(filesTable.uploadedById, user.id));
-      if (avatar) {
-        await ctx.server.fileManager.deleteFile(avatar.id);
-      }
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: image,
         userId: user.id,
-        type: 'post',
-        entityId: post.id,
       });
       await t.update(postsTable).set({ image: fileUrl }).where(eq(postsTable.id, post.id));
     }
@@ -173,16 +155,13 @@ export async function updatePostResolver(
   const postData = filterEmptyValues<Post>(args.input);
 
   return ctx.db.transaction(async (t) => {
-    if (postData.isBanner === true) {
-      await t.update(postsTable).set({ isBanner: false }).where(eq(postsTable.isBanner, true));
-    }
     const [post] = await t
       .update(postsTable)
       .set(postData)
       .where(eq(postsTable.id, args.input.id))
       .returning();
 
-    if (user.id !== post?.authorId && !user.isAdmin) {
+    if (user.id !== post?.authorId && !user.role?.endsWith('admin')) {
       throw new Error('You are not the author of this post');
     }
 
@@ -208,12 +187,66 @@ export async function updatePostResolver(
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: args.input.image,
         userId: user.id,
-        type: 'post',
-        entityId: post.id,
       });
       await t.update(postsTable).set({ image: fileUrl }).where(eq(postsTable.id, post.id));
     }
 
     return post;
   });
+}
+
+export async function getPostViewCountResolver(
+  _root: Root,
+  args: { postId: string },
+  ctx: Context,
+) {
+  const [result] = await ctx.db
+    .select({ count: count() })
+    .from(postViewsTable)
+    .where(eq(postViewsTable.postId, args.postId));
+
+  return result?.count || 0;
+}
+
+export async function incrementPostViewResolver(
+  _root: Root,
+  args: { postId: string },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+  const ipAddress = ctx.request.ip || ctx.request.socket.remoteAddress || null;
+
+  // Check if post exists
+  const [post] = await ctx.db.select().from(postsTable).where(eq(postsTable.id, args.postId));
+
+  if (!post) {
+    throw new Error('Post not found');
+  }
+
+  // Check if this view already exists
+  const whereConditions = [eq(postViewsTable.postId, args.postId)];
+
+  if (user) {
+    whereConditions.push(eq(postViewsTable.userId, user.id));
+  } else if (ipAddress) {
+    whereConditions.push(eq(postViewsTable.ipAddress, ipAddress));
+  }
+
+  const existingView = await ctx.db
+    .select()
+    .from(postViewsTable)
+    .where(and(...whereConditions))
+    .limit(1);
+
+  if (existingView.length === 0) {
+    // Record new view
+    await ctx.db.insert(postViewsTable).values({
+      postId: args.postId,
+      userId: user?.id || null,
+      ipAddress,
+    });
+  }
+
+  // Return updated view count
+  return getPostViewCountResolver(_root, { postId: args.postId }, ctx);
 }

@@ -1,3 +1,4 @@
+import type { User } from '@/db/schemas';
 import type { DecodedToken } from '@/plugins/auth';
 import type { Context, EnvConfig } from '@/types';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -18,7 +19,7 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
   return reply.code(403).send();
 }
 
-export function requireUser(ctx: Context) {
+export function requireUser(ctx: Context): User {
   const user = ctx.server.auth.getUser(ctx.request);
   if (!user) {
     throw new Error('Unauthorized');

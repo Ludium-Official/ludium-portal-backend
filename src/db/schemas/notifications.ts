@@ -18,6 +18,7 @@ export const notificationActions = [
   'submitted',
   'completed',
   'broadcast',
+  'invited',
 ] as const;
 export const notificationActionEnum = pgEnum('notification_action', notificationActions);
 

@@ -8,7 +8,7 @@ export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
       'Funding program for developers creating innovative Web3 solutions. We seek projects that solve real problems and have scaling potential.',
     price: '5',
     currency: 'ETH',
-    deadline: '2023-12-31',
+    deadline: new Date('2023-12-31'),
     status: 'published',
   },
   {
@@ -18,7 +18,7 @@ export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
       'Contest for Solidity smart contract developers. Participants must create a secure and efficient smart contract that solves one of the proposed tasks.',
     price: '2.5',
     currency: 'ETH',
-    deadline: '2023-11-15',
+    deadline: new Date('2023-11-15'),
     status: 'published',
   },
   {
@@ -28,8 +28,8 @@ export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
       'Support program for innovative projects in decentralized finance (DeFi). We seek projects offering new financial instruments, protocols, or blockchain-based services.',
     price: '10',
     currency: 'ETH',
-    deadline: '2024-01-31',
-    status: 'draft',
+    deadline: new Date('2024-01-31'),
+    status: 'pending',
   },
   {
     name: 'NFT Art Marketplace Development',
@@ -38,7 +38,7 @@ export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
       'Project to create an NFT art marketplace focused on supporting artists and creators. Looking for developers with NFT and frontend development experience.',
     price: '7.5',
     currency: 'ETH',
-    deadline: '2023-12-15',
+    deadline: new Date('2023-12-15'),
     status: 'published',
   },
   {
@@ -48,8 +48,8 @@ export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
       'Project to create an educational platform for blockchain technologies. The goal is to make blockchain more accessible to a wide audience through interactive courses and practical assignments.',
     price: '15',
     currency: 'ETH',
-    deadline: '2024-02-28',
-    status: 'draft',
+    deadline: new Date('2024-02-28'),
+    status: 'pending',
   },
 ];
 

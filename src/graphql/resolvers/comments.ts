@@ -1,4 +1,4 @@
-import { type Comment, commentsTable } from '@/db/schemas';
+import { type Comment, type CommentableType, commentsTable } from '@/db/schemas';
 import type { CreateCommentInput, UpdateCommentInput } from '@/graphql/types/comments';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { Context, Root } from '@/types';
@@ -23,8 +23,10 @@ export async function getCommentsResolver(
     switch (f.field) {
       case 'authorId':
         return eq(commentsTable.authorId, f.value);
-      case 'postId':
-        return eq(commentsTable.postId, f.value);
+      case 'commentableType':
+        return eq(commentsTable.commentableType, f.value as CommentableType);
+      case 'commentableId':
+        return eq(commentsTable.commentableId, f.value);
       default:
         return undefined;
     }
@@ -89,15 +91,20 @@ export async function getCommentRepliesResolver(
   return replies;
 }
 
-export async function getCommentsByPostResolver(
+export async function getCommentsByCommentableResolver(
   _root: Root,
-  args: { postId: string },
+  args: { commentableType: CommentableType; commentableId: string },
   ctx: Context,
 ) {
   const comments = await ctx.db
     .select()
     .from(commentsTable)
-    .where(eq(commentsTable.postId, args.postId))
+    .where(
+      and(
+        eq(commentsTable.commentableType, args.commentableType),
+        eq(commentsTable.commentableId, args.commentableId),
+      ),
+    )
     .orderBy(desc(commentsTable.createdAt));
 
   return comments;
@@ -110,7 +117,7 @@ export async function createCommentResolver(
 ) {
   const user = requireUser(ctx);
 
-  const { postId, content, parentId } = args.input;
+  const { commentableType, commentableId, content, parentId } = args.input;
 
   if (parentId) {
     const [parentComment] = await ctx.db
@@ -125,12 +132,21 @@ export async function createCommentResolver(
     if (parentComment.parentId) {
       throw new Error('Cannot reply to a comment that is already a reply (max nesting depth is 1)');
     }
+
+    // Ensure the parent comment belongs to the same commentable
+    if (
+      parentComment.commentableType !== commentableType ||
+      parentComment.commentableId !== commentableId
+    ) {
+      throw new Error('Parent comment does not belong to the same commentable entity');
+    }
   }
 
   const [comment] = await ctx.db
     .insert(commentsTable)
     .values({
-      postId,
+      commentableType: commentableType as CommentableType,
+      commentableId,
       content,
       authorId: user.id,
       parentId: parentId || null,

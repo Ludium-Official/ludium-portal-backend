@@ -1,14 +1,17 @@
 import type { Post as DBPost } from '@/db/schemas';
 import builder from '@/graphql/builder';
+import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
 import {
   createPostResolver,
-  getBannerPostResolver,
   getPostKeywordsByPostIdResolver,
   getPostResolver,
+  getPostViewCountResolver,
   getPostsResolver,
+  incrementPostViewResolver,
   updatePostResolver,
 } from '@/graphql/resolvers/posts';
 import { getUserResolver } from '@/graphql/resolvers/users';
+import { CommentType } from '@/graphql/types/comments';
 import { KeywordType, PaginationInput } from '@/graphql/types/common';
 import { User } from '@/graphql/types/users';
 
@@ -30,6 +33,19 @@ export const PostType = builder.objectRef<DBPost>('Post').implement({
       type: [KeywordType],
       resolve: async (post, _args, ctx) =>
         getPostKeywordsByPostIdResolver({}, { postId: post.id }, ctx),
+    }),
+    comments: t.field({
+      type: [CommentType],
+      resolve: async (post, _args, ctx) =>
+        getCommentsByCommentableResolver(
+          {},
+          { commentableType: 'post', commentableId: post.id },
+          ctx,
+        ),
+    }),
+    viewCount: t.field({
+      type: 'Int',
+      resolve: async (post, _args, ctx) => getPostViewCountResolver({}, { postId: post.id }, ctx),
     }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
   }),
@@ -53,7 +69,6 @@ export const CreatePostInput = builder.inputType('CreatePostInput', {
     content: t.string({ required: true }),
     summary: t.string({ required: true }),
     keywords: t.idList(),
-    isBanner: t.boolean(),
     image: t.field({ type: 'Upload' }),
   }),
 });
@@ -64,7 +79,6 @@ export const UpdatePostInput = builder.inputType('UpdatePostInput', {
     title: t.string(),
     content: t.string(),
     summary: t.string(),
-    isBanner: t.boolean(),
     keywords: t.idList(),
     image: t.field({ type: 'Upload' }),
   }),
@@ -88,10 +102,6 @@ builder.queryFields((t) => ({
     },
     resolve: getPostResolver,
   }),
-  banner: t.field({
-    type: PostType,
-    resolve: getBannerPostResolver,
-  }),
 }));
 
 builder.mutationFields((t) => ({
@@ -110,5 +120,12 @@ builder.mutationFields((t) => ({
       input: t.arg({ type: UpdatePostInput, required: true }),
     },
     resolve: updatePostResolver,
+  }),
+  incrementPostView: t.field({
+    type: 'Int',
+    args: {
+      postId: t.arg.id({ required: true }),
+    },
+    resolve: incrementPostViewResolver,
   }),
 }));

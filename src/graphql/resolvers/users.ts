@@ -1,9 +1,12 @@
 import {
   type User,
   filesTable,
+  keywordsTable,
   linksTable,
   programUserRolesTable,
+  programsTable,
   usersTable,
+  usersToKeywordsTable,
   usersToLinksTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
@@ -11,7 +14,7 @@ import type { UserInput, UserUpdateInput } from '@/graphql/types/users';
 import type { Args, Context, Root, UploadFile } from '@/types';
 import { requireUser } from '@/utils';
 import { filterEmptyValues, validAndNotEmptyArray } from '@/utils/common';
-import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, isNotNull, or, sql } from 'drizzle-orm';
 
 export async function getUsersResolver(
   _root: Root,
@@ -25,6 +28,7 @@ export async function getUsersResolver(
 
   const sortByProjects = filter.some((f) => f.field === 'byNumberOfProjects');
   const sortDirection = filter.find((f) => f.field === 'byNumberOfProjects')?.value || 'desc';
+  const sortByNewest = filter.some((f) => f.field === 'byNewest');
 
   const filterPromises = filter.map(async (f) => {
     if (f.field === 'search') {
@@ -37,6 +41,10 @@ export async function getUsersResolver(
     }
 
     if (f.field === 'byNumberOfProjects') {
+      return undefined;
+    }
+
+    if (f.field === 'byNewest') {
       return undefined;
     }
 
@@ -56,7 +64,12 @@ export async function getUsersResolver(
 
   const conditions = await Promise.all(filterPromises);
   const validConditions = conditions.filter(Boolean);
-  const where = validConditions.length > 0 ? and(...validConditions) : undefined;
+
+  // Add default filter for users with email not null
+  const emailNotNullCondition = isNotNull(usersTable.email);
+  const allConditions = [...validConditions, emailNotNullCondition];
+
+  const where = allConditions.length > 0 ? and(...allConditions) : undefined;
 
   if (sortByProjects) {
     const subquery = ctx.db
@@ -90,7 +103,13 @@ export async function getUsersResolver(
     return { data: users, count: totalCount.count };
   }
 
-  const orderBy = sort === 'asc' ? asc(usersTable.createdAt) : desc(usersTable.createdAt);
+  // Determine the order based on filters
+  const orderBy = sortByNewest
+    ? desc(usersTable.createdAt)
+    : sort === 'asc'
+      ? asc(usersTable.createdAt)
+      : desc(usersTable.createdAt);
+
   const users = await ctx.db
     .select()
     .from(usersTable)
@@ -106,7 +125,7 @@ export async function getUsersResolver(
     };
   }
 
-  const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable);
+  const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable).where(where);
 
   return { data: users, count: totalCount.count };
 }
@@ -126,12 +145,186 @@ export async function getUserResolver(_root: Root, args: { id: string }, ctx: Co
   return user;
 }
 
+export async function getValidatorsByProgramIdResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  const validators = await ctx.db
+    .select({ userId: programUserRolesTable.userId })
+    .from(programUserRolesTable)
+    .where(
+      and(
+        eq(programUserRolesTable.programId, args.programId),
+        eq(programUserRolesTable.roleType, 'validator'),
+      ),
+    );
+
+  if (validators.length === 0) return [];
+
+  const validatorUsers = await Promise.all(
+    validators.map((validator) => getUserResolver({}, { id: validator.userId }, ctx)),
+  );
+
+  // add to set to remove duplicates
+  return validatorUsers.filter((user) => user !== null);
+}
+
+export async function getInvitedBuildersByProgramIdResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  const builders = await ctx.db
+    .select({ userId: programUserRolesTable.userId })
+    .from(programUserRolesTable)
+    .where(
+      and(
+        eq(programUserRolesTable.programId, args.programId),
+        eq(programUserRolesTable.roleType, 'builder'),
+      ),
+    );
+
+  if (builders.length === 0) return [];
+
+  const builderUsers = await Promise.all(
+    builders.map((builder) => getUserResolver({}, { id: builder.userId }, ctx)),
+  );
+
+  return builderUsers.filter((user) => user !== null);
+}
+
+export async function getUserProgramStatisticsResolver(
+  _root: Root,
+  args: { userId: string },
+  ctx: Context,
+) {
+  // Get all program roles for this user
+  const userRoles = await ctx.db
+    .select({
+      programId: programUserRolesTable.programId,
+      roleType: programUserRolesTable.roleType,
+    })
+    .from(programUserRolesTable)
+    .where(eq(programUserRolesTable.userId, args.userId));
+
+  if (userRoles.length === 0) {
+    const initStats = () => ({
+      notConfirmed: 0,
+      confirmed: 0,
+      published: 0,
+      paymentRequired: 0,
+      completed: 0,
+      refund: 0,
+    });
+    return {
+      asSponsor: initStats(),
+      asValidator: initStats(),
+      asBuilder: initStats(),
+    };
+  }
+
+  // Get program statuses for all user's programs
+  const programIds = userRoles.map((role) => role.programId);
+  const programs = await ctx.db
+    .select({
+      id: programsTable.id,
+      status: programsTable.status,
+    })
+    .from(programsTable)
+    .where(inArray(programsTable.id, programIds));
+
+  // Create a map of program ID to status
+  const programStatusMap = new Map(programs.map((p) => [p.id, p.status]));
+
+  // Combine roles with program statuses
+  const userProgramRoles = userRoles.map((role) => ({
+    ...role,
+    status: programStatusMap.get(role.programId) || 'draft',
+  }));
+
+  // Function to map database status to UI status
+  const mapStatusToUI = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return 'notConfirmed';
+      case 'payment_required':
+        return 'paymentRequired';
+      case 'published':
+        return 'published';
+      case 'completed':
+        return 'completed';
+      case 'cancelled':
+        return 'refund';
+      case 'closed':
+        return 'completed'; // Treating closed as completed
+      default:
+        return 'notConfirmed';
+    }
+  };
+
+  // Initialize statistics structure
+  const initStats = () => ({
+    notConfirmed: 0,
+    confirmed: 0,
+    published: 0,
+    paymentRequired: 0,
+    completed: 0,
+    refund: 0,
+  });
+
+  const asSponsor = initStats();
+  const asValidator = initStats();
+  const asBuilder = initStats();
+
+  // Process each program role
+  for (const role of userProgramRoles) {
+    const uiStatus = mapStatusToUI(role.status);
+
+    switch (role.roleType) {
+      case 'sponsor':
+        asSponsor[uiStatus]++;
+        break;
+      case 'validator':
+        asValidator[uiStatus]++;
+        break;
+      case 'builder':
+        asBuilder[uiStatus]++;
+        break;
+    }
+  }
+
+  // For confirmed status, we need to handle the special case
+  // Programs that are payment_required are considered "confirmed" by validators
+  for (const role of userProgramRoles) {
+    if (role.status === 'payment_required') {
+      switch (role.roleType) {
+        case 'sponsor':
+          asSponsor.confirmed++;
+          break;
+        case 'validator':
+          asValidator.confirmed++;
+          break;
+        case 'builder':
+          asBuilder.confirmed++;
+          break;
+      }
+    }
+  }
+
+  return {
+    asSponsor,
+    asValidator,
+    asBuilder,
+  };
+}
+
 export function createUserResolver(
   _root: Root,
   args: { input: typeof UserInput.$inferInput },
   ctx: Context,
 ) {
-  const { links, ...userData } = args.input;
+  const { links, keywords, ...userData } = args.input;
 
   return ctx.db.transaction(async (t) => {
     const [user] = await t
@@ -146,7 +339,6 @@ export function createUserResolver(
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: userData.image,
         userId: user.id,
-        type: 'user',
       });
       await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, user.id));
     }
@@ -172,6 +364,40 @@ export function createUserResolver(
       );
     }
 
+    if (keywords) {
+      const keywordIds = [];
+
+      for (const keyword of keywords) {
+        let existingKeyword = await t
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.name, keyword.toLowerCase().trim()))
+          .then((results) => results[0]);
+
+        if (!existingKeyword) {
+          const [newKeyword] = await t
+            .insert(keywordsTable)
+            .values({ name: keyword.toLowerCase().trim() })
+            .returning();
+          existingKeyword = newKeyword;
+        }
+
+        keywordIds.push(existingKeyword.id);
+      }
+
+      if (keywordIds.length > 0) {
+        await t
+          .insert(usersToKeywordsTable)
+          .values(
+            keywordIds.map((keywordId) => ({
+              userId: user.id,
+              keywordId,
+            })),
+          )
+          .onConflictDoNothing();
+      }
+    }
+
     return user;
   });
 }
@@ -181,7 +407,7 @@ export function updateUserResolver(
   args: { input: typeof UserUpdateInput.$inferInput },
   ctx: Context,
 ) {
-  const { links, ...userData } = args.input;
+  const { links, keywords, ...userData } = args.input;
 
   return ctx.db.transaction(async (t) => {
     if (userData.image) {
@@ -195,7 +421,6 @@ export function updateUserResolver(
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: userData.image,
         userId: userData.id,
-        type: 'user',
       });
       await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, userData.id));
     }
@@ -236,6 +461,43 @@ export function updateUserResolver(
       );
     }
 
+    if (keywords) {
+      // Delete existing keyword associations
+      await t.delete(usersToKeywordsTable).where(eq(usersToKeywordsTable.userId, args.input.id));
+
+      const keywordIds = [];
+
+      for (const keyword of keywords) {
+        let existingKeyword = await t
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.name, keyword.toLowerCase().trim()))
+          .then((results) => results[0]);
+
+        if (!existingKeyword) {
+          const [newKeyword] = await t
+            .insert(keywordsTable)
+            .values({ name: keyword.toLowerCase().trim() })
+            .returning();
+          existingKeyword = newKeyword;
+        }
+
+        keywordIds.push(existingKeyword.id);
+      }
+
+      if (keywordIds.length > 0) {
+        await t
+          .insert(usersToKeywordsTable)
+          .values(
+            keywordIds.map((keywordId) => ({
+              userId: args.input.id,
+              keywordId,
+            })),
+          )
+          .onConflictDoNothing();
+      }
+    }
+
     return user;
   });
 }
@@ -260,11 +522,11 @@ export function updateProfileResolver(
 ) {
   const loggedinUser = requireUser(ctx);
 
-  if (loggedinUser.id !== args.input.id && !loggedinUser.isAdmin) {
+  if (loggedinUser.id !== args.input.id && !loggedinUser.role?.endsWith('admin')) {
     throw new Error('Unauthorized');
   }
 
-  const { links, ...userData } = args.input;
+  const { links, keywords, ...userData } = args.input;
 
   const filteredUserData = filterEmptyValues<User>(userData);
 
@@ -280,7 +542,6 @@ export function updateProfileResolver(
       const fileUrl = await ctx.server.fileManager.uploadFile({
         file: userData.image,
         userId: loggedinUser.id,
-        type: 'user',
       });
       await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, loggedinUser.id));
     }
@@ -318,6 +579,43 @@ export function updateProfileResolver(
       );
     }
 
+    if (keywords) {
+      // Delete existing keyword associations
+      await t.delete(usersToKeywordsTable).where(eq(usersToKeywordsTable.userId, loggedinUser.id));
+
+      const keywordIds = [];
+
+      for (const keyword of keywords) {
+        let existingKeyword = await t
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.name, keyword.toLowerCase().trim()))
+          .then((results) => results[0]);
+
+        if (!existingKeyword) {
+          const [newKeyword] = await t
+            .insert(keywordsTable)
+            .values({ name: keyword.toLowerCase().trim() })
+            .returning();
+          existingKeyword = newKeyword;
+        }
+
+        keywordIds.push(existingKeyword.id);
+      }
+
+      if (keywordIds.length > 0) {
+        await t
+          .insert(usersToKeywordsTable)
+          .values(
+            keywordIds.map((keywordId) => ({
+              userId: loggedinUser.id,
+              keywordId,
+            })),
+          )
+          .onConflictDoNothing();
+      }
+    }
+
     return user;
   });
 }
@@ -342,4 +640,98 @@ export async function getUserAvatarResolver(_root: Root, args: { userId: string 
       return bucketFile.createReadStream();
     },
   } as unknown as UploadFile;
+}
+
+export async function getUserKeywordsByUserIdResolver(
+  _root: Root,
+  args: { userId: string },
+  ctx: Context,
+) {
+  const keywordRelations = await ctx.db
+    .select()
+    .from(usersToKeywordsTable)
+    .where(eq(usersToKeywordsTable.userId, args.userId));
+
+  if (!keywordRelations.length) return [];
+
+  const keywordIds = keywordRelations.map((r) => r.keywordId);
+  const keywords = await ctx.db
+    .select()
+    .from(keywordsTable)
+    .where(inArray(keywordsTable.id, keywordIds));
+
+  return keywords;
+}
+
+export async function addUserKeywordResolver(
+  _root: Root,
+  args: { userId: string; keyword: string },
+  ctx: Context,
+) {
+  return await ctx.db.transaction(async (t) => {
+    const [user] = await t.select().from(usersTable).where(eq(usersTable.id, args.userId));
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    let existingKeyword = await t
+      .select()
+      .from(keywordsTable)
+      .where(eq(keywordsTable.name, args.keyword.toLowerCase().trim()))
+      .then((results) => results[0]);
+
+    if (!existingKeyword) {
+      const [newKeyword] = await t
+        .insert(keywordsTable)
+        .values({ name: args.keyword.toLowerCase().trim() })
+        .returning();
+      existingKeyword = newKeyword;
+    }
+
+    await t
+      .insert(usersToKeywordsTable)
+      .values({
+        userId: args.userId,
+        keywordId: existingKeyword.id,
+      })
+      .onConflictDoNothing();
+
+    return existingKeyword;
+  });
+}
+
+export async function removeUserKeywordResolver(
+  _root: Root,
+  args: { userId: string; keyword: string },
+  ctx: Context,
+) {
+  return await ctx.db.transaction(async (t) => {
+    const [user] = await t.select().from(usersTable).where(eq(usersTable.id, args.userId));
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const existingKeyword = await t
+      .select()
+      .from(keywordsTable)
+      .where(eq(keywordsTable.name, args.keyword.toLowerCase().trim()))
+      .then((results) => results[0]);
+
+    if (!existingKeyword) {
+      throw new Error('Keyword not found');
+    }
+
+    await t
+      .delete(usersToKeywordsTable)
+      .where(
+        and(
+          eq(usersToKeywordsTable.userId, args.userId),
+          eq(usersToKeywordsTable.keywordId, existingKeyword.id),
+        ),
+      );
+
+    return true;
+  });
 }

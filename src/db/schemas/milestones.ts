@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import {
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   primaryKey,
@@ -11,9 +12,16 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
+import { commentsTable } from './comments';
 import { linksTable } from './links';
 
-export const milestoneStatuses = ['pending', 'completed', 'rejected', 'submitted'] as const;
+export const milestoneStatuses = [
+  'draft',
+  'pending',
+  'completed',
+  'rejected',
+  'submitted',
+] as const;
 export const milestoneStatusEnum = pgEnum('milestone_status', milestoneStatuses);
 
 // Milestones table
@@ -28,12 +36,16 @@ export const milestonesTable = pgTable('milestones', {
   // Milestone details
   title: varchar('title', { length: 256 }).notNull(),
   description: text('description'),
+  summary: varchar('summary', { length: 512 }),
   price: varchar('price', { length: 256 }).notNull(),
+  percentage: numeric('percentage', { precision: 5, scale: 2 }).notNull(),
   currency: varchar('currency', { length: 10 }).default('ETH'),
   status: milestoneStatusEnum('status').default('pending').notNull(),
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
   sortOrder: integer('sort_order').notNull().default(0),
   rejectionReason: text('rejection_reason'),
+  file: varchar('file', { length: 512 }),
+  deadline: timestamp('deadline').notNull(),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
@@ -44,11 +56,12 @@ export const milestonesTable = pgTable('milestones', {
 });
 
 // Milestone relations
-export const milestoneRelations = relations(milestonesTable, ({ one }) => ({
+export const milestoneRelations = relations(milestonesTable, ({ one, many }) => ({
   application: one(applicationsTable, {
     fields: [milestonesTable.applicationId],
     references: [applicationsTable.id],
   }),
+  comments: many(commentsTable),
 }));
 
 // Links

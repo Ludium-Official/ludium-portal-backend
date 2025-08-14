@@ -1,35 +1,80 @@
-import type { User as DBUser } from '@/db/schemas';
+import { type User as DBUser, userRoles } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
+  addUserKeywordResolver,
   createUserResolver,
   deleteUserResolver,
   getProfileResolver,
   getUserAvatarResolver,
   getUserByIdResolver,
+  getUserKeywordsByUserIdResolver,
+  getUserProgramStatisticsResolver,
   getUsersResolver,
+  removeUserKeywordResolver,
   updateProfileResolver,
   updateUserResolver,
 } from '@/graphql/resolvers/users';
-import { PaginationInput } from '@/graphql/types/common';
+import { KeywordType, PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
+import type { ProgramStatsByStatusType } from '@/types';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
+export const UserRoleEnum = builder.enumType('UserRole', {
+  values: userRoles,
+});
+
+export const ProgramStatsByStatus = builder
+  .objectRef<ProgramStatsByStatusType>('ProgramStatsByStatus')
+  .implement({
+    fields: (t) => ({
+      notConfirmed: t.exposeInt('notConfirmed'),
+      confirmed: t.exposeInt('confirmed'),
+      published: t.exposeInt('published'),
+      paymentRequired: t.exposeInt('paymentRequired'),
+      completed: t.exposeInt('completed'),
+      refund: t.exposeInt('refund'),
+    }),
+  });
+
+export const UserProgramStatistics = builder
+  .objectRef<{
+    asSponsor: ProgramStatsByStatusType;
+    asValidator: ProgramStatsByStatusType;
+    asBuilder: ProgramStatsByStatusType;
+  }>('UserProgramStatistics')
+  .implement({
+    fields: (t) => ({
+      asSponsor: t.field({
+        type: ProgramStatsByStatus,
+        resolve: (parent) => parent.asSponsor,
+      }),
+      asValidator: t.field({
+        type: ProgramStatsByStatus,
+        resolve: (parent) => parent.asValidator,
+      }),
+      asBuilder: t.field({
+        type: ProgramStatsByStatus,
+        resolve: (parent) => parent.asBuilder,
+      }),
+    }),
+  });
+
 export const User = builder.objectRef<DBUser>('User').implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     firstName: t.exposeString('firstName', { nullable: true }),
     lastName: t.exposeString('lastName', { nullable: true }),
-    email: t.exposeString('email'),
+    email: t.exposeString('email', { nullable: true }),
     organizationName: t.exposeString('organizationName', { nullable: true }),
     image: t.exposeString('image', { nullable: true }),
     about: t.exposeString('about', { nullable: true }),
-    summary: t.exposeString('summary'),
+    summary: t.exposeString('summary', { nullable: true }),
     loginType: t.exposeString('loginType', { nullable: true }),
     walletAddress: t.exposeString('walletAddress', { nullable: true }),
-    isAdmin: t.exposeBoolean('isAdmin'),
+    role: t.expose('role', { type: UserRoleEnum, nullable: true }),
     links: t.field({
       type: [Link],
       nullable: true,
@@ -39,6 +84,18 @@ export const User = builder.objectRef<DBUser>('User').implement({
       type: 'Upload',
       nullable: true,
       resolve: async (user, _args, ctx) => getUserAvatarResolver({}, { userId: user.id }, ctx),
+    }),
+    programStatistics: t.field({
+      type: UserProgramStatistics,
+      nullable: true,
+      resolve: async (user, _args, ctx) =>
+        getUserProgramStatisticsResolver({}, { userId: user.id }, ctx),
+    }),
+    keywords: t.field({
+      type: [KeywordType],
+      nullable: true,
+      resolve: async (user, _args, ctx) =>
+        getUserKeywordsByUserIdResolver({}, { userId: user.id }, ctx),
     }),
   }),
 });
@@ -66,6 +123,7 @@ export const UserInput = builder.inputType('UserInput', {
     about: t.string(),
     summary: t.string(),
     links: t.field({ type: [LinkInput] }),
+    keywords: t.stringList(),
     loginType: t.string(),
     walletAddress: t.string(),
   }),
@@ -82,6 +140,7 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
     about: t.string(),
     summary: t.string(),
     links: t.field({ type: [LinkInput] }),
+    keywords: t.stringList(),
     loginType: t.string(),
     walletAddress: t.string(),
   }),
@@ -144,5 +203,29 @@ builder.mutationFields((t) => ({
       input: t.arg({ type: UserUpdateInput, required: true }),
     },
     resolve: updateProfileResolver,
+  }),
+  addUserKeyword: t.field({
+    type: KeywordType,
+    authScopes: (_, args) => ({
+      self: { userId: args.userId },
+      admin: true,
+    }),
+    args: {
+      userId: t.arg.id({ required: true }),
+      keyword: t.arg.string({ required: true }),
+    },
+    resolve: addUserKeywordResolver,
+  }),
+  removeUserKeyword: t.field({
+    type: 'Boolean',
+    authScopes: (_, args) => ({
+      self: { userId: args.userId },
+      admin: true,
+    }),
+    args: {
+      userId: t.arg.id({ required: true }),
+      keyword: t.arg.string({ required: true }),
+    },
+    resolve: removeUserKeywordResolver,
   }),
 }));

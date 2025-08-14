@@ -1,10 +1,11 @@
 import {
   type MilestoneUpdate,
   applicationsTable,
+  filesTable,
   linksTable,
   milestonesTable,
   milestonesToLinksTable,
-  programsTable,
+  programUserRolesTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type {
@@ -13,9 +14,18 @@ import type {
   UpdateMilestoneInput,
 } from '@/graphql/types/milestones';
 import type { Context, Root } from '@/types';
-import { filterEmptyValues, isInSameScope, requireUser, validAndNotEmptyArray } from '@/utils';
+import {
+  calculateMilestoneAmount,
+  checkAndUpdateProgramStatus,
+  filterEmptyValues,
+  isInSameScope,
+  requireUser,
+  validAndNotEmptyArray,
+  validateMilestonePercentages,
+} from '@/utils';
 import BigNumber from 'bignumber.js';
-import { and, asc, count, eq, inArray, lt } from 'drizzle-orm';
+import { and, asc, count, eq, lt } from 'drizzle-orm';
+import { getValidatorsByProgramIdResolver } from './users';
 
 export async function getMilestoneResolver(_root: Root, args: { id: string }, ctx: Context) {
   const [milestone] = await ctx.db
@@ -72,9 +82,49 @@ export function updateMilestoneResolver(
   args: { input: typeof UpdateMilestoneInput.$inferInput },
   ctx: Context,
 ) {
+  const user = requireUser(ctx);
   const filteredData = filterEmptyValues<MilestoneUpdate>(args.input);
 
   return ctx.db.transaction(async (t) => {
+    // Get the milestone and application to find the program
+    const [milestone] = await t
+      .select()
+      .from(milestonesTable)
+      .where(eq(milestonesTable.id, args.input.id));
+
+    if (!milestone) {
+      throw new Error('Milestone not found');
+    }
+
+    const [application] = await t
+      .select()
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, milestone.applicationId));
+
+    if (!application) {
+      throw new Error('Application not found');
+    }
+
+    // Check if user is the applicant, a builder in this program, or an admin
+    const isAdmin = user.role?.endsWith('admin');
+    const isApplicant = application.applicantId === user.id;
+
+    const [builderRole] = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, application.programId),
+          eq(programUserRolesTable.userId, user.id),
+          eq(programUserRolesTable.roleType, 'builder'),
+        ),
+      );
+
+    if (!isAdmin && !builderRole && !isApplicant) {
+      throw new Error(
+        'You are not allowed to update this milestone. Only the applicant, builders, and admins can update milestones.',
+      );
+    }
     // handle links
     if (args.input.links) {
       const filteredLinks = args.input.links.filter((link) => link.url);
@@ -95,66 +145,60 @@ export function updateMilestoneResolver(
       );
     }
 
-    if (args.input.price) {
-      // const get program id from milestone
+    // Validate percentage if provided
+    if (args.input.percentage) {
+      const percentage = new BigNumber(args.input.percentage);
+
+      // Validate percentage is between 0 and 100
+      if (percentage.isLessThan(0) || percentage.isGreaterThan(100)) {
+        throw new Error(
+          `Milestone percentage must be between 0 and 100. Received: ${percentage.toFixed()}%`,
+        );
+      }
+
+      // Get milestone and application info
       const [milestone] = await t
         .select({ applicationId: milestonesTable.applicationId })
         .from(milestonesTable)
         .where(eq(milestonesTable.id, args.input.id));
 
       const [application] = await t
-        .select({ programId: applicationsTable.programId })
+        .select({ programId: applicationsTable.programId, price: applicationsTable.price })
         .from(applicationsTable)
         .where(eq(applicationsTable.id, milestone.applicationId));
 
-      const [program] = await t
-        .select({ id: programsTable.id, price: programsTable.price })
-        .from(programsTable)
-        .where(eq(programsTable.id, application.programId));
-
-      const applications = await t
-        .select({ price: applicationsTable.price })
-        .from(applicationsTable)
-        .where(
-          and(
-            eq(applicationsTable.programId, program.id),
-            inArray(applicationsTable.status, ['accepted', 'completed', 'submitted']),
-          ),
-        );
-
+      // Get all milestones for this application
       const milestones = await t
-        .select({ price: milestonesTable.price })
+        .select({ id: milestonesTable.id, percentage: milestonesTable.percentage })
         .from(milestonesTable)
-        .where(
-          and(
-            eq(milestonesTable.applicationId, milestone.applicationId),
-            inArray(milestonesTable.status, ['pending', 'completed', 'submitted']),
-          ),
+        .where(eq(milestonesTable.applicationId, milestone.applicationId));
+
+      // Calculate total percentage including the updated one
+      const updatedMilestones = milestones
+        .map((m) =>
+          m.id === args.input.id ? { ...m, percentage: args.input.percentage || '0' } : m,
+        )
+        .filter((m): m is { id: string; percentage: string } => m.percentage != null);
+
+      if (!validateMilestonePercentages(updatedMilestones)) {
+        const totalPercentage = updatedMilestones.reduce((sum, m) => sum + Number(m.percentage), 0);
+        throw new Error(
+          `Milestone payout percentages must add up to exactly 100%. Current total: ${totalPercentage}%. Please adjust the percentages.`,
         );
-
-      const milestonesTotalPrice = milestones.reduce((acc, m) => {
-        return acc.plus(new BigNumber(m.price));
-      }, new BigNumber(0));
-
-      const applicationsTotalPrice = applications.reduce((acc, a) => {
-        return acc.plus(new BigNumber(a.price));
-      }, new BigNumber(0));
-
-      if (applicationsTotalPrice.plus(milestonesTotalPrice).gt(new BigNumber(program.price))) {
-        ctx.server.log.error(
-          'The total price of the applications is greater than the program price',
-        );
-        t.rollback();
       }
+
+      // Calculate the actual price amount and update it
+      const calculatedAmount = calculateMilestoneAmount(args.input.percentage, application.price);
+      filteredData.price = calculatedAmount;
     }
 
-    const [milestone] = await t
+    const [updatedMilestone] = await t
       .update(milestonesTable)
       .set(filteredData)
       .where(eq(milestonesTable.id, args.input.id))
       .returning();
 
-    return milestone;
+    return updatedMilestone;
   });
 }
 
@@ -174,6 +218,24 @@ export function submitMilestoneResolver(
     });
     if (!hasAccess) {
       throw new Error('You are not allowed to submit this milestone');
+    }
+
+    if (args.input.file) {
+      const [avatar] = await t
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.uploadedById, user.id));
+      if (avatar) {
+        await ctx.server.fileManager.deleteFile(avatar.id);
+      }
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: args.input.file,
+        userId: user.id,
+      });
+      await t
+        .update(milestonesTable)
+        .set({ file: fileUrl })
+        .where(eq(milestonesTable.id, args.input.id));
     }
 
     // handle links
@@ -196,7 +258,7 @@ export function submitMilestoneResolver(
     const [milestone] = await t
       .update(milestonesTable)
       .set({
-        status: 'submitted',
+        status: args.input.status,
         description: args.input.description,
         rejectionReason: null,
       })
@@ -209,6 +271,7 @@ export function submitMilestoneResolver(
       .from(milestonesTable)
       .where(eq(milestonesTable.applicationId, milestone.applicationId));
 
+    let applicationCompleted = false;
     if (applicationMilestones.every((m) => m.status === 'completed')) {
       await t
         .update(applicationsTable)
@@ -216,27 +279,35 @@ export function submitMilestoneResolver(
           status: 'completed',
         })
         .where(eq(applicationsTable.id, milestone.applicationId));
+      applicationCompleted = true;
     }
 
-    // TODO: Refactor this
     const [application] = await t
       .select({ programId: applicationsTable.programId })
       .from(applicationsTable)
       .where(eq(applicationsTable.id, milestone.applicationId));
 
-    const [program] = await t
-      .select({ validatorId: programsTable.validatorId })
-      .from(programsTable)
-      .where(eq(programsTable.id, application.programId));
+    const validators = await getValidatorsByProgramIdResolver(
+      {},
+      { programId: application.programId },
+      ctx,
+    );
 
-    if (program.validatorId) {
-      await ctx.server.pubsub.publish('notifications', t, {
-        type: 'milestone',
-        action: 'submitted',
-        recipientId: program.validatorId,
-        entityId: milestone.id,
-      });
+    if (validators.length > 0) {
+      for (const validator of validators) {
+        await ctx.server.pubsub.publish('notifications', t, {
+          type: 'milestone',
+          action: 'submitted',
+          recipientId: validator.id,
+          entityId: milestone.id,
+        });
+      }
       await ctx.server.pubsub.publish('notificationsCount');
+    }
+
+    // Check if program budget is fully allocated after application completion
+    if (applicationCompleted) {
+      await checkAndUpdateProgramStatus(application.programId, t);
     }
 
     return milestone;
@@ -279,11 +350,14 @@ export function checkMilestoneResolver(
       .select({ status: milestonesTable.status })
       .from(milestonesTable)
       .where(eq(milestonesTable.applicationId, milestone.applicationId));
+
+    let applicationCompleted = false;
     if (applicationMilestones.every((m) => m.status === 'completed')) {
       await t
         .update(applicationsTable)
         .set({ status: 'completed' })
         .where(eq(applicationsTable.id, milestone.applicationId));
+      applicationCompleted = true;
     }
 
     const previousMilestones = await t
@@ -302,11 +376,21 @@ export function checkMilestoneResolver(
 
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'milestone',
-      action: args.input.status === 'pending' ? 'rejected' : 'accepted',
+      action: args.input.status === 'rejected' ? 'rejected' : 'accepted',
       recipientId: application.applicantId,
       entityId: milestone.id,
     });
     await ctx.server.pubsub.publish('notificationsCount');
+
+    // Check if program budget is fully allocated after application completion
+    if (applicationCompleted && args.input.status === 'completed') {
+      const [fullApplication] = await t
+        .select({ programId: applicationsTable.programId })
+        .from(applicationsTable)
+        .where(eq(applicationsTable.id, milestone.applicationId));
+
+      await checkAndUpdateProgramStatus(fullApplication.programId, t);
+    }
 
     return milestone;
   });

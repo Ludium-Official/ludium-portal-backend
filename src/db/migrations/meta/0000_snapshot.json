@@ -1,5 +1,5 @@
 {
-  "id": "f69e56cd-2740-4353-a48e-5bb6b69bf2c8",
+  "id": "f2725573-ab7a-48e3-875d-a2c70133c25c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -65,6 +65,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
+        },
+        "rejection_reason": {
+          "name": "rejection_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -168,6 +174,104 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.carousel_items": {
+      "name": "carousel_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "item_type": {
+          "name": "item_type",
+          "type": "carousel_item_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "carousel_items_created_by_users_id_fk": {
+          "name": "carousel_items_created_by_users_id_fk",
+          "tableFrom": "carousel_items",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "carousel_items_display_order_is_active_unique": {
+          "name": "carousel_items_display_order_is_active_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "display_order",
+            "is_active"
+          ]
+        },
+        "carousel_items_item_type_item_id_is_active_unique": {
+          "name": "carousel_items_item_type_item_id_is_active_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "item_type",
+            "item_id",
+            "is_active"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.comments": {
       "name": "comments",
       "schema": "",
@@ -185,8 +289,15 @@
           "primaryKey": false,
           "notNull": true
         },
-        "post_id": {
-          "name": "post_id",
+        "commentable_type": {
+          "name": "commentable_type",
+          "type": "commentable_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "commentable_id": {
+          "name": "commentable_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -226,19 +337,6 @@
           "tableTo": "users",
           "columnsFrom": [
             "author_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "comments_post_id_posts_id_fk": {
-          "name": "comments_post_id_posts_id_fk",
-          "tableFrom": "comments",
-          "tableTo": "posts",
-          "columnsFrom": [
-            "post_id"
           ],
           "columnsTo": [
             "id"
@@ -396,18 +494,19 @@
           "primaryKey": false,
           "notNull": false
         },
-        "is_admin": {
-          "name": "is_admin",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
         "login_type": {
           "name": "login_type",
           "type": "varchar(256)",
           "primaryKey": false,
           "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "user_roles",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'user'"
         },
         "created_at": {
           "name": "created_at",
@@ -443,6 +542,66 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users_to_keywords": {
+      "name": "users_to_keywords",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "keyword_id": {
+          "name": "keyword_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "users_to_keywords_user_id_users_id_fk": {
+          "name": "users_to_keywords_user_id_users_id_fk",
+          "tableFrom": "users_to_keywords",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "users_to_keywords_keyword_id_keywords_id_fk": {
+          "name": "users_to_keywords_keyword_id_keywords_id_fk",
+          "tableFrom": "users_to_keywords",
+          "tableTo": "keywords",
+          "columnsFrom": [
+            "keyword_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "users_to_keywords_user_id_keyword_id_pk": {
+          "name": "users_to_keywords_user_id_keyword_id_pk",
+          "columns": [
+            "user_id",
+            "keyword_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -631,7 +790,7 @@
         },
         "deadline": {
           "name": "deadline",
-          "type": "date",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true
         },
@@ -641,19 +800,21 @@
           "primaryKey": false,
           "notNull": true
         },
-        "validator_id": {
-          "name": "validator_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "status": {
           "name": "status",
           "type": "program_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false,
-          "default": "'draft'"
+          "default": "'pending'"
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "program_visibility",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'public'"
         },
         "educhain_id": {
           "name": "educhain_id",
@@ -673,6 +834,18 @@
           "primaryKey": false,
           "notNull": false,
           "default": "'educhain'"
+        },
+        "rejection_reason": {
+          "name": "rejection_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image": {
+          "name": "image",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -702,19 +875,6 @@
             "id"
           ],
           "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "programs_validator_id_users_id_fk": {
-          "name": "programs_validator_id_users_id_fk",
-          "tableFrom": "programs",
-          "tableTo": "users",
-          "columnsFrom": [
-            "validator_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -921,9 +1081,21 @@
           "primaryKey": false,
           "notNull": false
         },
+        "summary": {
+          "name": "summary",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "price": {
           "name": "price",
           "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "percentage": {
+          "name": "percentage",
+          "type": "numeric(5, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -954,6 +1126,24 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
+        },
+        "rejection_reason": {
+          "name": "rejection_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "file": {
+          "name": "file",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deadline": {
+          "name": "deadline",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -1139,13 +1329,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "is_banner": {
-          "name": "is_banner",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -1235,6 +1418,80 @@
           "columns": [
             "post_id",
             "keyword_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.post_views": {
+      "name": "post_views",
+      "schema": "",
+      "columns": {
+        "post_id": {
+          "name": "post_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "varchar(45)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "viewed_at": {
+          "name": "viewed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "post_views_post_id_posts_id_fk": {
+          "name": "post_views_post_id_posts_id_fk",
+          "tableFrom": "post_views",
+          "tableTo": "posts",
+          "columnsFrom": [
+            "post_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "post_views_user_id_users_id_fk": {
+          "name": "post_views_user_id_users_id_fk",
+          "tableFrom": "post_views",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "post_views_pkey": {
+          "name": "post_views_pkey",
+          "columns": [
+            "post_id",
+            "user_id",
+            "ip_address"
           ]
         }
       },
@@ -1354,6 +1611,33 @@
         "submitted"
       ]
     },
+    "public.carousel_item_type": {
+      "name": "carousel_item_type",
+      "schema": "public",
+      "values": [
+        "program",
+        "post"
+      ]
+    },
+    "public.commentable_type": {
+      "name": "commentable_type",
+      "schema": "public",
+      "values": [
+        "post",
+        "program",
+        "milestone",
+        "application"
+      ]
+    },
+    "public.user_roles": {
+      "name": "user_roles",
+      "schema": "public",
+      "values": [
+        "user",
+        "admin",
+        "superadmin"
+      ]
+    },
     "public.program_role_type": {
       "name": "program_role_type",
       "schema": "public",
@@ -1367,18 +1651,29 @@
       "name": "program_status",
       "schema": "public",
       "values": [
-        "draft",
+        "pending",
         "payment_required",
+        "rejected",
         "published",
         "closed",
         "completed",
         "cancelled"
       ]
     },
+    "public.program_visibility": {
+      "name": "program_visibility",
+      "schema": "public",
+      "values": [
+        "private",
+        "restricted",
+        "public"
+      ]
+    },
     "public.milestone_status": {
       "name": "milestone_status",
       "schema": "public",
       "values": [
+        "draft",
         "pending",
         "completed",
         "rejected",
@@ -1394,7 +1689,8 @@
         "rejected",
         "submitted",
         "completed",
-        "broadcast"
+        "broadcast",
+        "invited"
       ]
     },
     "public.notification_type": {

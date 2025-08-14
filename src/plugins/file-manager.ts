@@ -1,11 +1,25 @@
 import { createHash } from 'node:crypto';
 import { extname } from 'node:path';
+import type { Readable, Writable } from 'node:stream';
 import { filesTable } from '@/db/schemas/files';
 import type { UploadFile } from '@/types';
 import { type Bucket, Storage } from '@google-cloud/storage';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance, FastifyPluginAsync, FastifyPluginOptions } from 'fastify';
 import fp from 'fastify-plugin';
+
+const allowedFileExtensions = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+  '.svg',
+  '.pdf',
+  '.docx',
+  '.ppt',
+  '.zip',
+];
 
 export class FileManager {
   server: FastifyInstance;
@@ -20,65 +34,100 @@ export class FileManager {
     this.maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
   }
 
-  private uploadFileToStorage = (file: UploadFile, path: string): Promise<string> => {
+  private uploadFileToStorage = (file: UploadFile): Promise<string> => {
     return new Promise((resolve, reject) => {
       const hash = createHash('md5');
-      const fullPath = `${path}/${hash
+      const fullPath = `${hash
         .update(file.filename + Date.now())
         .digest('hex')}${extname(file.filename)}`;
+
+      if (!allowedFileExtensions.includes(extname(file.filename))) {
+        reject(new Error('File extension not allowed'));
+        return;
+      }
+
       const bucketFile = this.bucket.file(fullPath);
 
       let uploadedSize = 0;
-      const stream = file.createReadStream();
+      let cleaned = false;
+      let fileStream: Readable | null = null;
+      let bucketStream: Writable | null = null;
 
-      stream.on('data', (chunk: Buffer) => {
-        uploadedSize += chunk.length;
+      const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
 
-        if (uploadedSize > this.maxFileSize) {
-          stream.destroy();
-          reject(
-            new Error(
-              `File size exceeds ${(this.maxFileSize / 1024 / 1024).toFixed(0)}MB limit. File size: ${(uploadedSize / 1024 / 1024).toFixed(2)}MB`,
-            ),
-          );
-          return;
+        if (fileStream && !fileStream.destroyed) {
+          fileStream.destroy();
         }
-      });
+        if (bucketStream && !bucketStream.destroyed) {
+          bucketStream.destroy();
+        }
+      };
 
-      stream
-        .pipe(
-          bucketFile.createWriteStream({
-            metadata: {
-              contentType: file.mimetype,
-            },
-          }),
-        )
-        .on('error', (error) => {
+      const uploadTimeout = setTimeout(() => {
+        cleanup();
+        reject(new Error('Upload timeout'));
+      }, 30000);
+
+      try {
+        fileStream = file.createReadStream();
+
+        bucketStream = bucketFile.createWriteStream({
+          metadata: {
+            contentType: file.mimetype,
+          },
+          resumable: false,
+        });
+
+        fileStream.on('data', (chunk: Buffer) => {
+          uploadedSize += chunk.length;
+
+          if (uploadedSize > this.maxFileSize) {
+            clearTimeout(uploadTimeout);
+            cleanup();
+            reject(
+              new Error(
+                `File size exceeds ${(this.maxFileSize / 1024 / 1024).toFixed(0)}MB limit. File size: ${(uploadedSize / 1024 / 1024).toFixed(2)}MB`,
+              ),
+            );
+          }
+        });
+
+        fileStream.on('error', (error) => {
+          clearTimeout(uploadTimeout);
+          cleanup();
           reject(error);
-        })
-        .on('finish', () => {
+        });
+
+        bucketStream.on('error', (error) => {
+          clearTimeout(uploadTimeout);
+          cleanup();
+          reject(error);
+        });
+
+        bucketStream.on('finish', () => {
+          clearTimeout(uploadTimeout);
+          cleanup();
           resolve(fullPath);
         });
+
+        fileStream.pipe(bucketStream);
+      } catch (error) {
+        clearTimeout(uploadTimeout);
+        cleanup();
+        reject(error);
+      }
     });
   };
 
   uploadFile = async (params: {
     file: Promise<UploadFile>;
     userId: string;
-    type: 'user' | 'post';
-    entityId?: string;
   }): Promise<string> => {
-    let path = '';
-    switch (params.type) {
-      case 'user':
-        path = `users/${params.userId}/`;
-        break;
-      case 'post':
-        path = `posts/${params.entityId}/`;
-    }
-
     const filePromise = await params.file;
-    const filePath = await this.uploadFileToStorage(filePromise, path);
+    const filePath = await this.uploadFileToStorage(filePromise);
+
     const { filename, mimetype } = filePromise;
     const [createdFile] = await this.server.db
       .insert(filesTable)
@@ -97,28 +146,24 @@ export class FileManager {
   deleteFile = async (id: string): Promise<void> => {
     const [dbFile] = await this.server.db.select().from(filesTable).where(eq(filesTable.id, id));
 
-    void this.bucket.file(dbFile.path).delete();
+    if (!dbFile) {
+      return;
+    }
 
-    void this.server.db.delete(filesTable).where(eq(filesTable.id, id));
+    try {
+      await this.bucket.file(dbFile.path).delete();
+    } catch (error) {
+      // Ignore 404 errors - file already deleted
+      if (!(error instanceof Error && 'code' in error && error.code === 404)) {
+        throw error;
+      }
+    }
+
+    await this.server.db.delete(filesTable).where(eq(filesTable.id, id));
   };
 
   makeFullUrl(filePath: string): string {
     return `https://storage.googleapis.com/${this.server.config.STORAGE_BUCKET}/${filePath}`;
-  }
-
-  async generateSignedUrl(lessonId: string) {
-    const expires = 60 * 1000 * 30; // 30 minutes
-    const filePath = `dashboard/recordings/${lessonId}.mp4`;
-    const bucketUrl = this.makeFullUrl(filePath);
-
-    const [signedUrl] = await this.bucket.file(filePath).getSignedUrl({
-      version: 'v4',
-      contentType: 'video/mp4',
-      action: 'write',
-      expires: Date.now() + expires,
-    });
-
-    return { signedUrl, bucketUrl };
   }
 }
 
