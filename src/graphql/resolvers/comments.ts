@@ -22,11 +22,11 @@ export async function getCommentsResolver(
   const filterPromises = filter.map(async (f) => {
     switch (f.field) {
       case 'authorId':
-        return eq(commentsTable.authorId, f.value);
+        return f.value ? eq(commentsTable.authorId, f.value) : undefined;
       case 'commentableType':
-        return eq(commentsTable.commentableType, f.value as CommentableType);
+        return f.value ? eq(commentsTable.commentableType, f.value as CommentableType) : undefined;
       case 'commentableId':
-        return eq(commentsTable.commentableId, f.value);
+        return f.value ? eq(commentsTable.commentableId, f.value) : undefined;
       default:
         return undefined;
     }

@@ -36,8 +36,9 @@ export async function getProgramsResolver(
   const filterPromises = filter.map(async (f) => {
     switch (f.field) {
       case 'creatorId':
-        return eq(programsTable.creatorId, f.value);
+        return f.value ? eq(programsTable.creatorId, f.value) : undefined;
       case 'validatorId': {
+        if (!f.value) return undefined;
         // Get programs where user has validator role
         const validatorPrograms = await ctx.db
           .select({ programId: programUserRolesTable.programId })
@@ -54,6 +55,7 @@ export async function getProgramsResolver(
         );
       }
       case 'applicantId': {
+        if (!f.value) return undefined;
         const applications = await ctx.db
           .select()
           .from(applicationsTable)
@@ -64,6 +66,7 @@ export async function getProgramsResolver(
         );
       }
       case 'userId': {
+        if (!f.value) return undefined;
         const creatorCondition = eq(programsTable.creatorId, f.value);
 
         const userRoles = await ctx.db
@@ -99,14 +102,26 @@ export async function getProgramsResolver(
         return or(...conditions);
       }
       case 'name':
-        return ilike(programsTable.name, `%${f.value ?? ''}%`);
+        return f.value ? ilike(programsTable.name, `%${f.value}%`) : undefined;
       case 'status':
-        return eq(
-          programsTable.status,
-          f.value as 'published' | 'closed' | 'completed' | 'cancelled',
-        );
+        // Support multi-values for status
+        if (f.values && f.values.length > 0) {
+          return inArray(
+            programsTable.status,
+            f.values as ('published' | 'closed' | 'completed' | 'cancelled')[],
+          );
+        }
+        if (f.value) {
+          return eq(
+            programsTable.status,
+            f.value as 'published' | 'closed' | 'completed' | 'cancelled',
+          );
+        }
+        return undefined;
       case 'visibility':
-        return eq(programsTable.visibility, f.value as 'private' | 'restricted' | 'public');
+        return f.value
+          ? eq(programsTable.visibility, f.value as 'private' | 'restricted' | 'public')
+          : undefined;
       case 'price':
         // sort by price, value can be 'asc' or 'desc'
         return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);

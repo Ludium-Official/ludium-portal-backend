@@ -8,7 +8,8 @@ export const SortEnum = builder.enumType('SortEnum', {
 export const FilterInput = builder.inputType('FilterInput', {
   fields: (t) => ({
     field: t.string({ required: true }),
-    value: t.string({ required: true }),
+    value: t.string({ required: false }),
+    values: t.stringList({ required: false }),
   }),
 });
 
