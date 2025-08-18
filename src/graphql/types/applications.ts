@@ -13,11 +13,13 @@ import {
   updateApplicationResolver,
 } from '@/graphql/resolvers/applications';
 import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
+import { getInvestmentTermsByApplicationIdResolver } from '@/graphql/resolvers/investment-terms';
 import { getLinksByApplicationIdResolver } from '@/graphql/resolvers/links';
 import { getMilestonesByApplicationIdResolver } from '@/graphql/resolvers/milestones';
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { CommentType } from '@/graphql/types/comments';
 import { PaginationInput } from '@/graphql/types/common';
+import { CreateInvestmentTermInput, InvestmentTermType } from '@/graphql/types/investment-terms';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { CreateMilestoneInput, MilestoneType } from '@/graphql/types/milestones';
 import { ApplicationRef } from '@/graphql/types/shared-refs';
@@ -73,6 +75,14 @@ export const ApplicationType = ApplicationRef.implement({
           ctx,
         ),
     }),
+    fundingTarget: t.exposeString('fundingTarget', { nullable: true }),
+    walletAddress: t.exposeString('walletAddress', { nullable: true }),
+    fundingSuccessful: t.exposeBoolean('fundingSuccessful', { nullable: true }),
+    investmentTerms: t.field({
+      type: [InvestmentTermType],
+      resolve: async (application, _args, ctx) =>
+        getInvestmentTermsByApplicationIdResolver({}, { applicationId: application.id }, ctx),
+    }),
   }),
 });
 
@@ -112,6 +122,9 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
     }),
     milestones: t.field({ type: [CreateMilestoneInput], required: true }),
     status: t.field({ type: ApplicationStatusEnum, required: true }),
+    fundingTarget: t.string(),
+    walletAddress: t.string(),
+    investmentTerms: t.field({ type: [CreateInvestmentTermInput] }),
   }),
 });
 

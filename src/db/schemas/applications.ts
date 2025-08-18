@@ -10,6 +10,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 import { commentsTable } from './comments';
+import { investmentTermsTable } from './investment-terms';
 import { linksTable } from './links';
 import { milestonesTable } from './milestones';
 import { programsTable } from './programs';
@@ -48,15 +49,6 @@ export const applicationsTable = pgTable('applications', {
   // Investment-specific fields (only used when program.type = 'funding')
   fundingTarget: varchar('funding_target', { length: 256 }),
   walletAddress: varchar('wallet_address', { length: 256 }),
-  investmentTerms:
-    jsonb('investment_terms').$type<
-      {
-        title: string;
-        description: string;
-        price: string;
-        purchaseLimit?: number;
-      }[]
-    >(),
   fundingSuccessful: boolean('funding_successful').default(false),
 
   // Timestamps
@@ -79,6 +71,7 @@ export const applicationRelations = relations(applicationsTable, ({ one, many })
   }),
   milestones: many(milestonesTable),
   comments: many(commentsTable),
+  investmentTerms: many(investmentTermsTable),
 }));
 
 // Links

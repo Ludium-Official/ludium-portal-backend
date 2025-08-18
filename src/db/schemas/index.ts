@@ -2,6 +2,7 @@ export * from './users';
 export * from './files';
 export * from './programs';
 export * from './applications';
+export * from './investment-terms';
 export * from './keywords';
 export * from './milestones';
 export * from './links';

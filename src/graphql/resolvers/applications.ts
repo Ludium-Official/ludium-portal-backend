@@ -4,6 +4,7 @@ import {
   type Milestone,
   applicationsTable,
   applicationsToLinksTable,
+  investmentTermsTable,
   linksTable,
   milestonesTable,
   milestonesToLinksTable,
@@ -41,11 +42,15 @@ export async function getApplicationsResolver(
     .map((f) => {
       switch (f.field) {
         case 'programId':
-          return eq(applicationsTable.programId, f.value);
+          return f.value ? eq(applicationsTable.programId, f.value) : undefined;
         case 'applicantId':
-          return eq(applicationsTable.applicantId, f.value);
+          return f.value ? eq(applicationsTable.applicantId, f.value) : undefined;
         case 'status':
-          return eq(applicationsTable.status, f.value as ApplicationStatusEnum);
+          // Only status uses multi-values
+          if (f.values && f.values.length > 0) {
+            return inArray(applicationsTable.status, f.values as ApplicationStatusEnum[]);
+          }
+          return undefined;
         default:
           return undefined;
       }
@@ -63,24 +68,7 @@ export async function getApplicationsResolver(
   const [totalCount] = await ctx.db
     .select({ count: count() })
     .from(applicationsTable)
-    .where(
-      and(
-        ...filter
-          .filter((f) => f.field in applicationsTable)
-          .map((f) => {
-            switch (f.field) {
-              case 'programId':
-                return eq(applicationsTable.programId, f.value);
-              case 'applicantId':
-                return eq(applicationsTable.applicantId, f.value);
-              case 'status':
-                return eq(applicationsTable.status, f.value as ApplicationStatusEnum);
-              default:
-                return undefined;
-            }
-          }),
-      ),
-    );
+    .where(and(...filterPromises));
 
   if (!validAndNotEmptyArray(data)) {
     return {
@@ -259,6 +247,8 @@ export function createApplicationResolver(
         metadata: args.input.metadata,
         applicantId: user.id,
         status: args.input.status,
+        fundingTarget: args.input.fundingTarget,
+        walletAddress: args.input.walletAddress,
       })
       .returning();
 
@@ -281,6 +271,19 @@ export function createApplicationResolver(
           linkId: link.id,
         })),
       );
+    }
+
+    // Handle investment terms if provided
+    if (args.input.investmentTerms && args.input.investmentTerms.length > 0) {
+      for (const term of args.input.investmentTerms) {
+        await t.insert(investmentTermsTable).values({
+          applicationId: application.id,
+          title: term.title,
+          description: term.description,
+          price: term.price,
+          purchaseLimit: term.purchaseLimit,
+        });
+      }
     }
 
     // Only process milestones if they are provided

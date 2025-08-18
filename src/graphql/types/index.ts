@@ -7,6 +7,7 @@ import './users';
 import './programs';
 import './shared-refs';
 import './applications';
+import './investment-terms';
 import './investments';
 import './milestones';
 import './milestone-payouts';
