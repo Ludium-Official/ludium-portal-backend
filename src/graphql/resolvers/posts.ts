@@ -25,9 +25,9 @@ export async function getPostsResolver(
   const filterPromises = filter.map(async (f) => {
     switch (f.field) {
       case 'authorId':
-        return eq(postsTable.authorId, f.value);
+        return f.value ? eq(postsTable.authorId, f.value) : undefined;
       case 'title':
-        return ilike(postsTable.title, `%${f.value}%`);
+        return f.value ? ilike(postsTable.title, `%${f.value}%`) : undefined;
       default:
         return undefined;
     }

@@ -41,11 +41,13 @@ export async function getApplicationsResolver(
     .map((f) => {
       switch (f.field) {
         case 'programId':
-          return eq(applicationsTable.programId, f.value);
+          return f.value ? eq(applicationsTable.programId, f.value) : undefined;
         case 'applicantId':
-          return eq(applicationsTable.applicantId, f.value);
+          return f.value ? eq(applicationsTable.applicantId, f.value) : undefined;
         case 'status':
-          return eq(applicationsTable.status, f.value as ApplicationStatusEnum);
+          return f.value
+            ? eq(applicationsTable.status, f.value as ApplicationStatusEnum)
+            : undefined;
         default:
           return undefined;
       }
@@ -63,24 +65,7 @@ export async function getApplicationsResolver(
   const [totalCount] = await ctx.db
     .select({ count: count() })
     .from(applicationsTable)
-    .where(
-      and(
-        ...filter
-          .filter((f) => f.field in applicationsTable)
-          .map((f) => {
-            switch (f.field) {
-              case 'programId':
-                return eq(applicationsTable.programId, f.value);
-              case 'applicantId':
-                return eq(applicationsTable.applicantId, f.value);
-              case 'status':
-                return eq(applicationsTable.status, f.value as ApplicationStatusEnum);
-              default:
-                return undefined;
-            }
-          }),
-      ),
-    );
+    .where(and(...filterPromises));
 
   if (!validAndNotEmptyArray(data)) {
     return {
