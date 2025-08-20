@@ -15,4 +15,6 @@ export type Supporter = {
   email: string | null | undefined;
   firstName: string | null | undefined;
   lastName: string | null | undefined;
+  tier: string | null;
+  maxInvestmentAmount: string | undefined;
 };

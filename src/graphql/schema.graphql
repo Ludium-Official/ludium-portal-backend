@@ -567,6 +567,8 @@ type Supporter {
   email: String
   firstName: String
   lastName: String
+  maxInvestmentAmount: String
+  tier: String
   userId: ID
 }
 

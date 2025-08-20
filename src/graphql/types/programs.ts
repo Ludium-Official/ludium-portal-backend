@@ -164,10 +164,8 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
     supporters: t.field({
       type: [SupporterType],
       nullable: true,
-      resolve: async (program, _args, ctx) => {
-        const result = await getSupportersWithTiersResolver({}, { programId: program.id }, ctx);
-        return result || [];
-      },
+      resolve: (program, _args, ctx) =>
+        getSupportersWithTiersResolver({}, { programId: program.id }, ctx),
     }),
   }),
 });

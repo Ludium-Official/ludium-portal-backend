@@ -93,6 +93,8 @@ export const SupporterType = builder.objectRef<Supporter>('Supporter').implement
     email: t.exposeString('email', { nullable: true }),
     firstName: t.exposeString('firstName', { nullable: true }),
     lastName: t.exposeString('lastName', { nullable: true }),
+    tier: t.exposeString('tier', { nullable: true }),
+    maxInvestmentAmount: t.exposeString('maxInvestmentAmount', { nullable: true }),
   }),
 });
 
