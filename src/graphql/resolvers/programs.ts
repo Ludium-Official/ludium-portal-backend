@@ -10,6 +10,7 @@ import {
   programsTable,
   programsToKeywordsTable,
   programsToLinksTable,
+  userTierAssignmentsTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
@@ -115,6 +116,8 @@ export async function getProgramsResolver(
         return f.value
           ? eq(programsTable.visibility, f.value as 'private' | 'restricted' | 'public')
           : undefined;
+      case 'type':
+        return f.value ? eq(programsTable.type, f.value as 'regular' | 'funding') : undefined;
       case 'price':
         // sort by price, value can be 'asc' or 'desc'
         return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
@@ -656,7 +659,12 @@ export function publishProgramResolver(
 
 export function inviteUserToProgramResolver(
   _root: Root,
-  args: { programId: string; userId: string },
+  args: {
+    programId: string;
+    userId: string;
+    tier?: 'bronze' | 'silver' | 'gold' | 'platinum' | null;
+    maxInvestmentAmount?: string | null;
+  },
   ctx: Context,
 ) {
   const user = requireUser(ctx);
@@ -705,12 +713,61 @@ export function inviteUserToProgramResolver(
       roleType: 'builder',
     });
 
+    // If this is a tier-based funding program and tier info is provided, create tier assignment
+    if (
+      program.type === 'funding' &&
+      program.fundingCondition === 'tier' &&
+      args.tier &&
+      args.maxInvestmentAmount
+    ) {
+      // Check if user already has a tier assignment
+      const existingAssignment = await t
+        .select()
+        .from(userTierAssignmentsTable)
+        .where(
+          and(
+            eq(userTierAssignmentsTable.programId, args.programId),
+            eq(userTierAssignmentsTable.userId, args.userId),
+          ),
+        );
+
+      if (existingAssignment.length > 0) {
+        // Update existing assignment
+        await t
+          .update(userTierAssignmentsTable)
+          .set({
+            tier: args.tier,
+            maxInvestmentAmount: args.maxInvestmentAmount,
+          })
+          .where(
+            and(
+              eq(userTierAssignmentsTable.programId, args.programId),
+              eq(userTierAssignmentsTable.userId, args.userId),
+            ),
+          );
+      } else {
+        // Create new tier assignment
+        await t.insert(userTierAssignmentsTable).values({
+          programId: args.programId,
+          userId: args.userId,
+          tier: args.tier,
+          maxInvestmentAmount: args.maxInvestmentAmount,
+        });
+      }
+    }
+
     // Send notification to the invited user
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'program',
       action: 'invited',
       recipientId: args.userId,
       entityId: args.programId,
+      metadata: args.tier
+        ? {
+            tier: args.tier,
+            maxInvestmentAmount: args.maxInvestmentAmount,
+          }
+        : undefined,
     });
     await ctx.server.pubsub.publish('notificationsCount');
 

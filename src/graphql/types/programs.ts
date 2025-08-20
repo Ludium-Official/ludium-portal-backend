@@ -1,4 +1,9 @@
-import { type Program as DBProgram, programStatuses, programVisibilities } from '@/db/schemas';
+import {
+  type Program as DBProgram,
+  investmentTiers,
+  programStatuses,
+  programVisibilities,
+} from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getApplicationsByProgramIdResolver } from '@/graphql/resolvers/applications';
 import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
@@ -41,6 +46,10 @@ export const ProgramStatusEnum = builder.enumType('ProgramStatus', {
 
 export const ProgramVisibilityEnum = builder.enumType('ProgramVisibility', {
   values: programVisibilities,
+});
+
+export const InvestmentTierEnum = builder.enumType('InvestmentTier', {
+  values: investmentTiers,
 });
 
 export const ProgramTypeEnum = builder.enumType('ProgramType', {
@@ -334,6 +343,9 @@ builder.mutationFields((t) => ({
     args: {
       programId: t.arg.id({ required: true }),
       userId: t.arg.id({ required: true }),
+      // Optional tier assignment for funding programs
+      tier: t.arg({ type: InvestmentTierEnum, required: false }),
+      maxInvestmentAmount: t.arg.string({ required: false }),
     },
     resolve: inviteUserToProgramResolver,
   }),

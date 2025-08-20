@@ -149,7 +149,9 @@ export async function createInvestmentResolver(
         );
 
       if (!tierAssignment) {
-        throw new Error('You are not assigned to any tier for this program');
+        throw new Error(
+          'You are not assigned to any tier for this program. Please contact the program creator to get tier access.',
+        );
       }
 
       tier = tierAssignment.tier;
