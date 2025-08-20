@@ -11,6 +11,8 @@ import {
   milestonesToLinksTable,
   programUserRolesTable,
   programsTable,
+  userTierAssignmentsTable,
+  usersTable,
 } from '@/db/schemas';
 import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
@@ -587,6 +589,30 @@ export async function getCurrentFundingAmountResolver(
   args: { id: string },
   ctx: Context,
 ) {
+  // First check if this is a funding program
+  const [application] = await ctx.db
+    .select({
+      programId: applicationsTable.programId,
+    })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, args.id));
+
+  if (!application) {
+    return null;
+  }
+
+  const [program] = await ctx.db
+    .select({
+      type: programsTable.type,
+    })
+    .from(programsTable)
+    .where(eq(programsTable.id, application.programId));
+
+  // Only return funding amount for funding programs
+  if (program?.type !== 'funding') {
+    return null;
+  }
+
   const [result] = await ctx.db
     .select({
       total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)::text`,
@@ -602,12 +628,32 @@ export async function getFundingProgressResolver(_root: Root, args: { id: string
   const [application] = await ctx.db
     .select({
       fundingTarget: applicationsTable.fundingTarget,
+      price: applicationsTable.price,
+      programId: applicationsTable.programId,
     })
     .from(applicationsTable)
     .where(eq(applicationsTable.id, args.id));
 
-  // Only calculate for applications with funding targets
-  if (!application.fundingTarget) {
+  if (!application) {
+    return null;
+  }
+
+  // Check if this is a funding program
+  const [program] = await ctx.db
+    .select({
+      type: programsTable.type,
+    })
+    .from(programsTable)
+    .where(eq(programsTable.id, application.programId));
+
+  // Only calculate progress for funding programs
+  if (program?.type !== 'funding') {
+    return null;
+  }
+
+  // Use fundingTarget if set, otherwise use application price
+  const targetAmount = application.fundingTarget || application.price;
+  if (!targetAmount) {
     return null;
   }
 
@@ -621,14 +667,14 @@ export async function getFundingProgressResolver(_root: Root, args: { id: string
     );
 
   const currentAmount = Number.parseFloat(result?.total || '0');
-  const targetAmount = Number.parseFloat(application.fundingTarget);
+  const target = Number.parseFloat(targetAmount);
 
-  if (targetAmount === 0) {
+  if (target === 0) {
     return 0;
   }
 
   // Calculate percentage and cap at 100
-  const percentage = (currentAmount / targetAmount) * 100;
+  const percentage = (currentAmount / target) * 100;
   return Math.min(percentage, 100);
 }
 
@@ -642,4 +688,78 @@ export async function getInvestmentCountResolver(_root: Root, args: { id: string
       and(eq(investmentsTable.applicationId, args.id), eq(investmentsTable.status, 'confirmed')),
     );
   return result?.count || 0;
+}
+
+// Get investors with their tiers for this application
+export async function getInvestorsWithTiersResolver(
+  _root: Root,
+  args: { id: string },
+  ctx: Context,
+) {
+  const [application] = await ctx.db
+    .select({
+      id: applicationsTable.id,
+      programId: applicationsTable.programId,
+    })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, args.id));
+
+  // Get the program to check if it's tier-based
+  const [program] = await ctx.db
+    .select()
+    .from(programsTable)
+    .where(eq(programsTable.id, application.programId));
+
+  if (!program || program.fundingCondition !== 'tier') {
+    return null;
+  }
+
+  // Get all investments for this application
+  const investments = await ctx.db
+    .select()
+    .from(investmentsTable)
+    .where(eq(investmentsTable.applicationId, application.id));
+
+  // Get user details for all investors
+  const userIds = [...new Set(investments.map((i) => i.userId))];
+  const users =
+    userIds.length > 0
+      ? await ctx.db.select().from(usersTable).where(inArray(usersTable.id, userIds))
+      : [];
+
+  // Create user lookup map
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  // Get tier assignments for all investors
+  const tierAssignments =
+    userIds.length > 0
+      ? await ctx.db
+          .select()
+          .from(userTierAssignmentsTable)
+          .where(
+            and(
+              eq(userTierAssignmentsTable.programId, program.id),
+              inArray(userTierAssignmentsTable.userId, userIds),
+            ),
+          )
+      : [];
+
+  // Map tier assignments by userId for quick lookup
+  const tierMap = new Map(tierAssignments.map((t) => [t.userId, t]));
+
+  // Combine investment data with user and tier information
+  return investments.map((investment) => {
+    const user = userMap.get(investment.userId);
+    return {
+      userId: investment.userId,
+      email: user?.email,
+      firstName: user?.firstName,
+      lastName: user?.lastName,
+      amount: investment.amount,
+      tier: tierMap.get(investment.userId)?.tier || investment.tier,
+      maxInvestmentAmount: tierMap.get(investment.userId)?.maxInvestmentAmount,
+      investmentStatus: investment.status,
+      createdAt: investment.createdAt,
+    };
+  });
 }

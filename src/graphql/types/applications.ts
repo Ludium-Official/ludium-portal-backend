@@ -12,6 +12,7 @@ import {
   getCurrentFundingAmountResolver,
   getFundingProgressResolver,
   getInvestmentCountResolver,
+  getInvestorsWithTiersResolver,
   rejectApplicationResolver,
   updateApplicationResolver,
 } from '@/graphql/resolvers/applications';
@@ -23,6 +24,7 @@ import { getUserResolver } from '@/graphql/resolvers/users';
 import { CommentType } from '@/graphql/types/comments';
 import { PaginationInput } from '@/graphql/types/common';
 import { CreateInvestmentTermInput, InvestmentTermType } from '@/graphql/types/investment-terms';
+import { InvestorType } from '@/graphql/types/investments';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { CreateMilestoneInput, MilestoneType } from '@/graphql/types/milestones';
 import { ApplicationRef } from '@/graphql/types/shared-refs';
@@ -103,6 +105,13 @@ export const ApplicationType = ApplicationRef.implement({
       nullable: true,
       resolve: (application, _args, ctx) =>
         getInvestmentCountResolver({}, { id: application.id }, ctx),
+    }),
+    // Get investors with their tiers for this application
+    investors: t.field({
+      type: [InvestorType],
+      nullable: true,
+      resolve: (application, _args, ctx) =>
+        getInvestorsWithTiersResolver({}, { id: application.id }, ctx),
     }),
   }),
 });

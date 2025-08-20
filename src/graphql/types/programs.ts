@@ -18,6 +18,7 @@ import {
   getProgramKeywordsResolver,
   getProgramResolver,
   getProgramsResolver,
+  getSupportersWithTiersResolver,
   inviteUserToProgramResolver,
   publishProgramResolver,
   rejectProgramResolver,
@@ -33,6 +34,7 @@ import {
 import { ApplicationType } from '@/graphql/types/applications';
 import { CommentType } from '@/graphql/types/comments';
 import { KeywordType, PaginationInput } from '@/graphql/types/common';
+import { SupporterType } from '@/graphql/types/investments';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { User } from '@/graphql/types/users';
 import BigNumber from 'bignumber.js';
@@ -157,6 +159,16 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
     }),
     feePercentage: t.exposeInt('feePercentage'),
     customFeePercentage: t.exposeInt('customFeePercentage'),
+
+    // Get supporters with their tiers for funding programs
+    supporters: t.field({
+      type: [SupporterType],
+      nullable: true,
+      resolve: async (program, _args, ctx) => {
+        const result = await getSupportersWithTiersResolver({}, { programId: program.id }, ctx);
+        return result || [];
+      },
+    }),
   }),
 });
 

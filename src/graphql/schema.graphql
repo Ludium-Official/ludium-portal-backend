@@ -9,6 +9,7 @@ type Application {
   id: ID
   investmentCount: Int
   investmentTerms: [InvestmentTerm!]
+  investors: [Investor!]
   links: [Link!]
   metadata: JSON
   milestones: [Milestone!]
@@ -221,6 +222,18 @@ enum InvestmentTier {
   gold
   platinum
   silver
+}
+
+type Investor {
+  amount: String
+  createdAt: String
+  email: String
+  firstName: String
+  investmentStatus: String
+  lastName: String
+  maxInvestmentAmount: String
+  tier: String
+  userId: ID
 }
 
 """
@@ -452,6 +465,7 @@ type Program {
   rejectionReason: String
   status: ProgramStatus
   summary: String
+  supporters: [Supporter!]
   tierSettings: JSON
   txHash: String
   type: ProgramType
@@ -547,6 +561,13 @@ enum SubmitMilestoneStatus {
 type Subscription {
   countNotifications: Int
   notifications: [Notification!]
+}
+
+type Supporter {
+  email: String
+  firstName: String
+  lastName: String
+  userId: ID
 }
 
 input UpdateApplicationInput {

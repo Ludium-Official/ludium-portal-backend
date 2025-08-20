@@ -11,6 +11,7 @@ import {
   programsToKeywordsTable,
   programsToLinksTable,
   userTierAssignmentsTable,
+  usersTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
@@ -979,5 +980,49 @@ export async function removeProgramKeywordResolver(
       );
 
     return true;
+  });
+}
+
+export async function getSupportersWithTiersResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  const [program] = await ctx.db
+    .select()
+    .from(programsTable)
+    .where(eq(programsTable.id, args.programId));
+  // Only return supporters for tier-based funding programs
+  if (program.type !== 'funding' || program.fundingCondition !== 'tier') {
+    return null;
+  }
+
+  // Get all tier assignments for this program
+  const tierAssignments = await ctx.db
+    .select()
+    .from(userTierAssignmentsTable)
+    .where(eq(userTierAssignmentsTable.programId, program.id));
+
+  // Get user details for all assigned users
+  const userIds = tierAssignments.map((assignment) => assignment.userId);
+  const users =
+    userIds.length > 0
+      ? await ctx.db.select().from(usersTable).where(inArray(usersTable.id, userIds))
+      : [];
+
+  // Create user lookup map
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  return tierAssignments.map((assignment) => {
+    const user = userMap.get(assignment.userId);
+    return {
+      userId: assignment.userId,
+      email: user?.email,
+      firstName: user?.firstName,
+      lastName: user?.lastName,
+      tier: assignment.tier,
+      maxInvestmentAmount: assignment.maxInvestmentAmount,
+      createdAt: assignment.createdAt,
+    };
   });
 }

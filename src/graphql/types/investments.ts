@@ -7,6 +7,7 @@ import {
   getInvestmentsResolver,
   reclaimInvestmentResolver,
 } from '@/graphql/resolvers/investments';
+import type { Investor, Supporter } from '@/types';
 import builder from '../builder';
 import { PaginationInput } from './common';
 import { ApplicationRef, InvestmentRef } from './shared-refs';
@@ -68,6 +69,32 @@ export const PaginatedInvestmentsType = builder
       }),
     }),
   });
+
+export const InvestorType = builder.objectRef<Investor>('Investor').implement({
+  fields: (t) => ({
+    userId: t.exposeID('userId'),
+    email: t.exposeString('email', { nullable: true }),
+    firstName: t.exposeString('firstName', { nullable: true }),
+    lastName: t.exposeString('lastName', { nullable: true }),
+    amount: t.exposeString('amount'),
+    tier: t.exposeString('tier', { nullable: true }),
+    maxInvestmentAmount: t.exposeString('maxInvestmentAmount', { nullable: true }),
+    investmentStatus: t.exposeString('investmentStatus'),
+    createdAt: t.field({
+      type: 'String',
+      resolve: (investor) => investor.createdAt.toISOString(),
+    }),
+  }),
+});
+
+export const SupporterType = builder.objectRef<Supporter>('Supporter').implement({
+  fields: (t) => ({
+    userId: t.exposeID('userId'),
+    email: t.exposeString('email', { nullable: true }),
+    firstName: t.exposeString('firstName', { nullable: true }),
+    lastName: t.exposeString('lastName', { nullable: true }),
+  }),
+});
 
 /* -------------------------------------------------------------------------- */
 /*                                   Inputs                                   */
