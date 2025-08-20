@@ -5,6 +5,7 @@ import {
   applicationsTable,
   applicationsToLinksTable,
   investmentTermsTable,
+  investmentsTable,
   linksTable,
   milestonesTable,
   milestonesToLinksTable,
@@ -25,7 +26,7 @@ import {
   validateMilestonePercentages,
 } from '@/utils';
 import BigNumber from 'bignumber.js';
-import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { getValidatorsByProgramIdResolver } from './users';
 
 export async function getApplicationsResolver(
@@ -579,4 +580,66 @@ export function rejectApplicationResolver(
 
     return application;
   });
+}
+
+export async function getCurrentFundingAmountResolver(
+  _root: Root,
+  args: { id: string },
+  ctx: Context,
+) {
+  const [result] = await ctx.db
+    .select({
+      total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)::text`,
+    })
+    .from(investmentsTable)
+    .where(
+      and(eq(investmentsTable.applicationId, args.id), eq(investmentsTable.status, 'confirmed')),
+    );
+  return result?.total || '0';
+}
+
+export async function getFundingProgressResolver(_root: Root, args: { id: string }, ctx: Context) {
+  const [application] = await ctx.db
+    .select({
+      fundingTarget: applicationsTable.fundingTarget,
+    })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, args.id));
+
+  // Only calculate for applications with funding targets
+  if (!application.fundingTarget) {
+    return null;
+  }
+
+  const [result] = await ctx.db
+    .select({
+      total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
+    })
+    .from(investmentsTable)
+    .where(
+      and(eq(investmentsTable.applicationId, args.id), eq(investmentsTable.status, 'confirmed')),
+    );
+
+  const currentAmount = Number.parseFloat(result?.total || '0');
+  const targetAmount = Number.parseFloat(application.fundingTarget);
+
+  if (targetAmount === 0) {
+    return 0;
+  }
+
+  // Calculate percentage and cap at 100
+  const percentage = (currentAmount / targetAmount) * 100;
+  return Math.min(percentage, 100);
+}
+
+export async function getInvestmentCountResolver(_root: Root, args: { id: string }, ctx: Context) {
+  const [result] = await ctx.db
+    .select({
+      count: sql<number>`COUNT(*)::int`,
+    })
+    .from(investmentsTable)
+    .where(
+      and(eq(investmentsTable.applicationId, args.id), eq(investmentsTable.status, 'confirmed')),
+    );
+  return result?.count || 0;
 }

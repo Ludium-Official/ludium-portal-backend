@@ -9,6 +9,9 @@ import {
   createApplicationResolver,
   getApplicationResolver,
   getApplicationsResolver,
+  getCurrentFundingAmountResolver,
+  getFundingProgressResolver,
+  getInvestmentCountResolver,
   rejectApplicationResolver,
   updateApplicationResolver,
 } from '@/graphql/resolvers/applications';
@@ -82,6 +85,24 @@ export const ApplicationType = ApplicationRef.implement({
       type: [InvestmentTermType],
       resolve: async (application, _args, ctx) =>
         getInvestmentTermsByApplicationIdResolver({}, { applicationId: application.id }, ctx),
+    }),
+    currentFundingAmount: t.field({
+      type: 'String',
+      nullable: true,
+      resolve: (application, _args, ctx) =>
+        getCurrentFundingAmountResolver({}, { id: application.id }, ctx),
+    }),
+    fundingProgress: t.field({
+      type: 'Float',
+      nullable: true,
+      resolve: (application, _args, ctx) =>
+        getFundingProgressResolver({}, { id: application.id }, ctx),
+    }),
+    investmentCount: t.field({
+      type: 'Int',
+      nullable: true,
+      resolve: (application, _args, ctx) =>
+        getInvestmentCountResolver({}, { id: application.id }, ctx),
     }),
   }),
 });

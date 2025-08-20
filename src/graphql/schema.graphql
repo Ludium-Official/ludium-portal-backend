@@ -2,7 +2,13 @@ type Application {
   applicant: User
   comments: [Comment!]
   content: String
+  currentFundingAmount: String
+  fundingProgress: Float
+  fundingSuccessful: Boolean
+  fundingTarget: String
   id: ID
+  investmentCount: Int
+  investmentTerms: [InvestmentTerm!]
   links: [Link!]
   metadata: JSON
   milestones: [Milestone!]
@@ -11,6 +17,7 @@ type Application {
   rejectionReason: String
   status: ApplicationStatus
   summary: String
+  walletAddress: String
 }
 
 enum ApplicationStatus {
@@ -67,6 +74,8 @@ enum CommentableTypeEnum {
 
 input CreateApplicationInput {
   content: String!
+  fundingTarget: String
+  investmentTerms: [CreateInvestmentTermInput!]
   links: [LinkInput!]
   metadata: JSON
   milestones: [CreateMilestoneInput!]!
@@ -75,6 +84,7 @@ input CreateApplicationInput {
   programId: String!
   status: ApplicationStatus!
   summary: String!
+  walletAddress: String
 }
 
 input CreateCarouselItemInput {
@@ -94,6 +104,13 @@ input CreateInvestmentInput {
   amount: String!
   projectId: ID!
   txHash: String
+}
+
+input CreateInvestmentTermInput {
+  description: String
+  price: String!
+  purchaseLimit: Int
+  title: String!
 }
 
 input CreateMilestoneInput {
@@ -159,7 +176,8 @@ type EnrichedCarouselItem {
 
 input FilterInput {
   field: String!
-  value: String!
+  value: String
+  values: [String!]
 }
 
 enum FundingCondition {
@@ -185,6 +203,17 @@ enum InvestmentStatus {
   failed
   pending
   refunded
+}
+
+type InvestmentTerm {
+  applicationId: ID
+  createdAt: DateTime
+  description: String
+  id: ID
+  price: String
+  purchaseLimit: Int
+  title: String
+  updatedAt: DateTime
 }
 
 """
@@ -255,10 +284,12 @@ type Mutation {
   createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
   createComment(input: CreateCommentInput!): Comment
   createInvestment(input: CreateInvestmentInput!): Investment
+  createInvestmentTerm(applicationId: ID!, input: CreateInvestmentTermInput!): InvestmentTerm
   createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createUser(input: UserInput!): User
   deleteCarouselItem(id: ID!): CarouselItem
+  deleteInvestmentTerm(id: ID!): Boolean
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
   incrementPostView(postId: ID!): Int
@@ -279,6 +310,7 @@ type Mutation {
   updateApplication(input: UpdateApplicationInput!): Application
   updateCarouselItem(input: UpdateCarouselItemInput!): CarouselItem
   updateComment(input: UpdateCommentInput!): Comment
+  updateInvestmentTerm(input: UpdateInvestmentTermInput!): InvestmentTerm
   updateMilestone(input: UpdateMilestoneInput!): Milestone
   updatePost(input: UpdatePostInput!): Post
   updateProfile(input: UserUpdateInput!): User
@@ -459,6 +491,8 @@ type Query {
   commentsByCommentable(commentableId: ID!, commentableType: CommentableTypeEnum!): [Comment!]
   countNotifications: Int
   investment(id: ID!): Investment
+  investmentTerm(id: ID!): InvestmentTerm
+  investmentTermsByApplicationId(applicationId: ID!): [InvestmentTerm!]
   investments(pagination: PaginationInput, projectId: ID, supporterId: ID): PaginatedInvestments
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
@@ -529,6 +563,14 @@ input UpdateCarouselItemInput {
 input UpdateCommentInput {
   content: String
   id: ID!
+}
+
+input UpdateInvestmentTermInput {
+  description: String
+  id: String!
+  price: String
+  purchaseLimit: Int
+  title: String
 }
 
 input UpdateMilestoneInput {
