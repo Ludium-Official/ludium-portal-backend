@@ -321,6 +321,7 @@ export function createProgramResolver(
         : undefined,
       feePercentage: inputData.feePercentage,
       customFeePercentage: inputData.customFeePercentage,
+      contractAddress: inputData.contractAddress,
     };
 
     const [program] = await t.insert(programsTable).values(insertData).returning();

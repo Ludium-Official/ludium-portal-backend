@@ -167,6 +167,7 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       resolve: (program, _args, ctx) =>
         getSupportersWithTiersResolver({}, { programId: program.id }, ctx),
     }),
+    contractAddress: t.exposeString('contractAddress'),
   }),
 });
 
@@ -220,6 +221,7 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
     tierSettings: t.field({ type: 'JSON' }),
     feePercentage: t.int(),
     customFeePercentage: t.int(),
+    contractAddress: t.string(),
   }),
 });
 

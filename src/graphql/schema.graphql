@@ -135,6 +135,7 @@ input CreatePostInput {
 input CreateProgramInput {
   applicationEndDate: DateTime
   applicationStartDate: DateTime
+  contractAddress: String
   currency: String
   customFeePercentage: Int
   deadline: DateTime!
@@ -444,6 +445,7 @@ type Program {
   applicationStartDate: DateTime
   applications: [Application!]
   comments: [Comment!]
+  contractAddress: String
   creator: User
   currency: String
   customFeePercentage: Int
