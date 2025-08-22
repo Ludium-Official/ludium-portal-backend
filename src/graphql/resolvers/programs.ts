@@ -113,6 +113,12 @@ export async function getProgramsResolver(
             f.values as ('published' | 'closed' | 'completed' | 'cancelled')[],
           );
         }
+        if (f.value) {
+          return eq(
+            programsTable.status,
+            f.value as 'published' | 'closed' | 'completed' | 'cancelled',
+          );
+        }
         return undefined;
       case 'visibility':
         return f.value
