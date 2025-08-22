@@ -14,6 +14,7 @@ type Application {
   metadata: JSON
   milestones: [Milestone!]
   name: String
+  onChainProjectId: Int
   price: String
   rejectionReason: String
   status: ApplicationStatus
@@ -295,7 +296,7 @@ enum MilestoneStatus {
 }
 
 type Mutation {
-  acceptApplication(id: ID!): Application
+  acceptApplication(id: ID!, onChainProjectId: Int): Application
   acceptProgram(id: ID!): Program
   addProgramKeyword(keyword: String!, programId: ID!): Keyword
   addUserKeyword(keyword: String!, userId: ID!): Keyword
@@ -471,6 +472,7 @@ type Program {
   tierSettings: JSON
   txHash: String
   type: ProgramType
+  userTierAssignment: UserTierAssignment
   validators: [User!]
   visibility: ProgramVisibility
 }
@@ -696,6 +698,15 @@ enum UserRole {
   admin
   superadmin
   user
+}
+
+type UserTierAssignment {
+  createdAt: DateTime
+  currentInvestment: String
+  maxInvestmentAmount: String
+  remainingCapacity: String
+  tier: String
+  userId: ID
 }
 
 input UserUpdateInput {

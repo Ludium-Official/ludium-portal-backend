@@ -19,6 +19,7 @@ import {
   getProgramResolver,
   getProgramsResolver,
   getSupportersWithTiersResolver,
+  getUserTierAssignmentResolver,
   inviteUserToProgramResolver,
   publishProgramResolver,
   rejectProgramResolver,
@@ -61,6 +62,30 @@ export const ProgramTypeEnum = builder.enumType('ProgramType', {
 export const FundingConditionEnum = builder.enumType('FundingCondition', {
   values: ['open', 'tier'] as const,
 });
+
+// Type for user's tier assignment with investment tracking
+export const UserTierAssignmentType = builder
+  .objectRef<{
+    userId: string;
+    tier: string;
+    maxInvestmentAmount: string;
+    currentInvestment: string;
+    remainingCapacity: string;
+    createdAt: Date;
+  }>('UserTierAssignment')
+  .implement({
+    fields: (t) => ({
+      userId: t.exposeID('userId'),
+      tier: t.exposeString('tier'),
+      maxInvestmentAmount: t.exposeString('maxInvestmentAmount'),
+      currentInvestment: t.exposeString('currentInvestment'),
+      remainingCapacity: t.exposeString('remainingCapacity'),
+      createdAt: t.field({
+        type: 'DateTime',
+        resolve: (assignment) => assignment.createdAt,
+      }),
+    }),
+  });
 
 export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
   fields: (t) => ({
@@ -166,6 +191,13 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       nullable: true,
       resolve: (program, _args, ctx) =>
         getSupportersWithTiersResolver({}, { programId: program.id }, ctx),
+    }),
+    // Get current user's tier assignment for funding programs
+    userTierAssignment: t.field({
+      type: UserTierAssignmentType,
+      nullable: true,
+      resolve: (program, _args, ctx) =>
+        getUserTierAssignmentResolver({}, { programId: program.id }, ctx),
     }),
     contractAddress: t.exposeString('contractAddress'),
   }),

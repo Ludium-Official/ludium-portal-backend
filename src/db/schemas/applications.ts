@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm';
 import {
   boolean,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -50,6 +51,7 @@ export const applicationsTable = pgTable('applications', {
   fundingTarget: varchar('funding_target', { length: 256 }),
   walletAddress: varchar('wallet_address', { length: 256 }),
   fundingSuccessful: boolean('funding_successful').default(false),
+  onChainProjectId: integer('on_chain_project_id'), // Blockchain project ID for investments
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

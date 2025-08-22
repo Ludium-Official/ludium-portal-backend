@@ -83,6 +83,7 @@ export const ApplicationType = ApplicationRef.implement({
     fundingTarget: t.exposeString('fundingTarget', { nullable: true }),
     walletAddress: t.exposeString('walletAddress', { nullable: true }),
     fundingSuccessful: t.exposeBoolean('fundingSuccessful', { nullable: true }),
+    onChainProjectId: t.exposeInt('onChainProjectId', { nullable: true }),
     investmentTerms: t.field({
       type: [InvestmentTermType],
       resolve: async (application, _args, ctx) =>
@@ -226,6 +227,7 @@ builder.mutationFields((t) => ({
     },
     args: {
       id: t.arg.id({ required: true }),
+      onChainProjectId: t.arg.int({ required: false }),
     },
     resolve: acceptApplicationResolver,
   }),

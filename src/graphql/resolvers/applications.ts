@@ -495,11 +495,22 @@ export function updateApplicationResolver(
   });
 }
 
-export function acceptApplicationResolver(_root: Root, args: { id: string }, ctx: Context) {
+export function acceptApplicationResolver(
+  _root: Root,
+  args: { id: string; onChainProjectId?: number },
+  ctx: Context,
+) {
   return ctx.db.transaction(async (t) => {
+    const updateData: Partial<ApplicationUpdate> = { status: 'accepted' };
+
+    // If onChainProjectId is provided, store it
+    if (args.onChainProjectId !== undefined) {
+      updateData.onChainProjectId = args.onChainProjectId;
+    }
+
     const [application] = await t
       .update(applicationsTable)
-      .set({ status: 'accepted' })
+      .set(updateData)
       .where(eq(applicationsTable.id, args.id))
       .returning();
 

@@ -4,6 +4,7 @@ import {
   type Program,
   applicationsTable,
   filesTable,
+  investmentsTable,
   keywordsTable,
   linksTable,
   programUserRolesTable,
@@ -23,7 +24,7 @@ import {
   requireUser,
   validAndNotEmptyArray,
 } from '@/utils';
-import { and, asc, count, desc, eq, gt, ilike, inArray, lt, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, ilike, inArray, lt, or, sql } from 'drizzle-orm';
 
 export async function getProgramsResolver(
   _root: Root,
@@ -294,7 +295,7 @@ export function createProgramResolver(
       currency: inputData.currency || 'ETH',
       deadline: inputData.deadline ? new Date(inputData.deadline) : new Date(),
       creatorId: user.id,
-      status: inputData.status,
+      status: inputData.type === 'funding' ? 'published' : inputData.status,
       visibility: inputData.visibility || 'public',
       network: inputData.network,
 
@@ -982,6 +983,77 @@ export async function removeProgramKeywordResolver(
 
     return true;
   });
+}
+
+export async function getUserTierAssignmentResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    return null;
+  }
+
+  const [program] = await ctx.db
+    .select()
+    .from(programsTable)
+    .where(eq(programsTable.id, args.programId));
+
+  // Only return tier for tier-based funding programs
+  if (!program || program.type !== 'funding' || program.fundingCondition !== 'tier') {
+    return null;
+  }
+
+  // Get user's tier assignment
+  const [tierAssignment] = await ctx.db
+    .select()
+    .from(userTierAssignmentsTable)
+    .where(
+      and(
+        eq(userTierAssignmentsTable.programId, args.programId),
+        eq(userTierAssignmentsTable.userId, user.id),
+      ),
+    );
+
+  if (!tierAssignment) {
+    return null;
+  }
+
+  // Get applications for this program
+  const programApplications = await ctx.db
+    .select({ id: applicationsTable.id })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.programId, args.programId));
+
+  const applicationIds = programApplications.map((app) => app.id);
+
+  // Calculate user's current investment total
+  const [userTotal] = await ctx.db
+    .select({
+      total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
+    })
+    .from(investmentsTable)
+    .where(
+      and(
+        inArray(investmentsTable.applicationId, applicationIds),
+        eq(investmentsTable.userId, user.id),
+        eq(investmentsTable.status, 'confirmed'),
+      ),
+    );
+
+  const currentInvestment = Number.parseFloat(userTotal.total || '0');
+  const maxAmount = Number.parseFloat(tierAssignment.maxInvestmentAmount);
+  const remainingCapacity = Math.max(0, maxAmount - currentInvestment);
+
+  return {
+    userId: tierAssignment.userId,
+    tier: tierAssignment.tier,
+    maxInvestmentAmount: tierAssignment.maxInvestmentAmount,
+    currentInvestment: currentInvestment.toString(),
+    remainingCapacity: remainingCapacity.toString(),
+    createdAt: tierAssignment.createdAt,
+  };
 }
 
 export async function getSupportersWithTiersResolver(

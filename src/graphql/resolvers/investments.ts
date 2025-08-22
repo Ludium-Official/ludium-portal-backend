@@ -83,6 +83,7 @@ export async function createInvestmentResolver(
   const { projectId, amount, txHash } = args.input;
 
   return ctx.db.transaction(async (t) => {
+    // TODO: createInvestment only possible if application is in status 'accepted'
     // Get application (project) details
     const [application] = await t
       .select()
