@@ -16,7 +16,7 @@ import {
 } from '@/db/schemas';
 import type { CreateApplicationInput, UpdateApplicationInput } from '@/graphql/types/applications';
 import type { PaginationInput } from '@/graphql/types/common';
-import type { Context, Root } from '@/types';
+import type { Args, Context, Root } from '@/types';
 import {
   calculateMilestoneAmount,
   canApplyToProgram,
@@ -27,6 +27,7 @@ import {
   validAndNotEmptyArray,
   validateMilestonePercentages,
 } from '@/utils';
+import { canSubmitApplication } from '@/utils/program-status';
 import BigNumber from 'bignumber.js';
 import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { getValidatorsByProgramIdResolver } from './users';
@@ -211,12 +212,35 @@ export function createApplicationResolver(
         id: programsTable.id,
         price: programsTable.price,
         visibility: programsTable.visibility,
+        type: programsTable.type,
+        applicationStartDate: programsTable.applicationStartDate,
+        applicationEndDate: programsTable.applicationEndDate,
       })
       .from(programsTable)
       .where(eq(programsTable.id, args.input.programId));
 
     if (!program) {
       throw new Error('Program not found');
+    }
+
+    // For funding programs, validate application period
+    if (program.type === 'funding') {
+      const fullProgram = await t
+        .select()
+        .from(programsTable)
+        .where(eq(programsTable.id, args.input.programId))
+        .then((rows) => rows[0]);
+
+      if (!canSubmitApplication(fullProgram)) {
+        const now = new Date();
+        if (program.applicationStartDate && now < program.applicationStartDate) {
+          throw new Error('Application period has not started yet');
+        }
+        if (program.applicationEndDate && now > program.applicationEndDate) {
+          throw new Error('Application period has ended');
+        }
+        throw new Error('Applications are not currently being accepted');
+      }
     }
 
     if (program.creatorId === user.id) {
@@ -773,4 +797,18 @@ export async function getInvestorsWithTiersResolver(
       createdAt: investment.createdAt,
     };
   });
+}
+
+// Get application's program (for Application type)
+export async function getApplicationProgramResolver(
+  root: { programId: string },
+  _args: Args,
+  ctx: Context,
+) {
+  const [program] = await ctx.db
+    .select()
+    .from(programsTable)
+    .where(eq(programsTable.id, root.programId));
+
+  return program;
 }

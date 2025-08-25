@@ -7,6 +7,7 @@ import builder from '@/graphql/builder';
 import {
   acceptApplicationResolver,
   createApplicationResolver,
+  getApplicationProgramResolver,
   getApplicationResolver,
   getApplicationsResolver,
   getCurrentFundingAmountResolver,
@@ -27,7 +28,7 @@ import { CreateInvestmentTermInput, InvestmentTermType } from '@/graphql/types/i
 import { InvestorType } from '@/graphql/types/investments';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { CreateMilestoneInput, MilestoneType } from '@/graphql/types/milestones';
-import { ApplicationRef } from '@/graphql/types/shared-refs';
+import { ApplicationRef, ProgramRef } from '@/graphql/types/shared-refs';
 import { User } from '@/graphql/types/users';
 import BigNumber from 'bignumber.js';
 import { eq } from 'drizzle-orm';
@@ -113,6 +114,12 @@ export const ApplicationType = ApplicationRef.implement({
       nullable: true,
       resolve: (application, _args, ctx) =>
         getInvestorsWithTiersResolver({}, { id: application.id }, ctx),
+    }),
+    // Get the program this application belongs to
+    program: t.field({
+      type: ProgramRef,
+      nullable: true,
+      resolve: (application, _args, ctx) => getApplicationProgramResolver(application, _args, ctx),
     }),
   }),
 });

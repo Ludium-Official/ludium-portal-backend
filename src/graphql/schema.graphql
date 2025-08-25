@@ -16,6 +16,7 @@ type Application {
   name: String
   onChainProjectId: Int
   price: String
+  program: Program
   rejectionReason: String
   status: ApplicationStatus
   summary: String
@@ -28,6 +29,18 @@ enum ApplicationStatus {
   pending
   rejected
   submitted
+}
+
+input AssignUserTierInput {
+  maxInvestmentAmount: String!
+  programId: ID!
+  tier: InvestmentTier!
+  userId: ID!
+}
+
+input BulkAssignTiersInput {
+  assignments: [AssignUserTierInput!]!
+  programId: ID!
 }
 
 type CarouselItem {
@@ -54,6 +67,15 @@ input CheckMilestoneInput {
 enum CheckMilestoneStatus {
   completed
   rejected
+}
+
+type ClaimableFees {
+  amount: String
+  canClaim: Boolean
+  claimedAt: DateTime
+  feePercentage: Float
+  pendingEndDate: DateTime
+  reason: String
 }
 
 type Comment {
@@ -175,6 +197,17 @@ type EnrichedCarouselItem {
   isActive: Boolean
   itemId: String
   itemType: CarouselItemType
+}
+
+type FeeClaim {
+  amount: String
+  claimedAt: DateTime
+  claimedBy: ID
+  createdAt: DateTime
+  id: ID
+  programId: ID
+  status: String
+  txHash: String
 }
 
 input FilterInput {
@@ -300,8 +333,10 @@ type Mutation {
   acceptProgram(id: ID!): Program
   addProgramKeyword(keyword: String!, programId: ID!): Keyword
   addUserKeyword(keyword: String!, userId: ID!): Keyword
+  assignUserTier(input: AssignUserTierInput!): UserTierAssignment
   assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
   checkMilestone(input: CheckMilestoneInput!): Milestone
+  claimProgramFees(programId: ID!, txHash: String!): FeeClaim
   createApplication(input: CreateApplicationInput!): Application
   createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
   createComment(input: CreateCommentInput!): Comment
@@ -325,6 +360,7 @@ type Mutation {
   rejectProgram(id: ID!, rejectionReason: String): Program
   removeProgramKeyword(keyword: String!, programId: ID!): Boolean
   removeUserKeyword(keyword: String!, userId: ID!): Boolean
+  removeUserTier(programId: ID!, userId: ID!): Boolean
   removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
   submitMilestone(input: SubmitMilestoneInput!): Milestone
@@ -338,6 +374,7 @@ type Mutation {
   updateProfile(input: UserUpdateInput!): User
   updateProgram(input: UpdateProgramInput!): Program
   updateUser(input: UserUpdateInput!): User
+  updateUserTier(input: AssignUserTierInput!): UserTierAssignment
 }
 
 type Notification {
@@ -452,6 +489,7 @@ type Program {
   customFeePercentage: Int
   deadline: DateTime
   description: String
+  detailedStatus: JSON
   educhainProgramId: Int
   feePercentage: Int
   fundingCondition: FundingCondition
@@ -511,6 +549,7 @@ type Query {
   application(id: ID!): Application
   applications(pagination: PaginationInput): PaginatedApplications
   carouselItems: [EnrichedCarouselItem!]
+  claimableFees(programId: ID!): ClaimableFees
   comment(id: ID!): Comment
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
   commentsByCommentable(commentableId: ID!, commentableType: CommentableTypeEnum!): [Comment!]

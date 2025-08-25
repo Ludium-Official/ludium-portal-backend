@@ -13,6 +13,7 @@ import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateInvestmentInput, ReclaimInvestmentInput } from '@/graphql/types/investments';
 import type { Args, Context, Root } from '@/types';
 import { requireUser } from '@/utils';
+import { canInvest } from '@/utils/program-status';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
@@ -83,7 +84,6 @@ export async function createInvestmentResolver(
   const { projectId, amount, txHash } = args.input;
 
   return ctx.db.transaction(async (t) => {
-    // TODO: createInvestment only possible if application is in status 'accepted'
     // Get application (project) details
     const [application] = await t
       .select()
@@ -92,6 +92,11 @@ export async function createInvestmentResolver(
 
     if (!application) {
       throw new Error('Project not found');
+    }
+
+    // PRD: Only accepted applications can receive investments
+    if (application.status !== 'accepted') {
+      throw new Error('Only accepted projects can receive investments');
     }
 
     // Get program details
@@ -103,13 +108,23 @@ export async function createInvestmentResolver(
     if (!program || program.type !== 'funding') {
       throw new Error('Project is not part of a funding program');
     }
-    const now = new Date();
 
-    // Check if funding period is active
-    if (program.fundingStartDate && program.fundingEndDate) {
-      if (now < program.fundingStartDate || now > program.fundingEndDate) {
-        throw new Error('Funding period is not active');
+    // Check if funding period is active using PRD-compliant status
+    const fullProgram = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, application.programId))
+      .then((rows) => rows[0]);
+
+    if (!canInvest(fullProgram)) {
+      const now = new Date();
+      if (program.fundingStartDate && now < program.fundingStartDate) {
+        throw new Error('Funding period has not started yet');
       }
+      if (program.fundingEndDate && now > program.fundingEndDate) {
+        throw new Error('Funding period has ended');
+      }
+      throw new Error('Investments are not currently being accepted');
     }
 
     // Check funding limit
