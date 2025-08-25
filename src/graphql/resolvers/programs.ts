@@ -4,12 +4,15 @@ import {
   type Program,
   applicationsTable,
   filesTable,
+  investmentsTable,
   keywordsTable,
   linksTable,
   programUserRolesTable,
   programsTable,
   programsToKeywordsTable,
   programsToLinksTable,
+  userTierAssignmentsTable,
+  usersTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
@@ -21,7 +24,7 @@ import {
   requireUser,
   validAndNotEmptyArray,
 } from '@/utils';
-import { and, asc, count, desc, eq, gt, ilike, inArray, lt, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, ilike, inArray, lt, or, sql } from 'drizzle-orm';
 
 export async function getProgramsResolver(
   _root: Root,
@@ -104,7 +107,6 @@ export async function getProgramsResolver(
       case 'name':
         return f.value ? ilike(programsTable.name, `%${f.value}%`) : undefined;
       case 'status':
-        // Support multi-values for status
         if (f.values && f.values.length > 0) {
           return inArray(
             programsTable.status,
@@ -122,6 +124,8 @@ export async function getProgramsResolver(
         return f.value
           ? eq(programsTable.visibility, f.value as 'private' | 'restricted' | 'public')
           : undefined;
+      case 'type':
+        return f.value ? eq(programsTable.type, f.value as 'regular' | 'funding') : undefined;
       case 'price':
         // sort by price, value can be 'asc' or 'desc'
         return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
@@ -297,9 +301,34 @@ export function createProgramResolver(
       currency: inputData.currency || 'ETH',
       deadline: inputData.deadline ? new Date(inputData.deadline) : new Date(),
       creatorId: user.id,
-      status: inputData.status,
+      status: inputData.type === 'funding' ? 'published' : inputData.status,
       visibility: inputData.visibility || 'public',
       network: inputData.network,
+
+      // Investment/Funding fields
+      type: inputData.type || 'regular',
+      applicationStartDate: inputData.applicationStartDate
+        ? new Date(inputData.applicationStartDate)
+        : undefined,
+      applicationEndDate: inputData.applicationEndDate
+        ? new Date(inputData.applicationEndDate)
+        : undefined,
+      fundingStartDate: inputData.fundingStartDate
+        ? new Date(inputData.fundingStartDate)
+        : undefined,
+      fundingEndDate: inputData.fundingEndDate ? new Date(inputData.fundingEndDate) : undefined,
+      fundingCondition: inputData.fundingCondition,
+      tierSettings: inputData.tierSettings
+        ? (inputData.tierSettings as {
+            bronze?: { enabled: boolean; maxAmount: string };
+            silver?: { enabled: boolean; maxAmount: string };
+            gold?: { enabled: boolean; maxAmount: string };
+            platinum?: { enabled: boolean; maxAmount: string };
+          })
+        : undefined,
+      feePercentage: inputData.feePercentage,
+      customFeePercentage: inputData.customFeePercentage,
+      contractAddress: inputData.contractAddress,
     };
 
     const [program] = await t.insert(programsTable).values(insertData).returning();
@@ -639,7 +668,12 @@ export function publishProgramResolver(
 
 export function inviteUserToProgramResolver(
   _root: Root,
-  args: { programId: string; userId: string },
+  args: {
+    programId: string;
+    userId: string;
+    tier?: 'bronze' | 'silver' | 'gold' | 'platinum' | null;
+    maxInvestmentAmount?: string | null;
+  },
   ctx: Context,
 ) {
   const user = requireUser(ctx);
@@ -688,12 +722,61 @@ export function inviteUserToProgramResolver(
       roleType: 'builder',
     });
 
+    // If this is a tier-based funding program and tier info is provided, create tier assignment
+    if (
+      program.type === 'funding' &&
+      program.fundingCondition === 'tier' &&
+      args.tier &&
+      args.maxInvestmentAmount
+    ) {
+      // Check if user already has a tier assignment
+      const existingAssignment = await t
+        .select()
+        .from(userTierAssignmentsTable)
+        .where(
+          and(
+            eq(userTierAssignmentsTable.programId, args.programId),
+            eq(userTierAssignmentsTable.userId, args.userId),
+          ),
+        );
+
+      if (existingAssignment.length > 0) {
+        // Update existing assignment
+        await t
+          .update(userTierAssignmentsTable)
+          .set({
+            tier: args.tier,
+            maxInvestmentAmount: args.maxInvestmentAmount,
+          })
+          .where(
+            and(
+              eq(userTierAssignmentsTable.programId, args.programId),
+              eq(userTierAssignmentsTable.userId, args.userId),
+            ),
+          );
+      } else {
+        // Create new tier assignment
+        await t.insert(userTierAssignmentsTable).values({
+          programId: args.programId,
+          userId: args.userId,
+          tier: args.tier,
+          maxInvestmentAmount: args.maxInvestmentAmount,
+        });
+      }
+    }
+
     // Send notification to the invited user
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'program',
       action: 'invited',
       recipientId: args.userId,
       entityId: args.programId,
+      metadata: args.tier
+        ? {
+            tier: args.tier,
+            maxInvestmentAmount: args.maxInvestmentAmount,
+          }
+        : undefined,
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -905,5 +988,120 @@ export async function removeProgramKeywordResolver(
       );
 
     return true;
+  });
+}
+
+export async function getUserTierAssignmentResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    return null;
+  }
+
+  const [program] = await ctx.db
+    .select()
+    .from(programsTable)
+    .where(eq(programsTable.id, args.programId));
+
+  // Only return tier for tier-based funding programs
+  if (!program || program.type !== 'funding' || program.fundingCondition !== 'tier') {
+    return null;
+  }
+
+  // Get user's tier assignment
+  const [tierAssignment] = await ctx.db
+    .select()
+    .from(userTierAssignmentsTable)
+    .where(
+      and(
+        eq(userTierAssignmentsTable.programId, args.programId),
+        eq(userTierAssignmentsTable.userId, user.id),
+      ),
+    );
+
+  if (!tierAssignment) {
+    return null;
+  }
+
+  // Get applications for this program
+  const programApplications = await ctx.db
+    .select({ id: applicationsTable.id })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.programId, args.programId));
+
+  const applicationIds = programApplications.map((app) => app.id);
+
+  // Calculate user's current investment total
+  const [userTotal] = await ctx.db
+    .select({
+      total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
+    })
+    .from(investmentsTable)
+    .where(
+      and(
+        inArray(investmentsTable.applicationId, applicationIds),
+        eq(investmentsTable.userId, user.id),
+        eq(investmentsTable.status, 'confirmed'),
+      ),
+    );
+
+  const currentInvestment = Number.parseFloat(userTotal.total || '0');
+  const maxAmount = Number.parseFloat(tierAssignment.maxInvestmentAmount);
+  const remainingCapacity = Math.max(0, maxAmount - currentInvestment);
+
+  return {
+    userId: tierAssignment.userId,
+    tier: tierAssignment.tier,
+    maxInvestmentAmount: tierAssignment.maxInvestmentAmount,
+    currentInvestment: currentInvestment.toString(),
+    remainingCapacity: remainingCapacity.toString(),
+    createdAt: tierAssignment.createdAt,
+  };
+}
+
+export async function getSupportersWithTiersResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  const [program] = await ctx.db
+    .select()
+    .from(programsTable)
+    .where(eq(programsTable.id, args.programId));
+  // Only return supporters for tier-based funding programs
+  if (program.type !== 'funding' || program.fundingCondition !== 'tier') {
+    return null;
+  }
+
+  // Get all tier assignments for this program
+  const tierAssignments = await ctx.db
+    .select()
+    .from(userTierAssignmentsTable)
+    .where(eq(userTierAssignmentsTable.programId, program.id));
+
+  // Get user details for all assigned users
+  const userIds = tierAssignments.map((assignment) => assignment.userId);
+  const users =
+    userIds.length > 0
+      ? await ctx.db.select().from(usersTable).where(inArray(usersTable.id, userIds))
+      : [];
+
+  // Create user lookup map
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  return tierAssignments.map((assignment) => {
+    const user = userMap.get(assignment.userId);
+    return {
+      userId: assignment.userId,
+      email: user?.email,
+      firstName: user?.firstName,
+      lastName: user?.lastName,
+      tier: assignment.tier,
+      maxInvestmentAmount: assignment.maxInvestmentAmount,
+      createdAt: assignment.createdAt,
+    };
   });
 }

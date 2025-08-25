@@ -2,12 +2,20 @@ CREATE TYPE "public"."application_status" AS ENUM('pending', 'accepted', 'reject
 CREATE TYPE "public"."carousel_item_type" AS ENUM('program', 'post');--> statement-breakpoint
 CREATE TYPE "public"."commentable_type" AS ENUM('post', 'program', 'milestone', 'application');--> statement-breakpoint
 CREATE TYPE "public"."user_roles" AS ENUM('user', 'admin', 'superadmin');--> statement-breakpoint
+CREATE TYPE "public"."funding_condition" AS ENUM('open', 'tier');--> statement-breakpoint
+CREATE TYPE "public"."investment_tier" AS ENUM('bronze', 'silver', 'gold', 'platinum');--> statement-breakpoint
 CREATE TYPE "public"."program_role_type" AS ENUM('sponsor', 'validator', 'builder');--> statement-breakpoint
+<<<<<<<< HEAD:src/db/migrations/0000_keen_junta.sql
+CREATE TYPE "public"."program_status" AS ENUM('draft', 'payment_required', 'published', 'closed', 'completed', 'cancelled');--> statement-breakpoint
+CREATE TYPE "public"."program_type" AS ENUM('regular', 'funding');--> statement-breakpoint
+========
 CREATE TYPE "public"."program_status" AS ENUM('pending', 'payment_required', 'rejected', 'published', 'closed', 'completed', 'cancelled');--> statement-breakpoint
+>>>>>>>> dev:src/db/migrations/0000_petite_colossus.sql
 CREATE TYPE "public"."program_visibility" AS ENUM('private', 'restricted', 'public');--> statement-breakpoint
 CREATE TYPE "public"."milestone_status" AS ENUM('draft', 'pending', 'completed', 'rejected', 'submitted');--> statement-breakpoint
 CREATE TYPE "public"."notification_action" AS ENUM('created', 'accepted', 'rejected', 'submitted', 'completed', 'broadcast', 'invited');--> statement-breakpoint
 CREATE TYPE "public"."notification_type" AS ENUM('program', 'application', 'milestone', 'comment', 'system');--> statement-breakpoint
+CREATE TYPE "public"."investment_status" AS ENUM('pending', 'confirmed', 'failed', 'refunded');--> statement-breakpoint
 CREATE TABLE "applications" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"program_id" uuid NOT NULL,
@@ -19,6 +27,10 @@ CREATE TABLE "applications" (
 	"metadata" jsonb,
 	"price" varchar(256) DEFAULT '0' NOT NULL,
 	"rejection_reason" text,
+	"funding_target" varchar(256),
+	"wallet_address" varchar(256),
+	"investment_terms" jsonb,
+	"funding_successful" boolean DEFAULT false,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -119,6 +131,18 @@ CREATE TABLE "programs" (
 	"network" varchar(256) DEFAULT 'educhain',
 	"rejection_reason" text,
 	"image" varchar(512),
+	"type" "program_type" DEFAULT 'regular' NOT NULL,
+	"application_start_date" timestamp,
+	"application_end_date" timestamp,
+	"funding_start_date" timestamp,
+	"funding_end_date" timestamp,
+	"funding_condition" "funding_condition" DEFAULT 'open',
+	"max_funding_amount" varchar(256),
+	"fee_percentage" integer DEFAULT 300,
+	"custom_fee_percentage" integer,
+	"tier_settings" jsonb,
+	"contract_address" varchar(256),
+	"terms" varchar(256) DEFAULT 'ETH',
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -133,6 +157,16 @@ CREATE TABLE "programs_to_links" (
 	"program_id" uuid NOT NULL,
 	"link_id" uuid NOT NULL,
 	CONSTRAINT "programs_to_links_program_id_link_id_pk" PRIMARY KEY("program_id","link_id")
+);
+--> statement-breakpoint
+CREATE TABLE "user_tier_assignments" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"program_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"tier" "investment_tier" NOT NULL,
+	"max_investment_amount" varchar(256) NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "keywords" (
@@ -215,6 +249,20 @@ CREATE TABLE "notifications" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "investments" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"application_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"amount" varchar(256) NOT NULL,
+	"tier" "investment_tier",
+	"tx_hash" varchar(256),
+	"status" "investment_status" DEFAULT 'pending' NOT NULL,
+	"reclaim_tx_hash" varchar(256),
+	"reclaimed_at" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 ALTER TABLE "applications" ADD CONSTRAINT "applications_program_id_programs_id_fk" FOREIGN KEY ("program_id") REFERENCES "public"."programs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "applications" ADD CONSTRAINT "applications_applicant_id_users_id_fk" FOREIGN KEY ("applicant_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "applications_to_links" ADD CONSTRAINT "applications_to_links_application_id_applications_id_fk" FOREIGN KEY ("application_id") REFERENCES "public"."applications"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -233,12 +281,20 @@ ALTER TABLE "programs_to_keywords" ADD CONSTRAINT "programs_to_keywords_program_
 ALTER TABLE "programs_to_keywords" ADD CONSTRAINT "programs_to_keywords_keyword_id_keywords_id_fk" FOREIGN KEY ("keyword_id") REFERENCES "public"."keywords"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "programs_to_links" ADD CONSTRAINT "programs_to_links_program_id_programs_id_fk" FOREIGN KEY ("program_id") REFERENCES "public"."programs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "programs_to_links" ADD CONSTRAINT "programs_to_links_link_id_links_id_fk" FOREIGN KEY ("link_id") REFERENCES "public"."links"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_tier_assignments" ADD CONSTRAINT "user_tier_assignments_program_id_programs_id_fk" FOREIGN KEY ("program_id") REFERENCES "public"."programs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_tier_assignments" ADD CONSTRAINT "user_tier_assignments_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "milestones" ADD CONSTRAINT "milestones_application_id_applications_id_fk" FOREIGN KEY ("application_id") REFERENCES "public"."applications"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "milestones_to_links" ADD CONSTRAINT "milestones_to_links_milestone_id_milestones_id_fk" FOREIGN KEY ("milestone_id") REFERENCES "public"."milestones"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "milestones_to_links" ADD CONSTRAINT "milestones_to_links_link_id_links_id_fk" FOREIGN KEY ("link_id") REFERENCES "public"."links"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts" ADD CONSTRAINT "posts_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts_to_keywords" ADD CONSTRAINT "posts_to_keywords_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts_to_keywords" ADD CONSTRAINT "posts_to_keywords_keyword_id_keywords_id_fk" FOREIGN KEY ("keyword_id") REFERENCES "public"."keywords"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+<<<<<<<< HEAD:src/db/migrations/0000_keen_junta.sql
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_recipient_id_users_id_fk" FOREIGN KEY ("recipient_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "investments" ADD CONSTRAINT "investments_application_id_applications_id_fk" FOREIGN KEY ("application_id") REFERENCES "public"."applications"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "investments" ADD CONSTRAINT "investments_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+========
 ALTER TABLE "post_views" ADD CONSTRAINT "post_views_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "post_views" ADD CONSTRAINT "post_views_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_recipient_id_users_id_fk" FOREIGN KEY ("recipient_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+>>>>>>>> dev:src/db/migrations/0000_petite_colossus.sql

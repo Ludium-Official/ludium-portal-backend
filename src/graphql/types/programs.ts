@@ -1,4 +1,9 @@
-import { type Program as DBProgram, programStatuses, programVisibilities } from '@/db/schemas';
+import {
+  type Program as DBProgram,
+  investmentTiers,
+  programStatuses,
+  programVisibilities,
+} from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getApplicationsByProgramIdResolver } from '@/graphql/resolvers/applications';
 import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
@@ -13,6 +18,8 @@ import {
   getProgramKeywordsResolver,
   getProgramResolver,
   getProgramsResolver,
+  getSupportersWithTiersResolver,
+  getUserTierAssignmentResolver,
   inviteUserToProgramResolver,
   publishProgramResolver,
   rejectProgramResolver,
@@ -28,6 +35,7 @@ import {
 import { ApplicationType } from '@/graphql/types/applications';
 import { CommentType } from '@/graphql/types/comments';
 import { KeywordType, PaginationInput } from '@/graphql/types/common';
+import { SupporterType } from '@/graphql/types/investments';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { User } from '@/graphql/types/users';
 import BigNumber from 'bignumber.js';
@@ -42,6 +50,42 @@ export const ProgramStatusEnum = builder.enumType('ProgramStatus', {
 export const ProgramVisibilityEnum = builder.enumType('ProgramVisibility', {
   values: programVisibilities,
 });
+
+export const InvestmentTierEnum = builder.enumType('InvestmentTier', {
+  values: investmentTiers,
+});
+
+export const ProgramTypeEnum = builder.enumType('ProgramType', {
+  values: ['regular', 'funding'] as const,
+});
+
+export const FundingConditionEnum = builder.enumType('FundingCondition', {
+  values: ['open', 'tier'] as const,
+});
+
+// Type for user's tier assignment with investment tracking
+export const UserTierAssignmentType = builder
+  .objectRef<{
+    userId: string;
+    tier: string;
+    maxInvestmentAmount: string;
+    currentInvestment: string;
+    remainingCapacity: string;
+    createdAt: Date;
+  }>('UserTierAssignment')
+  .implement({
+    fields: (t) => ({
+      userId: t.exposeID('userId'),
+      tier: t.exposeString('tier'),
+      maxInvestmentAmount: t.exposeString('maxInvestmentAmount'),
+      currentInvestment: t.exposeString('currentInvestment'),
+      remainingCapacity: t.exposeString('remainingCapacity'),
+      createdAt: t.field({
+        type: 'DateTime',
+        resolve: (assignment) => assignment.createdAt,
+      }),
+    }),
+  });
 
 export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
   fields: (t) => ({
@@ -106,6 +150,56 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
         ),
     }),
     image: t.exposeString('image'),
+
+    // Investment/Funding fields
+    type: t.field({
+      type: ProgramTypeEnum,
+      resolve: (program) => program.type,
+    }),
+    applicationStartDate: t.field({
+      type: 'DateTime',
+      resolve: (program) => program.applicationStartDate,
+    }),
+    applicationEndDate: t.field({
+      type: 'DateTime',
+      resolve: (program) => program.applicationEndDate,
+    }),
+    fundingStartDate: t.field({
+      type: 'DateTime',
+      resolve: (program) => program.fundingStartDate,
+    }),
+    fundingEndDate: t.field({
+      type: 'DateTime',
+      resolve: (program) => program.fundingEndDate,
+    }),
+    fundingCondition: t.field({
+      type: FundingConditionEnum,
+      resolve: (program) => program.fundingCondition,
+    }),
+    tierSettings: t.field({
+      type: 'JSON',
+      nullable: true,
+      resolve: (program) =>
+        program.tierSettings ? JSON.parse(JSON.stringify(program.tierSettings)) : null,
+    }),
+    feePercentage: t.exposeInt('feePercentage'),
+    customFeePercentage: t.exposeInt('customFeePercentage'),
+
+    // Get supporters with their tiers for funding programs
+    supporters: t.field({
+      type: [SupporterType],
+      nullable: true,
+      resolve: (program, _args, ctx) =>
+        getSupportersWithTiersResolver({}, { programId: program.id }, ctx),
+    }),
+    // Get current user's tier assignment for funding programs
+    userTierAssignment: t.field({
+      type: UserTierAssignmentType,
+      nullable: true,
+      resolve: (program, _args, ctx) =>
+        getUserTierAssignmentResolver({}, { programId: program.id }, ctx),
+    }),
+    contractAddress: t.exposeString('contractAddress'),
   }),
 });
 
@@ -148,6 +242,18 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
     visibility: t.field({ type: ProgramVisibilityEnum }),
     status: t.field({ type: ProgramStatusEnum, defaultValue: 'pending' }),
     image: t.field({ type: 'Upload', required: true }),
+
+    // Investment/Funding fields
+    type: t.field({ type: ProgramTypeEnum, defaultValue: 'regular' }),
+    applicationStartDate: t.field({ type: 'DateTime' }),
+    applicationEndDate: t.field({ type: 'DateTime' }),
+    fundingStartDate: t.field({ type: 'DateTime' }),
+    fundingEndDate: t.field({ type: 'DateTime' }),
+    fundingCondition: t.field({ type: FundingConditionEnum }),
+    tierSettings: t.field({ type: 'JSON' }),
+    feePercentage: t.int(),
+    customFeePercentage: t.int(),
+    contractAddress: t.string(),
   }),
 });
 
@@ -172,6 +278,17 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     visibility: t.field({ type: ProgramVisibilityEnum }),
     network: t.string(),
     image: t.field({ type: 'Upload' }),
+
+    // Investment/Funding fields
+    type: t.field({ type: ProgramTypeEnum }),
+    applicationStartDate: t.field({ type: 'DateTime' }),
+    applicationEndDate: t.field({ type: 'DateTime' }),
+    fundingStartDate: t.field({ type: 'DateTime' }),
+    fundingEndDate: t.field({ type: 'DateTime' }),
+    fundingCondition: t.field({ type: FundingConditionEnum }),
+    tierSettings: t.field({ type: 'JSON' }),
+    feePercentage: t.int(),
+    customFeePercentage: t.int(),
   }),
 });
 
@@ -270,6 +387,9 @@ builder.mutationFields((t) => ({
     args: {
       programId: t.arg.id({ required: true }),
       userId: t.arg.id({ required: true }),
+      // Optional tier assignment for funding programs
+      tier: t.arg({ type: InvestmentTierEnum, required: false }),
+      maxInvestmentAmount: t.arg.string({ required: false }),
     },
     resolve: inviteUserToProgramResolver,
   }),
