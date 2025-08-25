@@ -497,14 +497,14 @@ export function updateApplicationResolver(
 
 export function acceptApplicationResolver(
   _root: Root,
-  args: { id: string; onChainProjectId?: number },
+  args: { id: string; onChainProjectId?: number | null },
   ctx: Context,
 ) {
   return ctx.db.transaction(async (t) => {
     const updateData: Partial<ApplicationUpdate> = { status: 'accepted' };
 
     // If onChainProjectId is provided, store it
-    if (args.onChainProjectId !== undefined) {
+    if (args.onChainProjectId !== undefined && args.onChainProjectId !== null) {
       updateData.onChainProjectId = args.onChainProjectId;
     }
 
