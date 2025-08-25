@@ -13,3 +13,4 @@ export * from './notifications';
 export * from './carousel';
 export * from './investments';
 export * from './milestone-payouts';
+export * from './fees';

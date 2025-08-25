@@ -11,6 +11,7 @@ import './investment-terms';
 import './investments';
 import './milestones';
 import './milestone-payouts';
+import './fee-claims';
 import './auth';
 import './links';
 import './posts';

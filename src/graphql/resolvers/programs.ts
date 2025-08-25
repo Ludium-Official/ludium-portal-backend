@@ -15,7 +15,11 @@ import {
   usersTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
-import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
+import type {
+  AssignUserTierInput,
+  CreateProgramInput,
+  UpdateProgramInput,
+} from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
 import {
   filterEmptyValues,
@@ -24,6 +28,7 @@ import {
   requireUser,
   validAndNotEmptyArray,
 } from '@/utils';
+import BigNumber from 'bignumber.js';
 import { and, asc, count, desc, eq, gt, ilike, inArray, lt, or, sql } from 'drizzle-orm';
 
 export async function getProgramsResolver(
@@ -1071,37 +1076,239 @@ export async function getSupportersWithTiersResolver(
     .select()
     .from(programsTable)
     .where(eq(programsTable.id, args.programId));
-  // Only return supporters for tier-based funding programs
-  if (program.type !== 'funding' || program.fundingCondition !== 'tier') {
+
+  if (!program) {
     return null;
   }
 
-  // Get all tier assignments for this program
-  const tierAssignments = await ctx.db
-    .select()
-    .from(userTierAssignmentsTable)
-    .where(eq(userTierAssignmentsTable.programId, program.id));
+  // For tier-based funding programs, get tier assignments
+  if (program.type === 'funding' && program.fundingCondition === 'tier') {
+    // Get all tier assignments for this program
+    const tierAssignments = await ctx.db
+      .select()
+      .from(userTierAssignmentsTable)
+      .where(eq(userTierAssignmentsTable.programId, program.id));
 
-  // Get user details for all assigned users
-  const userIds = tierAssignments.map((assignment) => assignment.userId);
+    // Get user details for all assigned users
+    const userIds = tierAssignments.map((assignment) => assignment.userId);
+    const users =
+      userIds.length > 0
+        ? await ctx.db.select().from(usersTable).where(inArray(usersTable.id, userIds))
+        : [];
+
+    // Create user lookup map
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return tierAssignments.map((assignment) => {
+      const user = userMap.get(assignment.userId);
+      return {
+        userId: assignment.userId,
+        email: user?.email,
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        tier: assignment.tier,
+        maxInvestmentAmount: assignment.maxInvestmentAmount,
+        createdAt: assignment.createdAt,
+      };
+    });
+  }
+
+  // For non-tier programs, get all builders (supporters)
+  const programRoles = await ctx.db
+    .select()
+    .from(programUserRolesTable)
+    .where(
+      and(
+        eq(programUserRolesTable.programId, program.id),
+        eq(programUserRolesTable.roleType, 'builder'),
+      ),
+    );
+
+  // Get user details
+  const userIds = programRoles.map((role) => role.userId);
   const users =
     userIds.length > 0
       ? await ctx.db.select().from(usersTable).where(inArray(usersTable.id, userIds))
       : [];
 
-  // Create user lookup map
   const userMap = new Map(users.map((u) => [u.id, u]));
 
-  return tierAssignments.map((assignment) => {
-    const user = userMap.get(assignment.userId);
+  return programRoles.map((role) => {
+    const user = userMap.get(role.userId);
     return {
-      userId: assignment.userId,
+      userId: role.userId,
       email: user?.email,
       firstName: user?.firstName,
       lastName: user?.lastName,
-      tier: assignment.tier,
-      maxInvestmentAmount: assignment.maxInvestmentAmount,
-      createdAt: assignment.createdAt,
+      tier: null,
+      maxInvestmentAmount: undefined,
+      createdAt: role.createdAt,
     };
   });
+}
+
+// Assign a user to a tier for a funding program
+export async function assignUserTierResolver(
+  _root: Root,
+  args: { input: typeof AssignUserTierInput.$inferInput },
+  ctx: Context,
+) {
+  const { programId, userId, tier, maxInvestmentAmount } = args.input;
+
+  // Verify program exists and is a funding program
+  const [program] = await ctx.db
+    .select()
+    .from(programsTable)
+    .where(eq(programsTable.id, programId));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  if (program.type !== 'funding') {
+    throw new Error('Tier assignments are only available for funding programs');
+  }
+
+  // Check if user already has a tier assignment
+  const [existing] = await ctx.db
+    .select()
+    .from(userTierAssignmentsTable)
+    .where(
+      and(
+        eq(userTierAssignmentsTable.programId, programId),
+        eq(userTierAssignmentsTable.userId, userId),
+      ),
+    );
+
+  if (existing) {
+    throw new Error('User already has a tier assignment. Use updateUserTier instead.');
+  }
+
+  // Create tier assignment
+  const [assignment] = await ctx.db
+    .insert(userTierAssignmentsTable)
+    .values({
+      programId,
+      userId,
+      tier,
+      maxInvestmentAmount,
+    })
+    .returning();
+
+  // Calculate current investment amount
+  const [investmentData] = await ctx.db
+    .select({
+      total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
+    })
+    .from(investmentsTable)
+    .where(
+      and(
+        eq(investmentsTable.userId, userId),
+        sql`application_id IN (SELECT id FROM applications WHERE program_id = ${programId})`,
+        eq(investmentsTable.status, 'confirmed'),
+      ),
+    );
+
+  const currentInvestment = investmentData?.total || '0';
+  const remainingCapacity = new BigNumber(maxInvestmentAmount)
+    .minus(new BigNumber(currentInvestment))
+    .toString();
+
+  return {
+    userId: assignment.userId,
+    tier: assignment.tier,
+    maxInvestmentAmount: assignment.maxInvestmentAmount,
+    currentInvestment,
+    remainingCapacity: remainingCapacity,
+    createdAt: assignment.createdAt,
+  };
+}
+
+// Update a user's tier assignment
+export async function updateUserTierResolver(
+  _root: Root,
+  args: { input: typeof AssignUserTierInput.$inferInput },
+  ctx: Context,
+) {
+  const { programId, userId, tier, maxInvestmentAmount } = args.input;
+
+  // Verify tier assignment exists
+  const [existing] = await ctx.db
+    .select()
+    .from(userTierAssignmentsTable)
+    .where(
+      and(
+        eq(userTierAssignmentsTable.programId, programId),
+        eq(userTierAssignmentsTable.userId, userId),
+      ),
+    );
+
+  if (!existing) {
+    throw new Error('Tier assignment not found. Use assignUserTier to create a new assignment.');
+  }
+
+  // Update tier assignment
+  const [updated] = await ctx.db
+    .update(userTierAssignmentsTable)
+    .set({
+      tier,
+      maxInvestmentAmount,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(userTierAssignmentsTable.programId, programId),
+        eq(userTierAssignmentsTable.userId, userId),
+      ),
+    )
+    .returning();
+
+  // Calculate current investment amount
+  const [investmentData] = await ctx.db
+    .select({
+      total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
+    })
+    .from(investmentsTable)
+    .where(
+      and(
+        eq(investmentsTable.userId, userId),
+        sql`application_id IN (SELECT id FROM applications WHERE program_id = ${programId})`,
+        eq(investmentsTable.status, 'confirmed'),
+      ),
+    );
+
+  const currentInvestment = investmentData?.total || '0';
+  const remainingCapacity = new BigNumber(maxInvestmentAmount)
+    .minus(new BigNumber(currentInvestment))
+    .toString();
+
+  return {
+    userId: updated.userId,
+    tier: updated.tier,
+    maxInvestmentAmount: updated.maxInvestmentAmount,
+    currentInvestment,
+    remainingCapacity: remainingCapacity,
+    createdAt: updated.createdAt,
+  };
+}
+
+// Remove a user's tier assignment
+export async function removeUserTierResolver(
+  _root: Root,
+  args: { programId: string; userId: string },
+  ctx: Context,
+) {
+  const { programId, userId } = args;
+
+  // Delete tier assignment
+  await ctx.db
+    .delete(userTierAssignmentsTable)
+    .where(
+      and(
+        eq(userTierAssignmentsTable.programId, programId),
+        eq(userTierAssignmentsTable.userId, userId),
+      ),
+    );
+
+  return true;
 }

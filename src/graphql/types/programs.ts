@@ -11,6 +11,7 @@ import { getLinksByProgramIdResolver } from '@/graphql/resolvers/links';
 import {
   acceptProgramResolver,
   addProgramKeywordResolver,
+  assignUserTierResolver,
   assignValidatorToProgramResolver,
   createProgramResolver,
   deleteProgramResolver,
@@ -24,8 +25,10 @@ import {
   publishProgramResolver,
   rejectProgramResolver,
   removeProgramKeywordResolver,
+  removeUserTierResolver,
   removeValidatorFromProgramResolver,
   updateProgramResolver,
+  updateUserTierResolver,
 } from '@/graphql/resolvers/programs';
 import {
   getInvitedBuildersByProgramIdResolver,
@@ -37,7 +40,9 @@ import { CommentType } from '@/graphql/types/comments';
 import { KeywordType, PaginationInput } from '@/graphql/types/common';
 import { SupporterType } from '@/graphql/types/investments';
 import { Link, LinkInput } from '@/graphql/types/links';
+import { ProgramRef } from '@/graphql/types/shared-refs';
 import { User } from '@/graphql/types/users';
+import { getProgramDetailedStatus } from '@/utils/program-status';
 import BigNumber from 'bignumber.js';
 
 /* -------------------------------------------------------------------------- */
@@ -87,7 +92,7 @@ export const UserTierAssignmentType = builder
     }),
   });
 
-export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
+export const ProgramType = ProgramRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
@@ -112,6 +117,18 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       type: [Link],
       resolve: async (program, _args, ctx) =>
         getLinksByProgramIdResolver({}, { programId: program.id }, ctx),
+    }),
+    // PRD-compliant status information for funding programs
+    detailedStatus: t.field({
+      type: 'JSON',
+      nullable: true,
+      resolve: (program) => {
+        // Only for funding programs
+        if (program.type !== 'funding') return null;
+        const status = getProgramDetailedStatus(program);
+        // Convert to plain JSON object
+        return JSON.parse(JSON.stringify(status));
+      },
     }),
     status: t.field({
       type: ProgramStatusEnum,
@@ -189,8 +206,10 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
     supporters: t.field({
       type: [SupporterType],
       nullable: true,
-      resolve: (program, _args, ctx) =>
-        getSupportersWithTiersResolver({}, { programId: program.id }, ctx),
+      resolve: async (program, _args, ctx) => {
+        const result = await getSupportersWithTiersResolver({}, { programId: program.id }, ctx);
+        return result || [];
+      },
     }),
     // Get current user's tier assignment for funding programs
     userTierAssignment: t.field({
@@ -289,6 +308,34 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     tierSettings: t.field({ type: 'JSON' }),
     feePercentage: t.int(),
     customFeePercentage: t.int(),
+  }),
+});
+
+// Input for assigning users to investment tiers
+export const AssignUserTierInput = builder.inputType('AssignUserTierInput', {
+  fields: (t) => ({
+    programId: t.id({ required: true }),
+    userId: t.id({ required: true }),
+    tier: t.field({ type: InvestmentTierEnum, required: true }),
+    maxInvestmentAmount: t.string({
+      required: true,
+      validate: {
+        refine(value) {
+          return new BigNumber(value).isPositive();
+        },
+      },
+    }),
+  }),
+});
+
+// Input for bulk tier assignments
+export const BulkAssignTiersInput = builder.inputType('BulkAssignTiersInput', {
+  fields: (t) => ({
+    programId: t.id({ required: true }),
+    assignments: t.field({
+      type: [AssignUserTierInput],
+      required: true,
+    }),
   }),
 });
 
@@ -440,5 +487,43 @@ builder.mutationFields((t) => ({
       keyword: t.arg.string({ required: true }),
     },
     resolve: removeProgramKeywordResolver,
+  }),
+
+  // Tier assignment mutations
+  assignUserTier: t.field({
+    type: UserTierAssignmentType,
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.input.programId },
+      admin: true,
+    }),
+    args: {
+      input: t.arg({ type: AssignUserTierInput, required: true }),
+    },
+    resolve: assignUserTierResolver,
+  }),
+
+  updateUserTier: t.field({
+    type: UserTierAssignmentType,
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.input.programId },
+      admin: true,
+    }),
+    args: {
+      input: t.arg({ type: AssignUserTierInput, required: true }),
+    },
+    resolve: updateUserTierResolver,
+  }),
+
+  removeUserTier: t.field({
+    type: 'Boolean',
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.programId },
+      admin: true,
+    }),
+    args: {
+      programId: t.arg.id({ required: true }),
+      userId: t.arg.id({ required: true }),
+    },
+    resolve: removeUserTierResolver,
   }),
 }));
