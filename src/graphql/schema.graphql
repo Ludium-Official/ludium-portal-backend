@@ -359,6 +359,7 @@ type Mutation {
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
   removeProgramKeyword(keyword: String!, programId: ID!): Boolean
+  removeUserFromProgram(programId: ID!, userId: ID!): Program
   removeUserKeyword(keyword: String!, userId: ID!): Boolean
   removeUserTier(programId: ID!, userId: ID!): Boolean
   removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
