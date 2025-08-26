@@ -7,4 +7,5 @@ export const NETWORKS = [
   'arbitrum-sepolia',
   'coredao',
   'coredao-testnet',
+  'creditcoin'
 ];
