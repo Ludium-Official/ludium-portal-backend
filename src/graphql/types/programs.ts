@@ -25,6 +25,7 @@ import {
   publishProgramResolver,
   rejectProgramResolver,
   removeProgramKeywordResolver,
+  removeUserFromProgramResolver,
   removeUserTierResolver,
   removeValidatorFromProgramResolver,
   updateProgramResolver,
@@ -439,6 +440,18 @@ builder.mutationFields((t) => ({
       maxInvestmentAmount: t.arg.string({ required: false }),
     },
     resolve: inviteUserToProgramResolver,
+  }),
+  removeUserFromProgram: t.field({
+    type: ProgramType,
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.programId },
+      admin: true,
+    }),
+    args: {
+      programId: t.arg.id({ required: true }),
+      userId: t.arg.id({ required: true }),
+    },
+    resolve: removeUserFromProgramResolver,
   }),
   assignValidatorToProgram: t.field({
     type: ProgramType,

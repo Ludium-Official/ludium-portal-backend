@@ -306,7 +306,7 @@ export function createProgramResolver(
       currency: inputData.currency || 'ETH',
       deadline: inputData.deadline ? new Date(inputData.deadline) : new Date(),
       creatorId: user.id,
-      status: inputData.type === 'funding' ? 'published' : inputData.status,
+      status: inputData.status ?? 'pending',
       visibility: inputData.visibility || 'public',
       network: inputData.network,
 
@@ -784,6 +784,64 @@ export function inviteUserToProgramResolver(
         : undefined,
     });
     await ctx.server.pubsub.publish('notificationsCount');
+
+    return program;
+  });
+}
+
+export function removeUserFromProgramResolver(
+  _root: Root,
+  args: { programId: string; userId: string },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Check if user is the program creator
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: args.programId,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to remove users from this program');
+    }
+
+    // Check if program exists
+    const [program] = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, args.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    // Check if user is a builder for this program
+    const existingBuilder = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, args.programId),
+          eq(programUserRolesTable.userId, args.userId),
+          eq(programUserRolesTable.roleType, 'builder'),
+        ),
+      );
+
+    if (existingBuilder.length > 0) {
+      // Remove builder role
+      await t
+        .delete(programUserRolesTable)
+        .where(
+          and(
+            eq(programUserRolesTable.programId, args.programId),
+            eq(programUserRolesTable.userId, args.userId),
+            eq(programUserRolesTable.roleType, 'builder'),
+          ),
+        );
+    }
 
     return program;
   });
