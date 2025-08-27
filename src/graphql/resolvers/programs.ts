@@ -818,27 +818,48 @@ export function removeUserFromProgramResolver(
       throw new Error('Program not found');
     }
 
-    // Check if user is a builder for this program
-    const existingBuilder = await t
+    // Remove user from all program roles (builder, sponsor, validator)
+    const existingRoles = await t
       .select()
       .from(programUserRolesTable)
       .where(
         and(
           eq(programUserRolesTable.programId, args.programId),
           eq(programUserRolesTable.userId, args.userId),
-          eq(programUserRolesTable.roleType, 'builder'),
         ),
       );
 
-    if (existingBuilder.length > 0) {
-      // Remove builder role
+    if (existingRoles.length > 0) {
+      // Remove all roles for this user in this program
       await t
         .delete(programUserRolesTable)
         .where(
           and(
             eq(programUserRolesTable.programId, args.programId),
             eq(programUserRolesTable.userId, args.userId),
-            eq(programUserRolesTable.roleType, 'builder'),
+          ),
+        );
+    }
+
+    // Remove user tier assignments for funding programs
+    const existingTierAssignments = await t
+      .select()
+      .from(userTierAssignmentsTable)
+      .where(
+        and(
+          eq(userTierAssignmentsTable.programId, args.programId),
+          eq(userTierAssignmentsTable.userId, args.userId),
+        ),
+      );
+
+    if (existingTierAssignments.length > 0) {
+      // Remove tier assignments for this user in this program
+      await t
+        .delete(userTierAssignmentsTable)
+        .where(
+          and(
+            eq(userTierAssignmentsTable.programId, args.programId),
+            eq(userTierAssignmentsTable.userId, args.userId),
           ),
         );
     }
