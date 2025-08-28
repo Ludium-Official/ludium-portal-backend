@@ -1,6 +1,7 @@
 import { type Investment as DbInvestment, investmentStatuses } from '@/db/schemas';
 import {
   createInvestmentResolver,
+  getInvestmentCanReclaimResolver,
   getInvestmentProjectResolver,
   getInvestmentResolver,
   getInvestmentSupporterResolver,
@@ -39,6 +40,9 @@ export const InvestmentType = InvestmentRef.implement({
       type: 'Date',
       nullable: true,
       resolve: (investment) => investment.reclaimedAt,
+    }),
+    canReclaim: t.boolean({
+      resolve: getInvestmentCanReclaimResolver,
     }),
     project: t.field({
       type: ApplicationRef,

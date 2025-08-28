@@ -223,7 +223,7 @@ export function createApplicationResolver(
       throw new Error('Program not found');
     }
 
-    // For funding programs, validate application period
+    // For funding programs, validate application period and milestone deadlines
     if (program.type === 'funding') {
       const fullProgram = await t
         .select()
@@ -240,6 +240,24 @@ export function createApplicationResolver(
           throw new Error('Application period has ended');
         }
         throw new Error('Applications are not currently being accepted');
+      }
+
+      // Validate milestone deadlines are after funding end date
+      if (fullProgram.fundingEndDate && args.input.milestones && args.input.milestones.length > 0) {
+        const fundingEndDate = new Date(fullProgram.fundingEndDate);
+        const invalidMilestones = args.input.milestones.filter((milestone) => {
+          if (!milestone.deadline) return false;
+          const milestoneDeadline = new Date(milestone.deadline);
+          return milestoneDeadline <= fundingEndDate;
+        });
+
+        if (invalidMilestones.length > 0) {
+          const milestoneNames = invalidMilestones.map((m) => m.title || 'Untitled').join(', ');
+          throw new Error(
+            `Milestone deadlines must be after the funding period ends (${fundingEndDate.toISOString().split('T')[0]}). ` +
+              `The following milestones have invalid deadlines: ${milestoneNames}`,
+          );
+        }
       }
     }
 
