@@ -6,6 +6,7 @@ import {
   milestonesTable,
   milestonesToLinksTable,
   programUserRolesTable,
+  programsTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type {
@@ -125,6 +126,26 @@ export function updateMilestoneResolver(
         'You are not allowed to update this milestone. Only the applicant, builders, and admins can update milestones.',
       );
     }
+
+    // Validate milestone deadline for funding programs
+    if (args.input.deadline) {
+      const [program] = await t
+        .select()
+        .from(programsTable)
+        .where(eq(programsTable.id, application.programId));
+
+      if (program && program.type === 'funding' && program.fundingEndDate) {
+        const fundingEndDate = new Date(program.fundingEndDate);
+        const milestoneDeadline = new Date(args.input.deadline);
+
+        if (milestoneDeadline <= fundingEndDate) {
+          throw new Error(
+            `Milestone deadline must be after the funding period ends (${fundingEndDate.toISOString().split('T')[0]}). Please select a date after the funding end date.`,
+          );
+        }
+      }
+    }
+
     // handle links
     if (args.input.links) {
       const filteredLinks = args.input.links.filter((link) => link.url);

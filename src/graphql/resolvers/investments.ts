@@ -367,3 +367,83 @@ export async function getInvestmentSupporterResolver(root: Investment, _args: Ar
 
   return user;
 }
+
+// Check if investment can be reclaimed
+export async function getInvestmentCanReclaimResolver(root: Investment, _args: Args, ctx: Context) {
+  // Don't allow reclaim if already refunded
+  if (root.status === 'refunded') {
+    return false;
+  }
+
+  // Only confirmed investments can be reclaimed
+  if (root.status !== 'confirmed') {
+    return false;
+  }
+
+  // Get application and program details
+  const [application] = await ctx.db
+    .select()
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, root.applicationId));
+
+  if (!application || !application.programId) {
+    return false;
+  }
+
+  const [program] = await ctx.db
+    .select()
+    .from(programsTable)
+    .where(eq(programsTable.id, application.programId));
+
+  if (!program) {
+    return false;
+  }
+
+  const now = new Date();
+
+  // Case 1: Funding target not met after funding period ends
+  if (program.fundingEndDate && now > program.fundingEndDate) {
+    // Check if funding target was met
+    const [fundingResult] = await ctx.db
+      .select({
+        totalRaised: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
+      })
+      .from(investmentsTable)
+      .where(
+        and(
+          eq(investmentsTable.applicationId, root.applicationId),
+          eq(investmentsTable.status, 'confirmed'),
+        ),
+      );
+
+    const totalRaised = Number.parseFloat(fundingResult.totalRaised);
+    const targetFunding = Number.parseFloat(application.fundingTarget || '0');
+
+    if (targetFunding > 0 && totalRaised < targetFunding) {
+      return true; // Can reclaim - funding target not met
+    }
+  }
+
+  // Case 2: Milestone deadline missed
+  const milestones = await ctx.db
+    .select()
+    .from(milestonesTable)
+    .where(eq(milestonesTable.applicationId, root.applicationId))
+    .orderBy(milestonesTable.sortOrder);
+
+  for (const milestone of milestones) {
+    // Check if milestone deadline has passed without submission
+    if (milestone.deadline && now > milestone.deadline) {
+      // Milestone deadline has passed - check if it was submitted
+      if (
+        milestone.status === 'pending' ||
+        milestone.status === 'submitted' ||
+        milestone.status === 'rejected'
+      ) {
+        return true; // Can reclaim - milestone deadline missed
+      }
+    }
+  }
+
+  return false;
+}
