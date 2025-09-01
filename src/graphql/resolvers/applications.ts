@@ -281,21 +281,20 @@ export function createApplicationResolver(
       throw new Error(applicationAccess.reason || 'You cannot apply to this program');
     }
 
-    const [application] = await t
-      .insert(applicationsTable)
-      .values({
-        programId: args.input.programId,
-        name: args.input.name,
-        content: args.input.content || '',
-        summary: args.input.summary,
-        price: args.input.price,
-        metadata: args.input.metadata,
-        applicantId: user.id,
-        status: args.input.status,
-        fundingTarget: args.input.fundingTarget,
-        walletAddress: args.input.walletAddress,
-      })
-      .returning();
+    const insertData = {
+      programId: args.input.programId,
+      name: args.input.name,
+      content: args.input.content || '',
+      summary: args.input.summary,
+      price: args.input.price,
+      metadata: args.input.metadata,
+      applicantId: user.id,
+      status: args.input.status,
+      fundingTarget: args.input.fundingTarget,
+      walletAddress: args.input.walletAddress,
+    };
+
+    const [application] = await t.insert(applicationsTable).values(insertData).returning();
 
     if (args.input.links) {
       // insert links to links table and map to program
