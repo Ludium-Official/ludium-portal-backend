@@ -110,6 +110,7 @@ export const CreateInvestmentInput = builder.inputType('CreateInvestmentInput', 
   fields: (t) => ({
     projectId: t.id({ required: true }),
     amount: t.string({ required: true }),
+    investmentTermId: t.id({ required: false }), // Optional - only for open programs with terms
     txHash: t.string({ required: false }),
   }),
 });

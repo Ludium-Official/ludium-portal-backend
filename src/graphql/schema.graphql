@@ -126,6 +126,7 @@ input CreateCommentInput {
 
 input CreateInvestmentInput {
   amount: String!
+  investmentTermId: ID
   projectId: ID!
   txHash: String
 }
@@ -245,10 +246,12 @@ enum InvestmentStatus {
 type InvestmentTerm {
   applicationId: ID
   createdAt: DateTime
+  currentPurchases: Int
   description: String
   id: ID
   price: String
   purchaseLimit: Int
+  remainingPurchases: Int
   title: String
   updatedAt: DateTime
 }

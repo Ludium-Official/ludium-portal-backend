@@ -1,4 +1,5 @@
 import type { InvestmentTerm as DBInvestmentTerm } from '@/db/schemas';
+import { investmentsTable } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import {
   createInvestmentTermResolver,
@@ -7,6 +8,7 @@ import {
   getInvestmentTermsByApplicationIdResolver,
   updateInvestmentTermResolver,
 } from '@/graphql/resolvers/investment-terms';
+import { and, eq, sql } from 'drizzle-orm';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -19,6 +21,48 @@ export const InvestmentTermType = builder.objectRef<DBInvestmentTerm>('Investmen
     description: t.exposeString('description', { nullable: true }),
     price: t.exposeString('price'),
     purchaseLimit: t.exposeInt('purchaseLimit', { nullable: true }),
+    currentPurchases: t.field({
+      type: 'Int',
+      nullable: true,
+      resolve: async (term, _args, ctx) => {
+        // Count investments for this specific term
+        const [result] = await ctx.db
+          .select({
+            count: sql<number>`COUNT(*)::int`,
+          })
+          .from(investmentsTable)
+          .where(
+            and(
+              eq(investmentsTable.investmentTermId, term.id),
+              eq(investmentsTable.status, 'confirmed'),
+            ),
+          );
+        return result?.count || 0;
+      },
+    }),
+    remainingPurchases: t.field({
+      type: 'Int',
+      nullable: true,
+      resolve: async (term, _args, ctx) => {
+        if (!term.purchaseLimit) return null;
+
+        // Count investments for this specific term
+        const [result] = await ctx.db
+          .select({
+            count: sql<number>`COUNT(*)::int`,
+          })
+          .from(investmentsTable)
+          .where(
+            and(
+              eq(investmentsTable.investmentTermId, term.id),
+              eq(investmentsTable.status, 'confirmed'),
+            ),
+          );
+
+        const currentPurchases = result?.count || 0;
+        return Math.max(0, term.purchaseLimit - currentPurchases);
+      },
+    }),
     createdAt: t.field({
       type: 'DateTime',
       resolve: (term) => term.createdAt,
