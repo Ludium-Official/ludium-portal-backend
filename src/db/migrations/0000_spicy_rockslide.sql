@@ -5,12 +5,8 @@ CREATE TYPE "public"."user_roles" AS ENUM('user', 'admin', 'superadmin');--> sta
 CREATE TYPE "public"."funding_condition" AS ENUM('open', 'tier');--> statement-breakpoint
 CREATE TYPE "public"."investment_tier" AS ENUM('bronze', 'silver', 'gold', 'platinum');--> statement-breakpoint
 CREATE TYPE "public"."program_role_type" AS ENUM('sponsor', 'validator', 'builder');--> statement-breakpoint
-<<<<<<<< HEAD:src/db/migrations/0000_keen_junta.sql
-CREATE TYPE "public"."program_status" AS ENUM('draft', 'payment_required', 'published', 'closed', 'completed', 'cancelled');--> statement-breakpoint
 CREATE TYPE "public"."program_type" AS ENUM('regular', 'funding');--> statement-breakpoint
-========
 CREATE TYPE "public"."program_status" AS ENUM('pending', 'payment_required', 'rejected', 'published', 'closed', 'completed', 'cancelled');--> statement-breakpoint
->>>>>>>> dev:src/db/migrations/0000_petite_colossus.sql
 CREATE TYPE "public"."program_visibility" AS ENUM('private', 'restricted', 'public');--> statement-breakpoint
 CREATE TYPE "public"."milestone_status" AS ENUM('draft', 'pending', 'completed', 'rejected', 'submitted');--> statement-breakpoint
 CREATE TYPE "public"."notification_action" AS ENUM('created', 'accepted', 'rejected', 'submitted', 'completed', 'broadcast', 'invited');--> statement-breakpoint

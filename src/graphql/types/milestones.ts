@@ -6,6 +6,7 @@ import {
   checkMilestoneResolver,
   getMilestoneResolver,
   getMilestonesResolver,
+  reclaimMilestoneResolver,
   submitMilestoneResolver,
   updateMilestoneResolver,
 } from '@/graphql/resolvers/milestones';
@@ -53,6 +54,31 @@ export const MilestoneType = builder.objectRef<DBMilestone>('Milestone').impleme
     deadline: t.field({
       type: 'DateTime',
       resolve: (milestone) => (milestone.deadline ? new Date(milestone.deadline) : null),
+    }),
+    // Reclaim fields for unpaid milestones
+    reclaimed: t.exposeBoolean('reclaimed', { nullable: true }),
+    reclaimTxHash: t.exposeString('reclaimTxHash', { nullable: true }),
+    reclaimedAt: t.field({
+      type: 'DateTime',
+      nullable: true,
+      resolve: (milestone) => milestone.reclaimedAt,
+    }),
+    canReclaim: t.boolean({
+      description: 'Whether this milestone can be reclaimed (unpaid past deadline)',
+      resolve: (milestone) => {
+        // Milestone can be reclaimed if:
+        // 1. It's past deadline
+        // 2. It hasn't been reclaimed yet
+        // 3. It's not completed or rejected
+        if (milestone.reclaimed) return false;
+        if (milestone.status === 'completed' || milestone.status === 'rejected') return false;
+
+        const now = new Date();
+        const deadline = milestone.deadline ? new Date(milestone.deadline) : null;
+        if (!deadline || deadline > now) return false;
+
+        return true;
+      },
     }),
   }),
 });
@@ -183,5 +209,16 @@ builder.mutationFields((t) => ({
       input: t.arg({ type: CheckMilestoneInput, required: true }),
     },
     resolve: checkMilestoneResolver,
+  }),
+  // Reclaim mutation for unpaid milestones
+  reclaimMilestone: t.field({
+    type: MilestoneType,
+    description: 'Reclaim funds from an unpaid milestone past its deadline',
+    authScopes: { user: true },
+    args: {
+      milestoneId: t.arg.id({ required: true }),
+      txHash: t.arg.string({ required: false }),
+    },
+    resolve: reclaimMilestoneResolver,
   }),
 }));

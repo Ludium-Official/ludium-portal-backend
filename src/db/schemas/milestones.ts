@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import {
+  boolean,
   integer,
   jsonb,
   numeric,
@@ -46,6 +47,11 @@ export const milestonesTable = pgTable('milestones', {
   rejectionReason: text('rejection_reason'),
   file: varchar('file', { length: 512 }),
   deadline: timestamp('deadline').notNull(),
+
+  // Reclaim fields for unpaid milestones
+  reclaimed: boolean('reclaimed').default(false),
+  reclaimTxHash: varchar('reclaim_tx_hash', { length: 256 }),
+  reclaimedAt: timestamp('reclaimed_at', { mode: 'date' }),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

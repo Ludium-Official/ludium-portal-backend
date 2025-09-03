@@ -42,24 +42,42 @@ export async function getApplicationsResolver(
   const sort = args.pagination?.sort || 'desc';
   const filter = args.pagination?.filter || [];
 
-  const filterPromises = filter
-    .map((f) => {
-      switch (f.field) {
-        case 'programId':
-          return f.value ? eq(applicationsTable.programId, f.value) : undefined;
-        case 'applicantId':
-          return f.value ? eq(applicationsTable.applicantId, f.value) : undefined;
-        case 'status':
-          // Only status uses multi-values
-          if (f.values && f.values.length > 0) {
-            return inArray(applicationsTable.status, f.values as ApplicationStatusEnum[]);
-          }
-          return undefined;
-        default:
-          return undefined;
+  const filterPromises = filter.map(async (f) => {
+    switch (f.field) {
+      case 'programId':
+        return f.value ? eq(applicationsTable.programId, f.value) : undefined;
+      case 'applicantId':
+        return f.value ? eq(applicationsTable.applicantId, f.value) : undefined;
+      case 'status':
+        // Only status uses multi-values
+        if (f.values && f.values.length > 0) {
+          return inArray(applicationsTable.status, f.values as ApplicationStatusEnum[]);
+        }
+        return undefined;
+      case 'programType': {
+        if (!f.value) return undefined;
+        // Get programs of the specified type first
+        const programs = await ctx.db
+          .select({ id: programsTable.id })
+          .from(programsTable)
+          .where(eq(programsTable.type, f.value as 'regular' | 'funding'));
+
+        if (programs.length === 0) {
+          // If no programs of this type exist, return a condition that matches nothing
+          return eq(applicationsTable.programId, 'no-match');
+        }
+
+        return inArray(
+          applicationsTable.programId,
+          programs.map((p) => p.id),
+        );
       }
-    })
-    .filter(Boolean);
+      default:
+        return undefined;
+    }
+  });
+
+  const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
 
   const data = await ctx.db
     .select()
@@ -67,12 +85,12 @@ export async function getApplicationsResolver(
     .limit(limit)
     .offset(offset)
     .orderBy(sort === 'asc' ? asc(applicationsTable.createdAt) : desc(applicationsTable.createdAt))
-    .where(and(...filterPromises));
+    .where(and(...filterConditions));
 
   const [totalCount] = await ctx.db
     .select({ count: count() })
     .from(applicationsTable)
-    .where(and(...filterPromises));
+    .where(and(...filterConditions));
 
   if (!validAndNotEmptyArray(data)) {
     return {
