@@ -42,24 +42,42 @@ export async function getApplicationsResolver(
   const sort = args.pagination?.sort || 'desc';
   const filter = args.pagination?.filter || [];
 
-  const filterPromises = filter
-    .map((f) => {
-      switch (f.field) {
-        case 'programId':
-          return f.value ? eq(applicationsTable.programId, f.value) : undefined;
-        case 'applicantId':
-          return f.value ? eq(applicationsTable.applicantId, f.value) : undefined;
-        case 'status':
-          // Only status uses multi-values
-          if (f.values && f.values.length > 0) {
-            return inArray(applicationsTable.status, f.values as ApplicationStatusEnum[]);
-          }
-          return undefined;
-        default:
-          return undefined;
+  const filterPromises = filter.map(async (f) => {
+    switch (f.field) {
+      case 'programId':
+        return f.value ? eq(applicationsTable.programId, f.value) : undefined;
+      case 'applicantId':
+        return f.value ? eq(applicationsTable.applicantId, f.value) : undefined;
+      case 'status':
+        // Only status uses multi-values
+        if (f.values && f.values.length > 0) {
+          return inArray(applicationsTable.status, f.values as ApplicationStatusEnum[]);
+        }
+        return undefined;
+      case 'programType': {
+        if (!f.value) return undefined;
+        // Get programs of the specified type first
+        const programs = await ctx.db
+          .select({ id: programsTable.id })
+          .from(programsTable)
+          .where(eq(programsTable.type, f.value as 'regular' | 'funding'));
+
+        if (programs.length === 0) {
+          // If no programs of this type exist, return a condition that matches nothing
+          return eq(applicationsTable.programId, 'no-match');
+        }
+
+        return inArray(
+          applicationsTable.programId,
+          programs.map((p) => p.id),
+        );
       }
-    })
-    .filter(Boolean);
+      default:
+        return undefined;
+    }
+  });
+
+  const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
 
   const data = await ctx.db
     .select()
@@ -67,12 +85,12 @@ export async function getApplicationsResolver(
     .limit(limit)
     .offset(offset)
     .orderBy(sort === 'asc' ? asc(applicationsTable.createdAt) : desc(applicationsTable.createdAt))
-    .where(and(...filterPromises));
+    .where(and(...filterConditions));
 
   const [totalCount] = await ctx.db
     .select({ count: count() })
     .from(applicationsTable)
-    .where(and(...filterPromises));
+    .where(and(...filterConditions));
 
   if (!validAndNotEmptyArray(data)) {
     return {
@@ -641,6 +659,9 @@ export async function getCurrentFundingAmountResolver(
   args: { id: string },
   ctx: Context,
 ) {
+  console.log('=== GET CURRENT FUNDING AMOUNT START ===');
+  console.log('Application ID:', args.id);
+
   // First check if this is a funding program
   const [application] = await ctx.db
     .select({
@@ -650,6 +671,8 @@ export async function getCurrentFundingAmountResolver(
     .where(eq(applicationsTable.id, args.id));
 
   if (!application) {
+    console.log('Application not found');
+    console.log('=== GET CURRENT FUNDING AMOUNT END ===');
     return null;
   }
 
@@ -662,6 +685,8 @@ export async function getCurrentFundingAmountResolver(
 
   // Only return funding amount for funding programs
   if (program?.type !== 'funding') {
+    console.log('Not a funding program, type:', program?.type);
+    console.log('=== GET CURRENT FUNDING AMOUNT END ===');
     return null;
   }
 
@@ -673,6 +698,10 @@ export async function getCurrentFundingAmountResolver(
     .where(
       and(eq(investmentsTable.applicationId, args.id), eq(investmentsTable.status, 'confirmed')),
     );
+
+  console.log('Total funding amount (Wei):', result?.total || '0');
+  console.log('=== GET CURRENT FUNDING AMOUNT END ===');
+
   return result?.total || '0';
 }
 
@@ -718,16 +747,54 @@ export async function getFundingProgressResolver(_root: Root, args: { id: string
       and(eq(investmentsTable.applicationId, args.id), eq(investmentsTable.status, 'confirmed')),
     );
 
-  const currentAmount = Number.parseFloat(result?.total || '0');
-  const target = Number.parseFloat(targetAmount);
+  // Investment amounts are stored in Wei, but fundingTarget might be in ETH format
+  // Check if targetAmount looks like ETH (has decimal or is small number)
+  const currentAmountWei = result?.total || '0';
+  let targetInWei: string;
 
-  if (target === 0) {
+  // Log raw values first
+  console.log('=== FUNDING PROGRESS CALCULATION START ===');
+  console.log('Application ID:', args.id);
+  console.log('Raw targetAmount from DB:', targetAmount);
+  console.log('Raw currentAmountWei from investments sum:', currentAmountWei);
+
+  // If target is a small number (less than 1000), it's likely in ETH format
+  // Convert it to Wei for proper comparison
+  const targetFloat = Number.parseFloat(targetAmount);
+  console.log('Target as float:', targetFloat);
+
+  if (targetFloat < 1000 && targetFloat > 0) {
+    // Likely ETH format, convert to Wei (multiply by 10^18)
+    targetInWei = (targetFloat * 1e18).toString();
+    console.log('Detected ETH format, converting to Wei:', targetInWei);
+  } else {
+    // Already in Wei format
+    targetInWei = targetAmount;
+    console.log('Already in Wei format:', targetInWei);
+  }
+
+  const currentAmount = Number.parseFloat(currentAmountWei);
+  const target = Number.parseFloat(targetInWei);
+
+  // Log final calculation
+  console.log('Final values for calculation:', {
+    currentAmount,
+    target,
+    percentage: target > 0 ? (currentAmount / target) * 100 : 0,
+  });
+  console.log('=== FUNDING PROGRESS CALCULATION END ===');
+
+  if (target === 0 || Number.isNaN(target)) {
     return 0;
   }
 
   // Calculate percentage and cap at 100
   const percentage = (currentAmount / target) * 100;
-  return Math.min(percentage, 100);
+
+  // Round to 2 decimal places to avoid scientific notation
+  const roundedPercentage = Math.round(percentage * 100) / 100;
+
+  return Math.min(roundedPercentage, 100);
 }
 
 export async function getInvestmentCountResolver(_root: Root, args: { id: string }, ctx: Context) {

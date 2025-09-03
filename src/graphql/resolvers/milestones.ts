@@ -416,3 +416,77 @@ export function checkMilestoneResolver(
     return milestone;
   });
 }
+
+// Reclaim an unpaid milestone past its deadline
+export async function reclaimMilestoneResolver(
+  _root: Root,
+  args: { milestoneId: string; txHash?: string | null },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Get the milestone with its application
+    const [milestone] = await t
+      .select()
+      .from(milestonesTable)
+      .where(eq(milestonesTable.id, args.milestoneId));
+
+    if (!milestone) {
+      throw new Error('Milestone not found');
+    }
+
+    // Get the application to check builder
+    const [application] = await t
+      .select()
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, milestone.applicationId));
+
+    if (!application) {
+      throw new Error('Associated application not found');
+    }
+
+    // Check if user is the builder (applicant)
+    if (application.applicantId !== user.id) {
+      throw new Error('Only the milestone builder can reclaim funds');
+    }
+
+    // Check if milestone is eligible for reclaim
+    if (milestone.reclaimed) {
+      throw new Error('Milestone has already been reclaimed');
+    }
+
+    if (milestone.status === 'completed' || milestone.status === 'rejected') {
+      throw new Error('Cannot reclaim completed or rejected milestones');
+    }
+
+    const now = new Date();
+    const deadline = milestone.deadline ? new Date(milestone.deadline) : null;
+    if (!deadline || deadline > now) {
+      throw new Error('Milestone deadline has not passed yet');
+    }
+
+    // Update milestone as reclaimed
+    const updateData: {
+      reclaimed: boolean;
+      reclaimedAt: Date;
+      reclaimTxHash?: string;
+    } = {
+      reclaimed: true,
+      reclaimedAt: new Date(),
+    };
+
+    // Only set txHash if provided
+    if (args.txHash) {
+      updateData.reclaimTxHash = args.txHash;
+    }
+
+    const [updatedMilestone] = await t
+      .update(milestonesTable)
+      .set(updateData)
+      .where(eq(milestonesTable.id, args.milestoneId))
+      .returning();
+
+    return updatedMilestone;
+  });
+}

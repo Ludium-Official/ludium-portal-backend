@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import {
+  boolean,
   integer,
   jsonb,
   pgEnum,
@@ -77,6 +78,11 @@ export const programsTable = pgTable('programs', {
   // Fee settings
   feePercentage: integer('fee_percentage').default(300), // 300 = 3%
   customFeePercentage: integer('custom_fee_percentage'), // Custom fee if different from default
+
+  // Reclaim fields for recruitment programs
+  reclaimed: boolean('reclaimed').default(false),
+  reclaimTxHash: varchar('reclaim_tx_hash', { length: 256 }),
+  reclaimedAt: timestamp('reclaimed_at', { mode: 'date' }),
 
   // Tier settings (JSONB for flexibility)
   tierSettings: jsonb('tier_settings').$type<{

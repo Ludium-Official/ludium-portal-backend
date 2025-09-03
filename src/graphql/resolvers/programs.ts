@@ -1391,3 +1391,100 @@ export async function removeUserTierResolver(
 
   return true;
 }
+
+// Reclaim an unused program past its deadline
+export async function reclaimProgramResolver(
+  _root: Root,
+  args: { programId: string; txHash?: string | null },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Get the program
+    const [program] = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, args.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    // Check if user is the sponsor/creator
+    if (program.creatorId !== user.id) {
+      // Check if user has sponsor role
+      const [sponsorRole] = await t
+        .select()
+        .from(programUserRolesTable)
+        .where(
+          and(
+            eq(programUserRolesTable.programId, args.programId),
+            eq(programUserRolesTable.userId, user.id),
+            eq(programUserRolesTable.roleType, 'sponsor'),
+          ),
+        );
+
+      if (!sponsorRole) {
+        throw new Error('Only the program sponsor can reclaim funds');
+      }
+    }
+
+    // Check if program is eligible for reclaim
+    if (program.type === 'funding') {
+      throw new Error('This is an investment program, use investment reclaim instead');
+    }
+
+    if (program.reclaimed) {
+      throw new Error('Program has already been reclaimed');
+    }
+
+    const now = new Date();
+    const deadline = program.deadline ? new Date(program.deadline) : null;
+    if (!deadline || deadline > now) {
+      throw new Error('Program deadline has not passed yet');
+    }
+
+    // Check if program has any accepted applications
+    const applications = await t
+      .select()
+      .from(applicationsTable)
+      .where(
+        and(
+          eq(applicationsTable.programId, args.programId),
+          eq(applicationsTable.status, 'accepted'),
+        ),
+      );
+
+    if (applications.length > 0) {
+      throw new Error('Cannot reclaim program with accepted applications');
+    }
+
+    // Update program as reclaimed
+    const updateData: {
+      reclaimed: boolean;
+      reclaimedAt: Date;
+      reclaimTxHash?: string;
+    } = {
+      reclaimed: true,
+      reclaimedAt: new Date(),
+    };
+
+    // Only set txHash if provided and not undefined
+    if (args.txHash !== undefined && args.txHash !== null) {
+      updateData.reclaimTxHash = args.txHash;
+    }
+
+    const [updatedProgram] = await t
+      .update(programsTable)
+      .set(updateData)
+      .where(eq(programsTable.id, args.programId))
+      .returning();
+
+    if (!updatedProgram) {
+      throw new Error('Failed to update program');
+    }
+
+    return updatedProgram;
+  });
+}

@@ -126,6 +126,7 @@ input CreateCommentInput {
 
 input CreateInvestmentInput {
   amount: String!
+  investmentTermId: ID
   projectId: ID!
   txHash: String
 }
@@ -245,10 +246,12 @@ enum InvestmentStatus {
 type InvestmentTerm {
   applicationId: ID
   createdAt: DateTime
+  currentPurchases: Int
   description: String
   id: ID
   price: String
   purchaseLimit: Int
+  remainingPurchases: Int
   title: String
   updatedAt: DateTime
 }
@@ -293,6 +296,8 @@ input LinkInput {
 }
 
 type Milestone {
+  """Whether this milestone can be reclaimed (unpaid past deadline)"""
+  canReclaim: Boolean
   comments: [Comment!]
   currency: String
   deadline: DateTime
@@ -302,6 +307,9 @@ type Milestone {
   links: [Link!]
   percentage: String
   price: String
+  reclaimTxHash: String
+  reclaimed: Boolean
+  reclaimedAt: DateTime
   rejectionReason: String
   status: MilestoneStatus
   summary: String
@@ -357,6 +365,10 @@ type Mutation {
   markNotificationAsRead(id: ID!): Boolean
   processMilestonePayouts(input: ProcessPayoutsInput!): [MilestonePayout!]
   reclaimInvestment(input: ReclaimInvestmentInput!): Investment
+
+  """Reclaim funds from an unpaid milestone past its deadline"""
+  reclaimMilestone(milestoneId: ID!, txHash: String): Milestone
+  reclaimProgram(programId: ID!, txHash: String): Program
   rejectApplication(id: ID!, rejectionReason: String): Application
   rejectProgram(id: ID!, rejectionReason: String): Program
   removeProgramKeyword(keyword: String!, programId: ID!): Boolean
@@ -484,6 +496,9 @@ type Program {
   applicationEndDate: DateTime
   applicationStartDate: DateTime
   applications: [Application!]
+
+  """Whether this program can be reclaimed (unused past deadline)"""
+  canReclaim: Boolean
   comments: [Comment!]
   contractAddress: String
   creator: User
@@ -505,6 +520,9 @@ type Program {
   name: String
   network: String
   price: String
+  reclaimTxHash: String
+  reclaimed: Boolean
+  reclaimedAt: DateTime
   rejectionReason: String
   status: ProgramStatus
   summary: String

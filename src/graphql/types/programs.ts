@@ -23,6 +23,7 @@ import {
   getUserTierAssignmentResolver,
   inviteUserToProgramResolver,
   publishProgramResolver,
+  reclaimProgramResolver,
   rejectProgramResolver,
   removeProgramKeywordResolver,
   removeUserFromProgramResolver,
@@ -147,6 +148,33 @@ export const ProgramType = ProgramRef.implement({
       type: [User],
       resolve: async (program, _args, ctx) =>
         getValidatorsByProgramIdResolver({}, { programId: program.id }, ctx),
+    }),
+    // Reclaim fields for recruitment programs
+    reclaimed: t.exposeBoolean('reclaimed', { nullable: true }),
+    reclaimTxHash: t.exposeString('reclaimTxHash', { nullable: true }),
+    reclaimedAt: t.field({
+      type: 'DateTime',
+      nullable: true,
+      resolve: (program) => program.reclaimedAt,
+    }),
+    canReclaim: t.boolean({
+      description: 'Whether this program can be reclaimed (unused past deadline)',
+      resolve: (program) => {
+        // Program can be reclaimed if:
+        // 1. It's a regular (recruitment) program
+        // 2. It's past deadline
+        // 3. It hasn't been reclaimed yet
+        // 4. It has no accepted applications
+        if (program.type === 'funding' || program.reclaimed) return false;
+
+        const now = new Date();
+        const deadline = program.deadline ? new Date(program.deadline) : null;
+        if (!deadline || deadline > now) return false;
+
+        // TODO: Check if program has any accepted applications
+        // This would require querying applications table
+        return true;
+      },
     }),
     invitedBuilders: t.field({
       type: [User],
@@ -538,5 +566,15 @@ builder.mutationFields((t) => ({
       userId: t.arg.id({ required: true }),
     },
     resolve: removeUserTierResolver,
+  }),
+  // Reclaim mutations for recruitment programs
+  reclaimProgram: t.field({
+    type: ProgramType,
+    authScopes: { user: true },
+    args: {
+      programId: t.arg.id({ required: true }),
+      txHash: t.arg.string({ required: false }),
+    },
+    resolve: reclaimProgramResolver,
   }),
 }));

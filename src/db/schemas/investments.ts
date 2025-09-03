@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm';
 import { pgEnum, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { applicationsTable } from './applications';
+import { investmentTermsTable } from './investment-terms';
 import { investmentTierEnum } from './programs';
 import { usersTable } from './users';
 
@@ -26,6 +27,11 @@ export const investmentsTable = pgTable('investments', {
 
   // Investment tier (if tier-based funding)
   tier: investmentTierEnum('tier'),
+
+  // Investment term ID (for open funding programs with investment terms)
+  investmentTermId: uuid('investment_term_id').references(() => investmentTermsTable.id, {
+    onDelete: 'set null',
+  }),
 
   // Blockchain transaction hash
   txHash: varchar('tx_hash', { length: 256 }),
@@ -56,6 +62,11 @@ export const investmentRelations = relations(investmentsTable, ({ one }) => ({
     fields: [investmentsTable.userId],
     references: [usersTable.id],
     relationName: 'user_investments',
+  }),
+  investmentTerm: one(investmentTermsTable, {
+    fields: [investmentsTable.investmentTermId],
+    references: [investmentTermsTable.id],
+    relationName: 'investment_term',
   }),
 }));
 
