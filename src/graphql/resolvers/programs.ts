@@ -7,6 +7,7 @@ import {
   investmentsTable,
   keywordsTable,
   linksTable,
+  milestonesTable,
   programUserRolesTable,
   programsTable,
   programsToKeywordsTable,
@@ -1445,7 +1446,7 @@ export async function reclaimProgramResolver(
       throw new Error('Program deadline has not passed yet');
     }
 
-    // Check if program has any accepted applications
+    // Calculate if there are unused funds
     const applications = await t
       .select()
       .from(applicationsTable)
@@ -1456,28 +1457,51 @@ export async function reclaimProgramResolver(
         ),
       );
 
-    if (applications.length > 0) {
-      throw new Error('Cannot reclaim program with accepted applications');
+    // Calculate total paid out through completed milestones
+    let totalPaidOut = 0;
+    for (const app of applications) {
+      const milestones = await t
+        .select()
+        .from(milestonesTable)
+        .where(
+          and(eq(milestonesTable.applicationId, app.id), eq(milestonesTable.status, 'completed')),
+        );
+
+      for (const milestone of milestones) {
+        if (milestone.price) {
+          totalPaidOut += Number.parseFloat(milestone.price);
+        }
+      }
+    }
+
+    const totalDeposited = Number.parseFloat(program.price || '0');
+    const reclaimableAmount = totalDeposited - totalPaidOut;
+
+    // Check if there are actually funds to reclaim
+    if (reclaimableAmount <= 0.001) {
+      throw new Error('No unused funds to reclaim - all deposited funds have been paid out');
+    }
+
+    // IMPORTANT: The transaction hash should come from the frontend after calling
+    // the contract's reclaimFunds function. The flow should be:
+    // 1. Frontend calls LdEduProgram.reclaimFunds(programId)
+    // 2. Frontend gets transaction hash
+    // 3. Frontend calls this mutation with the txHash
+
+    if (!args.txHash) {
+      throw new Error(
+        'Transaction hash is required. Please call the contract reclaimFunds function first',
+      );
     }
 
     // Update program as reclaimed
-    const updateData: {
-      reclaimed: boolean;
-      reclaimedAt: Date;
-      reclaimTxHash?: string;
-    } = {
-      reclaimed: true,
-      reclaimedAt: new Date(),
-    };
-
-    // Only set txHash if provided and not undefined
-    if (args.txHash !== undefined && args.txHash !== null) {
-      updateData.reclaimTxHash = args.txHash;
-    }
-
     const [updatedProgram] = await t
       .update(programsTable)
-      .set(updateData)
+      .set({
+        reclaimed: true,
+        reclaimedAt: new Date(),
+        reclaimTxHash: args.txHash,
+      })
       .where(eq(programsTable.id, args.programId))
       .returning();
 

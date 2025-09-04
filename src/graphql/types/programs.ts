@@ -1,6 +1,8 @@
 import {
   type Program as DBProgram,
+  applicationsTable,
   investmentTiers,
+  milestonesTable,
   programStatuses,
   programVisibilities,
 } from '@/db/schemas';
@@ -46,6 +48,7 @@ import { ProgramRef } from '@/graphql/types/shared-refs';
 import { User } from '@/graphql/types/users';
 import { getProgramDetailedStatus } from '@/utils/program-status';
 import BigNumber from 'bignumber.js';
+import { and, eq } from 'drizzle-orm';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -159,21 +162,99 @@ export const ProgramType = ProgramRef.implement({
     }),
     canReclaim: t.boolean({
       description: 'Whether this program can be reclaimed (unused past deadline)',
-      resolve: (program) => {
-        // Program can be reclaimed if:
-        // 1. It's a regular (recruitment) program
-        // 2. It's past deadline
-        // 3. It hasn't been reclaimed yet
-        // 4. It has no accepted applications
-        if (program.type === 'funding' || program.reclaimed) return false;
+      resolve: async (program, _args, ctx) => {
+        // Already reclaimed
+        if (program.reclaimed) return false;
 
         const now = new Date();
-        const deadline = program.deadline ? new Date(program.deadline) : null;
-        if (!deadline || deadline > now) return false;
 
-        // TODO: Check if program has any accepted applications
-        // This would require querying applications table
-        return true;
+        // For regular programs: check deadline and unused funds
+        if (program.type === 'regular') {
+          const deadline = program.deadline ? new Date(program.deadline) : null;
+          if (!deadline || deadline > now) return false;
+
+          // Calculate if there are unused funds
+          const applications = await ctx.db
+            .select()
+            .from(applicationsTable)
+            .where(
+              and(
+                eq(applicationsTable.programId, program.id),
+                eq(applicationsTable.status, 'accepted'),
+              ),
+            );
+
+          // Get all completed milestones to calculate paid amount
+          let totalPaidOut = 0;
+          for (const app of applications) {
+            const milestones = await ctx.db
+              .select()
+              .from(milestonesTable)
+              .where(
+                and(
+                  eq(milestonesTable.applicationId, app.id),
+                  eq(milestonesTable.status, 'completed'),
+                ),
+              );
+
+            for (const milestone of milestones) {
+              if (milestone.price) {
+                totalPaidOut += Number.parseFloat(milestone.price);
+              }
+            }
+          }
+
+          const totalDeposited = Number.parseFloat(program.price || '0');
+          const reclaimableAmount = totalDeposited - totalPaidOut;
+
+          // Can reclaim if there's more than a small tolerance amount
+          return reclaimableAmount > 0.001;
+        }
+
+        // For funding programs: check funding end date and unused funds
+        if (program.type === 'funding') {
+          const fundingEndDate = program.fundingEndDate ? new Date(program.fundingEndDate) : null;
+          if (!fundingEndDate || fundingEndDate > now) return false;
+
+          // Calculate if there are unused funds
+          const applications = await ctx.db
+            .select()
+            .from(applicationsTable)
+            .where(
+              and(
+                eq(applicationsTable.programId, program.id),
+                eq(applicationsTable.status, 'accepted'),
+              ),
+            );
+
+          // Get all completed milestones to calculate paid amount
+          let totalPaidOut = 0;
+          for (const app of applications) {
+            const milestones = await ctx.db
+              .select()
+              .from(milestonesTable)
+              .where(
+                and(
+                  eq(milestonesTable.applicationId, app.id),
+                  eq(milestonesTable.status, 'completed'),
+                ),
+              );
+
+            for (const milestone of milestones) {
+              if (milestone.price) {
+                totalPaidOut += Number.parseFloat(milestone.price);
+              }
+            }
+          }
+
+          const totalDeposited = Number.parseFloat(program.price || '0');
+          const reclaimableAmount = totalDeposited - totalPaidOut;
+
+          // Can reclaim if there's more than a small tolerance amount
+          return reclaimableAmount > 0.001;
+        }
+
+        return false;
       },
     }),
     invitedBuilders: t.field({
