@@ -99,6 +99,7 @@ export const SupporterType = builder.objectRef<Supporter>('Supporter').implement
     lastName: t.exposeString('lastName', { nullable: true }),
     tier: t.exposeString('tier', { nullable: true }),
     maxInvestmentAmount: t.exposeString('maxInvestmentAmount', { nullable: true }),
+    walletAddress: t.exposeString('walletAddress', { nullable: true }),
   }),
 });
 

@@ -556,7 +556,14 @@ export function updateApplicationResolver(
 
 export function acceptApplicationResolver(
   _root: Root,
-  args: { id: string; onChainProjectId?: number | null },
+  args: {
+    id: string;
+    onChainProjectId?: number | null;
+    tierSyncInfo?: {
+      programOwnerAddress: string;
+      contractAddress: string;
+    } | null;
+  },
   ctx: Context,
 ) {
   return ctx.db.transaction(async (t) => {
@@ -598,6 +605,11 @@ export function acceptApplicationResolver(
       });
     }
 
+    // NOTE: Tier sync is now handled at the program level when hosts invite supporters
+    // We no longer sync tiers when approving applications since tiers are assigned
+    // to the program, not to individual projects
+    // The new contract architecture supports program-level tier assignments
+
     // Check if program budget is fully allocated and update status if needed
     await checkAndUpdateProgramStatus(application.programId, t);
 
@@ -611,6 +623,118 @@ export function acceptApplicationResolver(
     await ctx.server.pubsub.publish('notificationsCount');
 
     return application;
+  });
+}
+
+export async function syncApplicationTiersResolver(
+  _root: Root,
+  args: { applicationId: string },
+  ctx: Context,
+): Promise<{
+  success: boolean;
+  message: string;
+  projectId: number | null;
+  contractAddress: string | null;
+  tierAssignments: Array<{
+    userId: string;
+    walletAddress: string;
+    tier: string;
+    maxInvestmentAmount: string;
+  }>;
+}> {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Get the application
+    const [application] = await t
+      .select()
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, args.applicationId));
+
+    if (!application) {
+      throw new Error('Application not found');
+    }
+
+    // Get the program
+    const [program] = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, application.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    // Check if user is the program creator
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: program.id,
+      db: t,
+    });
+
+    if (!hasAccess) {
+      throw new Error('Only the program owner can sync tiers');
+    }
+
+    // Check if this is a tier-based funding program with an onchain project ID
+    if (program.type !== 'funding' || program.fundingCondition !== 'tier') {
+      throw new Error('This is not a tier-based funding program');
+    }
+
+    if (!application.onChainProjectId) {
+      throw new Error('Application has not been accepted on-chain yet');
+    }
+
+    // Get all tier assignments for this program
+    const tierAssignments = await t
+      .select({
+        userId: userTierAssignmentsTable.userId,
+        tier: userTierAssignmentsTable.tier,
+        maxInvestmentAmount: userTierAssignmentsTable.maxInvestmentAmount,
+      })
+      .from(userTierAssignmentsTable)
+      .where(eq(userTierAssignmentsTable.programId, application.programId));
+
+    if (tierAssignments.length === 0) {
+      return {
+        success: false,
+        message: 'No tier assignments found for this program',
+        projectId: null,
+        contractAddress: null,
+        tierAssignments: [],
+      };
+    }
+
+    // Get wallet addresses for all users with tier assignments
+    const userIds = tierAssignments.map((ta) => ta.userId);
+    const users = await t
+      .select({
+        id: usersTable.id,
+        walletAddress: usersTable.walletAddress,
+      })
+      .from(usersTable)
+      .where(inArray(usersTable.id, userIds));
+
+    const userWalletMap = new Map(users.map((u) => [u.id, u.walletAddress]));
+
+    // Prepare tier data for blockchain sync
+    const tiersToSync = tierAssignments
+      .map((ta) => ({
+        userId: ta.userId,
+        walletAddress: userWalletMap.get(ta.userId) || '',
+        tier: ta.tier,
+        maxInvestmentAmount: ta.maxInvestmentAmount,
+      }))
+      .filter((t) => t.walletAddress); // Only include users with wallet addresses
+
+    return {
+      success: true,
+      message: `Ready to sync ${tiersToSync.length} tier assignments`,
+      projectId: application.onChainProjectId || null,
+      contractAddress: program.contractAddress || null,
+      tierAssignments: tiersToSync,
+    };
   });
 }
 
@@ -659,9 +783,6 @@ export async function getCurrentFundingAmountResolver(
   args: { id: string },
   ctx: Context,
 ) {
-  console.log('=== GET CURRENT FUNDING AMOUNT START ===');
-  console.log('Application ID:', args.id);
-
   // First check if this is a funding program
   const [application] = await ctx.db
     .select({
@@ -671,8 +792,6 @@ export async function getCurrentFundingAmountResolver(
     .where(eq(applicationsTable.id, args.id));
 
   if (!application) {
-    console.log('Application not found');
-    console.log('=== GET CURRENT FUNDING AMOUNT END ===');
     return null;
   }
 
@@ -685,8 +804,6 @@ export async function getCurrentFundingAmountResolver(
 
   // Only return funding amount for funding programs
   if (program?.type !== 'funding') {
-    console.log('Not a funding program, type:', program?.type);
-    console.log('=== GET CURRENT FUNDING AMOUNT END ===');
     return null;
   }
 
@@ -698,9 +815,6 @@ export async function getCurrentFundingAmountResolver(
     .where(
       and(eq(investmentsTable.applicationId, args.id), eq(investmentsTable.status, 'confirmed')),
     );
-
-  console.log('Total funding amount (Wei):', result?.total || '0');
-  console.log('=== GET CURRENT FUNDING AMOUNT END ===');
 
   return result?.total || '0';
 }
@@ -719,10 +833,11 @@ export async function getFundingProgressResolver(_root: Root, args: { id: string
     return null;
   }
 
-  // Check if this is a funding program
+  // Check if this is a funding program and get currency
   const [program] = await ctx.db
     .select({
       type: programsTable.type,
+      currency: programsTable.currency,
     })
     .from(programsTable)
     .where(eq(programsTable.id, application.programId));
@@ -747,49 +862,19 @@ export async function getFundingProgressResolver(_root: Root, args: { id: string
       and(eq(investmentsTable.applicationId, args.id), eq(investmentsTable.status, 'confirmed')),
     );
 
-  // Investment amounts are stored in Wei, but fundingTarget might be in ETH format
-  // Check if targetAmount looks like ETH (has decimal or is small number)
-  const currentAmountWei = result?.total || '0';
-  let targetInWei: string;
+  // For USDT/USDC and other tokens, amounts are stored in display format (e.g., 0.1 for 0.1 USDT)
+  // For ETH/EDU, amounts might be in Wei or display format
+  const currentAmountStr = result?.total || '0';
+  const currentAmount = Number.parseFloat(currentAmountStr);
+  const target = Number.parseFloat(targetAmount);
 
-  // Log raw values first
-  console.log('=== FUNDING PROGRESS CALCULATION START ===');
-  console.log('Application ID:', args.id);
-  console.log('Raw targetAmount from DB:', targetAmount);
-  console.log('Raw currentAmountWei from investments sum:', currentAmountWei);
-
-  // If target is a small number (less than 1000), it's likely in ETH format
-  // Convert it to Wei for proper comparison
-  const targetFloat = Number.parseFloat(targetAmount);
-  console.log('Target as float:', targetFloat);
-
-  if (targetFloat < 1000 && targetFloat > 0) {
-    // Likely ETH format, convert to Wei (multiply by 10^18)
-    targetInWei = (targetFloat * 1e18).toString();
-    console.log('Detected ETH format, converting to Wei:', targetInWei);
-  } else {
-    // Already in Wei format
-    targetInWei = targetAmount;
-    console.log('Already in Wei format:', targetInWei);
-  }
-
-  const currentAmount = Number.parseFloat(currentAmountWei);
-  const target = Number.parseFloat(targetInWei);
-
-  // Log final calculation
-  console.log('Final values for calculation:', {
-    currentAmount,
-    target,
-    percentage: target > 0 ? (currentAmount / target) * 100 : 0,
-  });
-  console.log('=== FUNDING PROGRESS CALCULATION END ===');
+  // Both values are now in the same format (display format)
+  // So we can directly calculate the percentage
+  const percentage = target > 0 ? (currentAmount / target) * 100 : 0;
 
   if (target === 0 || Number.isNaN(target)) {
     return 0;
   }
-
-  // Calculate percentage and cap at 100
-  const percentage = (currentAmount / target) * 100;
 
   // Round to 2 decimal places to avoid scientific notation
   const roundedPercentage = Math.round(percentage * 100) / 100;

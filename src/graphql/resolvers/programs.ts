@@ -1188,6 +1188,7 @@ export async function getSupportersWithTiersResolver(
         lastName: user?.lastName,
         tier: assignment.tier,
         maxInvestmentAmount: assignment.maxInvestmentAmount,
+        walletAddress: user?.walletAddress,
         createdAt: assignment.createdAt,
       };
     });
@@ -1222,6 +1223,7 @@ export async function getSupportersWithTiersResolver(
       lastName: user?.lastName,
       tier: null,
       maxInvestmentAmount: undefined,
+      walletAddress: user?.walletAddress,
       createdAt: role.createdAt,
     };
   });
