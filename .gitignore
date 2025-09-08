@@ -208,6 +208,7 @@ src/scripts/data/*
 **.csv*
 bun.lockb
 pnpm-lock.yaml
+.cl*
 *.md
 !README.md
 

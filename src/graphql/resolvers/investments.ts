@@ -181,28 +181,21 @@ export async function createInvestmentResolver(
 
         if (difference < 1000) {
           // Less than 1000 Wei difference (negligible)
-          console.log(
-            'Allowing investment as it matches remaining capacity (difference:',
-            difference,
-            'Wei)',
-          );
+          // Allow investment as it matches remaining capacity
         } else if (possibleMissingInvestment) {
-          console.warn(
-            '⚠️ Possible contract/database sync issue detected. Contract may have extra investment.',
-            'Current DB total:',
-            currentFundingWei / 1e18,
-            'ETH',
-            'Investment amount:',
-            amountWei / 1e18,
-            'ETH',
-            'This might be due to a previously failed database write.',
-          );
+          // Possible contract/database sync issue - allow the investment
         } else {
           throw new Error(
             `Investment would exceed funding target. Remaining capacity: ${remainingInEth} EDU`,
           );
         }
       }
+    }
+
+    // Determine the token decimals based on currency
+    let decimals = 18; // Default to ETH decimals
+    if (program.currency === 'USDT' || program.currency === 'USDC') {
+      decimals = 6;
     }
 
     // Check tier-based restrictions and term limits
@@ -227,9 +220,15 @@ export async function createInvestmentResolver(
       tier = tierAssignment.tier;
 
       // Check investment amount against tier limit
-      const maxAmount = Number.parseFloat(tierAssignment.maxInvestmentAmount);
-      if (Number.parseFloat(amount) > maxAmount) {
-        throw new Error(`Investment exceeds your tier limit of ${maxAmount}`);
+
+      // Convert amount from smallest units to display format for comparison
+      const investmentAmountDisplay = Number.parseFloat(amount) / 10 ** decimals;
+      const maxAmountDisplay = Number.parseFloat(tierAssignment.maxInvestmentAmount);
+
+      if (investmentAmountDisplay > maxAmountDisplay) {
+        throw new Error(
+          `Investment exceeds your tier limit of ${maxAmountDisplay} ${program.currency || 'tokens'}`,
+        );
       }
     }
 
@@ -298,9 +297,15 @@ export async function createInvestmentResolver(
           ),
         );
 
-      const userTotalAfter = Number.parseFloat(userTotal.total) + Number.parseFloat(amount);
-      if (userTotalAfter > tierMaxAmount) {
-        throw new Error(`Total investments would exceed your tier limit of ${tierMaxAmount}`);
+      // Convert amounts to display format for comparison
+      const currentInvestmentDisplay = Number.parseFloat(userTotal.total);
+      const newInvestmentDisplay = Number.parseFloat(amount) / 10 ** decimals;
+      const userTotalAfterDisplay = currentInvestmentDisplay + newInvestmentDisplay;
+
+      if (userTotalAfterDisplay > tierMaxAmount) {
+        throw new Error(
+          `Total investments would exceed your tier limit of ${tierMaxAmount} ${program.currency || 'tokens'}`,
+        );
       }
     }
 
@@ -321,11 +326,32 @@ export async function createInvestmentResolver(
       }
     }
 
+    // Convert amount to display format for database storage
+    // The frontend sends amounts in smallest units (wei/smallest token unit)
+    // but the database stores in display format (ETH/USDT/etc)
+    let amountForStorage = amount;
+
+    // Determine decimals based on currency
+    const storageDecimals = program.currency === 'USDT' || program.currency === 'USDC' ? 6 : 18;
+
+    // Check if amount is in smallest units (large number) and needs conversion
+    const amountNum = Number.parseFloat(amount);
+    if (amountNum > 1000) {
+      // Likely in smallest units
+      amountForStorage = (amountNum / 10 ** storageDecimals).toString();
+      console.log('Converting amount for storage:', {
+        originalAmount: amount,
+        amountForStorage,
+        decimals: storageDecimals,
+        currency: program.currency,
+      });
+    }
+
     // Create investment record
     const investmentData: NewInvestment = {
       applicationId: projectId,
       userId: user.id,
-      amount,
+      amount: amountForStorage,
       tier,
       investmentTermId: investmentTermId || null,
       txHash,
@@ -342,7 +368,7 @@ export async function createInvestmentResolver(
       entityId: projectId,
       metadata: {
         investmentId: investment.id,
-        amount,
+        amount: amountForStorage,
         investor: user.email,
       },
     });

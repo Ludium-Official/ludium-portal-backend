@@ -17,4 +17,5 @@ export type Supporter = {
   lastName: string | null | undefined;
   tier: string | null;
   maxInvestmentAmount: string | undefined;
+  walletAddress?: string | null;
 };

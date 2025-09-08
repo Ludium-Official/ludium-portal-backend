@@ -338,7 +338,7 @@ enum MilestoneStatus {
 }
 
 type Mutation {
-  acceptApplication(id: ID!, onChainProjectId: Int): Application
+  acceptApplication(id: ID!, onChainProjectId: Int, tierSyncInfo: TierSyncInfo): Application
   acceptProgram(id: ID!): Program
   addProgramKeyword(keyword: String!, programId: ID!): Keyword
   addUserKeyword(keyword: String!, userId: ID!): Keyword
@@ -379,6 +379,7 @@ type Mutation {
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
+  syncApplicationTiers(applicationId: ID!): TierSyncResult
   updateApplication(input: UpdateApplicationInput!): Application
   updateCarouselItem(input: UpdateCarouselItemInput!): CarouselItem
   updateComment(input: UpdateCommentInput!): Comment
@@ -633,6 +634,27 @@ type Supporter {
   maxInvestmentAmount: String
   tier: String
   userId: ID
+  walletAddress: String
+}
+
+type TierAssignmentData {
+  maxInvestmentAmount: String
+  tier: String
+  userId: String
+  walletAddress: String
+}
+
+input TierSyncInfo {
+  contractAddress: String!
+  programOwnerAddress: String!
+}
+
+type TierSyncResult {
+  contractAddress: String
+  message: String
+  projectId: Int
+  success: Boolean
+  tierAssignments: [TierAssignmentData!]
 }
 
 input UpdateApplicationInput {

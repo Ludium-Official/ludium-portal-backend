@@ -15,6 +15,7 @@ import {
   getInvestmentCountResolver,
   getInvestorsWithTiersResolver,
   rejectApplicationResolver,
+  syncApplicationTiersResolver,
   updateApplicationResolver,
 } from '@/graphql/resolvers/applications';
 import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
@@ -235,6 +236,15 @@ builder.mutationFields((t) => ({
     args: {
       id: t.arg.id({ required: true }),
       onChainProjectId: t.arg.int({ required: false }),
+      tierSyncInfo: t.arg({
+        type: builder.inputType('TierSyncInfo', {
+          fields: (t) => ({
+            programOwnerAddress: t.string({ required: true }),
+            contractAddress: t.string({ required: true }),
+          }),
+        }),
+        required: false,
+      }),
     },
     resolve: acceptApplicationResolver,
   }),
@@ -260,5 +270,60 @@ builder.mutationFields((t) => ({
       rejectionReason: t.arg.string({ required: false }),
     },
     resolve: rejectApplicationResolver,
+  }),
+  syncApplicationTiers: t.field({
+    type: builder
+      .objectRef<{
+        success: boolean;
+        message: string;
+        projectId: number | null;
+        contractAddress: string | null;
+        tierAssignments: Array<{
+          userId: string;
+          walletAddress: string;
+          tier: string;
+          maxInvestmentAmount: string;
+        }>;
+      }>('TierSyncResult')
+      .implement({
+        fields: (t) => ({
+          success: t.boolean({ resolve: (parent) => parent.success }),
+          message: t.string({ resolve: (parent) => parent.message }),
+          projectId: t.int({ resolve: (parent) => parent.projectId, nullable: true }),
+          contractAddress: t.string({
+            resolve: (parent) => parent.contractAddress,
+            nullable: true,
+          }),
+          tierAssignments: t.field({
+            type: [
+              builder
+                .objectRef<{
+                  userId: string;
+                  walletAddress: string;
+                  tier: string;
+                  maxInvestmentAmount: string;
+                }>('TierAssignmentData')
+                .implement({
+                  fields: (t) => ({
+                    userId: t.string({ resolve: (parent) => parent.userId }),
+                    walletAddress: t.string({ resolve: (parent) => parent.walletAddress }),
+                    tier: t.string({ resolve: (parent) => parent.tier }),
+                    maxInvestmentAmount: t.string({
+                      resolve: (parent) => parent.maxInvestmentAmount,
+                    }),
+                  }),
+                }),
+            ],
+            resolve: (parent) => parent.tierAssignments || [],
+          }),
+        }),
+      }),
+    authScopes: {
+      user: true,
+    },
+    args: {
+      applicationId: t.arg.id({ required: true }),
+    },
+    resolve: syncApplicationTiersResolver,
   }),
 }));
