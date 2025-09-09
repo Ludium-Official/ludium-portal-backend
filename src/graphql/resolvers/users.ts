@@ -629,6 +629,7 @@ export function createUserResolver(
             keywordIds.map((keywordId) => ({
               userId: user.id,
               keywordId,
+              type: 'role' as const,
             })),
           )
           .onConflictDoNothing();
@@ -729,6 +730,7 @@ export function updateUserResolver(
             keywordIds.map((keywordId) => ({
               userId: args.input.id,
               keywordId,
+              type: 'role' as const,
             })),
           )
           .onConflictDoNothing();
@@ -763,7 +765,7 @@ export function updateProfileResolver(
     throw new Error('Unauthorized');
   }
 
-  const { links, keywords, ...userData } = args.input;
+  const { links, keywords, roleKeywords, skillKeywords, ...userData } = args.input;
 
   const filteredUserData = filterEmptyValues<User>(userData);
 
@@ -816,9 +818,109 @@ export function updateProfileResolver(
       );
     }
 
+    // Handle role keywords
+    if (roleKeywords !== undefined) {
+      // Delete existing role keyword associations
+      await t
+        .delete(usersToKeywordsTable)
+        .where(
+          and(
+            eq(usersToKeywordsTable.userId, loggedinUser.id),
+            eq(usersToKeywordsTable.type, 'role'),
+          ),
+        );
+
+      const keywordIds = [];
+
+      for (const keyword of roleKeywords || []) {
+        let existingKeyword = await t
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.name, keyword.toLowerCase().trim()))
+          .then((results) => results[0]);
+
+        if (!existingKeyword) {
+          const [newKeyword] = await t
+            .insert(keywordsTable)
+            .values({ name: keyword.toLowerCase().trim() })
+            .returning();
+          existingKeyword = newKeyword;
+        }
+
+        keywordIds.push(existingKeyword.id);
+      }
+
+      if (keywordIds.length > 0) {
+        await t
+          .insert(usersToKeywordsTable)
+          .values(
+            keywordIds.map((keywordId) => ({
+              userId: loggedinUser.id,
+              keywordId,
+              type: 'role' as const,
+            })),
+          )
+          .onConflictDoNothing();
+      }
+    }
+
+    // Handle skill keywords
+    if (skillKeywords !== undefined) {
+      // Delete existing skill keyword associations
+      await t
+        .delete(usersToKeywordsTable)
+        .where(
+          and(
+            eq(usersToKeywordsTable.userId, loggedinUser.id),
+            eq(usersToKeywordsTable.type, 'skill'),
+          ),
+        );
+
+      const keywordIds = [];
+
+      for (const keyword of skillKeywords || []) {
+        let existingKeyword = await t
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.name, keyword.toLowerCase().trim()))
+          .then((results) => results[0]);
+
+        if (!existingKeyword) {
+          const [newKeyword] = await t
+            .insert(keywordsTable)
+            .values({ name: keyword.toLowerCase().trim() })
+            .returning();
+          existingKeyword = newKeyword;
+        }
+
+        keywordIds.push(existingKeyword.id);
+      }
+
+      if (keywordIds.length > 0) {
+        await t
+          .insert(usersToKeywordsTable)
+          .values(
+            keywordIds.map((keywordId) => ({
+              userId: loggedinUser.id,
+              keywordId,
+              type: 'skill' as const,
+            })),
+          )
+          .onConflictDoNothing();
+      }
+    }
+
+    // Handle legacy keywords field (for backward compatibility)
     if (keywords) {
       // Delete existing keyword associations
-      await t.delete(usersToKeywordsTable).where(eq(usersToKeywordsTable.userId, loggedinUser.id));
+      await t
+        .delete(usersToKeywordsTable)
+        .where(
+          and(
+            eq(usersToKeywordsTable.userId, loggedinUser.id),
+            eq(usersToKeywordsTable.type, 'role'),
+          ),
+        );
 
       const keywordIds = [];
 
@@ -847,6 +949,7 @@ export function updateProfileResolver(
             keywordIds.map((keywordId) => ({
               userId: loggedinUser.id,
               keywordId,
+              type: 'role' as const,
             })),
           )
           .onConflictDoNothing();
@@ -881,13 +984,21 @@ export async function getUserAvatarResolver(_root: Root, args: { userId: string 
 
 export async function getUserKeywordsByUserIdResolver(
   _root: Root,
-  args: { userId: string },
+  args: { userId: string; type?: 'role' | 'skill' },
   ctx: Context,
 ) {
-  const keywordRelations = await ctx.db
+  let query = ctx.db
     .select()
     .from(usersToKeywordsTable)
     .where(eq(usersToKeywordsTable.userId, args.userId));
+
+  if (args.type) {
+    query = query.where(
+      and(eq(usersToKeywordsTable.userId, args.userId), eq(usersToKeywordsTable.type, args.type)),
+    );
+  }
+
+  const keywordRelations = await query;
 
   if (!keywordRelations.length) return [];
 
@@ -902,7 +1013,7 @@ export async function getUserKeywordsByUserIdResolver(
 
 export async function addUserKeywordResolver(
   _root: Root,
-  args: { userId: string; keyword: string },
+  args: { userId: string; keyword: string; type?: 'role' | 'skill' },
   ctx: Context,
 ) {
   return await ctx.db.transaction(async (t) => {
@@ -911,6 +1022,8 @@ export async function addUserKeywordResolver(
     if (!user) {
       throw new Error('User not found');
     }
+
+    const keywordType = args.type || 'role';
 
     let existingKeyword = await t
       .select()
@@ -931,6 +1044,7 @@ export async function addUserKeywordResolver(
       .values({
         userId: args.userId,
         keywordId: existingKeyword.id,
+        type: keywordType,
       })
       .onConflictDoNothing();
 
@@ -940,7 +1054,7 @@ export async function addUserKeywordResolver(
 
 export async function removeUserKeywordResolver(
   _root: Root,
-  args: { userId: string; keyword: string },
+  args: { userId: string; keyword: string; type?: 'role' | 'skill' },
   ctx: Context,
 ) {
   return await ctx.db.transaction(async (t) => {
@@ -949,6 +1063,8 @@ export async function removeUserKeywordResolver(
     if (!user) {
       throw new Error('User not found');
     }
+
+    const keywordType = args.type || 'role';
 
     const existingKeyword = await t
       .select()
@@ -966,6 +1082,7 @@ export async function removeUserKeywordResolver(
         and(
           eq(usersToKeywordsTable.userId, args.userId),
           eq(usersToKeywordsTable.keywordId, existingKeyword.id),
+          eq(usersToKeywordsTable.type, keywordType),
         ),
       );
 

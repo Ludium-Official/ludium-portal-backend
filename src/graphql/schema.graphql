@@ -294,6 +294,11 @@ type Keyword {
   name: String
 }
 
+enum KeywordType {
+  role
+  skill
+}
+
 type Link {
   title: String
   url: String
@@ -350,7 +355,7 @@ type Mutation {
   acceptApplication(id: ID!, onChainProjectId: Int, tierSyncInfo: TierSyncInfo): Application
   acceptProgram(id: ID!): Program
   addProgramKeyword(keyword: String!, programId: ID!): Keyword
-  addUserKeyword(keyword: String!, userId: ID!): Keyword
+  addUserKeyword(keyword: String!, type: KeywordType, userId: ID!): Keyword
   assignUserTier(input: AssignUserTierInput!): UserTierAssignment
   assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
   checkMilestone(input: CheckMilestoneInput!): Milestone
@@ -382,7 +387,7 @@ type Mutation {
   rejectProgram(id: ID!, rejectionReason: String): Program
   removeProgramKeyword(keyword: String!, programId: ID!): Boolean
   removeUserFromProgram(programId: ID!, userId: ID!): Program
-  removeUserKeyword(keyword: String!, userId: ID!): Boolean
+  removeUserKeyword(keyword: String!, type: KeywordType, userId: ID!): Boolean
   removeUserTier(programId: ID!, userId: ID!): Boolean
   removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
@@ -760,6 +765,8 @@ type User {
   organizationName: String
   programStatistics: UserProgramStatistics
   role: UserRole
+  roleKeywords: [Keyword!]
+  skillKeywords: [Keyword!]
   summary: String
   walletAddress: String
 }
@@ -817,6 +824,8 @@ input UserUpdateInput {
   links: [LinkInput!]
   loginType: String
   organizationName: String
+  roleKeywords: [String!]
+  skillKeywords: [String!]
   summary: String
   walletAddress: String
 }

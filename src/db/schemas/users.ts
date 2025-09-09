@@ -19,6 +19,9 @@ import { programUserRolesTable, programsTable } from './programs';
 export const userRoles = ['user', 'admin', 'superadmin'] as const;
 export const userRolesEnum = pgEnum('user_roles', userRoles);
 
+export const keywordTypes = ['role', 'skill'] as const;
+export const keywordTypeEnum = pgEnum('keyword_type', keywordTypes);
+
 export const usersTable = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   firstName: varchar('first_name', { length: 256 }),
@@ -85,8 +88,9 @@ export const usersToKeywordsTable = pgTable(
     keywordId: uuid('keyword_id')
       .notNull()
       .references(() => keywordsTable.id, { onDelete: 'cascade' }),
+    type: keywordTypeEnum('type').notNull().default('role'),
   },
-  (t) => [primaryKey({ columns: [t.userId, t.keywordId] })],
+  (t) => [primaryKey({ columns: [t.userId, t.keywordId, t.type] })],
 );
 
 export const usersToKeywordsRelations = relations(usersToKeywordsTable, ({ one }) => ({

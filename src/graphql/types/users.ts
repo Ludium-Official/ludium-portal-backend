@@ -1,4 +1,4 @@
-import { type User as DBUser, userRoles } from '@/db/schemas';
+import { type User as DBUser, keywordTypes, userRoles } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
@@ -25,6 +25,10 @@ import type { InvestmentStatsByStatusType, ProgramStatsByStatusType } from '@/ty
 /* -------------------------------------------------------------------------- */
 export const UserRoleEnum = builder.enumType('UserRole', {
   values: userRoles,
+});
+
+export const KeywordTypeEnum = builder.enumType('KeywordType', {
+  values: keywordTypes,
 });
 
 export const ProgramStatsByStatus = builder
@@ -140,6 +144,18 @@ export const User = builder.objectRef<DBUser>('User').implement({
       resolve: async (user, _args, ctx) =>
         getUserKeywordsByUserIdResolver({}, { userId: user.id }, ctx),
     }),
+    roleKeywords: t.field({
+      type: [KeywordType],
+      nullable: true,
+      resolve: async (user, _args, ctx) =>
+        getUserKeywordsByUserIdResolver({}, { userId: user.id, type: 'role' }, ctx),
+    }),
+    skillKeywords: t.field({
+      type: [KeywordType],
+      nullable: true,
+      resolve: async (user, _args, ctx) =>
+        getUserKeywordsByUserIdResolver({}, { userId: user.id, type: 'skill' }, ctx),
+    }),
   }),
 });
 
@@ -184,6 +200,8 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
     summary: t.string(),
     links: t.field({ type: [LinkInput] }),
     keywords: t.stringList(),
+    roleKeywords: t.stringList(),
+    skillKeywords: t.stringList(),
     loginType: t.string(),
     walletAddress: t.string(),
   }),
@@ -256,6 +274,7 @@ builder.mutationFields((t) => ({
     args: {
       userId: t.arg.id({ required: true }),
       keyword: t.arg.string({ required: true }),
+      type: t.arg({ type: KeywordTypeEnum, required: false }),
     },
     resolve: addUserKeywordResolver,
   }),
@@ -268,6 +287,7 @@ builder.mutationFields((t) => ({
     args: {
       userId: t.arg.id({ required: true }),
       keyword: t.arg.string({ required: true }),
+      type: t.arg({ type: KeywordTypeEnum, required: false }),
     },
     resolve: removeUserKeywordResolver,
   }),
