@@ -3,8 +3,11 @@ import builder from '@/graphql/builder';
 import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
   addUserKeywordResolver,
+  banUserResolver,
   createUserResolver,
   deleteUserResolver,
+  demoteFromAdminResolver,
+  getAdminUsersResolver,
   getProfileResolver,
   getUserAvatarResolver,
   getUserByIdResolver,
@@ -12,7 +15,9 @@ import {
   getUserKeywordsByUserIdResolver,
   getUserProgramStatisticsResolver,
   getUsersResolver,
+  promoteToAdminResolver,
   removeUserKeywordResolver,
+  unbanUserResolver,
   updateProfileResolver,
   updateUserResolver,
 } from '@/graphql/resolvers/users';
@@ -116,6 +121,9 @@ export const User = builder.objectRef<DBUser>('User').implement({
     loginType: t.exposeString('loginType', { nullable: true }),
     walletAddress: t.exposeString('walletAddress', { nullable: true }),
     role: t.expose('role', { type: UserRoleEnum, nullable: true }),
+    banned: t.exposeBoolean('banned'),
+    bannedAt: t.expose('bannedAt', { type: 'Date', nullable: true }),
+    bannedReason: t.exposeString('bannedReason', { nullable: true }),
     links: t.field({
       type: [Link],
       nullable: true,
@@ -218,6 +226,18 @@ builder.queryFields((t) => ({
     },
     resolve: getUsersResolver,
   }),
+  // Admin user management query
+  adminUsers: t.field({
+    type: PaginatedUsersType,
+    authScopes: { admin: true },
+    args: {
+      pagination: t.arg({ type: PaginationInput, required: false }),
+      includesBanned: t.arg.boolean({ required: false }),
+      onlyBanned: t.arg.boolean({ required: false }),
+      role: t.arg({ type: UserRoleEnum, required: false }),
+    },
+    resolve: getAdminUsersResolver,
+  }),
   user: t.field({
     type: User,
     args: {
@@ -290,5 +310,40 @@ builder.mutationFields((t) => ({
       type: t.arg({ type: KeywordTypeEnum, required: false }),
     },
     resolve: removeUserKeywordResolver,
+  }),
+  // User ban management
+  banUser: t.field({
+    type: User,
+    authScopes: { admin: true },
+    args: {
+      userId: t.arg.id({ required: true }),
+      reason: t.arg.string({ required: false }),
+    },
+    resolve: banUserResolver,
+  }),
+  unbanUser: t.field({
+    type: User,
+    authScopes: { admin: true },
+    args: {
+      userId: t.arg.id({ required: true }),
+    },
+    resolve: unbanUserResolver,
+  }),
+  // Role management
+  promoteToAdmin: t.field({
+    type: User,
+    authScopes: { admin: true },
+    args: {
+      userId: t.arg.id({ required: true }),
+    },
+    resolve: promoteToAdminResolver,
+  }),
+  demoteFromAdmin: t.field({
+    type: User,
+    authScopes: { admin: true },
+    args: {
+      userId: t.arg.id({ required: true }),
+    },
+    resolve: demoteFromAdminResolver,
   }),
 }));

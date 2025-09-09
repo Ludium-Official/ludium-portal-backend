@@ -372,6 +372,8 @@ type Mutation {
   deleteInvestmentTerm(id: ID!): Boolean
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
+  hidePost(id: ID!): Post
+  hideProgram(id: ID!): Program
   incrementPostView(postId: ID!): Int
   inviteUserToProgram(maxInvestmentAmount: String, programId: ID!, tier: InvestmentTier, userId: ID!): Program
   login(email: String, loginType: String!, walletAddress: String!): String
@@ -391,6 +393,8 @@ type Mutation {
   removeUserTier(programId: ID!, userId: ID!): Boolean
   removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
+  showPost(id: ID!): Post
+  showProgram(id: ID!): Program
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   syncApplicationTiers(applicationId: ID!): TierSyncResult
@@ -500,6 +504,13 @@ type Post {
   summary: String
   title: String
   viewCount: Int
+  visibility: PostVisibility
+}
+
+enum PostVisibility {
+  private
+  public
+  restricted
 }
 
 input ProcessPayoutsInput {

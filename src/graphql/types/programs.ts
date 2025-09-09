@@ -23,6 +23,7 @@ import {
   getProgramsResolver,
   getSupportersWithTiersResolver,
   getUserTierAssignmentResolver,
+  hideProgramResolver,
   inviteUserToProgramResolver,
   publishProgramResolver,
   reclaimProgramResolver,
@@ -31,6 +32,7 @@ import {
   removeUserFromProgramResolver,
   removeUserTierResolver,
   removeValidatorFromProgramResolver,
+  showProgramResolver,
   updateProgramResolver,
   updateUserTierResolver,
 } from '@/graphql/resolvers/programs';
@@ -657,5 +659,22 @@ builder.mutationFields((t) => ({
       txHash: t.arg.string({ required: false }),
     },
     resolve: reclaimProgramResolver,
+  }),
+  // Admin visibility mutations
+  hideProgram: t.field({
+    type: ProgramType,
+    authScopes: { admin: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: hideProgramResolver,
+  }),
+  showProgram: t.field({
+    type: ProgramType,
+    authScopes: { admin: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: showProgramResolver,
   }),
 }));

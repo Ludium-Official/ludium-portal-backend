@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import {
+  boolean,
   jsonb,
   pgEnum,
   pgTable,
@@ -35,6 +36,11 @@ export const usersTable = pgTable('users', {
   links: jsonb('links').$type<{ url: string; title: string }[]>(),
   loginType: varchar('login_type', { length: 256 }),
   role: userRolesEnum('role').default('user'),
+
+  // Ban management
+  banned: boolean('banned').default(false).notNull(),
+  bannedAt: timestamp('banned_at', { mode: 'date' }),
+  bannedReason: text('banned_reason'),
 
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

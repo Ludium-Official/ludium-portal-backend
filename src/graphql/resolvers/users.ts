@@ -67,9 +67,10 @@ export async function getUsersResolver(
   const conditions = await Promise.all(filterPromises);
   const validConditions = conditions.filter(Boolean);
 
-  // Add default filter for users with email not null
+  // Add default filter for users with email not null and not banned
   const emailNotNullCondition = isNotNull(usersTable.email);
-  const allConditions = [...validConditions, emailNotNullCondition];
+  const notBannedCondition = eq(usersTable.banned, false);
+  const allConditions = [...validConditions, emailNotNullCondition, notBannedCondition];
 
   const where = allConditions.length > 0 ? and(...allConditions) : undefined;
 
@@ -987,18 +988,16 @@ export async function getUserKeywordsByUserIdResolver(
   args: { userId: string; type?: 'role' | 'skill' },
   ctx: Context,
 ) {
-  let query = ctx.db
-    .select()
-    .from(usersToKeywordsTable)
-    .where(eq(usersToKeywordsTable.userId, args.userId));
+  const whereConditions = [eq(usersToKeywordsTable.userId, args.userId)];
 
   if (args.type) {
-    query = query.where(
-      and(eq(usersToKeywordsTable.userId, args.userId), eq(usersToKeywordsTable.type, args.type)),
-    );
+    whereConditions.push(eq(usersToKeywordsTable.type, args.type));
   }
 
-  const keywordRelations = await query;
+  const keywordRelations = await ctx.db
+    .select()
+    .from(usersToKeywordsTable)
+    .where(and(...whereConditions));
 
   if (!keywordRelations.length) return [];
 
@@ -1013,7 +1012,7 @@ export async function getUserKeywordsByUserIdResolver(
 
 export async function addUserKeywordResolver(
   _root: Root,
-  args: { userId: string; keyword: string; type?: 'role' | 'skill' },
+  args: { userId: string; keyword: string; type?: 'role' | 'skill' | null },
   ctx: Context,
 ) {
   return await ctx.db.transaction(async (t) => {
@@ -1054,7 +1053,7 @@ export async function addUserKeywordResolver(
 
 export async function removeUserKeywordResolver(
   _root: Root,
-  args: { userId: string; keyword: string; type?: 'role' | 'skill' },
+  args: { userId: string; keyword: string; type?: 'role' | 'skill' | null },
   ctx: Context,
 ) {
   return await ctx.db.transaction(async (t) => {
@@ -1088,4 +1087,222 @@ export async function removeUserKeywordResolver(
 
     return true;
   });
+}
+
+// Ban management resolvers
+export async function banUserResolver(
+  _root: Root,
+  args: { userId: string; reason?: string | null },
+  ctx: Context,
+): Promise<User> {
+  const currentUser = requireUser(ctx);
+
+  // Cannot ban yourself
+  if (currentUser.id === args.userId) {
+    throw new Error('Cannot ban yourself');
+  }
+
+  // Check if target user exists
+  const [targetUser] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.userId));
+
+  if (!targetUser) {
+    throw new Error('User not found');
+  }
+
+  // Cannot ban superadmin
+  if (targetUser.role === 'superadmin') {
+    throw new Error('Cannot ban superadmin');
+  }
+
+  // Update user to banned
+  const [bannedUser] = await ctx.db
+    .update(usersTable)
+    .set({
+      banned: true,
+      bannedAt: new Date(),
+      bannedReason: args.reason,
+    })
+    .where(eq(usersTable.id, args.userId))
+    .returning();
+
+  return bannedUser;
+}
+
+export async function unbanUserResolver(
+  _root: Root,
+  args: { userId: string },
+  ctx: Context,
+): Promise<User> {
+  // Check if user exists
+  const [targetUser] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.userId));
+
+  if (!targetUser) {
+    throw new Error('User not found');
+  }
+
+  // Update user to unbanned
+  const [unbannedUser] = await ctx.db
+    .update(usersTable)
+    .set({
+      banned: false,
+      bannedAt: null,
+      bannedReason: null,
+    })
+    .where(eq(usersTable.id, args.userId))
+    .returning();
+
+  return unbannedUser;
+}
+
+// Role management resolvers
+export async function promoteToAdminResolver(
+  _root: Root,
+  args: { userId: string },
+  ctx: Context,
+): Promise<User> {
+  // Ensure user is authenticated (admin check is done at GraphQL level)
+  requireUser(ctx);
+
+  // Check if target user exists
+  const [targetUser] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.userId));
+
+  if (!targetUser) {
+    throw new Error('User not found');
+  }
+
+  // Check if already admin
+  if (targetUser.role === 'admin' || targetUser.role === 'superadmin') {
+    throw new Error('User is already an admin');
+  }
+
+  // Promote to admin
+  const [promotedUser] = await ctx.db
+    .update(usersTable)
+    .set({ role: 'admin' })
+    .where(eq(usersTable.id, args.userId))
+    .returning();
+
+  return promotedUser;
+}
+
+export async function demoteFromAdminResolver(
+  _root: Root,
+  args: { userId: string },
+  ctx: Context,
+): Promise<User> {
+  const currentUser = requireUser(ctx);
+
+  // Cannot demote yourself
+  if (currentUser.id === args.userId) {
+    throw new Error('Cannot demote yourself');
+  }
+
+  // Check if target user exists
+  const [targetUser] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.userId));
+
+  if (!targetUser) {
+    throw new Error('User not found');
+  }
+
+  // Cannot demote superadmin
+  if (targetUser.role === 'superadmin') {
+    throw new Error('Cannot demote superadmin');
+  }
+
+  // Check if user is admin
+  if (targetUser.role !== 'admin') {
+    throw new Error('User is not an admin');
+  }
+
+  // Only superadmin can demote other admins
+  if (currentUser.role !== 'superadmin') {
+    throw new Error('Only superadmin can demote other admins');
+  }
+
+  // Demote to regular user
+  const [demotedUser] = await ctx.db
+    .update(usersTable)
+    .set({ role: 'user' })
+    .where(eq(usersTable.id, args.userId))
+    .returning();
+
+  return demotedUser;
+}
+
+// Admin user management query
+export async function getAdminUsersResolver(
+  _root: Root,
+  args: {
+    pagination?: typeof PaginationInput.$inferInput | null;
+    includesBanned?: boolean | null;
+    onlyBanned?: boolean | null;
+    role?: 'user' | 'admin' | 'superadmin' | null;
+  },
+  ctx: Context,
+) {
+  const limit = args.pagination?.limit || 10;
+  const offset = args.pagination?.offset || 0;
+  const sort = args.pagination?.sort || 'desc';
+  const filter = args.pagination?.filter || [];
+
+  const filterPromises = filter.map(async (f) => {
+    if (f.field === 'search') {
+      return or(
+        ilike(usersTable.firstName, `%${f.value}%`),
+        ilike(usersTable.lastName, `%${f.value}%`),
+        ilike(usersTable.organizationName, `%${f.value}%`),
+        ilike(usersTable.email, `%${f.value}%`),
+      );
+    }
+    switch (f.field) {
+      case 'email':
+        return f.value ? ilike(usersTable.email, `%${f.value}%`) : undefined;
+      case 'firstName':
+        return f.value ? ilike(usersTable.firstName, `%${f.value}%`) : undefined;
+      case 'lastName':
+        return f.value ? ilike(usersTable.lastName, `%${f.value}%`) : undefined;
+      case 'organizationName':
+        return f.value ? ilike(usersTable.organizationName, `%${f.value}%`) : undefined;
+      default:
+        return undefined;
+    }
+  });
+
+  const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
+
+  // Handle banned filter
+  if (args.onlyBanned) {
+    filterConditions.push(eq(usersTable.banned, true));
+  } else if (!args.includesBanned) {
+    filterConditions.push(eq(usersTable.banned, false));
+  }
+
+  // Handle role filter
+  if (args.role) {
+    filterConditions.push(eq(usersTable.role, args.role));
+  }
+
+  const where = filterConditions.length > 0 ? and(...filterConditions) : undefined;
+
+  const data = await ctx.db
+    .select()
+    .from(usersTable)
+    .where(where)
+    .limit(limit)
+    .offset(offset)
+    .orderBy(sort === 'asc' ? asc(usersTable.createdAt) : desc(usersTable.createdAt));
+
+  if (!validAndNotEmptyArray(data)) {
+    return {
+      data: [],
+      count: 0,
+    };
+  }
+
+  const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable).where(where);
+
+  return {
+    data,
+    count: totalCount.count,
+  };
 }
