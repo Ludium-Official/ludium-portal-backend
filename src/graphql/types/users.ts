@@ -8,6 +8,7 @@ import {
   getProfileResolver,
   getUserAvatarResolver,
   getUserByIdResolver,
+  getUserInvestmentStatisticsResolver,
   getUserKeywordsByUserIdResolver,
   getUserProgramStatisticsResolver,
   getUsersResolver,
@@ -17,7 +18,7 @@ import {
 } from '@/graphql/resolvers/users';
 import { KeywordType, PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
-import type { ProgramStatsByStatusType } from '@/types';
+import type { InvestmentStatsByStatusType, ProgramStatsByStatusType } from '@/types/users';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -62,6 +63,42 @@ export const UserProgramStatistics = builder
     }),
   });
 
+export const InvestmentStatsByStatus = builder
+  .objectRef<InvestmentStatsByStatusType>('InvestmentStatsByStatus')
+  .implement({
+    fields: (t) => ({
+      ready: t.exposeInt('ready'),
+      applicationOngoing: t.exposeInt('applicationOngoing'),
+      fundingOngoing: t.exposeInt('fundingOngoing'),
+      projectOngoing: t.exposeInt('projectOngoing'),
+      programCompleted: t.exposeInt('programCompleted'),
+      refund: t.exposeInt('refund'),
+    }),
+  });
+
+export const UserInvestmentStatistics = builder
+  .objectRef<{
+    asHost: InvestmentStatsByStatusType;
+    asProject: InvestmentStatsByStatusType;
+    asSupporter: InvestmentStatsByStatusType;
+  }>('UserInvestmentStatistics')
+  .implement({
+    fields: (t) => ({
+      asHost: t.field({
+        type: InvestmentStatsByStatus,
+        resolve: (parent) => parent.asHost,
+      }),
+      asProject: t.field({
+        type: InvestmentStatsByStatus,
+        resolve: (parent) => parent.asProject,
+      }),
+      asSupporter: t.field({
+        type: InvestmentStatsByStatus,
+        resolve: (parent) => parent.asSupporter,
+      }),
+    }),
+  });
+
 export const User = builder.objectRef<DBUser>('User').implement({
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -90,6 +127,12 @@ export const User = builder.objectRef<DBUser>('User').implement({
       nullable: true,
       resolve: async (user, _args, ctx) =>
         getUserProgramStatisticsResolver({}, { userId: user.id }, ctx),
+    }),
+    investmentStatistics: t.field({
+      type: UserInvestmentStatistics,
+      nullable: true,
+      resolve: async (user, _args, ctx) =>
+        getUserInvestmentStatisticsResolver({}, { userId: user.id }, ctx),
     }),
     keywords: t.field({
       type: [KeywordType],

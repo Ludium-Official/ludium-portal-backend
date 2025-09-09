@@ -1,6 +1,8 @@
 import {
   type User,
+  applicationsTable,
   filesTable,
+  investmentsTable,
   keywordsTable,
   linksTable,
   programUserRolesTable,
@@ -316,6 +318,241 @@ export async function getUserProgramStatisticsResolver(
     asSponsor,
     asValidator,
     asBuilder,
+  };
+}
+
+export async function getUserInvestmentStatisticsResolver(
+  _root: Root,
+  args: { userId: string },
+  ctx: Context,
+) {
+  // Initialize statistics structure for investment programs
+  const initInvestmentStats = () => ({
+    ready: 0,
+    applicationOngoing: 0,
+    fundingOngoing: 0,
+    projectOngoing: 0,
+    programCompleted: 0,
+    refund: 0,
+  });
+
+  const asHost = initInvestmentStats();
+  const asProject = initInvestmentStats();
+  const asSupporter = initInvestmentStats();
+
+  // 1. Investment Program Host statistics
+  // Get programs created by this user that are investment type
+  const hostPrograms = await ctx.db
+    .select({
+      id: programsTable.id,
+      status: programsTable.status,
+      applicationStartDate: programsTable.applicationStartDate,
+      applicationEndDate: programsTable.applicationEndDate,
+      fundingStartDate: programsTable.fundingStartDate,
+      fundingEndDate: programsTable.fundingEndDate,
+    })
+    .from(programsTable)
+    .where(and(eq(programsTable.creatorId, args.userId), eq(programsTable.type, 'funding')));
+
+  // Map host program statuses
+  const now = new Date();
+  for (const program of hostPrograms) {
+    let mappedStatus: keyof ReturnType<typeof initInvestmentStats>;
+
+    if (program.status === 'pending') {
+      mappedStatus = 'ready';
+    } else if (program.status === 'published') {
+      // Determine phase based on dates
+      const applicationStart = program.applicationStartDate
+        ? new Date(program.applicationStartDate)
+        : null;
+      const applicationEnd = program.applicationEndDate
+        ? new Date(program.applicationEndDate)
+        : null;
+      const fundingStart = program.fundingStartDate ? new Date(program.fundingStartDate) : null;
+      const fundingEnd = program.fundingEndDate ? new Date(program.fundingEndDate) : null;
+
+      if (applicationStart && applicationEnd && now >= applicationStart && now <= applicationEnd) {
+        mappedStatus = 'applicationOngoing';
+      } else if (fundingStart && fundingEnd && now >= fundingStart && now <= fundingEnd) {
+        mappedStatus = 'fundingOngoing';
+      } else if (fundingEnd && now > fundingEnd) {
+        mappedStatus = 'projectOngoing';
+      } else {
+        mappedStatus = 'ready';
+      }
+    } else if (program.status === 'completed') {
+      mappedStatus = 'programCompleted';
+    } else if (program.status === 'cancelled') {
+      mappedStatus = 'refund';
+    } else {
+      mappedStatus = 'ready';
+    }
+
+    asHost[mappedStatus]++;
+  }
+
+  // 2. Investment Program Project statistics
+  // First get all applications by this user
+  const userApplications = await ctx.db
+    .select({
+      id: applicationsTable.id,
+      status: applicationsTable.status,
+      fundingSuccessful: applicationsTable.fundingSuccessful,
+      programId: applicationsTable.programId,
+    })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.applicantId, args.userId));
+
+  if (userApplications.length === 0) {
+    // Continue to supporter stats
+  } else {
+    // Get investment programs for these applications
+    const applicationProgramIds = userApplications.map((app) => app.programId);
+    const investmentPrograms = await ctx.db
+      .select({
+        id: programsTable.id,
+        status: programsTable.status,
+        type: programsTable.type,
+        applicationStartDate: programsTable.applicationStartDate,
+        applicationEndDate: programsTable.applicationEndDate,
+        fundingStartDate: programsTable.fundingStartDate,
+        fundingEndDate: programsTable.fundingEndDate,
+      })
+      .from(programsTable)
+      .where(
+        and(inArray(programsTable.id, applicationProgramIds), eq(programsTable.type, 'funding')),
+      );
+
+    // Create a map for easy lookup
+    const programMap = new Map(investmentPrograms.map((p) => [p.id, p]));
+
+    // Process applications that are in investment programs
+    const investmentApplications = userApplications.filter((app) => programMap.has(app.programId));
+
+    // Map project application statuses
+    for (const application of investmentApplications) {
+      const program = programMap.get(application.programId);
+      if (!program) continue;
+
+      let mappedStatus: keyof ReturnType<typeof initInvestmentStats>;
+
+      if (application.status === 'pending') {
+        mappedStatus = 'ready';
+      } else if (application.status === 'accepted') {
+        // Determine phase based on dates
+        const fundingStart = program.fundingStartDate ? new Date(program.fundingStartDate) : null;
+        const fundingEnd = program.fundingEndDate ? new Date(program.fundingEndDate) : null;
+
+        if (fundingStart && fundingEnd && now >= fundingStart && now <= fundingEnd) {
+          mappedStatus = 'fundingOngoing';
+        } else if (fundingEnd && now > fundingEnd) {
+          if (application.fundingSuccessful) {
+            mappedStatus = 'projectOngoing';
+          } else {
+            mappedStatus = 'refund'; // Project failed to get funding
+          }
+        } else {
+          mappedStatus = 'ready';
+        }
+      } else if (application.status === 'completed') {
+        mappedStatus = 'programCompleted';
+      } else if (application.status === 'rejected') {
+        mappedStatus = 'refund';
+      } else {
+        mappedStatus = 'ready';
+      }
+
+      asProject[mappedStatus]++;
+    }
+  }
+
+  // 3. Investment Program Supporter statistics
+  // First get all investments by this user
+  const userInvestments = await ctx.db
+    .select({
+      id: investmentsTable.id,
+      status: investmentsTable.status,
+      applicationId: investmentsTable.applicationId,
+    })
+    .from(investmentsTable)
+    .where(eq(investmentsTable.userId, args.userId));
+
+  if (userInvestments.length > 0) {
+    // Get applications for these investments
+    const investmentApplicationIds = userInvestments.map((inv) => inv.applicationId);
+    const investmentApplications = await ctx.db
+      .select({
+        id: applicationsTable.id,
+        status: applicationsTable.status,
+        fundingSuccessful: applicationsTable.fundingSuccessful,
+        programId: applicationsTable.programId,
+      })
+      .from(applicationsTable)
+      .where(inArray(applicationsTable.id, investmentApplicationIds));
+
+    // Get programs for these applications
+    const applicationProgramIds = investmentApplications.map((app) => app.programId);
+    const supporterPrograms = await ctx.db
+      .select({
+        id: programsTable.id,
+        status: programsTable.status,
+        type: programsTable.type,
+        fundingStartDate: programsTable.fundingStartDate,
+        fundingEndDate: programsTable.fundingEndDate,
+      })
+      .from(programsTable)
+      .where(
+        and(inArray(programsTable.id, applicationProgramIds), eq(programsTable.type, 'funding')),
+      );
+
+    // Create maps for easy lookup
+    const applicationMap = new Map(investmentApplications.map((app) => [app.id, app]));
+    const supporterProgramMap = new Map(supporterPrograms.map((p) => [p.id, p]));
+
+    // Map supporter investment statuses
+    for (const investment of userInvestments) {
+      const application = applicationMap.get(investment.applicationId);
+      if (!application) continue;
+
+      const program = supporterProgramMap.get(application.programId);
+      if (!program) continue;
+
+      let mappedStatus: keyof ReturnType<typeof initInvestmentStats>;
+
+      if (investment.status === 'pending') {
+        mappedStatus = 'ready';
+      } else if (investment.status === 'confirmed') {
+        // Check project and program status
+        const fundingEnd = program.fundingEndDate ? new Date(program.fundingEndDate) : null;
+
+        if (fundingEnd && now <= fundingEnd) {
+          mappedStatus = 'fundingOngoing';
+        } else if (application.fundingSuccessful) {
+          if (application.status === 'completed') {
+            mappedStatus = 'programCompleted';
+          } else {
+            mappedStatus = 'projectOngoing';
+          }
+        } else {
+          mappedStatus = 'refund'; // Project failed to get funding
+        }
+      } else if (investment.status === 'refunded') {
+        mappedStatus = 'refund';
+      } else if (investment.status === 'failed') {
+        mappedStatus = 'refund';
+      } else {
+        mappedStatus = 'ready';
+      }
+
+      asSupporter[mappedStatus]++;
+    }
+  }
+
+  return {
+    asHost,
+    asProject,
+    asSupporter,
   };
 }
 

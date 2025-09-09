@@ -6,3 +6,12 @@ export type ProgramStatsByStatusType = {
   completed: number;
   refund: number;
 };
+
+export type InvestmentStatsByStatusType = {
+  ready: number;
+  applicationOngoing: number;
+  fundingOngoing: number;
+  projectOngoing: number;
+  programCompleted: number;
+  refund: number;
+};

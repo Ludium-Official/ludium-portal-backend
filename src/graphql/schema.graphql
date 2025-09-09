@@ -236,6 +236,15 @@ type Investment {
   txHash: String
 }
 
+type InvestmentStatsByStatus {
+  applicationOngoing: Int
+  fundingOngoing: Int
+  programCompleted: Int
+  projectOngoing: Int
+  ready: Int
+  refund: Int
+}
+
 enum InvestmentStatus {
   confirmed
   failed
@@ -743,6 +752,7 @@ type User {
   firstName: String
   id: ID
   image: String
+  investmentStatistics: UserInvestmentStatistics
   keywords: [Keyword!]
   lastName: String
   links: [Link!]
@@ -767,6 +777,12 @@ input UserInput {
   password: String!
   summary: String
   walletAddress: String
+}
+
+type UserInvestmentStatistics {
+  asHost: InvestmentStatsByStatus
+  asProject: InvestmentStatsByStatus
+  asSupporter: InvestmentStatsByStatus
 }
 
 type UserProgramStatistics {
