@@ -1,29 +1,39 @@
-import { type User as DBUser, userRoles } from '@/db/schemas';
+import { type User as DBUser, keywordTypes, userRoles } from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getLinksByUserIdResolver } from '@/graphql/resolvers/links';
 import {
   addUserKeywordResolver,
+  banUserResolver,
   createUserResolver,
   deleteUserResolver,
+  demoteFromAdminResolver,
+  getAdminUsersResolver,
   getProfileResolver,
   getUserAvatarResolver,
   getUserByIdResolver,
+  getUserInvestmentStatisticsResolver,
   getUserKeywordsByUserIdResolver,
   getUserProgramStatisticsResolver,
   getUsersResolver,
+  promoteToAdminResolver,
   removeUserKeywordResolver,
+  unbanUserResolver,
   updateProfileResolver,
   updateUserResolver,
 } from '@/graphql/resolvers/users';
 import { KeywordType, PaginationInput } from '@/graphql/types/common';
 import { Link, LinkInput } from '@/graphql/types/links';
-import type { ProgramStatsByStatusType } from '@/types';
+import type { InvestmentStatsByStatusType, ProgramStatsByStatusType } from '@/types/users';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
 export const UserRoleEnum = builder.enumType('UserRole', {
   values: userRoles,
+});
+
+export const KeywordTypeEnum = builder.enumType('KeywordType', {
+  values: keywordTypes,
 });
 
 export const ProgramStatsByStatus = builder
@@ -62,6 +72,42 @@ export const UserProgramStatistics = builder
     }),
   });
 
+export const InvestmentStatsByStatus = builder
+  .objectRef<InvestmentStatsByStatusType>('InvestmentStatsByStatus')
+  .implement({
+    fields: (t) => ({
+      ready: t.exposeInt('ready'),
+      applicationOngoing: t.exposeInt('applicationOngoing'),
+      fundingOngoing: t.exposeInt('fundingOngoing'),
+      projectOngoing: t.exposeInt('projectOngoing'),
+      programCompleted: t.exposeInt('programCompleted'),
+      refund: t.exposeInt('refund'),
+    }),
+  });
+
+export const UserInvestmentStatistics = builder
+  .objectRef<{
+    asHost: InvestmentStatsByStatusType;
+    asProject: InvestmentStatsByStatusType;
+    asSupporter: InvestmentStatsByStatusType;
+  }>('UserInvestmentStatistics')
+  .implement({
+    fields: (t) => ({
+      asHost: t.field({
+        type: InvestmentStatsByStatus,
+        resolve: (parent) => parent.asHost,
+      }),
+      asProject: t.field({
+        type: InvestmentStatsByStatus,
+        resolve: (parent) => parent.asProject,
+      }),
+      asSupporter: t.field({
+        type: InvestmentStatsByStatus,
+        resolve: (parent) => parent.asSupporter,
+      }),
+    }),
+  });
+
 export const User = builder.objectRef<DBUser>('User').implement({
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -75,6 +121,9 @@ export const User = builder.objectRef<DBUser>('User').implement({
     loginType: t.exposeString('loginType', { nullable: true }),
     walletAddress: t.exposeString('walletAddress', { nullable: true }),
     role: t.expose('role', { type: UserRoleEnum, nullable: true }),
+    banned: t.exposeBoolean('banned'),
+    bannedAt: t.expose('bannedAt', { type: 'Date', nullable: true }),
+    bannedReason: t.exposeString('bannedReason', { nullable: true }),
     links: t.field({
       type: [Link],
       nullable: true,
@@ -91,11 +140,29 @@ export const User = builder.objectRef<DBUser>('User').implement({
       resolve: async (user, _args, ctx) =>
         getUserProgramStatisticsResolver({}, { userId: user.id }, ctx),
     }),
+    investmentStatistics: t.field({
+      type: UserInvestmentStatistics,
+      nullable: true,
+      resolve: async (user, _args, ctx) =>
+        getUserInvestmentStatisticsResolver({}, { userId: user.id }, ctx),
+    }),
     keywords: t.field({
       type: [KeywordType],
       nullable: true,
       resolve: async (user, _args, ctx) =>
         getUserKeywordsByUserIdResolver({}, { userId: user.id }, ctx),
+    }),
+    roleKeywords: t.field({
+      type: [KeywordType],
+      nullable: true,
+      resolve: async (user, _args, ctx) =>
+        getUserKeywordsByUserIdResolver({}, { userId: user.id, type: 'role' }, ctx),
+    }),
+    skillKeywords: t.field({
+      type: [KeywordType],
+      nullable: true,
+      resolve: async (user, _args, ctx) =>
+        getUserKeywordsByUserIdResolver({}, { userId: user.id, type: 'skill' }, ctx),
     }),
   }),
 });
@@ -141,6 +208,8 @@ export const UserUpdateInput = builder.inputType('UserUpdateInput', {
     summary: t.string(),
     links: t.field({ type: [LinkInput] }),
     keywords: t.stringList(),
+    roleKeywords: t.stringList(),
+    skillKeywords: t.stringList(),
     loginType: t.string(),
     walletAddress: t.string(),
   }),
@@ -156,6 +225,18 @@ builder.queryFields((t) => ({
       pagination: t.arg({ type: PaginationInput, required: false }),
     },
     resolve: getUsersResolver,
+  }),
+  // Admin user management query
+  adminUsers: t.field({
+    type: PaginatedUsersType,
+    authScopes: { admin: true },
+    args: {
+      pagination: t.arg({ type: PaginationInput, required: false }),
+      includesBanned: t.arg.boolean({ required: false }),
+      onlyBanned: t.arg.boolean({ required: false }),
+      role: t.arg({ type: UserRoleEnum, required: false }),
+    },
+    resolve: getAdminUsersResolver,
   }),
   user: t.field({
     type: User,
@@ -213,6 +294,7 @@ builder.mutationFields((t) => ({
     args: {
       userId: t.arg.id({ required: true }),
       keyword: t.arg.string({ required: true }),
+      type: t.arg({ type: KeywordTypeEnum, required: false }),
     },
     resolve: addUserKeywordResolver,
   }),
@@ -225,7 +307,43 @@ builder.mutationFields((t) => ({
     args: {
       userId: t.arg.id({ required: true }),
       keyword: t.arg.string({ required: true }),
+      type: t.arg({ type: KeywordTypeEnum, required: false }),
     },
     resolve: removeUserKeywordResolver,
+  }),
+  // User ban management
+  banUser: t.field({
+    type: User,
+    authScopes: { admin: true },
+    args: {
+      userId: t.arg.id({ required: true }),
+      reason: t.arg.string({ required: false }),
+    },
+    resolve: banUserResolver,
+  }),
+  unbanUser: t.field({
+    type: User,
+    authScopes: { admin: true },
+    args: {
+      userId: t.arg.id({ required: true }),
+    },
+    resolve: unbanUserResolver,
+  }),
+  // Role management
+  promoteToAdmin: t.field({
+    type: User,
+    authScopes: { admin: true },
+    args: {
+      userId: t.arg.id({ required: true }),
+    },
+    resolve: promoteToAdminResolver,
+  }),
+  demoteFromAdmin: t.field({
+    type: User,
+    authScopes: { admin: true },
+    args: {
+      userId: t.arg.id({ required: true }),
+    },
+    resolve: demoteFromAdminResolver,
   }),
 }));

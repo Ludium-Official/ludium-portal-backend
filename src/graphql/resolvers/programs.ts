@@ -1514,3 +1514,39 @@ export async function reclaimProgramResolver(
     return updatedProgram;
   });
 }
+
+export async function hideProgramResolver(
+  _root: Root,
+  args: { id: string },
+  ctx: Context,
+): Promise<Program> {
+  const [program] = await ctx.db
+    .update(programsTable)
+    .set({ visibility: 'private' })
+    .where(eq(programsTable.id, args.id))
+    .returning();
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  return program;
+}
+
+export async function showProgramResolver(
+  _root: Root,
+  args: { id: string },
+  ctx: Context,
+): Promise<Program> {
+  const [program] = await ctx.db
+    .update(programsTable)
+    .set({ visibility: 'public' })
+    .where(eq(programsTable.id, args.id))
+    .returning();
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  return program;
+}

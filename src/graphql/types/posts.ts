@@ -1,4 +1,5 @@
 import type { Post as DBPost } from '@/db/schemas';
+import { postVisibilities } from '@/db/schemas/posts';
 import builder from '@/graphql/builder';
 import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
 import {
@@ -7,7 +8,9 @@ import {
   getPostResolver,
   getPostViewCountResolver,
   getPostsResolver,
+  hidePostResolver,
   incrementPostViewResolver,
+  showPostResolver,
   updatePostResolver,
 } from '@/graphql/resolvers/posts';
 import { getUserResolver } from '@/graphql/resolvers/users';
@@ -18,6 +21,11 @@ import { User } from '@/graphql/types/users';
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
 /* -------------------------------------------------------------------------- */
+// Post visibility enum
+export const PostVisibility = builder.enumType('PostVisibility', {
+  values: postVisibilities,
+});
+
 export const PostType = builder.objectRef<DBPost>('Post').implement({
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -25,6 +33,10 @@ export const PostType = builder.objectRef<DBPost>('Post').implement({
     content: t.exposeString('content'),
     summary: t.exposeString('summary'),
     image: t.exposeString('image'),
+    visibility: t.field({
+      type: PostVisibility,
+      resolve: (parent) => parent.visibility || 'public',
+    }),
     author: t.field({
       type: User,
       resolve: (parent, _args, ctx) => getUserResolver({}, { id: parent.authorId }, ctx),
@@ -127,5 +139,21 @@ builder.mutationFields((t) => ({
       postId: t.arg.id({ required: true }),
     },
     resolve: incrementPostViewResolver,
+  }),
+  hidePost: t.field({
+    type: PostType,
+    authScopes: { admin: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: hidePostResolver,
+  }),
+  showPost: t.field({
+    type: PostType,
+    authScopes: { admin: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: showPostResolver,
   }),
 }));

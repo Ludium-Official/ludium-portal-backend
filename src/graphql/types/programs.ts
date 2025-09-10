@@ -23,6 +23,7 @@ import {
   getProgramsResolver,
   getSupportersWithTiersResolver,
   getUserTierAssignmentResolver,
+  hideProgramResolver,
   inviteUserToProgramResolver,
   publishProgramResolver,
   reclaimProgramResolver,
@@ -31,6 +32,7 @@ import {
   removeUserFromProgramResolver,
   removeUserTierResolver,
   removeValidatorFromProgramResolver,
+  showProgramResolver,
   updateProgramResolver,
   updateUserTierResolver,
 } from '@/graphql/resolvers/programs';
@@ -311,6 +313,7 @@ export const ProgramType = ProgramRef.implement({
     }),
     feePercentage: t.exposeInt('feePercentage'),
     customFeePercentage: t.exposeInt('customFeePercentage'),
+    maxFundingAmount: t.exposeString('maxFundingAmount'),
 
     // Get supporters with their tiers for funding programs
     supporters: t.field({
@@ -657,5 +660,22 @@ builder.mutationFields((t) => ({
       txHash: t.arg.string({ required: false }),
     },
     resolve: reclaimProgramResolver,
+  }),
+  // Admin visibility mutations
+  hideProgram: t.field({
+    type: ProgramType,
+    authScopes: { admin: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: hideProgramResolver,
+  }),
+  showProgram: t.field({
+    type: ProgramType,
+    authScopes: { admin: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: showProgramResolver,
   }),
 }));

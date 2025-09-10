@@ -236,6 +236,15 @@ type Investment {
   txHash: String
 }
 
+type InvestmentStatsByStatus {
+  applicationOngoing: Int
+  fundingOngoing: Int
+  programCompleted: Int
+  projectOngoing: Int
+  ready: Int
+  refund: Int
+}
+
 enum InvestmentStatus {
   confirmed
   failed
@@ -283,6 +292,11 @@ scalar JSON
 type Keyword {
   id: ID
   name: String
+}
+
+enum KeywordType {
+  role
+  skill
 }
 
 type Link {
@@ -341,9 +355,10 @@ type Mutation {
   acceptApplication(id: ID!, onChainProjectId: Int, tierSyncInfo: TierSyncInfo): Application
   acceptProgram(id: ID!): Program
   addProgramKeyword(keyword: String!, programId: ID!): Keyword
-  addUserKeyword(keyword: String!, userId: ID!): Keyword
+  addUserKeyword(keyword: String!, type: KeywordType, userId: ID!): Keyword
   assignUserTier(input: AssignUserTierInput!): UserTierAssignment
   assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
+  banUser(reason: String, userId: ID!): User
   checkMilestone(input: CheckMilestoneInput!): Milestone
   claimProgramFees(programId: ID!, txHash: String!): FeeClaim
   createApplication(input: CreateApplicationInput!): Application
@@ -358,12 +373,16 @@ type Mutation {
   deleteInvestmentTerm(id: ID!): Boolean
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
+  demoteFromAdmin(userId: ID!): User
+  hidePost(id: ID!): Post
+  hideProgram(id: ID!): Program
   incrementPostView(postId: ID!): Int
   inviteUserToProgram(maxInvestmentAmount: String, programId: ID!, tier: InvestmentTier, userId: ID!): Program
   login(email: String, loginType: String!, walletAddress: String!): String
   markAllNotificationsAsRead: Boolean
   markNotificationAsRead(id: ID!): Boolean
   processMilestonePayouts(input: ProcessPayoutsInput!): [MilestonePayout!]
+  promoteToAdmin(userId: ID!): User
   reclaimInvestment(input: ReclaimInvestmentInput!): Investment
 
   """Reclaim funds from an unpaid milestone past its deadline"""
@@ -373,13 +392,16 @@ type Mutation {
   rejectProgram(id: ID!, rejectionReason: String): Program
   removeProgramKeyword(keyword: String!, programId: ID!): Boolean
   removeUserFromProgram(programId: ID!, userId: ID!): Program
-  removeUserKeyword(keyword: String!, userId: ID!): Boolean
+  removeUserKeyword(keyword: String!, type: KeywordType, userId: ID!): Boolean
   removeUserTier(programId: ID!, userId: ID!): Boolean
   removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
+  showPost(id: ID!): Post
+  showProgram(id: ID!): Program
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   syncApplicationTiers(applicationId: ID!): TierSyncResult
+  unbanUser(userId: ID!): User
   updateApplication(input: UpdateApplicationInput!): Application
   updateCarouselItem(input: UpdateCarouselItemInput!): CarouselItem
   updateComment(input: UpdateCommentInput!): Comment
@@ -486,6 +508,13 @@ type Post {
   summary: String
   title: String
   viewCount: Int
+  visibility: PostVisibility
+}
+
+enum PostVisibility {
+  private
+  public
+  restricted
 }
 
 input ProcessPayoutsInput {
@@ -518,6 +547,7 @@ type Program {
   invitedBuilders: [User!]
   keywords: [Keyword!]
   links: [Link!]
+  maxFundingAmount: String
   name: String
   network: String
   price: String
@@ -567,6 +597,7 @@ enum ProgramVisibility {
 }
 
 type Query {
+  adminUsers(includesBanned: Boolean, onlyBanned: Boolean, pagination: PaginationInput, role: UserRole): PaginatedUsers
   application(id: ID!): Application
   applications(pagination: PaginationInput): PaginatedApplications
   carouselItems: [EnrichedCarouselItem!]
@@ -739,10 +770,14 @@ scalar Upload
 type User {
   about: String
   avatar: Upload
+  banned: Boolean
+  bannedAt: Date
+  bannedReason: String
   email: String
   firstName: String
   id: ID
   image: String
+  investmentStatistics: UserInvestmentStatistics
   keywords: [Keyword!]
   lastName: String
   links: [Link!]
@@ -750,6 +785,8 @@ type User {
   organizationName: String
   programStatistics: UserProgramStatistics
   role: UserRole
+  roleKeywords: [Keyword!]
+  skillKeywords: [Keyword!]
   summary: String
   walletAddress: String
 }
@@ -767,6 +804,12 @@ input UserInput {
   password: String!
   summary: String
   walletAddress: String
+}
+
+type UserInvestmentStatistics {
+  asHost: InvestmentStatsByStatus
+  asProject: InvestmentStatsByStatus
+  asSupporter: InvestmentStatsByStatus
 }
 
 type UserProgramStatistics {
@@ -801,6 +844,8 @@ input UserUpdateInput {
   links: [LinkInput!]
   loginType: String
   organizationName: String
+  roleKeywords: [String!]
+  skillKeywords: [String!]
   summary: String
   walletAddress: String
 }
