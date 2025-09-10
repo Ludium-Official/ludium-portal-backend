@@ -358,6 +358,7 @@ type Mutation {
   addUserKeyword(keyword: String!, type: KeywordType, userId: ID!): Keyword
   assignUserTier(input: AssignUserTierInput!): UserTierAssignment
   assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
+  banUser(reason: String, userId: ID!): User
   checkMilestone(input: CheckMilestoneInput!): Milestone
   claimProgramFees(programId: ID!, txHash: String!): FeeClaim
   createApplication(input: CreateApplicationInput!): Application
@@ -372,6 +373,7 @@ type Mutation {
   deleteInvestmentTerm(id: ID!): Boolean
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
+  demoteFromAdmin(userId: ID!): User
   hidePost(id: ID!): Post
   hideProgram(id: ID!): Program
   incrementPostView(postId: ID!): Int
@@ -380,6 +382,7 @@ type Mutation {
   markAllNotificationsAsRead: Boolean
   markNotificationAsRead(id: ID!): Boolean
   processMilestonePayouts(input: ProcessPayoutsInput!): [MilestonePayout!]
+  promoteToAdmin(userId: ID!): User
   reclaimInvestment(input: ReclaimInvestmentInput!): Investment
 
   """Reclaim funds from an unpaid milestone past its deadline"""
@@ -398,6 +401,7 @@ type Mutation {
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   syncApplicationTiers(applicationId: ID!): TierSyncResult
+  unbanUser(userId: ID!): User
   updateApplication(input: UpdateApplicationInput!): Application
   updateCarouselItem(input: UpdateCarouselItemInput!): CarouselItem
   updateComment(input: UpdateCommentInput!): Comment
@@ -592,6 +596,7 @@ enum ProgramVisibility {
 }
 
 type Query {
+  adminUsers(includesBanned: Boolean, onlyBanned: Boolean, pagination: PaginationInput, role: UserRole): PaginatedUsers
   application(id: ID!): Application
   applications(pagination: PaginationInput): PaginatedApplications
   carouselItems: [EnrichedCarouselItem!]
@@ -764,6 +769,9 @@ scalar Upload
 type User {
   about: String
   avatar: Upload
+  banned: Boolean
+  bannedAt: Date
+  bannedReason: String
   email: String
   firstName: String
   id: ID

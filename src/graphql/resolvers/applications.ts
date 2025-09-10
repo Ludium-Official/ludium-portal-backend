@@ -48,6 +48,22 @@ export async function getApplicationsResolver(
         return f.value ? eq(applicationsTable.programId, f.value) : undefined;
       case 'applicantId':
         return f.value ? eq(applicationsTable.applicantId, f.value) : undefined;
+      case 'supporterId': {
+        if (!f.value) return undefined;
+        // Get application IDs that have investments from this supporter
+        const applicationIds = await ctx.db
+          .select({ applicationId: investmentsTable.applicationId })
+          .from(investmentsTable)
+          .where(eq(investmentsTable.userId, f.value))
+          .then((results) => results.map((r) => r.applicationId));
+
+        if (applicationIds.length === 0) {
+          // If no applications have investments from this supporter, return a condition that matches nothing
+          return eq(applicationsTable.id, 'no-match');
+        }
+
+        return inArray(applicationsTable.id, applicationIds);
+      }
       case 'status':
         // Only status uses multi-values
         if (f.values && f.values.length > 0) {
