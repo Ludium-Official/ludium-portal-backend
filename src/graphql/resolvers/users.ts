@@ -649,21 +649,6 @@ export function updateUserResolver(
   const { links, keywords, ...userData } = args.input;
 
   return ctx.db.transaction(async (t) => {
-    if (userData.image) {
-      const [avatar] = await t
-        .select()
-        .from(filesTable)
-        .where(eq(filesTable.uploadedById, userData.id));
-      if (avatar) {
-        await ctx.server.fileManager.deleteFile(avatar.id);
-      }
-      const fileUrl = await ctx.server.fileManager.uploadFile({
-        file: userData.image,
-        userId: userData.id,
-      });
-      await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, userData.id));
-    }
-
     const [user] = await t
       .update(usersTable)
       .set({
@@ -738,6 +723,21 @@ export function updateUserResolver(
       }
     }
 
+    if (userData.image) {
+      const [imageFile] = await t
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.uploadedById, userData.id));
+      if (imageFile) {
+        await ctx.server.fileManager.deleteFile(imageFile.id);
+      }
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: userData.image,
+        userId: userData.id,
+      });
+      await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, userData.id));
+    }
+
     return user;
   });
 }
@@ -771,21 +771,6 @@ export function updateProfileResolver(
   const filteredUserData = filterEmptyValues<User>(userData);
 
   return ctx.db.transaction(async (t) => {
-    if (userData.image) {
-      const [avatar] = await t
-        .select()
-        .from(filesTable)
-        .where(eq(filesTable.uploadedById, loggedinUser.id));
-      if (avatar) {
-        await ctx.server.fileManager.deleteFile(avatar.id);
-      }
-      const fileUrl = await ctx.server.fileManager.uploadFile({
-        file: userData.image,
-        userId: loggedinUser.id,
-      });
-      await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, loggedinUser.id));
-    }
-
     const [user] = await t
       .update(usersTable)
       .set({
@@ -955,6 +940,21 @@ export function updateProfileResolver(
           )
           .onConflictDoNothing();
       }
+    }
+
+    if (userData.image) {
+      const [imageFile] = await t
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.uploadedById, userData.id));
+      if (imageFile) {
+        await ctx.server.fileManager.deleteFile(imageFile.id);
+      }
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: userData.image,
+        userId: loggedinUser.id,
+      });
+      await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, loggedinUser.id));
     }
 
     return user;
