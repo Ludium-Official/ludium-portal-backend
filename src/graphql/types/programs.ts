@@ -313,6 +313,7 @@ export const ProgramType = ProgramRef.implement({
     }),
     feePercentage: t.exposeInt('feePercentage'),
     customFeePercentage: t.exposeInt('customFeePercentage'),
+    maxFundingAmount: t.exposeString('maxFundingAmount'),
 
     // Get supporters with their tiers for funding programs
     supporters: t.field({

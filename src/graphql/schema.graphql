@@ -547,6 +547,7 @@ type Program {
   invitedBuilders: [User!]
   keywords: [Keyword!]
   links: [Link!]
+  maxFundingAmount: String
   name: String
   network: String
   price: String

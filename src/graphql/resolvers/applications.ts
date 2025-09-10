@@ -249,6 +249,8 @@ export function createApplicationResolver(
         type: programsTable.type,
         applicationStartDate: programsTable.applicationStartDate,
         applicationEndDate: programsTable.applicationEndDate,
+        maxFundingAmount: programsTable.maxFundingAmount,
+        currency: programsTable.currency,
       })
       .from(programsTable)
       .where(eq(programsTable.id, args.input.programId));
@@ -290,6 +292,25 @@ export function createApplicationResolver(
           throw new Error(
             `Milestone deadlines must be after the funding period ends (${fundingEndDate.toISOString().split('T')[0]}). ` +
               `The following milestones have invalid deadlines: ${milestoneNames}`,
+          );
+        }
+      }
+
+      // Validate funding target against program's max funding per project
+      if (program.maxFundingAmount && args.input.fundingTarget) {
+        const maxFunding = Number.parseFloat(program.maxFundingAmount);
+        const requestedFunding = Number.parseFloat(args.input.fundingTarget);
+
+        // Handle both ETH format (e.g., "1.5") and Wei format
+        const isLikelyEthFormat = requestedFunding < 1000000 && requestedFunding > 0;
+        const maxFundingNormalized =
+          isLikelyEthFormat && maxFunding > 1e15
+            ? maxFunding / 1e18 // Convert Wei to ETH for comparison
+            : maxFunding;
+
+        if (requestedFunding > maxFundingNormalized) {
+          throw new Error(
+            `Funding target (${requestedFunding} ${program.currency || 'tokens'}) exceeds maximum funding per project (${maxFundingNormalized} ${program.currency || 'tokens'})`,
           );
         }
       }
