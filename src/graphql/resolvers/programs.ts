@@ -240,21 +240,20 @@ export async function getProgramResolver(_root: Root, args: { id: string }, ctx:
   // - Restricted: Anyone can access if they know the URL (no additional checks needed)
   // - Private: Only invited builders and program creators/validators can access
   if (program.visibility === 'private') {
-    const user = ctx.server.auth.getUser(ctx.request);
-    const isAdmin = user?.role?.endsWith('admin');
+    const user = requireUser(ctx);
 
-    // Admins can access everything
-    if (isAdmin) {
+    // Check if user is admin first (admins can access everything)
+    if (user?.role === 'admin' || user?.role === 'superadmin') {
       return program;
     }
 
     // Check if user is the creator first (fast path)
-    if (user && program.creatorId === user.id) {
+    if (program.creatorId === user.id) {
       return program; // Creator always has access
     }
 
     // Check for other access (validator, builder roles)
-    const hasAccess = await hasPrivateProgramAccess(program.id, user?.id || null, ctx.db);
+    const hasAccess = await hasPrivateProgramAccess(program.id, user.id, ctx.db);
     if (!hasAccess) {
       throw new Error('You do not have access to this program');
     }
