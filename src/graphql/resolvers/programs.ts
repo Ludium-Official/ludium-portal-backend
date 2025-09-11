@@ -151,6 +151,7 @@ export async function getProgramsResolver(
   // Check if visibility filter was explicitly provided
   const hasVisibilityFilter = filter.some((f) => f.field === 'visibility');
   const user = ctx.server.auth.getUser(ctx.request);
+  const isAdmin = user?.role?.endsWith('admin');
 
   // Build visibility conditions based on whether a filter was provided
   const visibilityConditions = [];
@@ -161,6 +162,9 @@ export async function getProgramsResolver(
     if (!user) {
       // Non-authenticated users can only see public programs
       visibilityConditions.push(eq(programsTable.visibility, 'public'));
+    } else if (!isAdmin) {
+      // Non-admin users: apply normal visibility rules (handled in access control below)
+      // Admins: can see everything, no visibility restrictions
     }
   }
   // If visibility filter is provided, it's already in filterConditions
@@ -185,8 +189,8 @@ export async function getProgramsResolver(
       .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
   }
 
-  // Apply access control for private programs
-  if (user && !hasVisibilityFilter) {
+  // Apply access control for private programs (skip for admins)
+  if (user && !hasVisibilityFilter && !isAdmin) {
     // Get user's roles to check validator access
     const userRoles = await ctx.db
       .select()
@@ -237,6 +241,12 @@ export async function getProgramResolver(_root: Root, args: { id: string }, ctx:
   // - Private: Only invited builders and program creators/validators can access
   if (program.visibility === 'private') {
     const user = ctx.server.auth.getUser(ctx.request);
+    const isAdmin = user?.role?.endsWith('admin');
+
+    // Admins can access everything
+    if (isAdmin) {
+      return program;
+    }
 
     // Check if user is the creator first (fast path)
     if (user && program.creatorId === user.id) {
