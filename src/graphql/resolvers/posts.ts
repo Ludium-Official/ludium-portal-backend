@@ -30,6 +30,10 @@ export async function getPostsResolver(
         return f.value ? eq(postsTable.authorId, f.value) : undefined;
       case 'title':
         return f.value ? ilike(postsTable.title, `%${f.value}%`) : undefined;
+      case 'visibility':
+        return f.value
+          ? eq(postsTable.visibility, f.value as 'private' | 'restricted' | 'public')
+          : undefined;
       default:
         return undefined;
     }
@@ -38,7 +42,9 @@ export async function getPostsResolver(
   const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
 
   // Add visibility filter: only public posts unless admin
-  if (!isAdmin) {
+  // But if admin explicitly filters by visibility, respect that filter
+  const hasVisibilityFilter = filter.some((f) => f.field === 'visibility');
+  if (!isAdmin && !hasVisibilityFilter) {
     filterConditions.push(eq(postsTable.visibility, 'public'));
   }
 
@@ -70,7 +76,7 @@ export async function getPostsResolver(
   const [totalCount] = await ctx.db
     .select({ count: count() })
     .from(postsTable)
-    .where(and(...filterConditions));
+    .where(filterConditions.length > 0 ? and(...filterConditions) : undefined);
 
   return {
     data,

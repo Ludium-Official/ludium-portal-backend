@@ -33,6 +33,60 @@ export async function getMilestoneResolver(_root: Root, args: { id: string }, ct
     .select()
     .from(milestonesTable)
     .where(eq(milestonesTable.id, args.id));
+
+  if (!milestone) {
+    throw new Error('Milestone not found');
+  }
+
+  // Get the application and program to check visibility
+  const [application] = await ctx.db
+    .select({ programId: applicationsTable.programId, applicantId: applicationsTable.applicantId })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, milestone.applicationId));
+
+  if (!application) {
+    throw new Error('Application not found');
+  }
+
+  const [program] = await ctx.db
+    .select({ visibility: programsTable.visibility, creatorId: programsTable.creatorId })
+    .from(programsTable)
+    .where(eq(programsTable.id, application.programId));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  // Check access for private programs
+  if (program.visibility === 'private') {
+    const user = requireUser(ctx);
+
+    // Check if user is admin first (admins can access everything)
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      return milestone;
+    }
+
+    // Allow access if user is the applicant or program creator
+    if (application.applicantId === user.id || program.creatorId === user.id) {
+      return milestone;
+    }
+
+    // Check if user has any role in the program
+    const userRole = await ctx.db
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, application.programId),
+          eq(programUserRolesTable.userId, user.id),
+        ),
+      );
+
+    if (userRole.length === 0) {
+      throw new Error('You do not have access to this milestone');
+    }
+  }
+
   return milestone;
 }
 
@@ -41,6 +95,53 @@ export async function getMilestonesResolver(
   args: { applicationId: string; pagination?: typeof PaginationInput.$inferInput | null },
   ctx: Context,
 ) {
+  // First check if user has access to this application's milestones
+  const [application] = await ctx.db
+    .select({ programId: applicationsTable.programId, applicantId: applicationsTable.applicantId })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, args.applicationId));
+
+  if (!application) {
+    throw new Error('Application not found');
+  }
+
+  const [program] = await ctx.db
+    .select({ visibility: programsTable.visibility, creatorId: programsTable.creatorId })
+    .from(programsTable)
+    .where(eq(programsTable.id, application.programId));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  // Check access for private programs
+  if (program.visibility === 'private') {
+    const user = requireUser(ctx);
+
+    // Check if user is admin first (admins can access everything)
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      // Admin can access all milestones, continue
+    } else {
+      // Allow access if user is the applicant or program creator
+      if (application.applicantId !== user.id && program.creatorId !== user.id) {
+        // Check if user has any role in the program
+        const userRole = await ctx.db
+          .select()
+          .from(programUserRolesTable)
+          .where(
+            and(
+              eq(programUserRolesTable.programId, application.programId),
+              eq(programUserRolesTable.userId, user.id),
+            ),
+          );
+
+        if (userRole.length === 0) {
+          throw new Error('You do not have access to view milestones for this application');
+        }
+      }
+    }
+  }
+
   const limit = args.pagination?.limit || 10;
   const offset = args.pagination?.offset || 0;
 
@@ -66,11 +167,58 @@ export async function getMilestonesResolver(
   };
 }
 
-export function getMilestonesByApplicationIdResolver(
+export async function getMilestonesByApplicationIdResolver(
   _root: Root,
   args: { applicationId: string },
   ctx: Context,
 ) {
+  // First check if user has access to this application's milestones
+  const [application] = await ctx.db
+    .select({ programId: applicationsTable.programId, applicantId: applicationsTable.applicantId })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, args.applicationId));
+
+  if (!application) {
+    throw new Error('Application not found');
+  }
+
+  const [program] = await ctx.db
+    .select({ visibility: programsTable.visibility, creatorId: programsTable.creatorId })
+    .from(programsTable)
+    .where(eq(programsTable.id, application.programId));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  // Check access for private programs
+  if (program.visibility === 'private') {
+    const user = requireUser(ctx);
+
+    // Check if user is admin first (admins can access everything)
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      // Admin can access all milestones, continue
+    } else {
+      // Allow access if user is the applicant or program creator
+      if (application.applicantId !== user.id && program.creatorId !== user.id) {
+        // Check if user has any role in the program
+        const userRole = await ctx.db
+          .select()
+          .from(programUserRolesTable)
+          .where(
+            and(
+              eq(programUserRolesTable.programId, application.programId),
+              eq(programUserRolesTable.userId, user.id),
+            ),
+          );
+
+        if (userRole.length === 0) {
+          throw new Error('You do not have access to view milestones for this application');
+        }
+      }
+    }
+  }
+
   return ctx.db
     .select()
     .from(milestonesTable)
