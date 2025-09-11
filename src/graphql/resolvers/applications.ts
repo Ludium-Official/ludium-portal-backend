@@ -148,31 +148,34 @@ export async function getApplicationResolver(_root: Root, args: { id: string }, 
   // Public and restricted: Anyone can view applications
   // Private: Only program participants can view applications
   if (program.visibility === 'private') {
-    const user = ctx.server.auth.getUser(ctx.request);
+    const user = requireUser(ctx);
+
+    // Check if user is admin first (admins can access everything)
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      return application;
+    }
 
     // Allow access if:
     // 1. User is the applicant
     // 2. User is the program creator
     // 3. User has a role in the program (validator, builder)
-    if (user) {
-      if (application.applicantId === user.id || program.creatorId === user.id) {
-        return application;
-      }
+    if (application.applicantId === user.id || program.creatorId === user.id) {
+      return application;
+    }
 
-      // Check if user has any role in the program
-      const userRole = await ctx.db
-        .select()
-        .from(programUserRolesTable)
-        .where(
-          and(
-            eq(programUserRolesTable.programId, application.programId),
-            eq(programUserRolesTable.userId, user.id),
-          ),
-        );
+    // Check if user has any role in the program
+    const userRole = await ctx.db
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, application.programId),
+          eq(programUserRolesTable.userId, user.id),
+        ),
+      );
 
-      if (userRole.length > 0) {
-        return application;
-      }
+    if (userRole.length > 0) {
+      return application;
     }
 
     throw new Error('You do not have access to this application');
@@ -201,26 +204,27 @@ export async function getApplicationsByProgramIdResolver(
 
   // For private programs, check if user has access
   if (program.visibility === 'private') {
-    const user = ctx.server.auth.getUser(ctx.request);
+    const user = requireUser(ctx);
 
-    if (!user) {
-      throw new Error('Authentication required to view applications for private programs');
-    }
+    // Check if user is admin first (admins can access everything)
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      // Admin can access all applications, continue to return them
+    } else {
+      // Check if user is the creator or has a role in the program
+      if (program.creatorId !== user.id) {
+        const userRole = await ctx.db
+          .select()
+          .from(programUserRolesTable)
+          .where(
+            and(
+              eq(programUserRolesTable.programId, args.programId),
+              eq(programUserRolesTable.userId, user.id),
+            ),
+          );
 
-    // Check if user is the creator or has a role in the program
-    if (program.creatorId !== user.id) {
-      const userRole = await ctx.db
-        .select()
-        .from(programUserRolesTable)
-        .where(
-          and(
-            eq(programUserRolesTable.programId, args.programId),
-            eq(programUserRolesTable.userId, user.id),
-          ),
-        );
-
-      if (userRole.length === 0) {
-        throw new Error('You do not have access to view applications for this private program');
+        if (userRole.length === 0) {
+          throw new Error('You do not have access to view applications for this private program');
+        }
       }
     }
   }
