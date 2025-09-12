@@ -471,8 +471,9 @@ export function createApplicationResolver(
         ),
       );
 
-    // Only validate budget for non-draft applications with milestones
-    if (milestones.length > 0) {
+    // Only validate budget for non-funding programs (educational programs)
+    // For funding/investment programs, maxFundingAmount is per-project, not cumulative
+    if (milestones.length > 0 && program.type !== 'funding') {
       const milestonesTotalPrice = milestones.reduce((acc, m) => {
         return acc.plus(new BigNumber(m.price));
       }, new BigNumber(0));
