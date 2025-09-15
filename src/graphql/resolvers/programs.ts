@@ -4,15 +4,23 @@ import {
   type Program,
   applicationsTable,
   filesTable,
+  investmentsTable,
   keywordsTable,
   linksTable,
+  milestonesTable,
   programUserRolesTable,
   programsTable,
   programsToKeywordsTable,
   programsToLinksTable,
+  userTierAssignmentsTable,
+  usersTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
-import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
+import type {
+  AssignUserTierInput,
+  CreateProgramInput,
+  UpdateProgramInput,
+} from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
 import {
   filterEmptyValues,
@@ -21,7 +29,8 @@ import {
   requireUser,
   validAndNotEmptyArray,
 } from '@/utils';
-import { and, asc, count, desc, eq, gt, ilike, inArray, lt, or } from 'drizzle-orm';
+import BigNumber from 'bignumber.js';
+import { and, asc, count, desc, eq, gt, ilike, inArray, lt, or, sql } from 'drizzle-orm';
 
 export async function getProgramsResolver(
   _root: Root,
@@ -104,7 +113,6 @@ export async function getProgramsResolver(
       case 'name':
         return f.value ? ilike(programsTable.name, `%${f.value}%`) : undefined;
       case 'status':
-        // Support multi-values for status
         if (f.values && f.values.length > 0) {
           return inArray(
             programsTable.status,
@@ -122,6 +130,8 @@ export async function getProgramsResolver(
         return f.value
           ? eq(programsTable.visibility, f.value as 'private' | 'restricted' | 'public')
           : undefined;
+      case 'type':
+        return f.value ? eq(programsTable.type, f.value as 'regular' | 'funding') : undefined;
       case 'price':
         // sort by price, value can be 'asc' or 'desc'
         return sort === 'asc' ? asc(programsTable.price) : desc(programsTable.price);
@@ -141,6 +151,7 @@ export async function getProgramsResolver(
   // Check if visibility filter was explicitly provided
   const hasVisibilityFilter = filter.some((f) => f.field === 'visibility');
   const user = ctx.server.auth.getUser(ctx.request);
+  const isAdmin = user?.role?.endsWith('admin');
 
   // Build visibility conditions based on whether a filter was provided
   const visibilityConditions = [];
@@ -151,6 +162,9 @@ export async function getProgramsResolver(
     if (!user) {
       // Non-authenticated users can only see public programs
       visibilityConditions.push(eq(programsTable.visibility, 'public'));
+    } else if (!isAdmin) {
+      // Non-admin users: apply normal visibility rules (handled in access control below)
+      // Admins: can see everything, no visibility restrictions
     }
   }
   // If visibility filter is provided, it's already in filterConditions
@@ -175,8 +189,8 @@ export async function getProgramsResolver(
       .orderBy(sort === 'asc' ? asc(programsTable.createdAt) : desc(programsTable.createdAt));
   }
 
-  // Apply access control for private programs
-  if (user && !hasVisibilityFilter) {
+  // Apply access control for private programs (skip for admins)
+  if (user && !hasVisibilityFilter && !isAdmin) {
     // Get user's roles to check validator access
     const userRoles = await ctx.db
       .select()
@@ -226,15 +240,20 @@ export async function getProgramResolver(_root: Root, args: { id: string }, ctx:
   // - Restricted: Anyone can access if they know the URL (no additional checks needed)
   // - Private: Only invited builders and program creators/validators can access
   if (program.visibility === 'private') {
-    const user = ctx.server.auth.getUser(ctx.request);
+    const user = requireUser(ctx);
+
+    // Check if user is admin first (admins can access everything)
+    if (user?.role === 'admin' || user?.role === 'superadmin') {
+      return program;
+    }
 
     // Check if user is the creator first (fast path)
-    if (user && program.creatorId === user.id) {
+    if (program.creatorId === user.id) {
       return program; // Creator always has access
     }
 
     // Check for other access (validator, builder roles)
-    const hasAccess = await hasPrivateProgramAccess(program.id, user?.id || null, ctx.db);
+    const hasAccess = await hasPrivateProgramAccess(program.id, user.id, ctx.db);
     if (!hasAccess) {
       throw new Error('You do not have access to this program');
     }
@@ -297,9 +316,34 @@ export function createProgramResolver(
       currency: inputData.currency || 'ETH',
       deadline: inputData.deadline ? new Date(inputData.deadline) : new Date(),
       creatorId: user.id,
-      status: inputData.status,
+      status: inputData.status ?? 'pending',
       visibility: inputData.visibility || 'public',
       network: inputData.network,
+
+      // Investment/Funding fields
+      type: inputData.type || 'regular',
+      applicationStartDate: inputData.applicationStartDate
+        ? new Date(inputData.applicationStartDate)
+        : undefined,
+      applicationEndDate: inputData.applicationEndDate
+        ? new Date(inputData.applicationEndDate)
+        : undefined,
+      fundingStartDate: inputData.fundingStartDate
+        ? new Date(inputData.fundingStartDate)
+        : undefined,
+      fundingEndDate: inputData.fundingEndDate ? new Date(inputData.fundingEndDate) : undefined,
+      fundingCondition: inputData.fundingCondition,
+      tierSettings: inputData.tierSettings
+        ? (inputData.tierSettings as {
+            bronze?: { enabled: boolean; maxAmount: string };
+            silver?: { enabled: boolean; maxAmount: string };
+            gold?: { enabled: boolean; maxAmount: string };
+            platinum?: { enabled: boolean; maxAmount: string };
+          })
+        : undefined,
+      feePercentage: inputData.feePercentage,
+      customFeePercentage: inputData.customFeePercentage,
+      contractAddress: inputData.contractAddress,
     };
 
     const [program] = await t.insert(programsTable).values(insertData).returning();
@@ -639,7 +683,12 @@ export function publishProgramResolver(
 
 export function inviteUserToProgramResolver(
   _root: Root,
-  args: { programId: string; userId: string },
+  args: {
+    programId: string;
+    userId: string;
+    tier?: 'bronze' | 'silver' | 'gold' | 'platinum' | null;
+    maxInvestmentAmount?: string | null;
+  },
   ctx: Context,
 ) {
   const user = requireUser(ctx);
@@ -688,14 +737,142 @@ export function inviteUserToProgramResolver(
       roleType: 'builder',
     });
 
+    // If this is a tier-based funding program and tier info is provided, create tier assignment
+    if (
+      program.type === 'funding' &&
+      program.fundingCondition === 'tier' &&
+      args.tier &&
+      args.maxInvestmentAmount
+    ) {
+      // Check if user already has a tier assignment
+      const existingAssignment = await t
+        .select()
+        .from(userTierAssignmentsTable)
+        .where(
+          and(
+            eq(userTierAssignmentsTable.programId, args.programId),
+            eq(userTierAssignmentsTable.userId, args.userId),
+          ),
+        );
+
+      if (existingAssignment.length > 0) {
+        // Update existing assignment
+        await t
+          .update(userTierAssignmentsTable)
+          .set({
+            tier: args.tier,
+            maxInvestmentAmount: args.maxInvestmentAmount,
+          })
+          .where(
+            and(
+              eq(userTierAssignmentsTable.programId, args.programId),
+              eq(userTierAssignmentsTable.userId, args.userId),
+            ),
+          );
+      } else {
+        // Create new tier assignment
+        await t.insert(userTierAssignmentsTable).values({
+          programId: args.programId,
+          userId: args.userId,
+          tier: args.tier,
+          maxInvestmentAmount: args.maxInvestmentAmount,
+        });
+      }
+    }
+
     // Send notification to the invited user
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'program',
       action: 'invited',
       recipientId: args.userId,
       entityId: args.programId,
+      metadata: args.tier
+        ? {
+            tier: args.tier,
+            maxInvestmentAmount: args.maxInvestmentAmount,
+          }
+        : undefined,
     });
     await ctx.server.pubsub.publish('notificationsCount');
+
+    return program;
+  });
+}
+
+export function removeUserFromProgramResolver(
+  _root: Root,
+  args: { programId: string; userId: string },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Check if user is the program creator
+    const hasAccess = await isInSameScope({
+      scope: 'program_creator',
+      userId: user.id,
+      entityId: args.programId,
+      db: t,
+    });
+    if (!hasAccess) {
+      throw new Error('You are not allowed to remove users from this program');
+    }
+
+    // Check if program exists
+    const [program] = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, args.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    // Remove user from all program roles (builder, sponsor, validator)
+    const existingRoles = await t
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, args.programId),
+          eq(programUserRolesTable.userId, args.userId),
+        ),
+      );
+
+    if (existingRoles.length > 0) {
+      // Remove all roles for this user in this program
+      await t
+        .delete(programUserRolesTable)
+        .where(
+          and(
+            eq(programUserRolesTable.programId, args.programId),
+            eq(programUserRolesTable.userId, args.userId),
+          ),
+        );
+    }
+
+    // Remove user tier assignments for funding programs
+    const existingTierAssignments = await t
+      .select()
+      .from(userTierAssignmentsTable)
+      .where(
+        and(
+          eq(userTierAssignmentsTable.programId, args.programId),
+          eq(userTierAssignmentsTable.userId, args.userId),
+        ),
+      );
+
+    if (existingTierAssignments.length > 0) {
+      // Remove tier assignments for this user in this program
+      await t
+        .delete(userTierAssignmentsTable)
+        .where(
+          and(
+            eq(userTierAssignmentsTable.programId, args.programId),
+            eq(userTierAssignmentsTable.userId, args.userId),
+          ),
+        );
+    }
 
     return program;
   });
@@ -906,4 +1083,479 @@ export async function removeProgramKeywordResolver(
 
     return true;
   });
+}
+
+export async function getUserTierAssignmentResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  const user = ctx.server.auth.getUser(ctx.request);
+  if (!user) {
+    return null;
+  }
+
+  const [program] = await ctx.db
+    .select()
+    .from(programsTable)
+    .where(eq(programsTable.id, args.programId));
+
+  // Only return tier for tier-based funding programs
+  if (!program || program.type !== 'funding' || program.fundingCondition !== 'tier') {
+    return null;
+  }
+
+  // Get user's tier assignment
+  const [tierAssignment] = await ctx.db
+    .select()
+    .from(userTierAssignmentsTable)
+    .where(
+      and(
+        eq(userTierAssignmentsTable.programId, args.programId),
+        eq(userTierAssignmentsTable.userId, user.id),
+      ),
+    );
+
+  if (!tierAssignment) {
+    return null;
+  }
+
+  // Get applications for this program
+  const programApplications = await ctx.db
+    .select({ id: applicationsTable.id })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.programId, args.programId));
+
+  const applicationIds = programApplications.map((app) => app.id);
+
+  // Calculate user's current investment total
+  const [userTotal] = await ctx.db
+    .select({
+      total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
+    })
+    .from(investmentsTable)
+    .where(
+      and(
+        inArray(investmentsTable.applicationId, applicationIds),
+        eq(investmentsTable.userId, user.id),
+        eq(investmentsTable.status, 'confirmed'),
+      ),
+    );
+
+  const currentInvestment = Number.parseFloat(userTotal.total || '0');
+  const maxAmount = Number.parseFloat(tierAssignment.maxInvestmentAmount);
+  const remainingCapacity = Math.max(0, maxAmount - currentInvestment);
+
+  return {
+    userId: tierAssignment.userId,
+    tier: tierAssignment.tier,
+    maxInvestmentAmount: tierAssignment.maxInvestmentAmount,
+    currentInvestment: currentInvestment.toString(),
+    remainingCapacity: remainingCapacity.toString(),
+    createdAt: tierAssignment.createdAt,
+  };
+}
+
+export async function getSupportersWithTiersResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  const [program] = await ctx.db
+    .select()
+    .from(programsTable)
+    .where(eq(programsTable.id, args.programId));
+
+  if (!program) {
+    return null;
+  }
+
+  // For tier-based funding programs, get tier assignments
+  if (program.type === 'funding' && program.fundingCondition === 'tier') {
+    // Get all tier assignments for this program
+    const tierAssignments = await ctx.db
+      .select()
+      .from(userTierAssignmentsTable)
+      .where(eq(userTierAssignmentsTable.programId, program.id));
+
+    // Get user details for all assigned users
+    const userIds = tierAssignments.map((assignment) => assignment.userId);
+    const users =
+      userIds.length > 0
+        ? await ctx.db.select().from(usersTable).where(inArray(usersTable.id, userIds))
+        : [];
+
+    // Create user lookup map
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return tierAssignments.map((assignment) => {
+      const user = userMap.get(assignment.userId);
+      return {
+        userId: assignment.userId,
+        email: user?.email,
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        tier: assignment.tier,
+        maxInvestmentAmount: assignment.maxInvestmentAmount,
+        walletAddress: user?.walletAddress,
+        createdAt: assignment.createdAt,
+      };
+    });
+  }
+
+  // For non-tier programs, get all builders (supporters)
+  const programRoles = await ctx.db
+    .select()
+    .from(programUserRolesTable)
+    .where(
+      and(
+        eq(programUserRolesTable.programId, program.id),
+        eq(programUserRolesTable.roleType, 'builder'),
+      ),
+    );
+
+  // Get user details
+  const userIds = programRoles.map((role) => role.userId);
+  const users =
+    userIds.length > 0
+      ? await ctx.db.select().from(usersTable).where(inArray(usersTable.id, userIds))
+      : [];
+
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  return programRoles.map((role) => {
+    const user = userMap.get(role.userId);
+    return {
+      userId: role.userId,
+      email: user?.email,
+      firstName: user?.firstName,
+      lastName: user?.lastName,
+      tier: null,
+      maxInvestmentAmount: undefined,
+      walletAddress: user?.walletAddress,
+      createdAt: role.createdAt,
+    };
+  });
+}
+
+// Assign a user to a tier for a funding program
+export async function assignUserTierResolver(
+  _root: Root,
+  args: { input: typeof AssignUserTierInput.$inferInput },
+  ctx: Context,
+) {
+  const { programId, userId, tier, maxInvestmentAmount } = args.input;
+
+  // Verify program exists and is a funding program
+  const [program] = await ctx.db
+    .select()
+    .from(programsTable)
+    .where(eq(programsTable.id, programId));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  if (program.type !== 'funding') {
+    throw new Error('Tier assignments are only available for funding programs');
+  }
+
+  // Check if user already has a tier assignment
+  const [existing] = await ctx.db
+    .select()
+    .from(userTierAssignmentsTable)
+    .where(
+      and(
+        eq(userTierAssignmentsTable.programId, programId),
+        eq(userTierAssignmentsTable.userId, userId),
+      ),
+    );
+
+  if (existing) {
+    throw new Error('User already has a tier assignment. Use updateUserTier instead.');
+  }
+
+  // Create tier assignment
+  const [assignment] = await ctx.db
+    .insert(userTierAssignmentsTable)
+    .values({
+      programId,
+      userId,
+      tier,
+      maxInvestmentAmount,
+    })
+    .returning();
+
+  // Calculate current investment amount
+  const [investmentData] = await ctx.db
+    .select({
+      total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
+    })
+    .from(investmentsTable)
+    .where(
+      and(
+        eq(investmentsTable.userId, userId),
+        sql`application_id IN (SELECT id FROM applications WHERE program_id = ${programId})`,
+        eq(investmentsTable.status, 'confirmed'),
+      ),
+    );
+
+  const currentInvestment = investmentData?.total || '0';
+  const remainingCapacity = new BigNumber(maxInvestmentAmount)
+    .minus(new BigNumber(currentInvestment))
+    .toString();
+
+  return {
+    userId: assignment.userId,
+    tier: assignment.tier,
+    maxInvestmentAmount: assignment.maxInvestmentAmount,
+    currentInvestment,
+    remainingCapacity: remainingCapacity,
+    createdAt: assignment.createdAt,
+  };
+}
+
+// Update a user's tier assignment
+export async function updateUserTierResolver(
+  _root: Root,
+  args: { input: typeof AssignUserTierInput.$inferInput },
+  ctx: Context,
+) {
+  const { programId, userId, tier, maxInvestmentAmount } = args.input;
+
+  // Verify tier assignment exists
+  const [existing] = await ctx.db
+    .select()
+    .from(userTierAssignmentsTable)
+    .where(
+      and(
+        eq(userTierAssignmentsTable.programId, programId),
+        eq(userTierAssignmentsTable.userId, userId),
+      ),
+    );
+
+  if (!existing) {
+    throw new Error('Tier assignment not found. Use assignUserTier to create a new assignment.');
+  }
+
+  // Update tier assignment
+  const [updated] = await ctx.db
+    .update(userTierAssignmentsTable)
+    .set({
+      tier,
+      maxInvestmentAmount,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(userTierAssignmentsTable.programId, programId),
+        eq(userTierAssignmentsTable.userId, userId),
+      ),
+    )
+    .returning();
+
+  // Calculate current investment amount
+  const [investmentData] = await ctx.db
+    .select({
+      total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
+    })
+    .from(investmentsTable)
+    .where(
+      and(
+        eq(investmentsTable.userId, userId),
+        sql`application_id IN (SELECT id FROM applications WHERE program_id = ${programId})`,
+        eq(investmentsTable.status, 'confirmed'),
+      ),
+    );
+
+  const currentInvestment = investmentData?.total || '0';
+  const remainingCapacity = new BigNumber(maxInvestmentAmount)
+    .minus(new BigNumber(currentInvestment))
+    .toString();
+
+  return {
+    userId: updated.userId,
+    tier: updated.tier,
+    maxInvestmentAmount: updated.maxInvestmentAmount,
+    currentInvestment,
+    remainingCapacity: remainingCapacity,
+    createdAt: updated.createdAt,
+  };
+}
+
+// Remove a user's tier assignment
+export async function removeUserTierResolver(
+  _root: Root,
+  args: { programId: string; userId: string },
+  ctx: Context,
+) {
+  const { programId, userId } = args;
+
+  // Delete tier assignment
+  await ctx.db
+    .delete(userTierAssignmentsTable)
+    .where(
+      and(
+        eq(userTierAssignmentsTable.programId, programId),
+        eq(userTierAssignmentsTable.userId, userId),
+      ),
+    );
+
+  return true;
+}
+
+// Reclaim an unused program past its deadline
+export async function reclaimProgramResolver(
+  _root: Root,
+  args: { programId: string; txHash?: string | null },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Get the program
+    const [program] = await t
+      .select()
+      .from(programsTable)
+      .where(eq(programsTable.id, args.programId));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    // Check if user is the sponsor/creator
+    if (program.creatorId !== user.id) {
+      // Check if user has sponsor role
+      const [sponsorRole] = await t
+        .select()
+        .from(programUserRolesTable)
+        .where(
+          and(
+            eq(programUserRolesTable.programId, args.programId),
+            eq(programUserRolesTable.userId, user.id),
+            eq(programUserRolesTable.roleType, 'sponsor'),
+          ),
+        );
+
+      if (!sponsorRole) {
+        throw new Error('Only the program sponsor can reclaim funds');
+      }
+    }
+
+    // Check if program is eligible for reclaim
+    if (program.type === 'funding') {
+      throw new Error('This is an investment program, use investment reclaim instead');
+    }
+
+    if (program.reclaimed) {
+      throw new Error('Program has already been reclaimed');
+    }
+
+    const now = new Date();
+    const deadline = program.deadline ? new Date(program.deadline) : null;
+    if (!deadline || deadline > now) {
+      throw new Error('Program deadline has not passed yet');
+    }
+
+    // Calculate if there are unused funds
+    const applications = await t
+      .select()
+      .from(applicationsTable)
+      .where(
+        and(
+          eq(applicationsTable.programId, args.programId),
+          eq(applicationsTable.status, 'accepted'),
+        ),
+      );
+
+    // Calculate total paid out through completed milestones
+    let totalPaidOut = 0;
+    for (const app of applications) {
+      const milestones = await t
+        .select()
+        .from(milestonesTable)
+        .where(
+          and(eq(milestonesTable.applicationId, app.id), eq(milestonesTable.status, 'completed')),
+        );
+
+      for (const milestone of milestones) {
+        if (milestone.price) {
+          totalPaidOut += Number.parseFloat(milestone.price);
+        }
+      }
+    }
+
+    const totalDeposited = Number.parseFloat(program.price || '0');
+    const reclaimableAmount = totalDeposited - totalPaidOut;
+
+    // Check if there are actually funds to reclaim
+    if (reclaimableAmount <= 0.001) {
+      throw new Error('No unused funds to reclaim - all deposited funds have been paid out');
+    }
+
+    // IMPORTANT: The transaction hash should come from the frontend after calling
+    // the contract's reclaimFunds function. The flow should be:
+    // 1. Frontend calls LdEduProgram.reclaimFunds(programId)
+    // 2. Frontend gets transaction hash
+    // 3. Frontend calls this mutation with the txHash
+
+    if (!args.txHash) {
+      throw new Error(
+        'Transaction hash is required. Please call the contract reclaimFunds function first',
+      );
+    }
+
+    // Update program as reclaimed
+    const [updatedProgram] = await t
+      .update(programsTable)
+      .set({
+        reclaimed: true,
+        reclaimedAt: new Date(),
+        reclaimTxHash: args.txHash,
+      })
+      .where(eq(programsTable.id, args.programId))
+      .returning();
+
+    if (!updatedProgram) {
+      throw new Error('Failed to update program');
+    }
+
+    return updatedProgram;
+  });
+}
+
+export async function hideProgramResolver(
+  _root: Root,
+  args: { id: string },
+  ctx: Context,
+): Promise<Program> {
+  const [program] = await ctx.db
+    .update(programsTable)
+    .set({ visibility: 'private' })
+    .where(eq(programsTable.id, args.id))
+    .returning();
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  return program;
+}
+
+export async function showProgramResolver(
+  _root: Root,
+  args: { id: string },
+  ctx: Context,
+): Promise<Program> {
+  const [program] = await ctx.db
+    .update(programsTable)
+    .set({ visibility: 'public' })
+    .where(eq(programsTable.id, args.id))
+    .returning();
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  return program;
 }

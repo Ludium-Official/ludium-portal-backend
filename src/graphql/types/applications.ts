@@ -7,19 +7,29 @@ import builder from '@/graphql/builder';
 import {
   acceptApplicationResolver,
   createApplicationResolver,
+  getApplicationProgramResolver,
   getApplicationResolver,
   getApplicationsResolver,
+  getCurrentFundingAmountResolver,
+  getFundingProgressResolver,
+  getInvestmentCountResolver,
+  getInvestorsWithTiersResolver,
   rejectApplicationResolver,
+  syncApplicationTiersResolver,
   updateApplicationResolver,
 } from '@/graphql/resolvers/applications';
 import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
+import { getInvestmentTermsByApplicationIdResolver } from '@/graphql/resolvers/investment-terms';
 import { getLinksByApplicationIdResolver } from '@/graphql/resolvers/links';
 import { getMilestonesByApplicationIdResolver } from '@/graphql/resolvers/milestones';
 import { getUserResolver } from '@/graphql/resolvers/users';
 import { CommentType } from '@/graphql/types/comments';
 import { PaginationInput } from '@/graphql/types/common';
+import { CreateInvestmentTermInput, InvestmentTermType } from '@/graphql/types/investment-terms';
+import { InvestorType } from '@/graphql/types/investments';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { CreateMilestoneInput, MilestoneType } from '@/graphql/types/milestones';
+import { ApplicationRef, ProgramRef } from '@/graphql/types/shared-refs';
 import { User } from '@/graphql/types/users';
 import BigNumber from 'bignumber.js';
 import { eq } from 'drizzle-orm';
@@ -31,7 +41,7 @@ export const ApplicationStatusEnum = builder.enumType('ApplicationStatus', {
   values: applicationStatuses,
 });
 
-export const ApplicationType = builder.objectRef<DBApplication>('Application').implement({
+export const ApplicationType = ApplicationRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     status: t.field({
@@ -72,6 +82,46 @@ export const ApplicationType = builder.objectRef<DBApplication>('Application').i
           ctx,
         ),
     }),
+    fundingTarget: t.exposeString('fundingTarget', { nullable: true }),
+    walletAddress: t.exposeString('walletAddress', { nullable: true }),
+    fundingSuccessful: t.exposeBoolean('fundingSuccessful', { nullable: true }),
+    onChainProjectId: t.exposeInt('onChainProjectId', { nullable: true }),
+    investmentTerms: t.field({
+      type: [InvestmentTermType],
+      resolve: async (application, _args, ctx) =>
+        getInvestmentTermsByApplicationIdResolver({}, { applicationId: application.id }, ctx),
+    }),
+    currentFundingAmount: t.field({
+      type: 'String',
+      nullable: true,
+      resolve: (application, _args, ctx) =>
+        getCurrentFundingAmountResolver({}, { id: application.id }, ctx),
+    }),
+    fundingProgress: t.field({
+      type: 'Float',
+      nullable: true,
+      resolve: (application, _args, ctx) =>
+        getFundingProgressResolver({}, { id: application.id }, ctx),
+    }),
+    investmentCount: t.field({
+      type: 'Int',
+      nullable: true,
+      resolve: (application, _args, ctx) =>
+        getInvestmentCountResolver({}, { id: application.id }, ctx),
+    }),
+    // Get investors with their tiers for this application
+    investors: t.field({
+      type: [InvestorType],
+      nullable: true,
+      resolve: (application, _args, ctx) =>
+        getInvestorsWithTiersResolver({}, { id: application.id }, ctx),
+    }),
+    // Get the program this application belongs to
+    program: t.field({
+      type: ProgramRef,
+      nullable: true,
+      resolve: (application, _args, ctx) => getApplicationProgramResolver(application, _args, ctx),
+    }),
   }),
 });
 
@@ -111,6 +161,9 @@ export const CreateApplicationInput = builder.inputType('CreateApplicationInput'
     }),
     milestones: t.field({ type: [CreateMilestoneInput], required: true }),
     status: t.field({ type: ApplicationStatusEnum, required: true }),
+    fundingTarget: t.string(),
+    walletAddress: t.string(),
+    investmentTerms: t.field({ type: [CreateInvestmentTermInput] }),
   }),
 });
 
@@ -182,6 +235,16 @@ builder.mutationFields((t) => ({
     },
     args: {
       id: t.arg.id({ required: true }),
+      onChainProjectId: t.arg.int({ required: false }),
+      tierSyncInfo: t.arg({
+        type: builder.inputType('TierSyncInfo', {
+          fields: (t) => ({
+            programOwnerAddress: t.string({ required: true }),
+            contractAddress: t.string({ required: true }),
+          }),
+        }),
+        required: false,
+      }),
     },
     resolve: acceptApplicationResolver,
   }),
@@ -207,5 +270,60 @@ builder.mutationFields((t) => ({
       rejectionReason: t.arg.string({ required: false }),
     },
     resolve: rejectApplicationResolver,
+  }),
+  syncApplicationTiers: t.field({
+    type: builder
+      .objectRef<{
+        success: boolean;
+        message: string;
+        projectId: number | null;
+        contractAddress: string | null;
+        tierAssignments: Array<{
+          userId: string;
+          walletAddress: string;
+          tier: string;
+          maxInvestmentAmount: string;
+        }>;
+      }>('TierSyncResult')
+      .implement({
+        fields: (t) => ({
+          success: t.boolean({ resolve: (parent) => parent.success }),
+          message: t.string({ resolve: (parent) => parent.message }),
+          projectId: t.int({ resolve: (parent) => parent.projectId, nullable: true }),
+          contractAddress: t.string({
+            resolve: (parent) => parent.contractAddress,
+            nullable: true,
+          }),
+          tierAssignments: t.field({
+            type: [
+              builder
+                .objectRef<{
+                  userId: string;
+                  walletAddress: string;
+                  tier: string;
+                  maxInvestmentAmount: string;
+                }>('TierAssignmentData')
+                .implement({
+                  fields: (t) => ({
+                    userId: t.string({ resolve: (parent) => parent.userId }),
+                    walletAddress: t.string({ resolve: (parent) => parent.walletAddress }),
+                    tier: t.string({ resolve: (parent) => parent.tier }),
+                    maxInvestmentAmount: t.string({
+                      resolve: (parent) => parent.maxInvestmentAmount,
+                    }),
+                  }),
+                }),
+            ],
+            resolve: (parent) => parent.tierAssignments || [],
+          }),
+        }),
+      }),
+    authScopes: {
+      user: true,
+    },
+    args: {
+      applicationId: t.arg.id({ required: true }),
+    },
+    resolve: syncApplicationTiersResolver,
   }),
 }));

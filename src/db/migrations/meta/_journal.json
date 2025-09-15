@@ -8,6 +8,41 @@
       "when": 1755071777081,
       "tag": "0000_spicy_rockslide",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1755482365508,
+      "tag": "0001_huge_sue_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756116659323,
+      "tag": "0002_perpetual_bill_hollister",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1756892697743,
+      "tag": "0003_peaceful_lake",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1757382481708,
+      "tag": "0004_gigantic_tyger_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1757412567136,
+      "tag": "0005_legal_tempest",
+      "breakpoints": true
     }
   ]
 }

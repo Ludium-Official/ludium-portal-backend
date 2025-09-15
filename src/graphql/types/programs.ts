@@ -1,4 +1,11 @@
-import { type Program as DBProgram, programStatuses, programVisibilities } from '@/db/schemas';
+import {
+  type Program as DBProgram,
+  applicationsTable,
+  investmentTiers,
+  milestonesTable,
+  programStatuses,
+  programVisibilities,
+} from '@/db/schemas';
 import builder from '@/graphql/builder';
 import { getApplicationsByProgramIdResolver } from '@/graphql/resolvers/applications';
 import { getCommentsByCommentableResolver } from '@/graphql/resolvers/comments';
@@ -6,6 +13,7 @@ import { getLinksByProgramIdResolver } from '@/graphql/resolvers/links';
 import {
   acceptProgramResolver,
   addProgramKeywordResolver,
+  assignUserTierResolver,
   assignValidatorToProgramResolver,
   createProgramResolver,
   deleteProgramResolver,
@@ -13,12 +21,20 @@ import {
   getProgramKeywordsResolver,
   getProgramResolver,
   getProgramsResolver,
+  getSupportersWithTiersResolver,
+  getUserTierAssignmentResolver,
+  hideProgramResolver,
   inviteUserToProgramResolver,
   publishProgramResolver,
+  reclaimProgramResolver,
   rejectProgramResolver,
   removeProgramKeywordResolver,
+  removeUserFromProgramResolver,
+  removeUserTierResolver,
   removeValidatorFromProgramResolver,
+  showProgramResolver,
   updateProgramResolver,
+  updateUserTierResolver,
 } from '@/graphql/resolvers/programs';
 import {
   getInvitedBuildersByProgramIdResolver,
@@ -28,9 +44,13 @@ import {
 import { ApplicationType } from '@/graphql/types/applications';
 import { CommentType } from '@/graphql/types/comments';
 import { KeywordType, PaginationInput } from '@/graphql/types/common';
+import { SupporterType } from '@/graphql/types/investments';
 import { Link, LinkInput } from '@/graphql/types/links';
+import { ProgramRef } from '@/graphql/types/shared-refs';
 import { User } from '@/graphql/types/users';
+import { getProgramDetailedStatus } from '@/utils/program-status';
 import BigNumber from 'bignumber.js';
+import { and, eq } from 'drizzle-orm';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -43,7 +63,43 @@ export const ProgramVisibilityEnum = builder.enumType('ProgramVisibility', {
   values: programVisibilities,
 });
 
-export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
+export const InvestmentTierEnum = builder.enumType('InvestmentTier', {
+  values: investmentTiers,
+});
+
+export const ProgramTypeEnum = builder.enumType('ProgramType', {
+  values: ['regular', 'funding'] as const,
+});
+
+export const FundingConditionEnum = builder.enumType('FundingCondition', {
+  values: ['open', 'tier'] as const,
+});
+
+// Type for user's tier assignment with investment tracking
+export const UserTierAssignmentType = builder
+  .objectRef<{
+    userId: string;
+    tier: string;
+    maxInvestmentAmount: string;
+    currentInvestment: string;
+    remainingCapacity: string;
+    createdAt: Date;
+  }>('UserTierAssignment')
+  .implement({
+    fields: (t) => ({
+      userId: t.exposeID('userId'),
+      tier: t.exposeString('tier'),
+      maxInvestmentAmount: t.exposeString('maxInvestmentAmount'),
+      currentInvestment: t.exposeString('currentInvestment'),
+      remainingCapacity: t.exposeString('remainingCapacity'),
+      createdAt: t.field({
+        type: 'DateTime',
+        resolve: (assignment) => assignment.createdAt,
+      }),
+    }),
+  });
+
+export const ProgramType = ProgramRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
@@ -69,6 +125,18 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       resolve: async (program, _args, ctx) =>
         getLinksByProgramIdResolver({}, { programId: program.id }, ctx),
     }),
+    // PRD-compliant status information for funding programs
+    detailedStatus: t.field({
+      type: 'JSON',
+      nullable: true,
+      resolve: (program) => {
+        // Only for funding programs
+        if (program.type !== 'funding') return null;
+        const status = getProgramDetailedStatus(program);
+        // Convert to plain JSON object
+        return JSON.parse(JSON.stringify(status));
+      },
+    }),
     status: t.field({
       type: ProgramStatusEnum,
       resolve: (program) => program.status,
@@ -85,6 +153,111 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
       type: [User],
       resolve: async (program, _args, ctx) =>
         getValidatorsByProgramIdResolver({}, { programId: program.id }, ctx),
+    }),
+    // Reclaim fields for recruitment programs
+    reclaimed: t.exposeBoolean('reclaimed', { nullable: true }),
+    reclaimTxHash: t.exposeString('reclaimTxHash', { nullable: true }),
+    reclaimedAt: t.field({
+      type: 'DateTime',
+      nullable: true,
+      resolve: (program) => program.reclaimedAt,
+    }),
+    canReclaim: t.boolean({
+      description: 'Whether this program can be reclaimed (unused past deadline)',
+      resolve: async (program, _args, ctx) => {
+        // Already reclaimed
+        if (program.reclaimed) return false;
+
+        const now = new Date();
+
+        // For regular programs: check deadline and unused funds
+        if (program.type === 'regular') {
+          const deadline = program.deadline ? new Date(program.deadline) : null;
+          if (!deadline || deadline > now) return false;
+
+          // Calculate if there are unused funds
+          const applications = await ctx.db
+            .select()
+            .from(applicationsTable)
+            .where(
+              and(
+                eq(applicationsTable.programId, program.id),
+                eq(applicationsTable.status, 'accepted'),
+              ),
+            );
+
+          // Get all completed milestones to calculate paid amount
+          let totalPaidOut = 0;
+          for (const app of applications) {
+            const milestones = await ctx.db
+              .select()
+              .from(milestonesTable)
+              .where(
+                and(
+                  eq(milestonesTable.applicationId, app.id),
+                  eq(milestonesTable.status, 'completed'),
+                ),
+              );
+
+            for (const milestone of milestones) {
+              if (milestone.price) {
+                totalPaidOut += Number.parseFloat(milestone.price);
+              }
+            }
+          }
+
+          const totalDeposited = Number.parseFloat(program.price || '0');
+          const reclaimableAmount = totalDeposited - totalPaidOut;
+
+          // Can reclaim if there's more than a small tolerance amount
+          return reclaimableAmount > 0.001;
+        }
+
+        // For funding programs: check funding end date and unused funds
+        if (program.type === 'funding') {
+          const fundingEndDate = program.fundingEndDate ? new Date(program.fundingEndDate) : null;
+          if (!fundingEndDate || fundingEndDate > now) return false;
+
+          // Calculate if there are unused funds
+          const applications = await ctx.db
+            .select()
+            .from(applicationsTable)
+            .where(
+              and(
+                eq(applicationsTable.programId, program.id),
+                eq(applicationsTable.status, 'accepted'),
+              ),
+            );
+
+          // Get all completed milestones to calculate paid amount
+          let totalPaidOut = 0;
+          for (const app of applications) {
+            const milestones = await ctx.db
+              .select()
+              .from(milestonesTable)
+              .where(
+                and(
+                  eq(milestonesTable.applicationId, app.id),
+                  eq(milestonesTable.status, 'completed'),
+                ),
+              );
+
+            for (const milestone of milestones) {
+              if (milestone.price) {
+                totalPaidOut += Number.parseFloat(milestone.price);
+              }
+            }
+          }
+
+          const totalDeposited = Number.parseFloat(program.price || '0');
+          const reclaimableAmount = totalDeposited - totalPaidOut;
+
+          // Can reclaim if there's more than a small tolerance amount
+          return reclaimableAmount > 0.001;
+        }
+
+        return false;
+      },
     }),
     invitedBuilders: t.field({
       type: [User],
@@ -106,6 +279,59 @@ export const ProgramType = builder.objectRef<DBProgram>('Program').implement({
         ),
     }),
     image: t.exposeString('image'),
+
+    // Investment/Funding fields
+    type: t.field({
+      type: ProgramTypeEnum,
+      resolve: (program) => program.type,
+    }),
+    applicationStartDate: t.field({
+      type: 'DateTime',
+      resolve: (program) => program.applicationStartDate,
+    }),
+    applicationEndDate: t.field({
+      type: 'DateTime',
+      resolve: (program) => program.applicationEndDate,
+    }),
+    fundingStartDate: t.field({
+      type: 'DateTime',
+      resolve: (program) => program.fundingStartDate,
+    }),
+    fundingEndDate: t.field({
+      type: 'DateTime',
+      resolve: (program) => program.fundingEndDate,
+    }),
+    fundingCondition: t.field({
+      type: FundingConditionEnum,
+      resolve: (program) => program.fundingCondition,
+    }),
+    tierSettings: t.field({
+      type: 'JSON',
+      nullable: true,
+      resolve: (program) =>
+        program.tierSettings ? JSON.parse(JSON.stringify(program.tierSettings)) : null,
+    }),
+    feePercentage: t.exposeInt('feePercentage'),
+    customFeePercentage: t.exposeInt('customFeePercentage'),
+    maxFundingAmount: t.exposeString('maxFundingAmount'),
+
+    // Get supporters with their tiers for funding programs
+    supporters: t.field({
+      type: [SupporterType],
+      nullable: true,
+      resolve: async (program, _args, ctx) => {
+        const result = await getSupportersWithTiersResolver({}, { programId: program.id }, ctx);
+        return result || [];
+      },
+    }),
+    // Get current user's tier assignment for funding programs
+    userTierAssignment: t.field({
+      type: UserTierAssignmentType,
+      nullable: true,
+      resolve: (program, _args, ctx) =>
+        getUserTierAssignmentResolver({}, { programId: program.id }, ctx),
+    }),
+    contractAddress: t.exposeString('contractAddress'),
   }),
 });
 
@@ -148,6 +374,18 @@ export const CreateProgramInput = builder.inputType('CreateProgramInput', {
     visibility: t.field({ type: ProgramVisibilityEnum }),
     status: t.field({ type: ProgramStatusEnum, defaultValue: 'pending' }),
     image: t.field({ type: 'Upload', required: true }),
+
+    // Investment/Funding fields
+    type: t.field({ type: ProgramTypeEnum, defaultValue: 'regular' }),
+    applicationStartDate: t.field({ type: 'DateTime' }),
+    applicationEndDate: t.field({ type: 'DateTime' }),
+    fundingStartDate: t.field({ type: 'DateTime' }),
+    fundingEndDate: t.field({ type: 'DateTime' }),
+    fundingCondition: t.field({ type: FundingConditionEnum }),
+    tierSettings: t.field({ type: 'JSON' }),
+    feePercentage: t.int(),
+    customFeePercentage: t.int(),
+    contractAddress: t.string(),
   }),
 });
 
@@ -172,6 +410,45 @@ export const UpdateProgramInput = builder.inputType('UpdateProgramInput', {
     visibility: t.field({ type: ProgramVisibilityEnum }),
     network: t.string(),
     image: t.field({ type: 'Upload' }),
+
+    // Investment/Funding fields
+    type: t.field({ type: ProgramTypeEnum }),
+    applicationStartDate: t.field({ type: 'DateTime' }),
+    applicationEndDate: t.field({ type: 'DateTime' }),
+    fundingStartDate: t.field({ type: 'DateTime' }),
+    fundingEndDate: t.field({ type: 'DateTime' }),
+    fundingCondition: t.field({ type: FundingConditionEnum }),
+    tierSettings: t.field({ type: 'JSON' }),
+    feePercentage: t.int(),
+    customFeePercentage: t.int(),
+  }),
+});
+
+// Input for assigning users to investment tiers
+export const AssignUserTierInput = builder.inputType('AssignUserTierInput', {
+  fields: (t) => ({
+    programId: t.id({ required: true }),
+    userId: t.id({ required: true }),
+    tier: t.field({ type: InvestmentTierEnum, required: true }),
+    maxInvestmentAmount: t.string({
+      required: true,
+      validate: {
+        refine(value) {
+          return new BigNumber(value).isPositive();
+        },
+      },
+    }),
+  }),
+});
+
+// Input for bulk tier assignments
+export const BulkAssignTiersInput = builder.inputType('BulkAssignTiersInput', {
+  fields: (t) => ({
+    programId: t.id({ required: true }),
+    assignments: t.field({
+      type: [AssignUserTierInput],
+      required: true,
+    }),
   }),
 });
 
@@ -270,8 +547,23 @@ builder.mutationFields((t) => ({
     args: {
       programId: t.arg.id({ required: true }),
       userId: t.arg.id({ required: true }),
+      // Optional tier assignment for funding programs
+      tier: t.arg({ type: InvestmentTierEnum, required: false }),
+      maxInvestmentAmount: t.arg.string({ required: false }),
     },
     resolve: inviteUserToProgramResolver,
+  }),
+  removeUserFromProgram: t.field({
+    type: ProgramType,
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.programId },
+      admin: true,
+    }),
+    args: {
+      programId: t.arg.id({ required: true }),
+      userId: t.arg.id({ required: true }),
+    },
+    resolve: removeUserFromProgramResolver,
   }),
   assignValidatorToProgram: t.field({
     type: ProgramType,
@@ -320,5 +612,70 @@ builder.mutationFields((t) => ({
       keyword: t.arg.string({ required: true }),
     },
     resolve: removeProgramKeywordResolver,
+  }),
+
+  // Tier assignment mutations
+  assignUserTier: t.field({
+    type: UserTierAssignmentType,
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.input.programId },
+      admin: true,
+    }),
+    args: {
+      input: t.arg({ type: AssignUserTierInput, required: true }),
+    },
+    resolve: assignUserTierResolver,
+  }),
+
+  updateUserTier: t.field({
+    type: UserTierAssignmentType,
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.input.programId },
+      admin: true,
+    }),
+    args: {
+      input: t.arg({ type: AssignUserTierInput, required: true }),
+    },
+    resolve: updateUserTierResolver,
+  }),
+
+  removeUserTier: t.field({
+    type: 'Boolean',
+    authScopes: (_, args) => ({
+      programSponsor: { programId: args.programId },
+      admin: true,
+    }),
+    args: {
+      programId: t.arg.id({ required: true }),
+      userId: t.arg.id({ required: true }),
+    },
+    resolve: removeUserTierResolver,
+  }),
+  // Reclaim mutations for recruitment programs
+  reclaimProgram: t.field({
+    type: ProgramType,
+    authScopes: { user: true },
+    args: {
+      programId: t.arg.id({ required: true }),
+      txHash: t.arg.string({ required: false }),
+    },
+    resolve: reclaimProgramResolver,
+  }),
+  // Admin visibility mutations
+  hideProgram: t.field({
+    type: ProgramType,
+    authScopes: { admin: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: hideProgramResolver,
+  }),
+  showProgram: t.field({
+    type: ProgramType,
+    authScopes: { admin: true },
+    args: {
+      id: t.arg.id({ required: true }),
+    },
+    resolve: showProgramResolver,
   }),
 }));

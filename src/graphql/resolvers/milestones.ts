@@ -6,6 +6,7 @@ import {
   milestonesTable,
   milestonesToLinksTable,
   programUserRolesTable,
+  programsTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type {
@@ -32,6 +33,60 @@ export async function getMilestoneResolver(_root: Root, args: { id: string }, ct
     .select()
     .from(milestonesTable)
     .where(eq(milestonesTable.id, args.id));
+
+  if (!milestone) {
+    throw new Error('Milestone not found');
+  }
+
+  // Get the application and program to check visibility
+  const [application] = await ctx.db
+    .select({ programId: applicationsTable.programId, applicantId: applicationsTable.applicantId })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, milestone.applicationId));
+
+  if (!application) {
+    throw new Error('Application not found');
+  }
+
+  const [program] = await ctx.db
+    .select({ visibility: programsTable.visibility, creatorId: programsTable.creatorId })
+    .from(programsTable)
+    .where(eq(programsTable.id, application.programId));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  // Check access for private programs
+  if (program.visibility === 'private') {
+    const user = requireUser(ctx);
+
+    // Check if user is admin first (admins can access everything)
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      return milestone;
+    }
+
+    // Allow access if user is the applicant or program creator
+    if (application.applicantId === user.id || program.creatorId === user.id) {
+      return milestone;
+    }
+
+    // Check if user has any role in the program
+    const userRole = await ctx.db
+      .select()
+      .from(programUserRolesTable)
+      .where(
+        and(
+          eq(programUserRolesTable.programId, application.programId),
+          eq(programUserRolesTable.userId, user.id),
+        ),
+      );
+
+    if (userRole.length === 0) {
+      throw new Error('You do not have access to this milestone');
+    }
+  }
+
   return milestone;
 }
 
@@ -40,6 +95,53 @@ export async function getMilestonesResolver(
   args: { applicationId: string; pagination?: typeof PaginationInput.$inferInput | null },
   ctx: Context,
 ) {
+  // First check if user has access to this application's milestones
+  const [application] = await ctx.db
+    .select({ programId: applicationsTable.programId, applicantId: applicationsTable.applicantId })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, args.applicationId));
+
+  if (!application) {
+    throw new Error('Application not found');
+  }
+
+  const [program] = await ctx.db
+    .select({ visibility: programsTable.visibility, creatorId: programsTable.creatorId })
+    .from(programsTable)
+    .where(eq(programsTable.id, application.programId));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  // Check access for private programs
+  if (program.visibility === 'private') {
+    const user = requireUser(ctx);
+
+    // Check if user is admin first (admins can access everything)
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      // Admin can access all milestones, continue
+    } else {
+      // Allow access if user is the applicant or program creator
+      if (application.applicantId !== user.id && program.creatorId !== user.id) {
+        // Check if user has any role in the program
+        const userRole = await ctx.db
+          .select()
+          .from(programUserRolesTable)
+          .where(
+            and(
+              eq(programUserRolesTable.programId, application.programId),
+              eq(programUserRolesTable.userId, user.id),
+            ),
+          );
+
+        if (userRole.length === 0) {
+          throw new Error('You do not have access to view milestones for this application');
+        }
+      }
+    }
+  }
+
   const limit = args.pagination?.limit || 10;
   const offset = args.pagination?.offset || 0;
 
@@ -65,11 +167,58 @@ export async function getMilestonesResolver(
   };
 }
 
-export function getMilestonesByApplicationIdResolver(
+export async function getMilestonesByApplicationIdResolver(
   _root: Root,
   args: { applicationId: string },
   ctx: Context,
 ) {
+  // First check if user has access to this application's milestones
+  const [application] = await ctx.db
+    .select({ programId: applicationsTable.programId, applicantId: applicationsTable.applicantId })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, args.applicationId));
+
+  if (!application) {
+    throw new Error('Application not found');
+  }
+
+  const [program] = await ctx.db
+    .select({ visibility: programsTable.visibility, creatorId: programsTable.creatorId })
+    .from(programsTable)
+    .where(eq(programsTable.id, application.programId));
+
+  if (!program) {
+    throw new Error('Program not found');
+  }
+
+  // Check access for private programs
+  if (program.visibility === 'private') {
+    const user = requireUser(ctx);
+
+    // Check if user is admin first (admins can access everything)
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      // Admin can access all milestones, continue
+    } else {
+      // Allow access if user is the applicant or program creator
+      if (application.applicantId !== user.id && program.creatorId !== user.id) {
+        // Check if user has any role in the program
+        const userRole = await ctx.db
+          .select()
+          .from(programUserRolesTable)
+          .where(
+            and(
+              eq(programUserRolesTable.programId, application.programId),
+              eq(programUserRolesTable.userId, user.id),
+            ),
+          );
+
+        if (userRole.length === 0) {
+          throw new Error('You do not have access to view milestones for this application');
+        }
+      }
+    }
+  }
+
   return ctx.db
     .select()
     .from(milestonesTable)
@@ -125,6 +274,26 @@ export function updateMilestoneResolver(
         'You are not allowed to update this milestone. Only the applicant, builders, and admins can update milestones.',
       );
     }
+
+    // Validate milestone deadline for funding programs
+    if (args.input.deadline) {
+      const [program] = await t
+        .select()
+        .from(programsTable)
+        .where(eq(programsTable.id, application.programId));
+
+      if (program && program.type === 'funding' && program.fundingEndDate) {
+        const fundingEndDate = new Date(program.fundingEndDate);
+        const milestoneDeadline = new Date(args.input.deadline);
+
+        if (milestoneDeadline <= fundingEndDate) {
+          throw new Error(
+            `Milestone deadline must be after the funding period ends (${fundingEndDate.toISOString().split('T')[0]}). Please select a date after the funding end date.`,
+          );
+        }
+      }
+    }
+
     // handle links
     if (args.input.links) {
       const filteredLinks = args.input.links.filter((link) => link.url);
@@ -393,5 +562,79 @@ export function checkMilestoneResolver(
     }
 
     return milestone;
+  });
+}
+
+// Reclaim an unpaid milestone past its deadline
+export async function reclaimMilestoneResolver(
+  _root: Root,
+  args: { milestoneId: string; txHash?: string | null },
+  ctx: Context,
+) {
+  const user = requireUser(ctx);
+
+  return ctx.db.transaction(async (t) => {
+    // Get the milestone with its application
+    const [milestone] = await t
+      .select()
+      .from(milestonesTable)
+      .where(eq(milestonesTable.id, args.milestoneId));
+
+    if (!milestone) {
+      throw new Error('Milestone not found');
+    }
+
+    // Get the application to check builder
+    const [application] = await t
+      .select()
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, milestone.applicationId));
+
+    if (!application) {
+      throw new Error('Associated application not found');
+    }
+
+    // Check if user is the builder (applicant)
+    if (application.applicantId !== user.id) {
+      throw new Error('Only the milestone builder can reclaim funds');
+    }
+
+    // Check if milestone is eligible for reclaim
+    if (milestone.reclaimed) {
+      throw new Error('Milestone has already been reclaimed');
+    }
+
+    if (milestone.status === 'completed' || milestone.status === 'rejected') {
+      throw new Error('Cannot reclaim completed or rejected milestones');
+    }
+
+    const now = new Date();
+    const deadline = milestone.deadline ? new Date(milestone.deadline) : null;
+    if (!deadline || deadline > now) {
+      throw new Error('Milestone deadline has not passed yet');
+    }
+
+    // Update milestone as reclaimed
+    const updateData: {
+      reclaimed: boolean;
+      reclaimedAt: Date;
+      reclaimTxHash?: string;
+    } = {
+      reclaimed: true,
+      reclaimedAt: new Date(),
+    };
+
+    // Only set txHash if provided
+    if (args.txHash) {
+      updateData.reclaimTxHash = args.txHash;
+    }
+
+    const [updatedMilestone] = await t
+      .update(milestonesTable)
+      .set(updateData)
+      .where(eq(milestonesTable.id, args.milestoneId))
+      .returning();
+
+    return updatedMilestone;
   });
 }

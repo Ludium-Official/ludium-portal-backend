@@ -1,6 +1,8 @@
 import {
   type User,
+  applicationsTable,
   filesTable,
+  investmentsTable,
   keywordsTable,
   linksTable,
   programUserRolesTable,
@@ -65,9 +67,10 @@ export async function getUsersResolver(
   const conditions = await Promise.all(filterPromises);
   const validConditions = conditions.filter(Boolean);
 
-  // Add default filter for users with email not null
+  // Add default filter for users with email not null and not banned
   const emailNotNullCondition = isNotNull(usersTable.email);
-  const allConditions = [...validConditions, emailNotNullCondition];
+  const notBannedCondition = eq(usersTable.banned, false);
+  const allConditions = [...validConditions, emailNotNullCondition, notBannedCondition];
 
   const where = allConditions.length > 0 ? and(...allConditions) : undefined;
 
@@ -319,6 +322,241 @@ export async function getUserProgramStatisticsResolver(
   };
 }
 
+export async function getUserInvestmentStatisticsResolver(
+  _root: Root,
+  args: { userId: string },
+  ctx: Context,
+) {
+  // Initialize statistics structure for investment programs
+  const initInvestmentStats = () => ({
+    ready: 0,
+    applicationOngoing: 0,
+    fundingOngoing: 0,
+    projectOngoing: 0,
+    programCompleted: 0,
+    refund: 0,
+  });
+
+  const asHost = initInvestmentStats();
+  const asProject = initInvestmentStats();
+  const asSupporter = initInvestmentStats();
+
+  // 1. Investment Program Host statistics
+  // Get programs created by this user that are investment type
+  const hostPrograms = await ctx.db
+    .select({
+      id: programsTable.id,
+      status: programsTable.status,
+      applicationStartDate: programsTable.applicationStartDate,
+      applicationEndDate: programsTable.applicationEndDate,
+      fundingStartDate: programsTable.fundingStartDate,
+      fundingEndDate: programsTable.fundingEndDate,
+    })
+    .from(programsTable)
+    .where(and(eq(programsTable.creatorId, args.userId), eq(programsTable.type, 'funding')));
+
+  // Map host program statuses
+  const now = new Date();
+  for (const program of hostPrograms) {
+    let mappedStatus: keyof ReturnType<typeof initInvestmentStats>;
+
+    if (program.status === 'pending') {
+      mappedStatus = 'ready';
+    } else if (program.status === 'published') {
+      // Determine phase based on dates
+      const applicationStart = program.applicationStartDate
+        ? new Date(program.applicationStartDate)
+        : null;
+      const applicationEnd = program.applicationEndDate
+        ? new Date(program.applicationEndDate)
+        : null;
+      const fundingStart = program.fundingStartDate ? new Date(program.fundingStartDate) : null;
+      const fundingEnd = program.fundingEndDate ? new Date(program.fundingEndDate) : null;
+
+      if (applicationStart && applicationEnd && now >= applicationStart && now <= applicationEnd) {
+        mappedStatus = 'applicationOngoing';
+      } else if (fundingStart && fundingEnd && now >= fundingStart && now <= fundingEnd) {
+        mappedStatus = 'fundingOngoing';
+      } else if (fundingEnd && now > fundingEnd) {
+        mappedStatus = 'projectOngoing';
+      } else {
+        mappedStatus = 'ready';
+      }
+    } else if (program.status === 'completed') {
+      mappedStatus = 'programCompleted';
+    } else if (program.status === 'cancelled') {
+      mappedStatus = 'refund';
+    } else {
+      mappedStatus = 'ready';
+    }
+
+    asHost[mappedStatus]++;
+  }
+
+  // 2. Investment Program Project statistics
+  // First get all applications by this user
+  const userApplications = await ctx.db
+    .select({
+      id: applicationsTable.id,
+      status: applicationsTable.status,
+      fundingSuccessful: applicationsTable.fundingSuccessful,
+      programId: applicationsTable.programId,
+    })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.applicantId, args.userId));
+
+  if (userApplications.length === 0) {
+    // Continue to supporter stats
+  } else {
+    // Get investment programs for these applications
+    const applicationProgramIds = userApplications.map((app) => app.programId);
+    const investmentPrograms = await ctx.db
+      .select({
+        id: programsTable.id,
+        status: programsTable.status,
+        type: programsTable.type,
+        applicationStartDate: programsTable.applicationStartDate,
+        applicationEndDate: programsTable.applicationEndDate,
+        fundingStartDate: programsTable.fundingStartDate,
+        fundingEndDate: programsTable.fundingEndDate,
+      })
+      .from(programsTable)
+      .where(
+        and(inArray(programsTable.id, applicationProgramIds), eq(programsTable.type, 'funding')),
+      );
+
+    // Create a map for easy lookup
+    const programMap = new Map(investmentPrograms.map((p) => [p.id, p]));
+
+    // Process applications that are in investment programs
+    const investmentApplications = userApplications.filter((app) => programMap.has(app.programId));
+
+    // Map project application statuses
+    for (const application of investmentApplications) {
+      const program = programMap.get(application.programId);
+      if (!program) continue;
+
+      let mappedStatus: keyof ReturnType<typeof initInvestmentStats>;
+
+      if (application.status === 'pending') {
+        mappedStatus = 'ready';
+      } else if (application.status === 'accepted') {
+        // Determine phase based on dates
+        const fundingStart = program.fundingStartDate ? new Date(program.fundingStartDate) : null;
+        const fundingEnd = program.fundingEndDate ? new Date(program.fundingEndDate) : null;
+
+        if (fundingStart && fundingEnd && now >= fundingStart && now <= fundingEnd) {
+          mappedStatus = 'fundingOngoing';
+        } else if (fundingEnd && now > fundingEnd) {
+          if (application.fundingSuccessful) {
+            mappedStatus = 'projectOngoing';
+          } else {
+            mappedStatus = 'refund'; // Project failed to get funding
+          }
+        } else {
+          mappedStatus = 'ready';
+        }
+      } else if (application.status === 'completed') {
+        mappedStatus = 'programCompleted';
+      } else if (application.status === 'rejected') {
+        mappedStatus = 'refund';
+      } else {
+        mappedStatus = 'ready';
+      }
+
+      asProject[mappedStatus]++;
+    }
+  }
+
+  // 3. Investment Program Supporter statistics
+  // First get all investments by this user
+  const userInvestments = await ctx.db
+    .select({
+      id: investmentsTable.id,
+      status: investmentsTable.status,
+      applicationId: investmentsTable.applicationId,
+    })
+    .from(investmentsTable)
+    .where(eq(investmentsTable.userId, args.userId));
+
+  if (userInvestments.length > 0) {
+    // Get applications for these investments
+    const investmentApplicationIds = userInvestments.map((inv) => inv.applicationId);
+    const investmentApplications = await ctx.db
+      .select({
+        id: applicationsTable.id,
+        status: applicationsTable.status,
+        fundingSuccessful: applicationsTable.fundingSuccessful,
+        programId: applicationsTable.programId,
+      })
+      .from(applicationsTable)
+      .where(inArray(applicationsTable.id, investmentApplicationIds));
+
+    // Get programs for these applications
+    const applicationProgramIds = investmentApplications.map((app) => app.programId);
+    const supporterPrograms = await ctx.db
+      .select({
+        id: programsTable.id,
+        status: programsTable.status,
+        type: programsTable.type,
+        fundingStartDate: programsTable.fundingStartDate,
+        fundingEndDate: programsTable.fundingEndDate,
+      })
+      .from(programsTable)
+      .where(
+        and(inArray(programsTable.id, applicationProgramIds), eq(programsTable.type, 'funding')),
+      );
+
+    // Create maps for easy lookup
+    const applicationMap = new Map(investmentApplications.map((app) => [app.id, app]));
+    const supporterProgramMap = new Map(supporterPrograms.map((p) => [p.id, p]));
+
+    // Map supporter investment statuses
+    for (const investment of userInvestments) {
+      const application = applicationMap.get(investment.applicationId);
+      if (!application) continue;
+
+      const program = supporterProgramMap.get(application.programId);
+      if (!program) continue;
+
+      let mappedStatus: keyof ReturnType<typeof initInvestmentStats>;
+
+      if (investment.status === 'pending') {
+        mappedStatus = 'ready';
+      } else if (investment.status === 'confirmed') {
+        // Check project and program status
+        const fundingEnd = program.fundingEndDate ? new Date(program.fundingEndDate) : null;
+
+        if (fundingEnd && now <= fundingEnd) {
+          mappedStatus = 'fundingOngoing';
+        } else if (application.fundingSuccessful) {
+          if (application.status === 'completed') {
+            mappedStatus = 'programCompleted';
+          } else {
+            mappedStatus = 'projectOngoing';
+          }
+        } else {
+          mappedStatus = 'refund'; // Project failed to get funding
+        }
+      } else if (investment.status === 'refunded') {
+        mappedStatus = 'refund';
+      } else if (investment.status === 'failed') {
+        mappedStatus = 'refund';
+      } else {
+        mappedStatus = 'ready';
+      }
+
+      asSupporter[mappedStatus]++;
+    }
+  }
+
+  return {
+    asHost,
+    asProject,
+    asSupporter,
+  };
+}
+
 export function createUserResolver(
   _root: Root,
   args: { input: typeof UserInput.$inferInput },
@@ -392,6 +630,7 @@ export function createUserResolver(
             keywordIds.map((keywordId) => ({
               userId: user.id,
               keywordId,
+              type: 'role' as const,
             })),
           )
           .onConflictDoNothing();
@@ -410,21 +649,6 @@ export function updateUserResolver(
   const { links, keywords, ...userData } = args.input;
 
   return ctx.db.transaction(async (t) => {
-    if (userData.image) {
-      const [avatar] = await t
-        .select()
-        .from(filesTable)
-        .where(eq(filesTable.uploadedById, userData.id));
-      if (avatar) {
-        await ctx.server.fileManager.deleteFile(avatar.id);
-      }
-      const fileUrl = await ctx.server.fileManager.uploadFile({
-        file: userData.image,
-        userId: userData.id,
-      });
-      await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, userData.id));
-    }
-
     const [user] = await t
       .update(usersTable)
       .set({
@@ -492,10 +716,26 @@ export function updateUserResolver(
             keywordIds.map((keywordId) => ({
               userId: args.input.id,
               keywordId,
+              type: 'role' as const,
             })),
           )
           .onConflictDoNothing();
       }
+    }
+
+    if (userData.image) {
+      const [imageFile] = await t
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.uploadedById, userData.id));
+      if (imageFile) {
+        await ctx.server.fileManager.deleteFile(imageFile.id);
+      }
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: userData.image,
+        userId: userData.id,
+      });
+      await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, userData.id));
     }
 
     return user;
@@ -526,26 +766,11 @@ export function updateProfileResolver(
     throw new Error('Unauthorized');
   }
 
-  const { links, keywords, ...userData } = args.input;
+  const { links, keywords, roleKeywords, skillKeywords, ...userData } = args.input;
 
   const filteredUserData = filterEmptyValues<User>(userData);
 
   return ctx.db.transaction(async (t) => {
-    if (userData.image) {
-      const [avatar] = await t
-        .select()
-        .from(filesTable)
-        .where(eq(filesTable.uploadedById, loggedinUser.id));
-      if (avatar) {
-        await ctx.server.fileManager.deleteFile(avatar.id);
-      }
-      const fileUrl = await ctx.server.fileManager.uploadFile({
-        file: userData.image,
-        userId: loggedinUser.id,
-      });
-      await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, loggedinUser.id));
-    }
-
     const [user] = await t
       .update(usersTable)
       .set({
@@ -579,9 +804,109 @@ export function updateProfileResolver(
       );
     }
 
+    // Handle role keywords
+    if (roleKeywords !== undefined) {
+      // Delete existing role keyword associations
+      await t
+        .delete(usersToKeywordsTable)
+        .where(
+          and(
+            eq(usersToKeywordsTable.userId, loggedinUser.id),
+            eq(usersToKeywordsTable.type, 'role'),
+          ),
+        );
+
+      const keywordIds = [];
+
+      for (const keyword of roleKeywords || []) {
+        let existingKeyword = await t
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.name, keyword.toLowerCase().trim()))
+          .then((results) => results[0]);
+
+        if (!existingKeyword) {
+          const [newKeyword] = await t
+            .insert(keywordsTable)
+            .values({ name: keyword.toLowerCase().trim() })
+            .returning();
+          existingKeyword = newKeyword;
+        }
+
+        keywordIds.push(existingKeyword.id);
+      }
+
+      if (keywordIds.length > 0) {
+        await t
+          .insert(usersToKeywordsTable)
+          .values(
+            keywordIds.map((keywordId) => ({
+              userId: loggedinUser.id,
+              keywordId,
+              type: 'role' as const,
+            })),
+          )
+          .onConflictDoNothing();
+      }
+    }
+
+    // Handle skill keywords
+    if (skillKeywords !== undefined) {
+      // Delete existing skill keyword associations
+      await t
+        .delete(usersToKeywordsTable)
+        .where(
+          and(
+            eq(usersToKeywordsTable.userId, loggedinUser.id),
+            eq(usersToKeywordsTable.type, 'skill'),
+          ),
+        );
+
+      const keywordIds = [];
+
+      for (const keyword of skillKeywords || []) {
+        let existingKeyword = await t
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.name, keyword.toLowerCase().trim()))
+          .then((results) => results[0]);
+
+        if (!existingKeyword) {
+          const [newKeyword] = await t
+            .insert(keywordsTable)
+            .values({ name: keyword.toLowerCase().trim() })
+            .returning();
+          existingKeyword = newKeyword;
+        }
+
+        keywordIds.push(existingKeyword.id);
+      }
+
+      if (keywordIds.length > 0) {
+        await t
+          .insert(usersToKeywordsTable)
+          .values(
+            keywordIds.map((keywordId) => ({
+              userId: loggedinUser.id,
+              keywordId,
+              type: 'skill' as const,
+            })),
+          )
+          .onConflictDoNothing();
+      }
+    }
+
+    // Handle legacy keywords field (for backward compatibility)
     if (keywords) {
       // Delete existing keyword associations
-      await t.delete(usersToKeywordsTable).where(eq(usersToKeywordsTable.userId, loggedinUser.id));
+      await t
+        .delete(usersToKeywordsTable)
+        .where(
+          and(
+            eq(usersToKeywordsTable.userId, loggedinUser.id),
+            eq(usersToKeywordsTable.type, 'role'),
+          ),
+        );
 
       const keywordIds = [];
 
@@ -610,10 +935,26 @@ export function updateProfileResolver(
             keywordIds.map((keywordId) => ({
               userId: loggedinUser.id,
               keywordId,
+              type: 'role' as const,
             })),
           )
           .onConflictDoNothing();
       }
+    }
+
+    if (userData.image) {
+      const [imageFile] = await t
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.uploadedById, userData.id));
+      if (imageFile) {
+        await ctx.server.fileManager.deleteFile(imageFile.id);
+      }
+      const fileUrl = await ctx.server.fileManager.uploadFile({
+        file: userData.image,
+        userId: loggedinUser.id,
+      });
+      await t.update(usersTable).set({ image: fileUrl }).where(eq(usersTable.id, loggedinUser.id));
     }
 
     return user;
@@ -644,13 +985,19 @@ export async function getUserAvatarResolver(_root: Root, args: { userId: string 
 
 export async function getUserKeywordsByUserIdResolver(
   _root: Root,
-  args: { userId: string },
+  args: { userId: string; type?: 'role' | 'skill' },
   ctx: Context,
 ) {
+  const whereConditions = [eq(usersToKeywordsTable.userId, args.userId)];
+
+  if (args.type) {
+    whereConditions.push(eq(usersToKeywordsTable.type, args.type));
+  }
+
   const keywordRelations = await ctx.db
     .select()
     .from(usersToKeywordsTable)
-    .where(eq(usersToKeywordsTable.userId, args.userId));
+    .where(and(...whereConditions));
 
   if (!keywordRelations.length) return [];
 
@@ -665,7 +1012,7 @@ export async function getUserKeywordsByUserIdResolver(
 
 export async function addUserKeywordResolver(
   _root: Root,
-  args: { userId: string; keyword: string },
+  args: { userId: string; keyword: string; type?: 'role' | 'skill' | null },
   ctx: Context,
 ) {
   return await ctx.db.transaction(async (t) => {
@@ -674,6 +1021,8 @@ export async function addUserKeywordResolver(
     if (!user) {
       throw new Error('User not found');
     }
+
+    const keywordType = args.type || 'role';
 
     let existingKeyword = await t
       .select()
@@ -694,6 +1043,7 @@ export async function addUserKeywordResolver(
       .values({
         userId: args.userId,
         keywordId: existingKeyword.id,
+        type: keywordType,
       })
       .onConflictDoNothing();
 
@@ -703,7 +1053,7 @@ export async function addUserKeywordResolver(
 
 export async function removeUserKeywordResolver(
   _root: Root,
-  args: { userId: string; keyword: string },
+  args: { userId: string; keyword: string; type?: 'role' | 'skill' | null },
   ctx: Context,
 ) {
   return await ctx.db.transaction(async (t) => {
@@ -712,6 +1062,8 @@ export async function removeUserKeywordResolver(
     if (!user) {
       throw new Error('User not found');
     }
+
+    const keywordType = args.type || 'role';
 
     const existingKeyword = await t
       .select()
@@ -729,9 +1081,228 @@ export async function removeUserKeywordResolver(
         and(
           eq(usersToKeywordsTable.userId, args.userId),
           eq(usersToKeywordsTable.keywordId, existingKeyword.id),
+          eq(usersToKeywordsTable.type, keywordType),
         ),
       );
 
     return true;
   });
+}
+
+// Ban management resolvers
+export async function banUserResolver(
+  _root: Root,
+  args: { userId: string; reason?: string | null },
+  ctx: Context,
+): Promise<User> {
+  const currentUser = requireUser(ctx);
+
+  // Cannot ban yourself
+  if (currentUser.id === args.userId) {
+    throw new Error('Cannot ban yourself');
+  }
+
+  // Check if target user exists
+  const [targetUser] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.userId));
+
+  if (!targetUser) {
+    throw new Error('User not found');
+  }
+
+  // Cannot ban superadmin
+  if (targetUser.role === 'superadmin') {
+    throw new Error('Cannot ban superadmin');
+  }
+
+  // Update user to banned
+  const [bannedUser] = await ctx.db
+    .update(usersTable)
+    .set({
+      banned: true,
+      bannedAt: new Date(),
+      bannedReason: args.reason,
+    })
+    .where(eq(usersTable.id, args.userId))
+    .returning();
+
+  return bannedUser;
+}
+
+export async function unbanUserResolver(
+  _root: Root,
+  args: { userId: string },
+  ctx: Context,
+): Promise<User> {
+  // Check if user exists
+  const [targetUser] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.userId));
+
+  if (!targetUser) {
+    throw new Error('User not found');
+  }
+
+  // Update user to unbanned
+  const [unbannedUser] = await ctx.db
+    .update(usersTable)
+    .set({
+      banned: false,
+      bannedAt: null,
+      bannedReason: null,
+    })
+    .where(eq(usersTable.id, args.userId))
+    .returning();
+
+  return unbannedUser;
+}
+
+// Role management resolvers
+export async function promoteToAdminResolver(
+  _root: Root,
+  args: { userId: string },
+  ctx: Context,
+): Promise<User> {
+  // Ensure user is authenticated (admin check is done at GraphQL level)
+  requireUser(ctx);
+
+  // Check if target user exists
+  const [targetUser] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.userId));
+
+  if (!targetUser) {
+    throw new Error('User not found');
+  }
+
+  // Check if already admin
+  if (targetUser.role === 'admin' || targetUser.role === 'superadmin') {
+    throw new Error('User is already an admin');
+  }
+
+  // Promote to admin
+  const [promotedUser] = await ctx.db
+    .update(usersTable)
+    .set({ role: 'admin' })
+    .where(eq(usersTable.id, args.userId))
+    .returning();
+
+  return promotedUser;
+}
+
+export async function demoteFromAdminResolver(
+  _root: Root,
+  args: { userId: string },
+  ctx: Context,
+): Promise<User> {
+  const currentUser = requireUser(ctx);
+
+  // Cannot demote yourself
+  if (currentUser.id === args.userId) {
+    throw new Error('Cannot demote yourself');
+  }
+
+  // Check if target user exists
+  const [targetUser] = await ctx.db.select().from(usersTable).where(eq(usersTable.id, args.userId));
+
+  if (!targetUser) {
+    throw new Error('User not found');
+  }
+
+  // Cannot demote superadmin
+  if (targetUser.role === 'superadmin') {
+    throw new Error('Cannot demote superadmin');
+  }
+
+  // Check if user is admin
+  if (targetUser.role !== 'admin') {
+    throw new Error('User is not an admin');
+  }
+
+  // Only superadmin can demote other admins
+  if (currentUser.role !== 'superadmin') {
+    throw new Error('Only superadmin can demote other admins');
+  }
+
+  // Demote to regular user
+  const [demotedUser] = await ctx.db
+    .update(usersTable)
+    .set({ role: 'user' })
+    .where(eq(usersTable.id, args.userId))
+    .returning();
+
+  return demotedUser;
+}
+
+// Admin user management query
+export async function getAdminUsersResolver(
+  _root: Root,
+  args: {
+    pagination?: typeof PaginationInput.$inferInput | null;
+    includesBanned?: boolean | null;
+    onlyBanned?: boolean | null;
+    role?: 'user' | 'admin' | 'superadmin' | null;
+  },
+  ctx: Context,
+) {
+  const limit = args.pagination?.limit || 10;
+  const offset = args.pagination?.offset || 0;
+  const sort = args.pagination?.sort || 'desc';
+  const filter = args.pagination?.filter || [];
+
+  const filterPromises = filter.map(async (f) => {
+    if (f.field === 'search') {
+      return or(
+        ilike(usersTable.firstName, `%${f.value}%`),
+        ilike(usersTable.lastName, `%${f.value}%`),
+        ilike(usersTable.organizationName, `%${f.value}%`),
+        ilike(usersTable.email, `%${f.value}%`),
+      );
+    }
+    switch (f.field) {
+      case 'email':
+        return f.value ? ilike(usersTable.email, `%${f.value}%`) : undefined;
+      case 'firstName':
+        return f.value ? ilike(usersTable.firstName, `%${f.value}%`) : undefined;
+      case 'lastName':
+        return f.value ? ilike(usersTable.lastName, `%${f.value}%`) : undefined;
+      case 'organizationName':
+        return f.value ? ilike(usersTable.organizationName, `%${f.value}%`) : undefined;
+      default:
+        return undefined;
+    }
+  });
+
+  const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
+
+  // Handle banned filter
+  if (args.onlyBanned) {
+    filterConditions.push(eq(usersTable.banned, true));
+  } else if (!args.includesBanned) {
+    filterConditions.push(eq(usersTable.banned, false));
+  }
+
+  // Handle role filter
+  if (args.role) {
+    filterConditions.push(eq(usersTable.role, args.role));
+  }
+
+  const where = filterConditions.length > 0 ? and(...filterConditions) : undefined;
+
+  const data = await ctx.db
+    .select()
+    .from(usersTable)
+    .where(where)
+    .limit(limit)
+    .offset(offset)
+    .orderBy(sort === 'asc' ? asc(usersTable.createdAt) : desc(usersTable.createdAt));
+
+  if (!validAndNotEmptyArray(data)) {
+    return {
+      data: [],
+      count: 0,
+    };
+  }
+
+  const [totalCount] = await ctx.db.select({ count: count() }).from(usersTable).where(where);
+
+  return {
+    data,
+    count: totalCount.count,
+  };
 }

@@ -1,6 +1,17 @@
 import { relations } from 'drizzle-orm';
-import { jsonb, pgEnum, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { commentsTable } from './comments';
+import { investmentTermsTable } from './investment-terms';
 import { linksTable } from './links';
 import { milestonesTable } from './milestones';
 import { programsTable } from './programs';
@@ -36,6 +47,12 @@ export const applicationsTable = pgTable('applications', {
   price: varchar('price', { length: 256 }).default('0').notNull(),
   rejectionReason: text('rejection_reason'),
 
+  // Investment-specific fields (only used when program.type = 'funding')
+  fundingTarget: varchar('funding_target', { length: 256 }),
+  walletAddress: varchar('wallet_address', { length: 256 }),
+  fundingSuccessful: boolean('funding_successful').default(false),
+  onChainProjectId: integer('on_chain_project_id'), // Blockchain project ID for investments
+
   // Timestamps
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
@@ -56,6 +73,7 @@ export const applicationRelations = relations(applicationsTable, ({ one, many })
   }),
   milestones: many(milestonesTable),
   comments: many(commentsTable),
+  investmentTerms: many(investmentTermsTable),
 }));
 
 // Links

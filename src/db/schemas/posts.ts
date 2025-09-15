@@ -1,8 +1,12 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, primaryKey, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { pgEnum, pgTable, primaryKey, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { commentsTable } from './comments';
 import { keywordsTable } from './keywords';
 import { usersTable } from './users';
+
+// Post visibility enum matching programs pattern
+export const postVisibilities = ['private', 'restricted', 'public'] as const;
+export const postVisibilityEnum = pgEnum('post_visibility', postVisibilities);
 
 export const postsTable = pgTable('posts', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -13,6 +17,7 @@ export const postsTable = pgTable('posts', {
   content: text('content').notNull(),
   summary: varchar('summary', { length: 512 }).notNull(),
   image: varchar('image', { length: 512 }),
+  visibility: postVisibilityEnum('visibility').default('public'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()

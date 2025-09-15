@@ -21,6 +21,8 @@ export async function getPostsResolver(
   const offset = args.pagination?.offset || 0;
   const sort = args.pagination?.sort || 'desc';
   const filter = args.pagination?.filter || [];
+  const user = requireUser(ctx);
+  const isAdmin = user.role?.endsWith('admin');
 
   const filterPromises = filter.map(async (f) => {
     switch (f.field) {
@@ -28,12 +30,23 @@ export async function getPostsResolver(
         return f.value ? eq(postsTable.authorId, f.value) : undefined;
       case 'title':
         return f.value ? ilike(postsTable.title, `%${f.value}%`) : undefined;
+      case 'visibility':
+        return f.value
+          ? eq(postsTable.visibility, f.value as 'private' | 'restricted' | 'public')
+          : undefined;
       default:
         return undefined;
     }
   });
 
   const filterConditions = (await Promise.all(filterPromises)).filter(Boolean);
+
+  // Add visibility filter: only public posts unless admin
+  // But if admin explicitly filters by visibility, respect that filter
+  const hasVisibilityFilter = filter.some((f) => f.field === 'visibility');
+  if (!isAdmin && !hasVisibilityFilter) {
+    filterConditions.push(eq(postsTable.visibility, 'public'));
+  }
 
   let data: Post[] = [];
   if (filterConditions.length > 0) {
@@ -63,7 +76,7 @@ export async function getPostsResolver(
   const [totalCount] = await ctx.db
     .select({ count: count() })
     .from(postsTable)
-    .where(and(...filterConditions));
+    .where(filterConditions.length > 0 ? and(...filterConditions) : undefined);
 
   return {
     data,
@@ -73,6 +86,14 @@ export async function getPostsResolver(
 
 export async function getPostResolver(_root: Root, args: { id: string }, ctx: Context) {
   const [post] = await ctx.db.select().from(postsTable).where(eq(postsTable.id, args.id));
+
+  // Check visibility: only allow public posts unless admin
+  const user = requireUser(ctx);
+  const isAdmin = user.role?.endsWith('admin');
+
+  if (post && post.visibility !== 'public' && !isAdmin) {
+    throw new Error('Post not found');
+  }
 
   return post;
 }
@@ -249,4 +270,40 @@ export async function incrementPostViewResolver(
 
   // Return updated view count
   return getPostViewCountResolver(_root, { postId: args.postId }, ctx);
+}
+
+export async function hidePostResolver(
+  _root: Root,
+  args: { id: string },
+  ctx: Context,
+): Promise<Post> {
+  const [post] = await ctx.db
+    .update(postsTable)
+    .set({ visibility: 'private' })
+    .where(eq(postsTable.id, args.id))
+    .returning();
+
+  if (!post) {
+    throw new Error('Post not found');
+  }
+
+  return post;
+}
+
+export async function showPostResolver(
+  _root: Root,
+  args: { id: string },
+  ctx: Context,
+): Promise<Post> {
+  const [post] = await ctx.db
+    .update(postsTable)
+    .set({ visibility: 'public' })
+    .where(eq(postsTable.id, args.id))
+    .returning();
+
+  if (!post) {
+    throw new Error('Post not found');
+  }
+
+  return post;
 }
