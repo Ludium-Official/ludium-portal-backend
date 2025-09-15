@@ -209,8 +209,6 @@ src/scripts/data/*
 bun.lockb
 pnpm-lock.yaml
 .cl*
-*.md
-!README.md
 
 # GCloud
 .gcloud
