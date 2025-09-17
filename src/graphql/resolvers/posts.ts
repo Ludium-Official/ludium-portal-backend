@@ -21,8 +21,10 @@ export async function getPostsResolver(
   const offset = args.pagination?.offset || 0;
   const sort = args.pagination?.sort || 'desc';
   const filter = args.pagination?.filter || [];
-  const user = requireUser(ctx);
-  const isAdmin = user.role?.endsWith('admin');
+
+  // Posts should be viewable by everyone, not just authenticated users
+  const user = ctx.server.auth.getUser(ctx.request);
+  const isAdmin = user?.role?.endsWith('admin');
 
   const filterPromises = filter.map(async (f) => {
     switch (f.field) {
@@ -88,8 +90,9 @@ export async function getPostResolver(_root: Root, args: { id: string }, ctx: Co
   const [post] = await ctx.db.select().from(postsTable).where(eq(postsTable.id, args.id));
 
   // Check visibility: only allow public posts unless admin
-  const user = requireUser(ctx);
-  const isAdmin = user.role?.endsWith('admin');
+  // Posts should be viewable by everyone, not just authenticated users
+  const user = ctx.server.auth.getUser(ctx.request);
+  const isAdmin = user?.role?.endsWith('admin');
 
   if (post && post.visibility !== 'public' && !isAdmin) {
     throw new Error('Post not found');
