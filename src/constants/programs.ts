@@ -1,4 +1,5 @@
 export const NETWORKS = [
+  'sepolia',
   'educhain',
   'educhain-testnet',
   'base',

@@ -374,6 +374,7 @@ type Mutation {
   deleteProgram(id: ID!): Boolean
   deleteUser(id: ID!): User
   demoteFromAdmin(userId: ID!): User
+  generateSwappedUrl(amount: String!, currencyCode: String!, userId: String!, walletAddress: String!): SwappedUrlResponse
   hidePost(id: ID!): Post
   hideProgram(id: ID!): Program
   incrementPostView(postId: ID!): Int
@@ -606,6 +607,7 @@ type Query {
   comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
   commentsByCommentable(commentableId: ID!, commentableType: CommentableTypeEnum!): [Comment!]
   countNotifications: Int
+  getSwappedStatus(userId: String!): SwappedStatusResponse
   investment(id: ID!): Investment
   investmentTerm(id: ID!): InvestmentTerm
   investmentTermsByApplicationId(applicationId: ID!): [InvestmentTerm!]
@@ -666,6 +668,19 @@ type Supporter {
   tier: String
   userId: ID
   walletAddress: String
+}
+
+type SwappedStatusResponse {
+  data: JSON
+  message: String
+  orderId: String
+  status: String
+}
+
+type SwappedUrlResponse {
+  originalUrl: String
+  signature: String
+  signedUrl: String
 }
 
 type TierAssignmentData {
