@@ -34,10 +34,9 @@ SwappedStatusResponseType.implement({
       nullable: true,
       resolve: (parent) => parent.orderId,
     }),
-    data: t.field({
-      type: 'JSON',
+    data: t.string({
       nullable: true,
-      resolve: (parent) => parent.data,
+      resolve: (parent) => (parent.data ? JSON.stringify(parent.data) : null),
     }),
   }),
 });
