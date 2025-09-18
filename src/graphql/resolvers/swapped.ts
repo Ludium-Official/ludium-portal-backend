@@ -28,7 +28,7 @@ export async function generateSwappedUrlResolver(
 
   try {
     const responseUrl = encodeURIComponent(
-      `https://e9c7eeeef8ba.ngrok-free.app/swapped/webhook?userId=${userId}`,
+      `https://api-prod-service-892036993268.asia-northeast3.run.app/swapped/webhook?userId=${userId}`,
     );
     let baseUrl: string;
 
