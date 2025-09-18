@@ -18,6 +18,7 @@ import './posts';
 import './comments';
 import './notifications';
 import './carousel';
+import './swapped';
 
 export const schema = builder.toSchema();
 const schemaAsString = printSchema(lexicographicSortSchema(schema));
