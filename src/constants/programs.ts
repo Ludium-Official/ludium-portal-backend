@@ -1,4 +1,5 @@
 export const NETWORKS = [
+  'sepolia',
   'educhain',
   'educhain-testnet',
   'base',
@@ -7,5 +8,5 @@ export const NETWORKS = [
   'arbitrum-sepolia',
   'coredao',
   'coredao-testnet',
-  'creditcoin'
+  'creditcoin',
 ];
