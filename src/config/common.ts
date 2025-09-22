@@ -10,5 +10,9 @@ export const envSchema = {
     JWT_SECRET: { type: 'string' },
     DATABASE_URL: { type: 'string' },
     STORAGE_BUCKET: { type: 'string' },
+    BASE_URL: { type: 'string' },
+    SWAPPED_STYLE_KEY: { type: 'string' },
+    SWAPPED_PUBLIC_KEY: { type: 'string' },
+    SWAPPED_SECRET_KEY: { type: 'string' },
   },
 };
