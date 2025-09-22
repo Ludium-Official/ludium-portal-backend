@@ -33,7 +33,7 @@ export async function generateSwappedUrlResolver(
     );
     let baseUrl: string;
 
-    if (process.env.NODE_ENV === 'local') {
+    if (process.env.NODE_ENV === 'local' || process.env.NODE_ENV === 'development') {
       baseUrl = `https://sandbox.swapped.com/?apiKey=${publicKey}&currencyCode=${currencyCode}&walletAddress=${walletAddress}&baseCurrencyCode=USD&baseCurrencyAmount=${amount}&style=${styleKey}&lockAmount=true&responseUrl=${responseUrl}`;
     } else {
       baseUrl = `https://widget.swapped.com/?apiKey=${publicKey}&currencyCode=${currencyCode}&walletAddress=${walletAddress}&baseCurrencyCode=USD&baseCurrencyAmount=${amount}&style=${styleKey}&lockAmount=true&responseUrl=${responseUrl}`;
@@ -64,6 +64,14 @@ export async function getSwappedStatusResolver(
   },
   ctx: Context,
 ) {
+  let statusUrl: string;
+
+  if (process.env.NODE_ENV === 'local' || process.env.NODE_ENV === 'development') {
+    statusUrl = 'https://sandbox.swapped.com/api/v1/merchant/get_status';
+  } else {
+    statusUrl = 'https://widget.swapped.com/api/v1/merchant/get_status';
+  }
+
   const { userId } = args;
 
   if (!userId) {
@@ -86,7 +94,7 @@ export async function getSwappedStatusResolver(
   }
 
   try {
-    const statusResponse = await fetch('https://sandbox.swapped.com/api/v1/merchant/get_status', {
+    const statusResponse = await fetch(statusUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -100,7 +108,8 @@ export async function getSwappedStatusResolver(
     const statusData = await statusResponse.json();
 
     if (
-      (statusData as { data?: { order_status?: string } }).data?.order_status === 'order_completed'
+      (statusData as { data?: { order_status?: string } }).data?.order_status ===
+      'order_broadcasted'
     ) {
       userOrderMap.delete(userId);
       console.log(`🗑️ Deleted completed order record for user: ${userId}`);
