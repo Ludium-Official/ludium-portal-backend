@@ -671,7 +671,7 @@ type Supporter {
 }
 
 type SwappedStatusResponse {
-  data: JSON
+  data: String
   message: String
   orderId: String
   status: String

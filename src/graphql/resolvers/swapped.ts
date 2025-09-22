@@ -3,6 +3,14 @@ import { URL } from 'node:url';
 import { userOrderMap } from '@/states/swappedState';
 import type { Context, Root } from '@/types';
 
+let baseUrl: string;
+
+if (process.env.NODE_ENV === 'local' || process.env.NODE_ENV === 'development') {
+  baseUrl = 'https://sandbox.swapped.com';
+} else {
+  baseUrl = 'https://widget.swapped.com';
+}
+
 export async function generateSwappedUrlResolver(
   _root: Root,
   args: {
@@ -31,23 +39,18 @@ export async function generateSwappedUrlResolver(
     const responseUrl = encodeURIComponent(
       `${ctx.server.config.BASE_URL}/swapped/webhook?userId=${userId}`,
     );
-    let baseUrl: string;
 
-    if (process.env.NODE_ENV === 'local' || process.env.NODE_ENV === 'development') {
-      baseUrl = `https://sandbox.swapped.com/?apiKey=${publicKey}&currencyCode=${currencyCode}&walletAddress=${walletAddress}&baseCurrencyCode=USD&baseCurrencyAmount=${amount}&style=${styleKey}&lockAmount=true&responseUrl=${responseUrl}`;
-    } else {
-      baseUrl = `https://widget.swapped.com/?apiKey=${publicKey}&currencyCode=${currencyCode}&walletAddress=${walletAddress}&baseCurrencyCode=USD&baseCurrencyAmount=${amount}&style=${styleKey}&lockAmount=true&responseUrl=${responseUrl}`;
-    }
+    const swappedUrl = `${baseUrl}/?apiKey=${publicKey}&currencyCode=${currencyCode}&walletAddress=${walletAddress}&baseCurrencyCode=USD&baseCurrencyAmount=${amount}&style=${styleKey}&lockAmount=true&responseUrl=${responseUrl}`;
 
     const signature = createHmac('sha256', secretKey)
-      .update(new URL(baseUrl).search)
+      .update(new URL(swappedUrl).search)
       .digest('base64');
 
-    const signedUrl = `${baseUrl}&signature=${encodeURIComponent(signature)}`;
+    const signedUrl = `${swappedUrl}&signature=${encodeURIComponent(signature)}`;
 
     return {
       signedUrl,
-      originalUrl: baseUrl,
+      originalUrl: swappedUrl,
       signature,
     };
   } catch (error) {
@@ -64,13 +67,7 @@ export async function getSwappedStatusResolver(
   },
   ctx: Context,
 ) {
-  let statusUrl: string;
-
-  if (process.env.NODE_ENV === 'local' || process.env.NODE_ENV === 'development') {
-    statusUrl = 'https://sandbox.swapped.com/api/v1/merchant/get_status';
-  } else {
-    statusUrl = 'https://widget.swapped.com/api/v1/merchant/get_status';
-  }
+  const statusUrl = `${baseUrl}/api/v1/merchant/get_status`;
 
   const { userId } = args;
 
