@@ -100,8 +100,7 @@ export async function getSwappedStatusResolver(
     const statusData = await statusResponse.json();
 
     if (
-      (statusData as { data?: { order_status?: string } }).data?.order_status ===
-      'order_broadcasted'
+      (statusData as { data?: { order_status?: string } }).data?.order_status === 'order_completed'
     ) {
       userOrderMap.delete(userId);
       console.log(`🗑️ Deleted completed order record for user: ${userId}`);
