@@ -23,22 +23,26 @@ A modern GraphQL API built with Fastify, PostgreSQL, and TypeScript for the Ludi
 ## 🛠️ Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/Ludium-Official/ludium-portal-backend.git
    cd ludium-portal-backend
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Create environment file:
+
    ```bash
    cp .env.example .env
    ```
 
 4. Update the `.env` file with your configuration:
+
    ```env
    NODE_ENV=local
    PORT=4000
@@ -58,11 +62,13 @@ A modern GraphQL API built with Fastify, PostgreSQL, and TypeScript for the Ludi
 ## 🚀 Quick Start
 
 1. Start the database:
+
    ```bash
    npm run db:up
    ```
 
 2. Prepare the database (migrations and seed):
+
    ```bash
    npm run db:prepare
    ```
@@ -122,6 +128,7 @@ The API uses JWT for authentication. To authenticate:
 ## 👥 User Roles
 
 The system supports four user roles:
+
 - **Admin**: Full system access
 - **Sponsor**: Can create and manage programs
 - **Validator**: Can validate programs and create milestones
@@ -148,7 +155,6 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 - [Drizzle ORM](https://orm.drizzle.team/)
 - [Pothos GraphQL](https://pothos-graphql.dev/)
 - [Mercurius](https://mercurius.dev/)
-
 
 ## 📝 Naming convention
 
