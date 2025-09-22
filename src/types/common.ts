@@ -9,6 +9,10 @@ export interface EnvConfig {
   JWT_SECRET: string;
   DATABASE_URL: string;
   STORAGE_BUCKET: string;
+  BASE_URL: string;
+  SWAPPED_STYLE_KEY: string;
+  SWAPPED_PUBLIC_KEY: string;
+  SWAPPED_SECRET_KEY: string;
 }
 
 export type Root = NonNullable<unknown>;

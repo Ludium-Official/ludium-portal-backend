@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { URL } from 'node:url';
 import { userOrderMap } from '@/states/swappedState';
-import type { Root } from '@/types';
+import type { Context, Root } from '@/types';
 
 export async function generateSwappedUrlResolver(
   _root: Root,
@@ -11,12 +11,13 @@ export async function generateSwappedUrlResolver(
     amount: string;
     userId: string;
   },
+  ctx: Context,
 ) {
   const { currencyCode, walletAddress, amount, userId } = args;
 
-  const publicKey = process.env.SWAPPED_PUBLIC_KEY;
-  const secretKey = process.env.SWAPPED_SECRET_KEY;
-  const styleKey = process.env.SWAPPED_STYLE_KEY;
+  const publicKey = ctx.server.config.SWAPPED_PUBLIC_KEY;
+  const secretKey = ctx.server.config.SWAPPED_SECRET_KEY;
+  const styleKey = ctx.server.config.SWAPPED_STYLE_KEY;
 
   if (!publicKey || !secretKey) {
     throw new Error('Server configuration error: Missing SWAPPED_PUBLIC_KEY or SWAPPED_SECRET_KEY');
@@ -28,7 +29,7 @@ export async function generateSwappedUrlResolver(
 
   try {
     const responseUrl = encodeURIComponent(
-      `https://api-prod-service-892036993268.asia-northeast3.run.app/swapped/webhook?userId=${userId}`,
+      `${ctx.server.config.BASE_URL}/swapped/webhook?userId=${userId}`,
     );
     let baseUrl: string;
 
@@ -61,6 +62,7 @@ export async function getSwappedStatusResolver(
   args: {
     userId: string;
   },
+  ctx: Context,
 ) {
   const { userId } = args;
 
@@ -68,7 +70,7 @@ export async function getSwappedStatusResolver(
     throw new Error('Missing required parameter: userId');
   }
 
-  const publicKey = process.env.SWAPPED_PUBLIC_KEY;
+  const publicKey = ctx.server.config.SWAPPED_PUBLIC_KEY;
   if (!publicKey) {
     throw new Error('SWAPPED_PUBLIC_KEY not configured');
   }

@@ -19,7 +19,7 @@ const registerSwappedRoutes = (server: FastifyInstance) => {
       const userId = query.userId;
 
       const signature = request.headers.signature as string;
-      const secretKey = process.env.SWAPPED_SECRET_KEY;
+      const secretKey = server.config.SWAPPED_SECRET_KEY;
 
       if (!secretKey) {
         console.error('❌ SWAPPED_SECRET_KEY not configured');
