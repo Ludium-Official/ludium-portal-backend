@@ -356,7 +356,6 @@ type Mutation {
   acceptProgram(id: ID!): Program
   addProgramKeyword(keyword: String!, programId: ID!): Keyword
   addUserKeyword(keyword: String!, type: KeywordType, userId: ID!): Keyword
-  assignUserTier(input: AssignUserTierInput!): UserTierAssignment
   assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
   banUser(reason: String, userId: ID!): User
   checkMilestone(input: CheckMilestoneInput!): Milestone
@@ -394,7 +393,6 @@ type Mutation {
   removeProgramKeyword(keyword: String!, programId: ID!): Boolean
   removeUserFromProgram(programId: ID!, userId: ID!): Program
   removeUserKeyword(keyword: String!, type: KeywordType, userId: ID!): Boolean
-  removeUserTier(programId: ID!, userId: ID!): Boolean
   removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
   showPost(id: ID!): Post
@@ -412,7 +410,6 @@ type Mutation {
   updateProfile(input: UserUpdateInput!): User
   updateProgram(input: UpdateProgramInput!): Program
   updateUser(input: UserUpdateInput!): User
-  updateUserTier(input: AssignUserTierInput!): UserTierAssignment
 }
 
 type Notification {

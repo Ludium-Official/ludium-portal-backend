@@ -13,7 +13,6 @@ import { getLinksByProgramIdResolver } from '@/graphql/resolvers/links';
 import {
   acceptProgramResolver,
   addProgramKeywordResolver,
-  assignUserTierResolver,
   assignValidatorToProgramResolver,
   createProgramResolver,
   deleteProgramResolver,
@@ -30,11 +29,9 @@ import {
   rejectProgramResolver,
   removeProgramKeywordResolver,
   removeUserFromProgramResolver,
-  removeUserTierResolver,
   removeValidatorFromProgramResolver,
   showProgramResolver,
   updateProgramResolver,
-  updateUserTierResolver,
 } from '@/graphql/resolvers/programs';
 import {
   getInvitedBuildersByProgramIdResolver,
@@ -48,7 +45,7 @@ import { SupporterType } from '@/graphql/types/investments';
 import { Link, LinkInput } from '@/graphql/types/links';
 import { ProgramRef } from '@/graphql/types/shared-refs';
 import { User } from '@/graphql/types/users';
-import { getProgramDetailedStatus } from '@/utils/program-status';
+import { getProgramDetailedStatus } from '@/utils';
 import BigNumber from 'bignumber.js';
 import { and, eq } from 'drizzle-orm';
 
@@ -612,44 +609,6 @@ builder.mutationFields((t) => ({
       keyword: t.arg.string({ required: true }),
     },
     resolve: removeProgramKeywordResolver,
-  }),
-
-  // Tier assignment mutations
-  assignUserTier: t.field({
-    type: UserTierAssignmentType,
-    authScopes: (_, args) => ({
-      programSponsor: { programId: args.input.programId },
-      admin: true,
-    }),
-    args: {
-      input: t.arg({ type: AssignUserTierInput, required: true }),
-    },
-    resolve: assignUserTierResolver,
-  }),
-
-  updateUserTier: t.field({
-    type: UserTierAssignmentType,
-    authScopes: (_, args) => ({
-      programSponsor: { programId: args.input.programId },
-      admin: true,
-    }),
-    args: {
-      input: t.arg({ type: AssignUserTierInput, required: true }),
-    },
-    resolve: updateUserTierResolver,
-  }),
-
-  removeUserTier: t.field({
-    type: 'Boolean',
-    authScopes: (_, args) => ({
-      programSponsor: { programId: args.programId },
-      admin: true,
-    }),
-    args: {
-      programId: t.arg.id({ required: true }),
-      userId: t.arg.id({ required: true }),
-    },
-    resolve: removeUserTierResolver,
   }),
   // Reclaim mutations for recruitment programs
   reclaimProgram: t.field({

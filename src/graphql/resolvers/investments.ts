@@ -367,6 +367,7 @@ export async function createInvestmentResolver(
       recipientId: application.applicantId,
       entityId: projectId,
       metadata: {
+        category: 'investment',
         investmentId: investment.id,
         amount: amountForStorage,
         token: program.currency,
@@ -458,6 +459,7 @@ export async function reclaimInvestmentResolver(
       recipientId: application.applicantId,
       entityId: investment.applicationId,
       metadata: {
+        category: 'reclaim',
         investmentId: investment.id,
         amount: investment.amount,
         token: program.currency,
@@ -474,6 +476,7 @@ export async function reclaimInvestmentResolver(
       recipientId: investment.userId,
       entityId: investment.applicationId,
       metadata: {
+        category: 'reclaim',
         investmentId: investment.id,
         amount: investment.amount,
         token: program.currency,

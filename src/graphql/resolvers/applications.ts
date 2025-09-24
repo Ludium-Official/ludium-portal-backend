@@ -497,6 +497,9 @@ export function createApplicationResolver(
           action: 'created',
           recipientId: validatorId,
           entityId: application.id,
+          metadata: {
+            category: 'progress',
+          },
         });
       }
       await ctx.server.pubsub.publish('notificationsCount');
@@ -660,7 +663,7 @@ export function acceptApplicationResolver(
       action: 'accepted',
       recipientId: application.applicantId,
       entityId: application.id,
-      metadata: { programId: application.programId },
+      metadata: { programId: application.programId, category: 'progress' },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -812,7 +815,7 @@ export function rejectApplicationResolver(
       action: 'rejected',
       recipientId: application.applicantId,
       entityId: application.id,
-      metadata: { programId: application.programId },
+      metadata: { programId: application.programId, category: 'progress' },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 

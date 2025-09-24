@@ -475,6 +475,7 @@ export function submitMilestoneResolver(
           metadata: {
             ...milestoneMetadata,
             action: 'milestone_submitted',
+            category: 'progress',
           },
         });
       }
@@ -561,6 +562,7 @@ export function checkMilestoneResolver(
         ...milestoneMetadata,
         action: args.input.status === 'rejected' ? 'milestone_rejected' : 'milestone_accepted',
         rejectionReason: args.input.status === 'rejected' ? args.input.rejectionReason : undefined,
+        category: 'progress',
       },
     });
     await ctx.server.pubsub.publish('notificationsCount');
@@ -659,6 +661,7 @@ export async function reclaimMilestoneResolver(
       metadata: {
         ...milestoneMetadata,
         reason: 'deadline_passed',
+        category: 'reclaim',
       },
     });
     await ctx.server.pubsub.publish('notificationsCount');

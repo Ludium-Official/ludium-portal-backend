@@ -103,6 +103,7 @@ export async function claimProgramFeesResolver(
       recipientId: user.id,
       entityId: args.programId,
       metadata: {
+        category: 'reclaim',
         amount: totalFees,
         txHash: args.txHash,
       },
