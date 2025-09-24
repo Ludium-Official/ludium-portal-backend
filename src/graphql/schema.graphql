@@ -436,6 +436,11 @@ enum NotificationAction {
   submitted
 }
 
+type NotificationResult {
+  count: Int
+  data: [Notification!]
+}
+
 enum NotificationType {
   application
   comment
@@ -617,7 +622,7 @@ type Query {
   milestonePayout(id: ID!): MilestonePayout
   milestonePayouts(investmentId: ID, milestoneId: ID, pagination: PaginationInput, status: PayoutStatus): PaginatedMilestonePayouts
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
-  notifications: [Notification!]
+  notifications(pagination: PaginationInput): NotificationResult
   post(id: ID!): Post
   posts(pagination: PaginationInput): PaginatedPosts
   profile: User
@@ -657,7 +662,7 @@ enum SubmitMilestoneStatus {
 
 type Subscription {
   countNotifications: Int
-  notifications: [Notification!]
+  notifications(pagination: PaginationInput): NotificationResult
 }
 
 type Supporter {
@@ -671,7 +676,7 @@ type Supporter {
 }
 
 type SwappedStatusResponse {
-  data: JSON
+  data: String
   message: String
   orderId: String
   status: String

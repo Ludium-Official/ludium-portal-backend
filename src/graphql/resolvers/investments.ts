@@ -369,7 +369,13 @@ export async function createInvestmentResolver(
       metadata: {
         investmentId: investment.id,
         amount: amountForStorage,
+        token: program.currency,
+        network: program.network,
         investor: user.email,
+        investorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+        tier: tier,
+        txHash: txHash,
+        action: 'invested',
       },
     });
 
@@ -445,7 +451,7 @@ export async function reclaimInvestmentResolver(
       .where(eq(investmentsTable.id, investmentId))
       .returning();
 
-    // Send notification
+    // Send notification to both project owner and investor
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'application',
       action: 'completed',
@@ -454,9 +460,29 @@ export async function reclaimInvestmentResolver(
       metadata: {
         investmentId: investment.id,
         amount: investment.amount,
-        action: 'refunded',
+        token: program.currency,
+        network: program.network,
+        investorId: investment.userId,
+        reason: 'deadline_passed',
       },
     });
+
+    // Also send notification to the investor
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'application',
+      action: 'completed',
+      recipientId: investment.userId,
+      entityId: investment.applicationId,
+      metadata: {
+        investmentId: investment.id,
+        amount: investment.amount,
+        token: program.currency,
+        network: program.network,
+        projectName: application.name,
+        reason: 'deadline_passed',
+      },
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
 
     return updatedInvestment;
   });

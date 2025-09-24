@@ -19,6 +19,7 @@ import {
   calculateMilestoneAmount,
   checkAndUpdateProgramStatus,
   filterEmptyValues,
+  getMilestoneNotificationMetadata,
   isInSameScope,
   requireUser,
   validAndNotEmptyArray,
@@ -463,12 +464,18 @@ export function submitMilestoneResolver(
     );
 
     if (validators.length > 0) {
+      const milestoneMetadata = await getMilestoneNotificationMetadata(milestone.id, t);
+
       for (const validator of validators) {
         await ctx.server.pubsub.publish('notifications', t, {
           type: 'milestone',
           action: 'submitted',
           recipientId: validator.id,
           entityId: milestone.id,
+          metadata: {
+            ...milestoneMetadata,
+            action: 'milestone_submitted',
+          },
         });
       }
       await ctx.server.pubsub.publish('notificationsCount');
@@ -543,11 +550,18 @@ export function checkMilestoneResolver(
       throw new Error('Previous milestones must be accepted');
     }
 
+    const milestoneMetadata = await getMilestoneNotificationMetadata(milestone.id, t);
+
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'milestone',
       action: args.input.status === 'rejected' ? 'rejected' : 'accepted',
       recipientId: application.applicantId,
       entityId: milestone.id,
+      metadata: {
+        ...milestoneMetadata,
+        action: args.input.status === 'rejected' ? 'milestone_rejected' : 'milestone_accepted',
+        rejectionReason: args.input.status === 'rejected' ? args.input.rejectionReason : undefined,
+      },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -634,6 +648,20 @@ export async function reclaimMilestoneResolver(
       .set(updateData)
       .where(eq(milestonesTable.id, args.milestoneId))
       .returning();
+
+    const milestoneMetadata = await getMilestoneNotificationMetadata(milestone.id, t);
+
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'milestone',
+      action: 'completed',
+      recipientId: application.applicantId,
+      entityId: milestone.id,
+      metadata: {
+        ...milestoneMetadata,
+        reason: 'deadline_passed',
+      },
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
 
     return updatedMilestone;
   });

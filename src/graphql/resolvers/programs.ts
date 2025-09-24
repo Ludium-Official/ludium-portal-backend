@@ -786,12 +786,11 @@ export function inviteUserToProgramResolver(
       action: 'invited',
       recipientId: args.userId,
       entityId: args.programId,
-      metadata: args.tier
-        ? {
-            tier: args.tier,
-            maxInvestmentAmount: args.maxInvestmentAmount,
-          }
-        : undefined,
+      metadata: {
+        programName: program.name,
+        programType: program.type,
+        action: 'program_invited',
+      },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -1246,73 +1245,83 @@ export async function assignUserTierResolver(
 ) {
   const { programId, userId, tier, maxInvestmentAmount } = args.input;
 
-  // Verify program exists and is a funding program
-  const [program] = await ctx.db
-    .select()
-    .from(programsTable)
-    .where(eq(programsTable.id, programId));
+  return ctx.db.transaction(async (t) => {
+    // Verify program exists and is a funding program
+    const [program] = await t.select().from(programsTable).where(eq(programsTable.id, programId));
 
-  if (!program) {
-    throw new Error('Program not found');
-  }
+    if (!program) {
+      throw new Error('Program not found');
+    }
 
-  if (program.type !== 'funding') {
-    throw new Error('Tier assignments are only available for funding programs');
-  }
+    if (program.type !== 'funding') {
+      throw new Error('Tier assignments are only available for funding programs');
+    }
 
-  // Check if user already has a tier assignment
-  const [existing] = await ctx.db
-    .select()
-    .from(userTierAssignmentsTable)
-    .where(
-      and(
-        eq(userTierAssignmentsTable.programId, programId),
-        eq(userTierAssignmentsTable.userId, userId),
-      ),
-    );
+    // Check if user already has a tier assignment
+    const [existing] = await t
+      .select()
+      .from(userTierAssignmentsTable)
+      .where(
+        and(
+          eq(userTierAssignmentsTable.programId, programId),
+          eq(userTierAssignmentsTable.userId, userId),
+        ),
+      );
 
-  if (existing) {
-    throw new Error('User already has a tier assignment. Use updateUserTier instead.');
-  }
+    if (existing) {
+      throw new Error('User already has a tier assignment. Use updateUserTier instead.');
+    }
 
-  // Create tier assignment
-  const [assignment] = await ctx.db
-    .insert(userTierAssignmentsTable)
-    .values({
-      programId,
-      userId,
-      tier,
-      maxInvestmentAmount,
-    })
-    .returning();
+    // Create tier assignment
+    const [assignment] = await t
+      .insert(userTierAssignmentsTable)
+      .values({
+        programId,
+        userId,
+        tier,
+        maxInvestmentAmount,
+      })
+      .returning();
 
-  // Calculate current investment amount
-  const [investmentData] = await ctx.db
-    .select({
-      total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
-    })
-    .from(investmentsTable)
-    .where(
-      and(
-        eq(investmentsTable.userId, userId),
-        sql`application_id IN (SELECT id FROM applications WHERE program_id = ${programId})`,
-        eq(investmentsTable.status, 'confirmed'),
-      ),
-    );
+    // Calculate current investment amount
+    const [investmentData] = await t
+      .select({
+        total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
+      })
+      .from(investmentsTable)
+      .where(
+        and(
+          eq(investmentsTable.userId, userId),
+          sql`application_id IN (SELECT id FROM applications WHERE program_id = ${programId})`,
+          eq(investmentsTable.status, 'confirmed'),
+        ),
+      );
 
-  const currentInvestment = investmentData?.total || '0';
-  const remainingCapacity = new BigNumber(maxInvestmentAmount)
-    .minus(new BigNumber(currentInvestment))
-    .toString();
+    const currentInvestment = investmentData?.total || '0';
+    const remainingCapacity = new BigNumber(maxInvestmentAmount)
+      .minus(new BigNumber(currentInvestment))
+      .toString();
 
-  return {
-    userId: assignment.userId,
-    tier: assignment.tier,
-    maxInvestmentAmount: assignment.maxInvestmentAmount,
-    currentInvestment,
-    remainingCapacity: remainingCapacity,
-    createdAt: assignment.createdAt,
-  };
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'invited',
+      recipientId: userId,
+      entityId: programId,
+      metadata: {
+        tier,
+      },
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
+
+    return {
+      userId: assignment.userId,
+      tier: assignment.tier,
+      maxInvestmentAmount: assignment.maxInvestmentAmount,
+      currentInvestment,
+      remainingCapacity: remainingCapacity,
+      createdAt: assignment.createdAt,
+    };
+  });
 }
 
 // Update a user's tier assignment
@@ -1519,6 +1528,17 @@ export async function reclaimProgramResolver(
     if (!updatedProgram) {
       throw new Error('Failed to update program');
     }
+
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'completed',
+      recipientId: program.creatorId,
+      entityId: program.id,
+      metadata: {
+        reason: 'deadline_passed',
+      },
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
 
     return updatedProgram;
   });
