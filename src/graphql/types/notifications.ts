@@ -45,6 +45,10 @@ export const NotificationType = builder.objectRef<DBNotiication>('Notification')
       type: 'Date',
       resolve: (notification) => (notification.readAt ? new Date(notification.readAt) : null),
     }),
+    createdAt: t.field({
+      type: 'Date',
+      resolve: (notification) => new Date(notification.createdAt),
+    }),
   }),
 });
 

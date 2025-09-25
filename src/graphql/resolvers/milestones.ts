@@ -7,6 +7,7 @@ import {
   milestonesToLinksTable,
   programUserRolesTable,
   programsTable,
+  usersTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type {
@@ -653,6 +654,15 @@ export async function reclaimMilestoneResolver(
 
     const milestoneMetadata = await getMilestoneNotificationMetadata(milestone.id, t);
 
+    const [applicant] = await t
+      .select({
+        firstName: usersTable.firstName,
+        lastName: usersTable.lastName,
+        email: usersTable.email,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, application.applicantId));
+
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'milestone',
       action: 'completed',
@@ -662,6 +672,8 @@ export async function reclaimMilestoneResolver(
         ...milestoneMetadata,
         reason: 'deadline_passed',
         category: 'reclaim',
+        applicantName:
+          `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
       },
     });
     await ctx.server.pubsub.publish('notificationsCount');

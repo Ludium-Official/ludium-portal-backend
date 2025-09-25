@@ -367,7 +367,7 @@ export async function createInvestmentResolver(
       recipientId: application.applicantId,
       entityId: projectId,
       metadata: {
-        category: 'investment',
+        category: 'progress',
         investmentId: investment.id,
         amount: amountForStorage,
         token: program.currency,
@@ -452,6 +452,15 @@ export async function reclaimInvestmentResolver(
       .where(eq(investmentsTable.id, investmentId))
       .returning();
 
+    const [applicant] = await t
+      .select({
+        firstName: usersTable.firstName,
+        lastName: usersTable.lastName,
+        email: usersTable.email,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, application.applicantId));
+
     // Send notification to both project owner and investor
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'application',
@@ -466,6 +475,8 @@ export async function reclaimInvestmentResolver(
         network: program.network,
         investorId: investment.userId,
         reason: 'deadline_passed',
+        applicantName:
+          `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
       },
     });
 
@@ -482,6 +493,8 @@ export async function reclaimInvestmentResolver(
         token: program.currency,
         network: program.network,
         projectName: application.name,
+        applicantName:
+          `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
         reason: 'deadline_passed',
       },
     });

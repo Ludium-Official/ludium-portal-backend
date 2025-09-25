@@ -778,6 +778,15 @@ export function inviteUserToProgramResolver(
       }
     }
 
+    const [applicant] = await t
+      .select({
+        firstName: usersTable.firstName,
+        lastName: usersTable.lastName,
+        email: usersTable.email,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, args.userId));
+
     // Send notification to the invited user
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'program',
@@ -789,6 +798,9 @@ export function inviteUserToProgramResolver(
         programName: program.name,
         programType: program.type,
         action: 'program_invited',
+        tier: args.tier,
+        applicantName:
+          `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
       },
     });
     await ctx.server.pubsub.publish('notificationsCount');
