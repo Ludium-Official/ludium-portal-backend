@@ -659,6 +659,7 @@ export async function reclaimMilestoneResolver(
         firstName: usersTable.firstName,
         lastName: usersTable.lastName,
         email: usersTable.email,
+        image: usersTable.image,
       })
       .from(usersTable)
       .where(eq(usersTable.id, application.applicantId));
@@ -674,6 +675,7 @@ export async function reclaimMilestoneResolver(
         category: 'reclaim',
         applicantName:
           `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
+        avatar: applicant.image,
       },
     });
     await ctx.server.pubsub.publish('notificationsCount');

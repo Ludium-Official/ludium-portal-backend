@@ -783,6 +783,7 @@ export function inviteUserToProgramResolver(
         firstName: usersTable.firstName,
         lastName: usersTable.lastName,
         email: usersTable.email,
+        image: usersTable.image,
       })
       .from(usersTable)
       .where(eq(usersTable.id, args.userId));
@@ -801,6 +802,7 @@ export function inviteUserToProgramResolver(
         tier: args.tier,
         applicantName:
           `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
+        avatar: applicant.image,
       },
     });
     await ctx.server.pubsub.publish('notificationsCount');
@@ -1366,6 +1368,16 @@ export async function reclaimProgramResolver(
       throw new Error('Failed to update program');
     }
 
+    const [applicant] = await t
+      .select({
+        firstName: usersTable.firstName,
+        lastName: usersTable.lastName,
+        email: usersTable.email,
+        image: usersTable.image,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, program.creatorId));
+
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'program',
       action: 'completed',
@@ -1374,6 +1386,9 @@ export async function reclaimProgramResolver(
       metadata: {
         category: 'reclaim',
         reason: 'deadline_passed',
+        applicantName:
+          `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
+        avatar: applicant.image,
       },
     });
     await ctx.server.pubsub.publish('notificationsCount');

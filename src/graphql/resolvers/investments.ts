@@ -457,6 +457,7 @@ export async function reclaimInvestmentResolver(
         firstName: usersTable.firstName,
         lastName: usersTable.lastName,
         email: usersTable.email,
+        image: usersTable.image,
       })
       .from(usersTable)
       .where(eq(usersTable.id, application.applicantId));
@@ -477,6 +478,7 @@ export async function reclaimInvestmentResolver(
         reason: 'deadline_passed',
         applicantName:
           `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
+        avatar: applicant.image,
       },
     });
 
@@ -495,6 +497,7 @@ export async function reclaimInvestmentResolver(
         projectName: application.name,
         applicantName:
           `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
+        avatar: applicant.image,
         reason: 'deadline_passed',
       },
     });
