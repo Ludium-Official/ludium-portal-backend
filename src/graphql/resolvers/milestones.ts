@@ -672,6 +672,11 @@ export async function reclaimMilestoneResolver(
       .from(usersTable)
       .where(eq(usersTable.id, application.applicantId));
 
+    const [program] = await t
+      .select({ type: programsTable.type })
+      .from(programsTable)
+      .where(eq(programsTable.id, application.programId));
+
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'milestone',
       action: 'completed',
@@ -681,6 +686,7 @@ export async function reclaimMilestoneResolver(
         ...milestoneMetadata,
         reason: 'deadline_passed',
         category: 'reclaim',
+        programType: program.type,
         applicantName:
           `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
         avatar: applicant.image,

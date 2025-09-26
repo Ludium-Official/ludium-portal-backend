@@ -1385,6 +1385,7 @@ export async function reclaimProgramResolver(
       entityId: program.id,
       metadata: {
         category: 'reclaim',
+        programType: program.type,
         reason: 'deadline_passed',
         applicantName:
           `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,

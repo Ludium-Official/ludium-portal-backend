@@ -471,6 +471,7 @@ export async function reclaimInvestmentResolver(
       entityId: investment.applicationId,
       metadata: {
         category: 'reclaim',
+        programType: program.type,
         programId: program.id,
         investmentId: investment.id,
         amount: investment.amount,
@@ -492,6 +493,7 @@ export async function reclaimInvestmentResolver(
       entityId: investment.applicationId,
       metadata: {
         category: 'reclaim',
+        programType: program.type,
         programId: program.id,
         investmentId: investment.id,
         amount: investment.amount,
