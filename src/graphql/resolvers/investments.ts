@@ -367,9 +367,17 @@ export async function createInvestmentResolver(
       recipientId: application.applicantId,
       entityId: projectId,
       metadata: {
+        category: 'progress',
+        programId: program.id,
         investmentId: investment.id,
         amount: amountForStorage,
+        token: program.currency,
+        network: program.network,
         investor: user.email,
+        investorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+        tier: tier,
+        txHash: txHash,
+        action: 'invested',
       },
     });
 
@@ -445,18 +453,60 @@ export async function reclaimInvestmentResolver(
       .where(eq(investmentsTable.id, investmentId))
       .returning();
 
-    // Send notification
+    const [applicant] = await t
+      .select({
+        firstName: usersTable.firstName,
+        lastName: usersTable.lastName,
+        email: usersTable.email,
+        image: usersTable.image,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, application.applicantId));
+
+    // Send notification to both project owner and investor
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'application',
       action: 'completed',
       recipientId: application.applicantId,
       entityId: investment.applicationId,
       metadata: {
+        category: 'reclaim',
+        programType: program.type,
+        programId: program.id,
         investmentId: investment.id,
         amount: investment.amount,
-        action: 'refunded',
+        token: program.currency,
+        network: program.network,
+        investorId: investment.userId,
+        reason: 'deadline_passed',
+        applicantName:
+          `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
+        avatar: applicant.image,
       },
     });
+
+    // Also send notification to the investor
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'application',
+      action: 'completed',
+      recipientId: investment.userId,
+      entityId: investment.applicationId,
+      metadata: {
+        category: 'reclaim',
+        programType: program.type,
+        programId: program.id,
+        investmentId: investment.id,
+        amount: investment.amount,
+        token: program.currency,
+        network: program.network,
+        projectName: application.name,
+        applicantName:
+          `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
+        avatar: applicant.image,
+        reason: 'deadline_passed',
+      },
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
 
     return updatedInvestment;
   });

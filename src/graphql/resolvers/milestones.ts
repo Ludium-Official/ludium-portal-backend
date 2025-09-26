@@ -7,6 +7,7 @@ import {
   milestonesToLinksTable,
   programUserRolesTable,
   programsTable,
+  usersTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
 import type {
@@ -19,6 +20,7 @@ import {
   calculateMilestoneAmount,
   checkAndUpdateProgramStatus,
   filterEmptyValues,
+  getMilestoneNotificationMetadata,
   isInSameScope,
   requireUser,
   validAndNotEmptyArray,
@@ -452,7 +454,7 @@ export function submitMilestoneResolver(
     }
 
     const [application] = await t
-      .select({ programId: applicationsTable.programId })
+      .select({ programId: applicationsTable.programId, id: applicationsTable.id })
       .from(applicationsTable)
       .where(eq(applicationsTable.id, milestone.applicationId));
 
@@ -463,12 +465,21 @@ export function submitMilestoneResolver(
     );
 
     if (validators.length > 0) {
+      const milestoneMetadata = await getMilestoneNotificationMetadata(milestone.id, t);
+
       for (const validator of validators) {
         await ctx.server.pubsub.publish('notifications', t, {
           type: 'milestone',
           action: 'submitted',
           recipientId: validator.id,
           entityId: milestone.id,
+          metadata: {
+            ...milestoneMetadata,
+            action: 'milestone_submitted',
+            category: 'progress',
+            programId: application.programId,
+            applicationId: application.id,
+          },
         });
       }
       await ctx.server.pubsub.publish('notificationsCount');
@@ -511,7 +522,11 @@ export function checkMilestoneResolver(
       .returning();
 
     const [application] = await t
-      .select({ applicantId: applicationsTable.applicantId })
+      .select({
+        applicantId: applicationsTable.applicantId,
+        programId: applicationsTable.programId,
+        id: applicationsTable.id,
+      })
       .from(applicationsTable)
       .where(eq(applicationsTable.id, milestone.applicationId));
 
@@ -543,11 +558,21 @@ export function checkMilestoneResolver(
       throw new Error('Previous milestones must be accepted');
     }
 
+    const milestoneMetadata = await getMilestoneNotificationMetadata(milestone.id, t);
+
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'milestone',
       action: args.input.status === 'rejected' ? 'rejected' : 'accepted',
       recipientId: application.applicantId,
       entityId: milestone.id,
+      metadata: {
+        ...milestoneMetadata,
+        action: args.input.status === 'rejected' ? 'milestone_rejected' : 'milestone_accepted',
+        rejectionReason: args.input.status === 'rejected' ? args.input.rejectionReason : undefined,
+        category: 'progress',
+        programId: application.programId,
+        applicationId: application.id,
+      },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -634,6 +659,42 @@ export async function reclaimMilestoneResolver(
       .set(updateData)
       .where(eq(milestonesTable.id, args.milestoneId))
       .returning();
+
+    const milestoneMetadata = await getMilestoneNotificationMetadata(milestone.id, t);
+
+    const [applicant] = await t
+      .select({
+        firstName: usersTable.firstName,
+        lastName: usersTable.lastName,
+        email: usersTable.email,
+        image: usersTable.image,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, application.applicantId));
+
+    const [program] = await t
+      .select({ type: programsTable.type })
+      .from(programsTable)
+      .where(eq(programsTable.id, application.programId));
+
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'milestone',
+      action: 'completed',
+      recipientId: application.applicantId,
+      entityId: milestone.id,
+      metadata: {
+        ...milestoneMetadata,
+        reason: 'deadline_passed',
+        category: 'reclaim',
+        programType: program.type,
+        applicantName:
+          `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
+        avatar: applicant.image,
+        programId: application.programId,
+        applicationId: application.id,
+      },
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
 
     return updatedMilestone;
   });

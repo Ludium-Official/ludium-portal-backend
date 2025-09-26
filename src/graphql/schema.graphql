@@ -356,7 +356,6 @@ type Mutation {
   acceptProgram(id: ID!): Program
   addProgramKeyword(keyword: String!, programId: ID!): Keyword
   addUserKeyword(keyword: String!, type: KeywordType, userId: ID!): Keyword
-  assignUserTier(input: AssignUserTierInput!): UserTierAssignment
   assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
   banUser(reason: String, userId: ID!): User
   checkMilestone(input: CheckMilestoneInput!): Milestone
@@ -394,7 +393,6 @@ type Mutation {
   removeProgramKeyword(keyword: String!, programId: ID!): Boolean
   removeUserFromProgram(programId: ID!, userId: ID!): Program
   removeUserKeyword(keyword: String!, type: KeywordType, userId: ID!): Boolean
-  removeUserTier(programId: ID!, userId: ID!): Boolean
   removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
   reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
   showPost(id: ID!): Post
@@ -412,12 +410,12 @@ type Mutation {
   updateProfile(input: UserUpdateInput!): User
   updateProgram(input: UpdateProgramInput!): Program
   updateUser(input: UserUpdateInput!): User
-  updateUserTier(input: AssignUserTierInput!): UserTierAssignment
 }
 
 type Notification {
   action: NotificationAction
   content: String
+  createdAt: Date
   entityId: ID
   id: ID
   metadata: JSON
@@ -434,6 +432,11 @@ enum NotificationAction {
   invited
   rejected
   submitted
+}
+
+type NotificationResult {
+  count: Int
+  data: [Notification!]
 }
 
 enum NotificationType {
@@ -617,7 +620,7 @@ type Query {
   milestonePayout(id: ID!): MilestonePayout
   milestonePayouts(investmentId: ID, milestoneId: ID, pagination: PaginationInput, status: PayoutStatus): PaginatedMilestonePayouts
   milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
-  notifications: [Notification!]
+  notifications(pagination: PaginationInput): NotificationResult
   post(id: ID!): Post
   posts(pagination: PaginationInput): PaginatedPosts
   profile: User
@@ -657,7 +660,7 @@ enum SubmitMilestoneStatus {
 
 type Subscription {
   countNotifications: Int
-  notifications: [Notification!]
+  notifications(pagination: PaginationInput): NotificationResult
 }
 
 type Supporter {
@@ -671,7 +674,7 @@ type Supporter {
 }
 
 type SwappedStatusResponse {
-  data: JSON
+  data: String
   message: String
   orderId: String
   status: String

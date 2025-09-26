@@ -16,11 +16,7 @@ import {
   usersTable,
 } from '@/db/schemas';
 import type { PaginationInput } from '@/graphql/types/common';
-import type {
-  AssignUserTierInput,
-  CreateProgramInput,
-  UpdateProgramInput,
-} from '@/graphql/types/programs';
+import type { CreateProgramInput, UpdateProgramInput } from '@/graphql/types/programs';
 import type { Args, Context, Root } from '@/types';
 import {
   filterEmptyValues,
@@ -29,7 +25,6 @@ import {
   requireUser,
   validAndNotEmptyArray,
 } from '@/utils';
-import BigNumber from 'bignumber.js';
 import { and, asc, count, desc, eq, gt, ilike, inArray, lt, or, sql } from 'drizzle-orm';
 
 export async function getProgramsResolver(
@@ -599,6 +594,7 @@ export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Co
       action: 'accepted',
       recipientId: program.creatorId,
       entityId: program.id,
+      metadata: { category: 'progress' },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -638,6 +634,7 @@ export function rejectProgramResolver(
       action: 'rejected',
       recipientId: program.creatorId,
       entityId: program.id,
+      metadata: { category: 'progress' },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -674,6 +671,7 @@ export function publishProgramResolver(
       action: 'submitted',
       recipientId: program.creatorId,
       entityId: program.id,
+      metadata: { category: 'progress' },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -780,18 +778,32 @@ export function inviteUserToProgramResolver(
       }
     }
 
+    const [applicant] = await t
+      .select({
+        firstName: usersTable.firstName,
+        lastName: usersTable.lastName,
+        email: usersTable.email,
+        image: usersTable.image,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, args.userId));
+
     // Send notification to the invited user
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'program',
       action: 'invited',
       recipientId: args.userId,
       entityId: args.programId,
-      metadata: args.tier
-        ? {
-            tier: args.tier,
-            maxInvestmentAmount: args.maxInvestmentAmount,
-          }
-        : undefined,
+      metadata: {
+        category: 'investment',
+        programName: program.name,
+        programType: program.type,
+        action: 'program_invited',
+        tier: args.tier,
+        applicantName:
+          `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
+        avatar: applicant.image,
+      },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -936,6 +948,7 @@ export function assignValidatorToProgramResolver(
       action: 'created',
       recipientId: args.validatorId,
       entityId: args.programId,
+      metadata: { category: 'progress' },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -989,6 +1002,7 @@ export function removeValidatorFromProgramResolver(
       action: 'rejected',
       recipientId: args.validatorId,
       entityId: args.programId,
+      metadata: { category: 'progress' },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -1238,172 +1252,6 @@ export async function getSupportersWithTiersResolver(
   });
 }
 
-// Assign a user to a tier for a funding program
-export async function assignUserTierResolver(
-  _root: Root,
-  args: { input: typeof AssignUserTierInput.$inferInput },
-  ctx: Context,
-) {
-  const { programId, userId, tier, maxInvestmentAmount } = args.input;
-
-  // Verify program exists and is a funding program
-  const [program] = await ctx.db
-    .select()
-    .from(programsTable)
-    .where(eq(programsTable.id, programId));
-
-  if (!program) {
-    throw new Error('Program not found');
-  }
-
-  if (program.type !== 'funding') {
-    throw new Error('Tier assignments are only available for funding programs');
-  }
-
-  // Check if user already has a tier assignment
-  const [existing] = await ctx.db
-    .select()
-    .from(userTierAssignmentsTable)
-    .where(
-      and(
-        eq(userTierAssignmentsTable.programId, programId),
-        eq(userTierAssignmentsTable.userId, userId),
-      ),
-    );
-
-  if (existing) {
-    throw new Error('User already has a tier assignment. Use updateUserTier instead.');
-  }
-
-  // Create tier assignment
-  const [assignment] = await ctx.db
-    .insert(userTierAssignmentsTable)
-    .values({
-      programId,
-      userId,
-      tier,
-      maxInvestmentAmount,
-    })
-    .returning();
-
-  // Calculate current investment amount
-  const [investmentData] = await ctx.db
-    .select({
-      total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
-    })
-    .from(investmentsTable)
-    .where(
-      and(
-        eq(investmentsTable.userId, userId),
-        sql`application_id IN (SELECT id FROM applications WHERE program_id = ${programId})`,
-        eq(investmentsTable.status, 'confirmed'),
-      ),
-    );
-
-  const currentInvestment = investmentData?.total || '0';
-  const remainingCapacity = new BigNumber(maxInvestmentAmount)
-    .minus(new BigNumber(currentInvestment))
-    .toString();
-
-  return {
-    userId: assignment.userId,
-    tier: assignment.tier,
-    maxInvestmentAmount: assignment.maxInvestmentAmount,
-    currentInvestment,
-    remainingCapacity: remainingCapacity,
-    createdAt: assignment.createdAt,
-  };
-}
-
-// Update a user's tier assignment
-export async function updateUserTierResolver(
-  _root: Root,
-  args: { input: typeof AssignUserTierInput.$inferInput },
-  ctx: Context,
-) {
-  const { programId, userId, tier, maxInvestmentAmount } = args.input;
-
-  // Verify tier assignment exists
-  const [existing] = await ctx.db
-    .select()
-    .from(userTierAssignmentsTable)
-    .where(
-      and(
-        eq(userTierAssignmentsTable.programId, programId),
-        eq(userTierAssignmentsTable.userId, userId),
-      ),
-    );
-
-  if (!existing) {
-    throw new Error('Tier assignment not found. Use assignUserTier to create a new assignment.');
-  }
-
-  // Update tier assignment
-  const [updated] = await ctx.db
-    .update(userTierAssignmentsTable)
-    .set({
-      tier,
-      maxInvestmentAmount,
-      updatedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(userTierAssignmentsTable.programId, programId),
-        eq(userTierAssignmentsTable.userId, userId),
-      ),
-    )
-    .returning();
-
-  // Calculate current investment amount
-  const [investmentData] = await ctx.db
-    .select({
-      total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)`,
-    })
-    .from(investmentsTable)
-    .where(
-      and(
-        eq(investmentsTable.userId, userId),
-        sql`application_id IN (SELECT id FROM applications WHERE program_id = ${programId})`,
-        eq(investmentsTable.status, 'confirmed'),
-      ),
-    );
-
-  const currentInvestment = investmentData?.total || '0';
-  const remainingCapacity = new BigNumber(maxInvestmentAmount)
-    .minus(new BigNumber(currentInvestment))
-    .toString();
-
-  return {
-    userId: updated.userId,
-    tier: updated.tier,
-    maxInvestmentAmount: updated.maxInvestmentAmount,
-    currentInvestment,
-    remainingCapacity: remainingCapacity,
-    createdAt: updated.createdAt,
-  };
-}
-
-// Remove a user's tier assignment
-export async function removeUserTierResolver(
-  _root: Root,
-  args: { programId: string; userId: string },
-  ctx: Context,
-) {
-  const { programId, userId } = args;
-
-  // Delete tier assignment
-  await ctx.db
-    .delete(userTierAssignmentsTable)
-    .where(
-      and(
-        eq(userTierAssignmentsTable.programId, programId),
-        eq(userTierAssignmentsTable.userId, userId),
-      ),
-    );
-
-  return true;
-}
-
 // Reclaim an unused program past its deadline
 export async function reclaimProgramResolver(
   _root: Root,
@@ -1519,6 +1367,32 @@ export async function reclaimProgramResolver(
     if (!updatedProgram) {
       throw new Error('Failed to update program');
     }
+
+    const [applicant] = await t
+      .select({
+        firstName: usersTable.firstName,
+        lastName: usersTable.lastName,
+        email: usersTable.email,
+        image: usersTable.image,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, program.creatorId));
+
+    await ctx.server.pubsub.publish('notifications', t, {
+      type: 'program',
+      action: 'completed',
+      recipientId: program.creatorId,
+      entityId: program.id,
+      metadata: {
+        category: 'reclaim',
+        programType: program.type,
+        reason: 'deadline_passed',
+        applicantName:
+          `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
+        avatar: applicant.image,
+      },
+    });
+    await ctx.server.pubsub.publish('notificationsCount');
 
     return updatedProgram;
   });
