@@ -454,7 +454,7 @@ export function submitMilestoneResolver(
     }
 
     const [application] = await t
-      .select({ programId: applicationsTable.programId })
+      .select({ programId: applicationsTable.programId, id: applicationsTable.id })
       .from(applicationsTable)
       .where(eq(applicationsTable.id, milestone.applicationId));
 
@@ -477,6 +477,8 @@ export function submitMilestoneResolver(
             ...milestoneMetadata,
             action: 'milestone_submitted',
             category: 'progress',
+            programId: application.programId,
+            applicationId: application.id,
           },
         });
       }
@@ -520,7 +522,11 @@ export function checkMilestoneResolver(
       .returning();
 
     const [application] = await t
-      .select({ applicantId: applicationsTable.applicantId })
+      .select({
+        applicantId: applicationsTable.applicantId,
+        programId: applicationsTable.programId,
+        id: applicationsTable.id,
+      })
       .from(applicationsTable)
       .where(eq(applicationsTable.id, milestone.applicationId));
 
@@ -564,6 +570,8 @@ export function checkMilestoneResolver(
         action: args.input.status === 'rejected' ? 'milestone_rejected' : 'milestone_accepted',
         rejectionReason: args.input.status === 'rejected' ? args.input.rejectionReason : undefined,
         category: 'progress',
+        programId: application.programId,
+        applicationId: application.id,
       },
     });
     await ctx.server.pubsub.publish('notificationsCount');
@@ -676,6 +684,8 @@ export async function reclaimMilestoneResolver(
         applicantName:
           `${applicant.firstName ?? ''} ${applicant.lastName ?? ''}`.trim() ?? applicant.email,
         avatar: applicant.image,
+        programId: application.programId,
+        applicationId: application.id,
       },
     });
     await ctx.server.pubsub.publish('notificationsCount');

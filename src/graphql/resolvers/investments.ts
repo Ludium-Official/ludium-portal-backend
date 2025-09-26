@@ -368,6 +368,7 @@ export async function createInvestmentResolver(
       entityId: projectId,
       metadata: {
         category: 'progress',
+        programId: program.id,
         investmentId: investment.id,
         amount: amountForStorage,
         token: program.currency,
@@ -470,6 +471,7 @@ export async function reclaimInvestmentResolver(
       entityId: investment.applicationId,
       metadata: {
         category: 'reclaim',
+        programId: program.id,
         investmentId: investment.id,
         amount: investment.amount,
         token: program.currency,
@@ -490,6 +492,7 @@ export async function reclaimInvestmentResolver(
       entityId: investment.applicationId,
       metadata: {
         category: 'reclaim',
+        programId: program.id,
         investmentId: investment.id,
         amount: investment.amount,
         token: program.currency,

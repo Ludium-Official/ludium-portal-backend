@@ -499,6 +499,7 @@ export function createApplicationResolver(
           entityId: application.id,
           metadata: {
             category: 'progress',
+            programId: program.id,
           },
         });
       }
