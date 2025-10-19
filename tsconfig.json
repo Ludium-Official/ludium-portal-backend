@@ -22,8 +22,11 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ],
+      ]
     },
+    "types": [
+      "vitest/globals"
+    ],
     "inlineSources": true,
     "sourceRoot": "/"
   },

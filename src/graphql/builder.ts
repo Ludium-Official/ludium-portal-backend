@@ -114,6 +114,6 @@ builder.addScalarType('Upload', GraphQLUpload);
 
 builder.queryType({});
 builder.mutationType({});
-builder.subscriptionType({});
+// builder.subscriptionType({});
 
 export default builder;
