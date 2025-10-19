@@ -10,7 +10,5 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_INITDB_ARGS: --locale-provider=icu --icu-locale=en-US
       LANG: en_US.utf8
-    volumes:
-      - ./.pgdata:/var/lib/postgresql/data
     ports:
       - ${DB_PORT}:5432
