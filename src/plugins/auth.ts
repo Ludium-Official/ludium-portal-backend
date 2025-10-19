@@ -155,16 +155,18 @@ const authPlugin = (
   const authHandler = new AuthHandler(server);
   server.decorate('auth', authHandler);
 
-  server.addHook('onRequest', async (request) => {
-    try {
-      const decodedToken = await request.jwtVerify<DecodedToken>();
+  if (server.config.NODE_ENV !== 'development') {
+    server.addHook('onRequest', async (request) => {
+      try {
+        const decodedToken = await request.jwtVerify<DecodedToken>();
 
-      const auth = await requestHandler(decodedToken, server.db);
-      request.auth = auth;
-    } catch (error) {
-      server.log.error('No token provided', error);
-    }
-  });
+        const auth = await requestHandler(decodedToken, server.db);
+        request.auth = auth;
+      } catch (error) {
+        server.log.error('No token provided', error);
+      }
+    });
+  }
 
   done();
 };

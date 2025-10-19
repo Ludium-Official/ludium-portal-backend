@@ -49,6 +49,10 @@ This is the official backend API for the Ludium Portal, a global platform for We
 
 ## 🔧 Coding Standards & Conventions
 
+### GraphQL Documentation:
+
+- **Updating:** If the schema for v2, you always should update GRAPHQL_EXAMPLES.md document for other developement team.
+
 ### TypeScript/General:
 
 - **Formatting:** Use Biome (`npm run check` before committing)
