@@ -18,6 +18,7 @@
     "db:clean": "npm run db:down && rm -rf ./src/db/migrations && rm -rf .pgdata",
     "db:seed": "tsx -r dotenv-expand/config ./src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
+    "test": "vitest run",
     "prepare": "husky"
   },
   "dependencies": {
@@ -48,6 +49,8 @@
     "husky": "^9.1.7",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.19.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
   }
 }
