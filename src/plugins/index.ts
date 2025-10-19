@@ -47,7 +47,7 @@ const registerPlugins = (server: FastifyInstance) => {
           user: request.user,
         };
       },
-      graphiql: false,
+      graphiql: true,
       subscription: {
         context: (_, request) => {
           return {
