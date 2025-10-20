@@ -1,0 +1,318 @@
+{
+  "data": {
+    "program": {
+      "applications": [
+        {
+          "applicant": {
+            "about": null,
+            "email": "godamcity98@gmail.com",
+            "firstName": null,
+            "id": "019d84f5-8d0b-402d-b9a9-964dbfbebae1",
+            "image": null,
+            "lastName": null,
+            "links": [],
+            "organizationName": null,
+            "__typename": "User"
+          },
+          "content": "* Contract 리스트럭팅 담당\n* UX 기획 보조",
+          "id": "6722618f-da9c-4160-bdcf-16d0881084c6",
+          "metadata": null,
+          "fundingProgress": null,
+          "name": "Ludium Portal Restructing",
+          "milestones": [
+            {
+              "currency": "USDC",
+              "description": "* Contract 리스트럭팅 담당\n* UX 기획 보조",
+              "id": "d65749c6-c690-4180-a919-c10b2df79348",
+              "price": "500",
+              "status": "submitted",
+              "title": "Ludium Portal Restructing",
+              "__typename": "Milestone"
+            }
+          ],
+          "status": "accepted",
+          "__typename": "Application"
+        },
+        {
+          "applicant": {
+            "about": null,
+            "email": "seup87@gmail.com",
+            "firstName": null,
+            "id": "02880816-c9d2-466c-8355-d067710f6f92",
+            "image": null,
+            "lastName": null,
+            "links": [],
+            "organizationName": null,
+            "__typename": "User"
+          },
+          "content": "* Resouce: [https://github.com/Ludium-Official/ludium-portal-backend](https://github.com/Ludium-Official/ludium-portal-backend)\n\n1. Code Review(코드리뷰)\n2. Feature description clean up(기능 구현 정리)\n3. Make milestones (short planning, 플래닝)\n4. Refactoring(리팩토링)\n5. Make a standard  and doc for open source contribution (오픈소스 컨트리뷰션 스탠다드 정리)",
+          "id": "57d441d9-e8ae-4c85-bf17-0f2401285490",
+          "metadata": null,
+          "fundingProgress": null,
+          "name": "Application for backend side",
+          "milestones": [
+            {
+              "currency": "USDC",
+              "description": "* Resouce: [https://github.com/Ludium-Official/ludium-portal-backend](https://github.com/Ludium-Official/ludium-portal-backend)\n\n1. Code Review(코드리뷰)\n2. Feature description clean up(기능 구현 정리)\n3. Make milestones (short planning, 플래닝)\n4. Refactoring(리팩토링)\n5. Make a standard  and doc for open source contribution (오픈소스 컨트리뷰션 스탠다드 정리)",
+              "id": "288864ef-58ae-4c3e-be7e-63e1a2209245",
+              "price": "500",
+              "status": "pending",
+              "title": "Refactoring",
+              "__typename": "Milestone"
+            }
+          ],
+          "status": "accepted",
+          "__typename": "Application"
+        },
+        {
+          "applicant": {
+            "about": "Hi",
+            "email": "ginauare5@gmail.com",
+            "firstName": "Jeehee",
+            "id": "8acba1c9-e60f-419d-933f-217891305cc8",
+            "image": "https://storage.googleapis.com/ludium-storage/8d0589fcb64fb400cb35f5fbe1d3ca7a.png",
+            "lastName": "Shim",
+            "links": [],
+            "organizationName": "Ludium",
+            "__typename": "User"
+          },
+          "content": "Ludium Portal Restucting - UXUI",
+          "id": "c04d0f22-b809-4da8-ab58-04ec0fdc362e",
+          "metadata": null,
+          "fundingProgress": null,
+          "name": "Ludium Portal Restucting - UXUI",
+          "milestones": [
+            {
+              "currency": "USDC",
+              "description": "Ludium Portal Restucting - UXUI",
+              "id": "8d702ac2-dce1-4c25-a165-5a1cb1675d35",
+              "price": "500",
+              "status": "submitted",
+              "title": "Ludium Portal Restucting - UXUI",
+              "__typename": "Milestone"
+            }
+          ],
+          "status": "accepted",
+          "__typename": "Application"
+        }
+      ],
+      "creator": {
+        "about": "Ludium Official Account",
+        "email": "contact@ludium.world",
+        "firstName": "Ludium",
+        "id": "49eca126-f478-49dd-bc61-21248f2046d4",
+        "image": null,
+        "lastName": "Official",
+        "organizationName": "Ludium",
+        "summary": "Ludium Official Account",
+        "walletAddress": "0x37Fb72480e7FAf39A1c5d49F9aE20910aCeC4042",
+        "links": [
+          {
+            "title": "https://x.com/ludium_official",
+            "url": "https://x.com/ludium_official",
+            "__typename": "Link"
+          },
+          {
+            "title": "https://github.com/Ludium-Official",
+            "url": "https://github.com/Ludium-Official",
+            "__typename": "Link"
+          },
+          {
+            "title": "https://www.ludium.world/",
+            "url": "https://www.ludium.world/",
+            "__typename": "Link"
+          }
+        ],
+        "keywords": [],
+        "__typename": "User"
+      },
+      "currency": "USDC",
+      "deadline": "2025-09-29T14:59:59.999Z",
+      "description": "# 🚀 Ludium Portal 재구축 컨트리뷰터 모집\n\n안녕하세요, 루디움입니다.\n루디움 포털은 **빌더의 교육 → 취업 연계 → 투자**까지 지원하는 글로벌 플랫폼으로, 지난 1년간 다양한 기능들을 빠르게 개발해왔습니다.\n\n이번에는 **포털을 근본적으로 재구축**하고, 앞으로는 **오픈소스 기반 컨트리뷰션**으로 발전시켜 나가려 합니다. 이를 위해 이번 프로젝트에 함께할 컨트리뷰터 3명을 모집합니다.\n\n***\n\n## 🎯 왜 재구축하나요?\n\n그동안 빠른 구현에 집중하다 보니 **코드 정합성, 문서화, 협업 체계**에서 부족한 부분이 있었습니다.\n이번 재구축은 단순한 코드 리팩토링을 넘어,\n\n* **개발 문서화 체계 확립**\n* **외부 기여자 친화적인 구조 정비**\n* **UX·QA 개선**\n  을 목표로 합니다.\n\n***\n\n## 👥 모집 포지션 (총 3명)\n\n### 1. **Backend Contributor (1명)**\n\n* 기술 스택: `Node.js`, `TypeScript`, `Fastify`, `PostgreSQL`, `GraphQL`\n* 주요 역할:\n  * 기존 API 리팩토링 및 문서화\n  * 데이터 모델 및 ORM 구조 개선\n  * Auth & Role 기반 로직 정비\n\n***\n\n### 2. **Smart Contract Contributor (1명)**\n\n* 기술 스택: `Solidity`, `Hardhat`, `OpenZeppelin`\n* 주요 역할:\n  * 기존 컨트랙트 리팩토링 및 최적화\n  * Warranty / Escrow / Payment 로직 리뷰\n  * 보안 검토 및 테스트 강화\n\n***\n\n### 3. **UX Designer (1명)**\n\n* 역량: UX 리서치, 와이어프레임, 프로토타입 제작\n* 주요 역할:\n  * 전체 사용자 플로우 재정리\n  * 프로그램/프로젝트/프로필 UX 개선안 설계\n  * 컨트리뷰터 친화적인 화면 구조 제안\n\n***\n\n## 🛠️ 협업 방식\n\n* **GitHub 기반 Branch Workflow**\n  * `main` : 항상 배포 가능한 상태\n  * `dev` : 통합 브랜치\n  * `feature/xxx` : 기능 단위 브랜치\n* **PR 필수 리뷰 → 코드 머지**\n* **주간 개발 회의** 진행 (진행 상황 공유 + QA)\n\n레퍼런스 자료:\n\n* [포털 로드맵](https://kindly-smoke-eb0.notion.site/250706-Portal-Roadmap-2025-227b8bf83c2b807da558dd891835062c)\n* [개발 협업 가이드라인](https://kindly-smoke-eb0.notion.site/277b8bf83c2b80bc9fd2ff0606577878?source=copy_link)\n* [GitHub Projects](https://github.com/orgs/Ludium-Official/projects/7/views/1)\n\n***\n\n## 📅 모집 일정\n\n* 모집 인원: 3명 (Backend 1 / Contract 1 / UX Designer 1)\n* 모집 마감: 2025년 9월 28일 (일)\n* 활동 기간: **2025년 10월 (1개월 집중 기여)**\n\n***\n\n## 💡 지원 방법\n\n👉 루디움 포털 [커뮤니티](https://www.ludium.world/community)에서 댓글 혹은 메일로 간단한 자기소개와 관심 포지션을 남겨주세요.\n메일: [**contact@ludium.world**](mailto\\:contact@ludium.world)\n\n***\n\n## ✨ 함께하면 좋은 분\n\n* 오픈소스 기여 경험이 있는 분\n* Web3, 블록체인, 빌더 생태계에 관심이 많은 분\n* 단순 개발뿐 아니라, **플랫폼을 함께 성장시킬 의지**가 있는 분\n\n***\n\n🙌 루디움 포털의 새로운 도약에 함께해주세요",
+      "educhainProgramId": 22,
+      "keywords": [
+        {
+          "id": "915a7162-8ba2-46e4-bb29-8689a208d049",
+          "name": "Web3",
+          "__typename": "Keyword"
+        },
+        {
+          "id": "1e145614-24ae-4f9c-b922-2e7aea0fceff",
+          "name": "Development",
+          "__typename": "Keyword"
+        },
+        {
+          "id": "38490ea0-e660-4322-96e1-bff2bdddba2a",
+          "name": "Open-Source",
+          "__typename": "Keyword"
+        },
+        {
+          "id": "8a0a6ca2-777f-4d12-991d-cf3da53f5760",
+          "name": "Contributor",
+          "__typename": "Keyword"
+        }
+      ],
+      "links": [
+        {
+          "title": "https://www.ludium.world/",
+          "url": "https://www.ludium.world/",
+          "__typename": "Link"
+        }
+      ],
+      "id": "a9dcc0bd-9d0e-47ff-819d-83c8797fddba",
+      "name": "🚀 Ludium Portal 재구축 컨트리뷰터 모집",
+      "image": "https://storage.googleapis.com/ludium-storage/be5a0f2fe28e8d6bf3e184bb6e98da95.png",
+      "price": "1500",
+      "status": "published",
+      "summary": "루디움 코드 분석, 문서화, 협업 체계 개선을 위한 오픈 소스 컨트리뷰터 모집",
+      "rejectionReason": null,
+      "visibility": "public",
+      "invitedBuilders": [
+        {
+          "about": null,
+          "avatar": null,
+          "email": "godamcity98@gmail.com",
+          "firstName": null,
+          "id": "019d84f5-8d0b-402d-b9a9-964dbfbebae1",
+          "image": null,
+          "lastName": null,
+          "links": [],
+          "loginType": "google",
+          "organizationName": null,
+          "role": "user",
+          "summary": null,
+          "walletAddress": "0x9b6e75717027F4F24F4B201004617Dcb9d27BF63",
+          "__typename": "User"
+        },
+        {
+          "about": null,
+          "avatar": null,
+          "email": "seup87@gmail.com",
+          "firstName": null,
+          "id": "02880816-c9d2-466c-8355-d067710f6f92",
+          "image": null,
+          "lastName": null,
+          "links": [],
+          "loginType": "google",
+          "organizationName": null,
+          "role": "user",
+          "summary": null,
+          "walletAddress": "0x903Ef70D578c0bB2D8Dfe4475DdDE83b1Db3E7e1",
+          "__typename": "User"
+        },
+        {
+          "about": "Hi",
+          "avatar": {
+            "filename": "Booking Details _ BC Ferries.pdf",
+            "mimetype": "application/pdf"
+          },
+          "email": "ginauare5@gmail.com",
+          "firstName": "Jeehee",
+          "id": "8acba1c9-e60f-419d-933f-217891305cc8",
+          "image": "https://storage.googleapis.com/ludium-storage/8d0589fcb64fb400cb35f5fbe1d3ca7a.png",
+          "lastName": "Shim",
+          "links": [],
+          "loginType": "google",
+          "organizationName": "Ludium",
+          "role": "user",
+          "summary": "Hi",
+          "walletAddress": "0x14F280ce2A4f84aDed8B66F1288F67205a56077a",
+          "__typename": "User"
+        }
+      ],
+      "validators": [
+        {
+          "about": "Hi! I am Ludium Agwn",
+          "email": "agwn@ludium.world",
+          "firstName": "Agwn",
+          "id": "b21ad306-7665-471f-be71-88c6a9c05bd8",
+          "image": null,
+          "summary": "Ludium Agwn",
+          "lastName": "Ludium",
+          "organizationName": "Ludium",
+          "links": [
+            {
+              "title": "https://x.com/Ludium_Agwn",
+              "url": "https://x.com/Ludium_Agwn",
+              "__typename": "Link"
+            },
+            {
+              "title": "https://github.com/Ludium-Agwn",
+              "url": "https://github.com/Ludium-Agwn",
+              "__typename": "Link"
+            },
+            {
+              "title": "https://agwn.medium.com/",
+              "url": "https://agwn.medium.com/",
+              "__typename": "Link"
+            }
+          ],
+          "keywords": [
+            {
+              "id": "1410d1f5-25b9-4fe4-9236-d25a2159238c",
+              "name": "planning",
+              "__typename": "Keyword"
+            },
+            {
+              "id": "91d1e3ff-4075-45e7-8777-5fc2072782d2",
+              "name": "biz",
+              "__typename": "Keyword"
+            },
+            {
+              "id": "7bc8cc2d-668f-4dd2-994f-56923d47c532",
+              "name": "possibly-anything-if-required",
+              "__typename": "Keyword"
+            }
+          ],
+          "walletAddress": "0x9Dc1c51a62A451A4917b1fc1512B83F354BF03d0",
+          "__typename": "User"
+        }
+      ],
+      "supporters": [
+        {
+          "email": "godamcity98@gmail.com",
+          "firstName": null,
+          "lastName": null,
+          "maxInvestmentAmount": null,
+          "tier": null,
+          "userId": "019d84f5-8d0b-402d-b9a9-964dbfbebae1",
+          "walletAddress": "0x9b6e75717027F4F24F4B201004617Dcb9d27BF63",
+          "__typename": "Supporter"
+        },
+        {
+          "email": "seup87@gmail.com",
+          "firstName": null,
+          "lastName": null,
+          "maxInvestmentAmount": null,
+          "tier": null,
+          "userId": "02880816-c9d2-466c-8355-d067710f6f92",
+          "walletAddress": "0x903Ef70D578c0bB2D8Dfe4475DdDE83b1Db3E7e1",
+          "__typename": "Supporter"
+        },
+        {
+          "email": "ginauare5@gmail.com",
+          "firstName": "Jeehee",
+          "lastName": "Shim",
+          "maxInvestmentAmount": null,
+          "tier": null,
+          "userId": "8acba1c9-e60f-419d-933f-217891305cc8",
+          "walletAddress": "0x14F280ce2A4f84aDed8B66F1288F67205a56077a",
+          "__typename": "Supporter"
+        }
+      ],
+      "userTierAssignment": null,
+      "network": "arbitrum",
+      "type": "regular",
+      "applicationStartDate": null,
+      "applicationEndDate": null,
+      "fundingStartDate": null,
+      "fundingEndDate": null,
+      "fundingCondition": "open",
+      "tierSettings": null,
+      "feePercentage": 300,
+      "customFeePercentage": null,
+      "maxFundingAmount": null,
+      "__typename": "Program"
+    }
+  }
+}
