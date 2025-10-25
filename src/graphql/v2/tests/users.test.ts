@@ -26,11 +26,16 @@ const mockServer = {
     info: () => {},
     warn: () => {},
     error: () => {},
+    child: () => ({ info: () => {}, warn: () => {}, error: () => {} }),
+    level: 'info',
+    fatal: () => {},
+    debug: () => {},
+    trace: () => {},
   },
   jwt: {
     sign: mockJwtSign,
   },
-} as Partial<FastifyInstance> as FastifyInstance;
+} as unknown as FastifyInstance;
 
 // Mock context
 const mockContext = {
@@ -39,7 +44,7 @@ const mockContext = {
   request: {} as FastifyRequest,
   reply: {} as FastifyReply,
   user: {} as UserV2,
-} as Context;
+} as unknown as Context;
 
 describe('Users V2 GraphQL Resolvers', () => {
   let testUser: {
