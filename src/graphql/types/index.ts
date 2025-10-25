@@ -1,6 +1,5 @@
-import { writeFileSync } from 'node:fs';
+// import { writeFileSync } from 'node:fs';
 import builder from '@/graphql/builder';
-import { lexicographicSortSchema, printSchema } from 'graphql';
 
 import './common';
 import './users';
@@ -12,14 +11,16 @@ import './investments';
 import './milestones';
 import './milestone-payouts';
 import './fee-claims';
-import './auth';
+import './auth'; // ✅ V1 login mutation을 위해 활성화
 import './links';
-import './posts';
-import './comments';
+import './posts'; // ✅ V1 post mutations 활성화
+import './comments'; // ✅ posts와 관련된 comments
 import './notifications';
 import './carousel';
 import './swapped';
 
+import '../v2';
+
 export const schema = builder.toSchema();
-const schemaAsString = printSchema(lexicographicSortSchema(schema));
-writeFileSync('./src/graphql/schema.graphql', schemaAsString);
+// const schemaAsString = printSchema(lexicographicSortSchema(schema));
+// writeFileSync('./src/graphql/schema.graphql', schemaAsString);

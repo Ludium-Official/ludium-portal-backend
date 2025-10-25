@@ -1,3 +1,4 @@
+// v1
 export * from './users';
 export * from './files';
 export * from './programs';
@@ -14,3 +15,6 @@ export * from './carousel';
 export * from './investments';
 export * from './milestone-payouts';
 export * from './fees';
+// v2
+export * from './v2/programsV2';
+export * from './v2/usersV2';
