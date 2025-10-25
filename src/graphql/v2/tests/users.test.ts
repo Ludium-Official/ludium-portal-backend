@@ -1,45 +1,53 @@
 import { usersV2Table } from '@/db/schemas/v2/usersV2';
-import type { NewUserV2 } from '@/db/schemas/v2/usersV2';
+import type { NewUserV2, UserV2 } from '@/db/schemas/v2/usersV2';
 import { db } from '@/db/test-db';
+import type { Context } from '@/types/context';
 import { sql } from 'drizzle-orm';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   createUserV2Resolver,
   deleteUserV2Resolver,
   getUserV2Resolver,
   getUsersV2Resolver,
-  searchUsersV2Resolver,
+  loginV2Resolver,
+  queryUsersV2Resolver,
   updateUserV2Resolver,
 } from '../resolvers/users';
+
+// Mock JWT sign function
+const mockJwtSign = (payload: unknown, _options: unknown) => {
+  return `mock-jwt-token-${JSON.stringify(payload)}`;
+};
+
+// Mock FastifyInstance
+const mockServer = {
+  log: {
+    info: () => {},
+    warn: () => {},
+    error: () => {},
+  },
+  jwt: {
+    sign: mockJwtSign,
+  },
+} as Partial<FastifyInstance> as FastifyInstance;
 
 // Mock context
 const mockContext = {
   db,
-  server: {
-    log: {
-      info: () => {},
-      warn: () => {},
-      error: () => {},
-    },
-  },
-} as {
-  db: typeof db;
-  server: {
-    log: {
-      info: (message: string) => void;
-      warn: (message: string) => void;
-      error: (message: string) => void;
-    };
-  };
-};
+  server: mockServer,
+  request: {} as FastifyRequest,
+  reply: {} as FastifyReply,
+  user: {} as UserV2,
+} as Context;
 
 describe('Users V2 GraphQL Resolvers', () => {
   let testUser: {
     id: number;
     email: string | null;
     walletAddress: string;
-    loginType: string;
-    role: string;
+    loginType: 'wallet' | 'google' | 'farcaster';
+    role: 'user' | 'admin';
     firstName: string | null;
     lastName: string | null;
   };
@@ -65,7 +73,7 @@ describe('Users V2 GraphQL Resolvers', () => {
         links: ['https://github.com/johndoe', 'https://twitter.com/johndoe'],
       };
 
-      const result = await createUserV2Resolver(null, { input }, mockContext);
+      const result = await createUserV2Resolver({}, { input }, mockContext);
 
       expect(result).toBeDefined();
       expect(result.id).toBe(1);
@@ -93,7 +101,7 @@ describe('Users V2 GraphQL Resolvers', () => {
         email: 'minimal@example.com',
       };
 
-      const result = await createUserV2Resolver(null, { input }, mockContext);
+      const result = await createUserV2Resolver({}, { input }, mockContext);
 
       expect(result).toBeDefined();
       expect(result.loginType).toBe('google');
@@ -113,7 +121,7 @@ describe('Users V2 GraphQL Resolvers', () => {
         role: 'admin',
       };
 
-      const result = await createUserV2Resolver(null, { input }, mockContext);
+      const result = await createUserV2Resolver({}, { input }, mockContext);
 
       expect(result).toBeDefined();
       expect(result.role).toBe('admin');
@@ -135,7 +143,7 @@ describe('Users V2 GraphQL Resolvers', () => {
     });
 
     it('should get a user by ID', async () => {
-      const result = await getUserV2Resolver(null, { id: testUser.id.toString() }, mockContext);
+      const result = await getUserV2Resolver({}, { id: testUser.id.toString() }, mockContext);
 
       expect(result).toBeDefined();
       expect(result.id).toBe(testUser.id);
@@ -144,7 +152,7 @@ describe('Users V2 GraphQL Resolvers', () => {
     });
 
     it('should throw error for non-existent user', async () => {
-      await expect(getUserV2Resolver(null, { id: '999' }, mockContext)).rejects.toThrow(
+      await expect(getUserV2Resolver({}, { id: '999' }, mockContext)).rejects.toThrow(
         'User not found',
       );
     });
@@ -164,7 +172,6 @@ describe('Users V2 GraphQL Resolvers', () => {
           email: 'user1@example.com',
           firstName: 'Alice',
           lastName: 'Smith',
-          role: 'user',
         },
         {
           loginType: 'google',
@@ -179,7 +186,6 @@ describe('Users V2 GraphQL Resolvers', () => {
           walletAddress: '0x3333333333333333333333333333333333333333',
           firstName: 'Charlie',
           lastName: 'Brown',
-          role: 'user',
         },
       ];
 
@@ -187,11 +193,7 @@ describe('Users V2 GraphQL Resolvers', () => {
     });
 
     it('should get paginated users list', async () => {
-      const result = await getUsersV2Resolver(
-        null,
-        { pagination: { page: 1, limit: 2 } },
-        mockContext,
-      );
+      const result = await getUsersV2Resolver({}, { query: { page: 1, limit: 2 } }, mockContext);
 
       expect(result).toBeDefined();
       expect(result.users).toHaveLength(2);
@@ -203,7 +205,7 @@ describe('Users V2 GraphQL Resolvers', () => {
     });
 
     it('should filter users by role', async () => {
-      const result = await getUsersV2Resolver(null, { pagination: { role: 'admin' } }, mockContext);
+      const result = await getUsersV2Resolver({}, { query: { role: 'admin' } }, mockContext);
 
       expect(result).toBeDefined();
       expect(result.users).toHaveLength(1);
@@ -211,11 +213,7 @@ describe('Users V2 GraphQL Resolvers', () => {
     });
 
     it('should filter users by login type', async () => {
-      const result = await getUsersV2Resolver(
-        null,
-        { pagination: { loginType: 'wallet' } },
-        mockContext,
-      );
+      const result = await getUsersV2Resolver({}, { query: { loginType: 'wallet' } }, mockContext);
 
       expect(result).toBeDefined();
       expect(result.users).toHaveLength(1);
@@ -223,11 +221,7 @@ describe('Users V2 GraphQL Resolvers', () => {
     });
 
     it('should search users by name', async () => {
-      const result = await getUsersV2Resolver(
-        null,
-        { pagination: { search: 'Alice' } },
-        mockContext,
-      );
+      const result = await getUsersV2Resolver({}, { query: { search: 'Alice' } }, mockContext);
 
       expect(result).toBeDefined();
       expect(result.users).toHaveLength(1);
@@ -235,7 +229,7 @@ describe('Users V2 GraphQL Resolvers', () => {
     });
   });
 
-  describe('searchUsersV2Resolver', () => {
+  describe('getUsersV2Resolver with search', () => {
     beforeEach(async () => {
       // Clean up first
       await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
@@ -266,12 +260,11 @@ describe('Users V2 GraphQL Resolvers', () => {
       await db.insert(usersV2Table).values(users);
     });
 
-    it('should search users by bio', async () => {
-      const result = await searchUsersV2Resolver(
-        null,
+    it('should search users by email', async () => {
+      const result = await getUsersV2Resolver(
+        {},
         {
-          search: { query: 'developer', fields: ['bio'] },
-          pagination: { page: 1, limit: 10 },
+          query: { search: 'developer@example.com', page: 1, limit: 10 },
         },
         mockContext,
       );
@@ -281,12 +274,29 @@ describe('Users V2 GraphQL Resolvers', () => {
       expect(result.users[0].firstName).toBe('Alice');
     });
 
-    it('should search users by skills', async () => {
-      const result = await searchUsersV2Resolver(
-        null,
+    it('should search users by wallet address', async () => {
+      const result = await getUsersV2Resolver(
+        {},
         {
-          search: { query: 'React', fields: ['firstName', 'lastName', 'bio'] },
-          pagination: { page: 1, limit: 10 },
+          query: {
+            search: '0x1111111111111111111111111111111111111111',
+            page: 1,
+            limit: 10,
+          },
+        },
+        mockContext,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.users).toHaveLength(1);
+      expect(result.users[0].firstName).toBe('Alice');
+    });
+
+    it('should search users by firstName', async () => {
+      const result = await getUsersV2Resolver(
+        {},
+        {
+          query: { search: 'Alice', page: 1, limit: 10 },
         },
         mockContext,
       );
@@ -324,7 +334,7 @@ describe('Users V2 GraphQL Resolvers', () => {
         skills: ['Updated', 'Skills'],
       };
 
-      const result = await updateUserV2Resolver(null, { input }, mockContext);
+      const result = await updateUserV2Resolver({}, { input }, mockContext);
 
       expect(result).toBeDefined();
       expect(result.id).toBe(testUser.id);
@@ -340,7 +350,7 @@ describe('Users V2 GraphQL Resolvers', () => {
         role: 'admin',
       };
 
-      const result = await updateUserV2Resolver(null, { input }, mockContext);
+      const result = await updateUserV2Resolver({}, { input }, mockContext);
 
       expect(result).toBeDefined();
       expect(result.role).toBe('admin');
@@ -352,7 +362,7 @@ describe('Users V2 GraphQL Resolvers', () => {
         firstName: 'Test',
       };
 
-      await expect(updateUserV2Resolver(null, { input }, mockContext)).rejects.toThrow(
+      await expect(updateUserV2Resolver({}, { input }, mockContext)).rejects.toThrow(
         'User not found',
       );
     });
@@ -377,7 +387,7 @@ describe('Users V2 GraphQL Resolvers', () => {
     });
 
     it('should delete a user', async () => {
-      const result = await deleteUserV2Resolver(null, { id: testUser.id.toString() }, mockContext);
+      const result = await deleteUserV2Resolver({}, { id: testUser.id.toString() }, mockContext);
 
       expect(result).toBe(true);
 
@@ -390,9 +400,329 @@ describe('Users V2 GraphQL Resolvers', () => {
     });
 
     it('should throw error for non-existent user', async () => {
-      await expect(deleteUserV2Resolver(null, { id: '999' }, mockContext)).rejects.toThrow(
+      await expect(deleteUserV2Resolver({}, { id: '999' }, mockContext)).rejects.toThrow(
         'User not found',
       );
+    });
+  });
+
+  describe('queryUsersV2Resolver', () => {
+    beforeEach(async () => {
+      // Clean up first
+      await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
+      await db.execute(sql`ALTER SEQUENCE users_v2_id_seq RESTART WITH 1`);
+
+      // Create test users
+      const users: NewUserV2[] = [
+        {
+          loginType: 'wallet',
+          walletAddress: '0x1111111111111111111111111111111111111111',
+          email: 'user1@example.com',
+          firstName: 'Alice',
+          lastName: 'Smith',
+          role: 'user',
+        },
+        {
+          loginType: 'google',
+          walletAddress: '0x2222222222222222222222222222222222222222',
+          email: 'user2@example.com',
+          firstName: 'Bob',
+          lastName: 'Johnson',
+          role: 'admin',
+        },
+        {
+          loginType: 'farcaster',
+          walletAddress: '0x3333333333333333333333333333333333333333',
+          email: 'user3@example.com',
+          firstName: 'Charlie',
+          lastName: 'Brown',
+          role: 'user',
+        },
+      ];
+
+      await db.insert(usersV2Table).values(users);
+    });
+
+    it('should query users by wallet address', async () => {
+      const result = await queryUsersV2Resolver(
+        {},
+        {
+          filter: [
+            {
+              field: 'walletAddress',
+              value: '0x1111111111111111111111111111111111111111',
+            },
+          ],
+        },
+        mockContext,
+      );
+
+      expect(result).toBeDefined();
+      expect(result).toHaveLength(1);
+      expect(result[0].firstName).toBe('Alice');
+    });
+
+    it('should query users by email', async () => {
+      const result = await queryUsersV2Resolver(
+        {},
+        {
+          filter: [
+            {
+              field: 'email',
+              value: 'user2@example.com',
+            },
+          ],
+        },
+        mockContext,
+      );
+
+      expect(result).toBeDefined();
+      expect(result).toHaveLength(1);
+      expect(result[0].firstName).toBe('Bob');
+    });
+
+    it('should query users with AND condition (wallet AND email)', async () => {
+      const result = await queryUsersV2Resolver(
+        {},
+        {
+          filter: [
+            {
+              field: 'walletAddress',
+              value: '0x1111111111111111111111111111111111111111',
+            },
+            {
+              field: 'email',
+              value: 'user1@example.com',
+            },
+          ],
+        },
+        mockContext,
+      );
+
+      expect(result).toBeDefined();
+      expect(result).toHaveLength(1);
+      expect(result[0].firstName).toBe('Alice');
+    });
+
+    it('should return empty array when no match found', async () => {
+      const result = await queryUsersV2Resolver(
+        {},
+        {
+          filter: [
+            {
+              field: 'walletAddress',
+              value: '0x9999999999999999999999999999999999999999',
+            },
+          ],
+        },
+        mockContext,
+      );
+
+      expect(result).toBeDefined();
+      expect(result).toHaveLength(0);
+    });
+
+    it('should return all users when no filter provided', async () => {
+      const result = await queryUsersV2Resolver(
+        {},
+        {
+          filter: [],
+        },
+        mockContext,
+      );
+
+      expect(result).toBeDefined();
+      expect(result).toHaveLength(3);
+    });
+
+    it('should query by role', async () => {
+      const result = await queryUsersV2Resolver(
+        {},
+        {
+          filter: [
+            {
+              field: 'role',
+              value: 'admin',
+            },
+          ],
+        },
+        mockContext,
+      );
+
+      expect(result).toBeDefined();
+      expect(result).toHaveLength(1);
+      expect(result[0].role).toBe('admin');
+    });
+  });
+
+  describe('loginV2Resolver', () => {
+    beforeEach(async () => {
+      // Clean up first
+      await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
+      await db.execute(sql`ALTER SEQUENCE users_v2_id_seq RESTART WITH 1`);
+    });
+
+    it('should create new user and return JWT token', async () => {
+      const result = await loginV2Resolver(
+        {},
+        {
+          walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
+          loginType: 'wallet',
+          email: 'newuser@example.com',
+        },
+        mockContext,
+      );
+
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('string');
+      expect(result).toContain('mock-jwt-token');
+
+      // Verify user was created
+      const [user] = await db
+        .select()
+        .from(usersV2Table)
+        .where(sql`${usersV2Table.walletAddress} = '0x1234567890abcdef1234567890abcdef12345678'`);
+
+      expect(user).toBeDefined();
+      expect(user.email).toBe('newuser@example.com');
+      expect(user.loginType).toBe('wallet');
+      expect(user.role).toBe('user');
+    });
+
+    it('should login existing user and return JWT token', async () => {
+      // Create a user first
+      const newUser: NewUserV2 = {
+        loginType: 'wallet',
+        walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
+        email: 'existing@example.com',
+      };
+      await db.insert(usersV2Table).values(newUser);
+
+      // Login with existing wallet
+      const result = await loginV2Resolver(
+        {},
+        {
+          walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
+          loginType: 'wallet',
+          email: 'existing@example.com',
+        },
+        mockContext,
+      );
+
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('string');
+      expect(result).toContain('mock-jwt-token');
+
+      // Verify only one user exists
+      const users = await db.select().from(usersV2Table);
+      expect(users).toHaveLength(1);
+    });
+
+    it('should link email to existing wallet account', async () => {
+      // Create user with wallet only
+      const newUser: NewUserV2 = {
+        loginType: 'wallet',
+        walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
+        email: null,
+      };
+      await db.insert(usersV2Table).values(newUser);
+
+      // Login with same wallet but add email
+      const result = await loginV2Resolver(
+        {},
+        {
+          walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
+          loginType: 'google',
+          email: 'linked@example.com',
+        },
+        mockContext,
+      );
+
+      expect(result).toBeDefined();
+
+      // Verify email was added
+      const [user] = await db
+        .select()
+        .from(usersV2Table)
+        .where(sql`${usersV2Table.walletAddress} = '0x1234567890abcdef1234567890abcdef12345678'`);
+
+      expect(user.email).toBe('linked@example.com');
+      expect(user.loginType).toBe('google'); // Updated to latest login type
+    });
+
+    it('should update loginType on each login', async () => {
+      // Create user with wallet
+      const newUser: NewUserV2 = {
+        loginType: 'wallet',
+        walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
+        email: 'user@example.com',
+      };
+      await db.insert(usersV2Table).values(newUser);
+
+      // Login with google
+      await loginV2Resolver(
+        {},
+        {
+          walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
+          loginType: 'google',
+          email: 'user@example.com',
+        },
+        mockContext,
+      );
+
+      // Verify loginType was updated
+      const [user] = await db
+        .select()
+        .from(usersV2Table)
+        .where(sql`${usersV2Table.walletAddress} = '0x1234567890abcdef1234567890abcdef12345678'`);
+
+      expect(user.loginType).toBe('google');
+    });
+
+    it('should throw error when wallet is linked to different email', async () => {
+      // Create user with wallet and email
+      const newUser: NewUserV2 = {
+        loginType: 'wallet',
+        walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
+        email: 'original@example.com',
+      };
+      await db.insert(usersV2Table).values(newUser);
+
+      // Try to login with same wallet but different email
+      await expect(
+        loginV2Resolver(
+          {},
+          {
+            walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
+            loginType: 'wallet',
+            email: 'different@example.com',
+          },
+          mockContext,
+        ),
+      ).rejects.toThrow('This wallet is already associated with a different email address');
+    });
+
+    it('should create user without email', async () => {
+      const result = await loginV2Resolver(
+        {},
+        {
+          walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
+          loginType: 'wallet',
+        },
+        mockContext,
+      );
+
+      expect(result).toBeDefined();
+
+      // Verify user was created without email
+      const [user] = await db
+        .select()
+        .from(usersV2Table)
+        .where(sql`${usersV2Table.walletAddress} = '0x1234567890abcdef1234567890abcdef12345678'`);
+
+      expect(user).toBeDefined();
+      expect(user.email).toBeNull();
+      expect(user.walletAddress).toBe('0x1234567890abcdef1234567890abcdef12345678');
     });
   });
 });

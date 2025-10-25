@@ -2,12 +2,49 @@ import builder from '@/graphql/builder';
 import {
   createUserV2Resolver,
   deleteUserV2Resolver,
+  loginV2Resolver,
   updateUserV2Resolver,
 } from '@/graphql/v2/resolvers/users';
 import { CreateUserV2Input, UpdateUserV2Input } from '../inputs/users';
+import { LoginTypeEnum } from '../types/users';
 import { UserV2Type } from '../types/users';
 
-// Create User Mutation
+// ============================================================================
+// Authentication Mutations
+// ============================================================================
+
+/**
+ * Login or create user (upsert) - Returns JWT token
+ */
+builder.mutationFields((t) => ({
+  loginV2: t.field({
+    type: 'String',
+    args: {
+      walletAddress: t.arg.string({
+        required: true,
+        description: 'User wallet address',
+      }),
+      loginType: t.arg({
+        type: LoginTypeEnum,
+        required: true,
+        description: 'Login type (google, wallet, farcaster)',
+      }),
+      email: t.arg.string({
+        description: 'User email address (optional)',
+      }),
+    },
+    resolve: loginV2Resolver,
+    description: 'Login or create user account and return JWT token',
+  }),
+}));
+
+// ============================================================================
+// User Mutations
+// ============================================================================
+
+/**
+ * Create a new user
+ */
 builder.mutationFields((t) => ({
   createUserV2: t.field({
     type: UserV2Type,
@@ -23,7 +60,9 @@ builder.mutationFields((t) => ({
   }),
 }));
 
-// Update User Mutation
+/**
+ * Update an existing user
+ */
 builder.mutationFields((t) => ({
   updateUserV2: t.field({
     type: UserV2Type,
@@ -39,7 +78,9 @@ builder.mutationFields((t) => ({
   }),
 }));
 
-// Delete User Mutation
+/**
+ * Delete a user by ID
+ */
 builder.mutationFields((t) => ({
   deleteUserV2: t.field({
     type: 'Boolean',
@@ -51,73 +92,5 @@ builder.mutationFields((t) => ({
     },
     resolve: deleteUserV2Resolver,
     description: 'Delete a user by ID',
-  }),
-}));
-
-// Bulk Operations
-builder.mutationFields((t) => ({
-  bulkUpdateUsersV2: t.field({
-    type: ['Boolean'],
-    args: {
-      ids: t.arg.idList({
-        required: true,
-        description: 'List of user IDs to update',
-      }),
-      input: t.arg({
-        type: UpdateUserV2Input,
-        required: true,
-        description: 'Update data to apply to all users',
-      }),
-    },
-    resolve: async (_, args, ctx) => {
-      // Implementation for bulk update
-      const results = [];
-      for (const id of args.ids) {
-        try {
-          await updateUserV2Resolver(_, { input: { ...args.input, id } }, ctx);
-          results.push(true);
-        } catch (error) {
-          ctx.server.log.error(
-            `Failed to update user ${id}: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          );
-          results.push(false);
-        }
-      }
-      return results;
-    },
-    description: 'Update multiple users at once',
-  }),
-}));
-
-builder.mutationFields((t) => ({
-  bulkDeleteUsersV2: t.field({
-    type: ['Boolean'],
-    args: {
-      ids: t.arg.idList({
-        required: true,
-        description: 'List of user IDs to delete',
-      }),
-    },
-    resolve: async (_, args, ctx) => {
-      // Implementation for bulk delete
-      const results = [];
-      for (const id of args.ids) {
-        try {
-          await deleteUserV2Resolver(_, { id }, ctx);
-          results.push(true);
-        } catch (error) {
-          ctx.server.log.error(
-            `Failed to delete user ${id}: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          );
-          results.push(false);
-        }
-      }
-      return results;
-    },
-    description: 'Delete multiple users at once',
   }),
 }));

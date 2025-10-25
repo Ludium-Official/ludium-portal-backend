@@ -1,0 +1,25 @@
+{
+  "data": {
+    "createUserV2": {
+      "id": "1",
+      "role": "user",
+      "loginType": "wallet",
+      "walletAddress": "0x1234567890abcdef1234567890abcdef12345678",
+      "email": "developer@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "organizationName": "Web3 Builders",
+      "profileImage": "https://example.com/profile/john-doe.jpg",
+      "bio": "Full-stack Web3 developer with 5 years of experience in blockchain development",
+      "skills": ["solidity", "react", "typescript", "web3", "ethereum"],
+      "links": [
+        "https://github.com/johndoe",
+        "https://twitter.com/johndoe",
+        "https://linkedin.com/in/johndoe"
+      ],
+      "createdAt": "2025-10-23T10:00:00.000Z",
+      "updatedAt": "2025-10-23T10:00:00.000Z",
+      "__typename": "UserV2"
+    }
+  }
+}

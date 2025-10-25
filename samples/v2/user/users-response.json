@@ -1,0 +1,52 @@
+{
+  "data": {
+    "usersV2": {
+      "users": [
+        {
+          "id": "1",
+          "role": "user",
+          "loginType": "wallet",
+          "walletAddress": "0x1234567890abcdef1234567890abcdef12345678",
+          "email": "developer@example.com",
+          "firstName": "John",
+          "lastName": "Doe",
+          "organizationName": "Web3 Builders",
+          "profileImage": "https://example.com/profile/john-doe.jpg",
+          "bio": "Full-stack Web3 developer with 5 years of experience in blockchain development",
+          "skills": ["solidity", "react", "typescript", "web3", "ethereum"],
+          "links": [
+            "https://github.com/johndoe",
+            "https://twitter.com/johndoe",
+            "https://linkedin.com/in/johndoe"
+          ],
+          "createdAt": "2025-10-23T10:00:00.000Z",
+          "updatedAt": "2025-10-23T10:00:00.000Z",
+          "__typename": "UserV2"
+        },
+        {
+          "id": "2",
+          "role": "admin",
+          "loginType": "google",
+          "walletAddress": "0xabcdef1234567890abcdef1234567890abcdef12",
+          "email": "admin@example.com",
+          "firstName": "Jane",
+          "lastName": "Smith",
+          "organizationName": "Ludium Platform",
+          "profileImage": "https://example.com/profile/jane-smith.jpg",
+          "bio": "Platform administrator and community manager",
+          "skills": ["management", "community", "web3"],
+          "links": ["https://twitter.com/janesmith"],
+          "createdAt": "2025-10-22T09:00:00.000Z",
+          "updatedAt": "2025-10-22T09:00:00.000Z",
+          "__typename": "UserV2"
+        }
+      ],
+      "totalCount": 2,
+      "totalPages": 1,
+      "currentPage": 1,
+      "hasNextPage": false,
+      "hasPreviousPage": false,
+      "__typename": "PaginatedUsersV2"
+    }
+  }
+}

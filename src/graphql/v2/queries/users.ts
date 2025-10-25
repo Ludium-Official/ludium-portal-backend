@@ -2,17 +2,18 @@ import builder from '@/graphql/builder';
 import {
   getUserV2Resolver,
   getUsersV2Resolver,
-  searchUsersV2Resolver,
+  queryUsersV2Resolver,
 } from '@/graphql/v2/resolvers/users';
-import { UserV2FilterInput } from '../inputs/users';
-import {
-  PaginatedUsersV2Type,
-  UserV2SearchInput,
-  UserV2Type,
-  UsersV2PaginationInput,
-} from '../types/users';
+import { UserV2QueryFilterInput, UsersV2QueryInput } from '../inputs/users';
+import { PaginatedUsersV2Type, UserV2Type } from '../types/users';
 
-// Single User Query
+// ============================================================================
+// User Queries
+// ============================================================================
+
+/**
+ * Get a single user by ID
+ */
 builder.queryFields((t) => ({
   userV2: t.field({
     type: UserV2Type,
@@ -27,57 +28,38 @@ builder.queryFields((t) => ({
   }),
 }));
 
-// Users List Query
+/**
+ * Get paginated list of users with filtering, searching, and sorting
+ * This is the main unified query for retrieving users
+ */
 builder.queryFields((t) => ({
   usersV2: t.field({
     type: PaginatedUsersV2Type,
     args: {
-      pagination: t.arg({
-        type: UsersV2PaginationInput,
-        description: 'Pagination and filtering options',
+      query: t.arg({
+        type: UsersV2QueryInput,
+        description: 'Query options including pagination, filtering, searching, and sorting',
       }),
     },
     resolve: getUsersV2Resolver,
-    description: 'Get paginated list of users',
+    description: 'Get paginated list of users with comprehensive filtering options',
   }),
 }));
 
-// Search Users Query
+/**
+ * Query users with dynamic field=value filtering (AND logic)
+ * Useful for exact field matching without pagination
+ */
 builder.queryFields((t) => ({
-  searchUsersV2: t.field({
-    type: PaginatedUsersV2Type,
-    args: {
-      search: t.arg({
-        type: UserV2SearchInput,
-        required: true,
-        description: 'Search criteria',
-      }),
-      pagination: t.arg({
-        type: UsersV2PaginationInput,
-        description: 'Pagination options',
-      }),
-    },
-    resolve: searchUsersV2Resolver,
-    description: 'Search users with advanced filtering',
-  }),
-}));
-
-// Filter Users Query
-builder.queryFields((t) => ({
-  filterUsersV2: t.field({
-    type: PaginatedUsersV2Type,
+  queryUsersV2: t.field({
+    type: [UserV2Type],
     args: {
       filter: t.arg({
-        type: UserV2FilterInput,
-        required: true,
-        description: 'Filter criteria',
-      }),
-      pagination: t.arg({
-        type: UsersV2PaginationInput,
-        description: 'Pagination options',
+        type: [UserV2QueryFilterInput],
+        description: 'Dynamic filter criteria (field=value pairs combined with AND logic)',
       }),
     },
-    resolve: getUsersV2Resolver, // Reuse the same resolver with filter
-    description: 'Filter users with specific criteria',
+    resolve: queryUsersV2Resolver,
+    description: 'Query users with dynamic field=value filters (AND condition, no pagination)',
   }),
 }));

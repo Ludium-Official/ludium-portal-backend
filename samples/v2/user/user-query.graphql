@@ -1,0 +1,19 @@
+query userV2($id: ID!) {
+  userV2(id: $id) {
+    id
+    role
+    loginType
+    walletAddress
+    email
+    firstName
+    lastName
+    organizationName
+    profileImage
+    bio
+    skills
+    links
+    createdAt
+    updatedAt
+    __typename
+  }
+}

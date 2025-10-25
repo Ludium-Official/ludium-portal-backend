@@ -1,12 +1,18 @@
 import builder from '@/graphql/builder';
-import { LoginV2TypeEnum, UserV2RoleEnum } from '../types/users';
+import { LoginTypeEnum, UserRoleEnum } from '../types/users';
 
-// Create User Input
+// ============================================================================
+// Mutation Inputs
+// ============================================================================
+
+/**
+ * Input type for creating a new user
+ */
 export const CreateUserV2Input = builder.inputType('CreateUserV2Input', {
   fields: (t) => ({
     // Required fields
     loginType: t.field({
-      type: LoginV2TypeEnum,
+      type: LoginTypeEnum,
       required: true,
       description: 'User login type',
     }),
@@ -21,7 +27,7 @@ export const CreateUserV2Input = builder.inputType('CreateUserV2Input', {
       validate: { email: true },
     }),
     role: t.field({
-      type: UserV2RoleEnum,
+      type: UserRoleEnum,
       description: 'User role (defaults to user)',
     }),
     firstName: t.string({
@@ -48,7 +54,9 @@ export const CreateUserV2Input = builder.inputType('CreateUserV2Input', {
   }),
 });
 
-// Update User Input
+/**
+ * Input type for updating an existing user
+ */
 export const UpdateUserV2Input = builder.inputType('UpdateUserV2Input', {
   fields: (t) => ({
     // ID is required for updates
@@ -87,8 +95,75 @@ export const UpdateUserV2Input = builder.inputType('UpdateUserV2Input', {
       description: 'User links array',
     }),
     role: t.field({
-      type: UserV2RoleEnum,
+      type: UserRoleEnum,
       description: 'User role',
+    }),
+  }),
+});
+
+// ============================================================================
+// Query Inputs
+// ============================================================================
+
+/**
+ * Unified pagination and filtering input for users queries
+ * Combines pagination, sorting, searching, and filtering in one input type
+ */
+export const UsersV2QueryInput = builder.inputType('UsersV2QueryInput', {
+  fields: (t) => ({
+    // Pagination
+    page: t.int({
+      description: 'Page number (1-based)',
+      defaultValue: 1,
+    }),
+    limit: t.int({
+      description: 'Number of items per page',
+      defaultValue: 10,
+    }),
+
+    // Sorting
+    sortBy: t.string({
+      description: 'Field to sort by (createdAt, updatedAt, firstName, lastName)',
+      defaultValue: 'createdAt',
+    }),
+    sortOrder: t.string({
+      description: 'Sort order (asc/desc)',
+      defaultValue: 'desc',
+    }),
+
+    // Search
+    search: t.string({
+      description: 'Search term for walletAddress, email, firstName, lastName',
+    }),
+
+    // Filters
+    role: t.field({
+      type: UserRoleEnum,
+      description: 'Filter by user role',
+    }),
+    loginType: t.field({
+      type: LoginTypeEnum,
+      description: 'Filter by login type',
+    }),
+    hasEmail: t.boolean({
+      description: 'Filter users with/without email',
+    }),
+  }),
+});
+
+/**
+ * Input type for dynamic field-value filtering
+ * Supports querying users with specific field values using AND logic
+ */
+export const UserV2QueryFilterInput = builder.inputType('UserV2QueryFilterInput', {
+  fields: (t) => ({
+    field: t.string({
+      required: true,
+      description:
+        'Field name to filter by (walletAddress, email, role, loginType, firstName, lastName, organizationName)',
+    }),
+    value: t.string({
+      description: 'Value to filter for',
     }),
   }),
 });
