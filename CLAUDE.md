@@ -49,34 +49,29 @@ This is the official backend API for the Ludium Portal, a global platform for We
 
 ## 🔧 Coding Standards & Conventions
 
-### GraphQL Documentation:
+> **📚 참고**: 일반적인 Fastify, GraphQL, TypeScript 베스트 프랙티스는 [@best-practices.mdc](mdc:@best-practices.mdc)를 참조하세요.
 
-- **Updating:** If the schema for v2, you always should update GRAPHQL_EXAMPLES.md document for other developement team.
+### 프로젝트 특화 규칙:
 
-### TypeScript/General:
+#### GraphQL Documentation:
 
-- **Formatting:** Use Biome (`npm run check` before committing)
-- **Naming Conventions:**
-  - Interfaces, Types, Classes: `PascalCase`
-  - Files: `kebab-case`
-  - Constants: `UPPER_SNAKE_CASE`
-  - Enums: `PascalCase` for enum, `UPPER_SNAKE_CASE` for members
-  - Variables, Functions: `camelCase`
+- **Updating:** v2 스키마 변경 시 GRAPHQL_EXAMPLES.md 문서를 반드시 업데이트하세요.
+
+#### 프로젝트 네이밍 규칙:
+
 - **Imports:** ALWAYS use absolute path aliases (`@/db/schemas`) - NEVER relative paths
 - **Comments:** Explain "why" (business logic) not just "what"
 
-### Database (Drizzle ORM):
+#### Database (Drizzle ORM):
 
 - **Schema Files:** Each table gets its own file in `src/db/schemas/`
 - **Table Naming:** `camelCase` + `Table` (e.g., `usersTable`, `programsTable`)
 - **Migrations:** NEVER modify schema directly - update schema files, then run `npm run db:gen`
 
-### GraphQL:
+#### GraphQL (프로젝트 특화):
 
 - **Schema Builder:** Use Pothos for code-first, type-safe approach
-- **Naming:** Follow GraphQL conventions (camelCase for fields, PascalCase for types)
-- **Error Handling:** Include proper error handling in resolvers
-- **Documentation:** Add JSDoc comments for complex resolvers
+- **Domain Structure:** API definitions (`types`)와 business logic (`resolvers`) 분리
 
 ## 🚀 Common Development Tasks
 
@@ -129,11 +124,18 @@ This project follows a **domain-centric structure** where API definitions (`type
 - Do NOT add third-party libraries without explicit instruction
 - Keep dependency tree lean and secure
 
-### Code Quality:
+### Code Quality (프로젝트 특화):
 
 - All code MUST pass Biome checks (`npm run check`)
 - Do NOT manually edit auto-generated files
-- Use absolute imports exclusively
+- Use absolute imports exclusively (`@/` prefix)
+- **Formatting:** Use Biome (`npm run check` before committing)
+- **Naming Conventions:**
+  - Interfaces, Types, Classes: `PascalCase`
+  - Files: `kebab-case`
+  - Constants: `UPPER_SNAKE_CASE`
+  - Enums: `PascalCase` for enum, `UPPER_SNAKE_CASE` for members
+  - Variables, Functions: `camelCase`
 
 ## 📋 Development Checklist
 
@@ -169,7 +171,11 @@ This project follows a **domain-centric structure** where API definitions (`type
 
 ## 🎨 Best Practices
 
-### Error Handling:
+> **📚 참고**: 일반적인 에러 핸들링, 로깅, 성능 최적화 방법은 [@best-practices.mdc](mdc:@best-practices.mdc)를 참조하세요.
+
+### 프로젝트 특화 패턴:
+
+#### Error Handling (Ludium 스타일):
 
 ```typescript
 try {
@@ -185,25 +191,25 @@ try {
 }
 ```
 
-### Logging:
+#### Logging (프로젝트 규칙):
 
 - Use Fastify logger (`ctx.server.log`) instead of `console.log`
 - Include structured logging with metadata
 - Use appropriate log levels (info, warn, error, debug)
 
-### GraphQL Resolvers:
+#### GraphQL Resolvers (도메인 구조):
 
 - Keep resolvers focused on API concerns
-- Extract business logic to utility functions
+- Extract business logic to utility functions (`src/utils/`)
 - Include proper TypeScript types
 - Handle errors gracefully
 
-## 🔍 Performance Considerations
+#### Performance (프로젝트 특화):
 
 - Use transactions for multi-step database operations
 - Consider timeout scenarios for long-running queries
 - Include query execution time logging
 - Monitor database connection pool status
-- Track response times and error ratesw
+- Track response times and error rates
 
 Remember: This is an open-source project transitioning to community contributions. Code clarity, documentation, and adherence to standards are paramount for all work.

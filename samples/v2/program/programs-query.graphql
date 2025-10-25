@@ -1,0 +1,22 @@
+query programsV2($pagination: PaginationInput) {
+  programsV2(pagination: $pagination) {
+    data {
+      id
+      title
+      description
+      skills
+      deadline
+      invitedMembers
+      status
+      visibility
+      network
+      price
+      currency
+      createdAt
+      updatedAt
+      __typename
+    }
+    count
+    __typename
+  }
+}

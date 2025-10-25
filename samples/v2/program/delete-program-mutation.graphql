@@ -1,0 +1,18 @@
+mutation deleteProgramV2($id: ID!) {
+  deleteProgramV2(id: $id) {
+    id
+    title
+    description
+    skills
+    deadline
+    invitedMembers
+    status
+    visibility
+    network
+    price
+    currency
+    createdAt
+    updatedAt
+    __typename
+  }
+}

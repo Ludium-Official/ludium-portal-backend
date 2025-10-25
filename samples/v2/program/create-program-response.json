@@ -1,0 +1,20 @@
+{
+  "data": {
+    "createProgramV2": {
+      "id": "4",
+      "title": "Web3 Development Program",
+      "description": "A comprehensive program for learning Web3 development including blockchain, smart contracts, and dApp development.",
+      "skills": ["solidity", "react", "web3", "ethereum", "typescript"],
+      "deadline": "2024-12-31T23:59:59Z",
+      "invitedMembers": ["developer1@example.com", "developer2@example.com"],
+      "status": "open",
+      "visibility": "public",
+      "network": "ethereum",
+      "price": "1000",
+      "currency": "ETH",
+      "createdAt": "2024-01-20T12:00:00Z",
+      "updatedAt": "2024-01-20T12:00:00Z",
+      "__typename": "ProgramV2"
+    }
+  }
+}
