@@ -1,0 +1,215 @@
+---
+alwaysApply: false
+---
+
+# Cursor AI Rules for Ludium Backend
+
+## 🎯 Project Context
+
+This is a GraphQL API built with Fastify, PostgreSQL, and TypeScript for the Ludium platform.
+
+## 📝 GitHub Workflow Rules
+
+### When creating GitHub Issues:
+
+- ALWAYS use the project's issue templates located in `.github/ISSUE_TEMPLATE/`
+- For hotfixes: Use `hotfix.md` template format with ALL sections filled out
+- For bugs: Use `bug_report.md` template format with ALL sections filled out
+- Include proper emoji prefixes: 🐛 for bugs, 🔥 for hotfixes, ✨ for features
+- Use structured markdown with checkboxes and clear sections
+- Always include urgency level and acceptance criteria
+- NEVER create issues without using the templates
+- Copy the exact structure from the template files
+
+### When creating Pull Requests:
+
+- ALWAYS use the project's PR template located in `.github/PULL_REQUEST_TEMPLATE.md`
+- Include proper type classification (bug fix, feature, hotfix, etc.)
+- Fill out ALL checklist items appropriately - do not skip any sections
+- Link related issues using "Closes #" format
+- Include testing details and deployment notes
+- Use consistent emoji formatting
+- NEVER create PRs without using the template
+- Copy the exact structure from the template file
+
+### When writing commit messages:
+
+- Use conventional commit format: `type(scope): description`
+- Types: feat, fix, docs, style, refactor, test, chore, hotfix
+- Include breaking changes with `!` if applicable
+- Examples:
+  - `feat(auth): add JWT token refresh mechanism`
+  - `fix(db): resolve connection timeout issues`
+  - `hotfix(login): prevent infinite hanging on database queries`
+
+## 🔧 Code Quality Rules
+
+### TypeScript/JavaScript:
+
+- Use strict TypeScript with proper type annotations
+- Prefer `const` over `let`, avoid `var`
+- Use absolute imports with `@/` prefix
+- Follow the project's naming conventions (camelCase for variables, PascalCase for classes)
+- Always handle errors properly with try-catch blocks
+
+### Database Operations:
+
+- Always use Drizzle ORM syntax
+- Include proper error handling for database operations
+- Use transactions for multi-step operations
+- Add appropriate logging for database queries
+- Consider timeout scenarios for long-running queries
+
+### Logging:
+
+- Use Fastify logger (`ctx.server.log`) instead of `console.log`
+- Include structured logging with relevant metadata
+- Use appropriate log levels (info, warn, error, debug)
+- Include timing information for performance monitoring
+- Format: `ctx.server.log.info({ msg: "description", key: value })`
+
+### GraphQL:
+
+- Follow GraphQL naming conventions (camelCase for fields, PascalCase for types)
+- Include proper error handling in resolvers
+- Use appropriate return types
+- Add JSDoc comments for complex resolvers
+- Validate input arguments
+
+## 🚀 Development Workflow
+
+### Before creating issues/PRs:
+
+1. Check existing templates in `.github/` directory
+2. Use appropriate template format
+3. Fill out all required sections
+4. Include proper labels and assignees
+5. Link related issues/PRs
+
+### Code review checklist:
+
+- [ ] Code follows project style guidelines
+- [ ] Proper error handling implemented
+- [ ] Logging is consistent and informative
+- [ ] Database operations are optimized
+- [ ] Security considerations addressed
+- [ ] Performance impact considered
+- [ ] Tests are included/updated
+
+### Hotfix process:
+
+1. Use hotfix issue template
+2. Mark as high/critical urgency
+3. Include immediate impact assessment
+4. Create focused PR with minimal changes
+5. Include rollback plan
+6. Test thoroughly before deployment
+
+## 📋 Template Usage
+
+### MANDATORY Template Usage:
+
+- When asked to create ANY GitHub issue, ALWAYS reference the appropriate template first
+- Read the template file content and use it as the base structure
+- Do not create custom issue formats - only use the provided templates
+- When asked to create ANY pull request, ALWAYS reference the PR template first
+- Fill out every section in the templates - do not leave any section empty
+
+### For Database Issues:
+
+- Use `db-timeout-fix` snippet when dealing with database timeout problems
+- Include connection pool settings and query optimization details
+- Mention specific database operations affected
+- ALWAYS use hotfix template if it's a critical database issue
+
+### For Authentication Issues:
+
+- Include JWT token handling details
+- Mention security implications
+- Include user impact assessment
+- ALWAYS use hotfix template if it's a security-related issue
+
+### For Performance Issues:
+
+- Include timing measurements
+- Mention affected endpoints/operations
+- Include optimization strategies
+- Use appropriate template based on urgency level
+
+## 🎨 Formatting Standards
+
+### Markdown:
+
+- Use proper heading hierarchy (##, ###, ####)
+- Include code blocks with language specification
+- Use checkboxes for task lists
+- Include emoji for visual clarity
+- Use tables for structured data
+
+### Code Comments:
+
+- Use JSDoc format for functions
+- Include parameter and return type descriptions
+- Add examples for complex functions
+- Include TODO comments with context
+
+## 🔍 Error Handling Patterns
+
+### Database Errors:
+
+```typescript
+try {
+  const result = await ctx.db.select()...;
+  ctx.server.log.info({ msg: "Operation completed", result });
+} catch (error) {
+  ctx.server.log.error({
+    msg: "Database operation failed",
+    error: error.message,
+    operation: "select_users"
+  });
+  throw new Error("Failed to fetch users");
+}
+```
+
+### GraphQL Resolver Errors:
+
+```typescript
+try {
+  // resolver logic
+} catch (error) {
+  ctx.server.log.error({
+    msg: "Resolver error",
+    error: error.message,
+    resolver: "loginResolver"
+  });
+  throw new Error("Login failed");
+}
+```
+
+## 📊 Performance Monitoring
+
+### Always include:
+
+- Query execution time logging
+- Memory usage considerations
+- Database connection pool status
+- Response time measurements
+- Error rate tracking
+
+## 🚨 CRITICAL RULES
+
+### Template File Locations:
+
+- Hotfix Issue Template: `.github/ISSUE_TEMPLATE/hotfix.md`
+- Bug Report Template: `.github/ISSUE_TEMPLATE/bug_report.md`
+- Pull Request Template: `.github/PULL_REQUEST_TEMPLATE.md`
+
+### Before creating ANY issue or PR:
+
+1. ALWAYS read the appropriate template file first
+2. Copy the exact structure and format
+3. Fill out ALL sections completely
+4. Do not modify the template structure
+5. Use the exact emoji and formatting from templates
+
+Remember: Always prioritize code quality, security, and maintainability. Use the project's established patterns and templates consistently. NEVER create issues or PRs without following the templates exactly.
