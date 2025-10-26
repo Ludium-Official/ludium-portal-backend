@@ -1,3 +1,8 @@
+---
+alwaysApply: true
+description: Ludium Backend development guidelines and V2 architecture protection rules
+---
+
 # Cursor AI Agent for Ludium Backend
 
 ## 🎯 Project Overview
@@ -73,11 +78,83 @@ This is the official backend API for the Ludium Portal, a global platform for We
 - **Schema Builder:** Use Pothos for code-first, type-safe approach
 - **Domain Structure:** API definitions (`types`)와 business logic (`resolvers`) 분리
 
+## 🛡️ V2 Architecture Protection
+
+### V2 Architecture Rules (NON-NEGOTIABLE)
+
+The V2 architecture follows a strict modular pattern that MUST be maintained:
+
+```
+src/graphql/v2/
+├── types/           # GraphQL type definitions (API contracts)
+├── resolvers/       # Business logic implementation
+├── mutations/       # Mutation definitions (data modification)
+├── queries/         # Query definitions (data retrieval)
+├── inputs/          # Input type definitions (validation)
+└── tests/           # Comprehensive test suite
+```
+
+#### Critical V2 Rules:
+
+- **NEVER** mix V1 and V2 code in the same files
+- **ALWAYS** create new files in the appropriate V2 subdirectory
+- **NEVER** modify `src/graphql/builder.ts` for V2-specific code
+- **ALWAYS** maintain the separation between types, resolvers, mutations, and queries
+- **MUST** follow naming conventions: `{Entity}V2Type`, `{Action}{Entity}V2Input`, `{action}{Entity}V2Resolver`
+
+#### When to Use V2:
+
+- **NEW** features must use V2 architecture
+- **MAJOR** refactoring of existing features should migrate to V2
+- **CRITICAL** features should prioritize V2 implementation
+
 ## 🚀 Common Development Tasks
 
-### Adding a New GraphQL Query/Mutation (Example: `programs_v2`)
+### Adding a New GraphQL Query/Mutation (V2 Architecture)
 
 This project follows a **domain-centric structure** where API definitions (`types`) are separated from their business logic (`resolvers`).
+
+#### For V2 Features (RECOMMENDED):
+
+1.  **Create V2 Directory Structure**
+
+    ```bash
+    mkdir -p src/graphql/v2/{types,resolvers,mutations,queries,inputs,tests}
+    ```
+
+2.  **Define the API Specification (`/graphql/v2/types/`)**
+
+    - Create new file: `src/graphql/v2/types/{entity}.ts`
+    - **Define Object Types:** Create the GraphQL object shape using `builder.objectRef`, e.g., `EntityV2Type`
+    - **Define Input Types:** Define input types using `builder.inputType`, e.g., `CreateEntityV2Input`
+    - **Add Queries/Mutations:** Use `builder.queryFields` or `builder.mutationFields` to expose API endpoints
+    - **Connect to Resolver:** Use the `resolve` property to link to resolver functions
+
+3.  **Implement the Business Logic (`/graphql/v2/resolvers/`)**
+
+    - Create new file: `src/graphql/v2/resolvers/{entity}.ts`
+    - Create `async` functions with naming pattern: `{action}{Entity}V2Resolver`
+    - Implement business logic: database queries, data transformation, permission checks
+
+4.  **Add Input Definitions (`/graphql/v2/inputs/`)**
+
+    - Create new file: `src/graphql/v2/inputs/{entity}.ts`
+    - Define all input types for the entity
+    - Include validation and documentation
+
+5.  **Create Comprehensive Tests (`/graphql/v2/tests/`)**
+
+    - Create new file: `src/graphql/v2/tests/{entity}.test.ts`
+    - Cover all CRUD operations and edge cases
+    - Minimum 90% test coverage required
+
+6.  **Important V2 Rules:**
+    - **NEVER** modify `src/graphql/builder.ts` for V2-specific code
+    - **ALWAYS** use V2 naming conventions
+    - **MUST** maintain separation between types, resolvers, mutations, and queries
+    - **MUST** include comprehensive JSDoc documentation
+
+#### For V1 Features (LEGACY - Use V2 when possible):
 
 1.  **Define the API Specification (`/graphql/types/`)**
 
