@@ -143,9 +143,6 @@ jspm_packages/
 *.iws
 *.ipr
 
-# Cursor
-.cursor
-
 # yarn
 .yarn/cache
 .yarn/unplugged
