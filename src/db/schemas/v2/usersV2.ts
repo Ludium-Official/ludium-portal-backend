@@ -39,5 +39,8 @@ export const usersV2Table = pgTable(
   (c) => [unique('email_wallet_unique').on(c.email, c.walletAddress)],
 );
 
+// Relations are defined in programsV2.ts to avoid circular dependencies
+// See programV2Relations and userV2Relations exports in programsV2.ts
+
 export type UserV2 = typeof usersV2Table.$inferSelect;
 export type NewUserV2 = typeof usersV2Table.$inferInsert;
