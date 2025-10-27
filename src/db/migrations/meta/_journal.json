@@ -57,6 +57,13 @@
       "when": 1761118924858,
       "tag": "0007_petite_azazel",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1761536148837,
+      "tag": "0008_curious_white_queen",
+      "breakpoints": true
     }
   ]
 }
