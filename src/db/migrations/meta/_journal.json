@@ -64,6 +64,20 @@
       "when": 1761536148837,
       "tag": "0008_curious_white_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1761541741611,
+      "tag": "0009_motionless_gideon",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1761543790590,
+      "tag": "0010_fluffy_mastermind",
+      "breakpoints": true
     }
   ]
 }
