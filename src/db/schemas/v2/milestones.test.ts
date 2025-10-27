@@ -1,8 +1,8 @@
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
-import { type NewMilestoneV2, milestonesV2Table } from './milestonesV2';
-import { type NewProgramV2, programsV2Table } from './programsV2';
-import { type NewUserV2, usersV2Table } from './usersV2';
+import { type NewMilestoneV2, milestonesV2Table } from './milestones';
+import { type NewProgramV2, programsV2Table } from './programs';
+import { type NewUserV2, usersV2Table } from './users';
 
 describe('Milestones V2 Table', () => {
   let testUserId: number;

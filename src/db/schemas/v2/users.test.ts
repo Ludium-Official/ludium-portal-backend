@@ -1,6 +1,6 @@
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
-import { type NewUserV2, usersV2Table } from './usersV2';
+import { type NewUserV2, usersV2Table } from './users';
 
 describe('Users V2 Table', () => {
   beforeEach(async () => {

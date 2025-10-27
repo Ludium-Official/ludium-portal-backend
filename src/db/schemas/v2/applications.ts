@@ -1,7 +1,7 @@
 import { relations } from 'drizzle-orm';
 import { integer, pgEnum, pgTable, serial, timestamp } from 'drizzle-orm/pg-core';
-import { programsV2Table } from './programsV2';
-import { usersV2Table } from './usersV2';
+import { programsV2Table } from './programs';
+import { usersV2Table } from './users';
 
 // V2 status enum per renewed spec
 export const applicationStatusV2Values = ['pending', 'accepted', 'rejected', 'deleted'] as const;
