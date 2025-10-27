@@ -47,11 +47,14 @@ export const programV2Relations = relations(programsV2Table, ({ one }) => ({
     fields: [programsV2Table.creatorId],
     references: [usersV2Table.id],
   }),
+  // Program → Applications relation is defined in applicationV2.ts
 }));
 
-// User relations (defined here to avoid circular dependency)
+// User relations (defined here to avoid circular dependency at module load time)
+// This establishes the reverse relationship: User → Created Programs
 export const userV2Relations = relations(usersV2Table, ({ many }) => ({
   createdPrograms: many(programsV2Table),
+  // User → Applications relation is defined in applicationV2.ts
 }));
 
 // EN: The type for selecting/querying data from the database. It includes all fields, including auto-generated ones like 'id' and 'createdAt'.
