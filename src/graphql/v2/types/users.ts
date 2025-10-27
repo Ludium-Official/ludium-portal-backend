@@ -1,5 +1,13 @@
-import { type UserV2 as DBUser, loginTypesV2, userV2Roles } from '@/db/schemas/v2/usersV2';
+import {
+  type UserV2 as DBUser,
+  loginTypesV2,
+  userV2Roles,
+  usersV2Table,
+} from '@/db/schemas/v2/usersV2';
+import { programsV2Table } from '@/db/schemas/v2/programsV2';
 import builder from '@/graphql/builder';
+import type { Context } from '@/types';
+import { eq } from 'drizzle-orm';
 import { ProgramV2Type } from './programs';
 
 // ============================================================================
@@ -89,15 +97,13 @@ export const UserV2Type = builder.objectRef<DBUser>('UserV2').implement({
     createdPrograms: t.field({
       type: [ProgramV2Type],
       description: 'Programs created by this user',
-      resolve: async (user, _args, ctx) => {
-        // Using Drizzle relations to fetch related programs
-        const programs = await ctx.db.query.usersV2Table.findFirst({
-          where: (users, { eq }) => eq(users.id, user.id),
-          with: {
-            createdPrograms: true, // This uses the userV2Relations we defined!
-          },
-        });
-        return programs?.createdPrograms ?? [];
+      resolve: async (user, _args, ctx: Context) => {
+        // Fetch programs created by this user
+        const programs = await ctx.db
+          .select()
+          .from(programsV2Table)
+          .where(eq(programsV2Table.creatorId, user.id));
+        return programs ?? [];
       },
     }),
   }),

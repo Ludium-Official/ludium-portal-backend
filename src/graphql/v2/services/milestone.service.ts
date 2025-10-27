@@ -170,7 +170,9 @@ export class MilestoneV2Service {
       if (input.title !== undefined) updateData.title = input.title;
       if (input.description !== undefined) updateData.description = input.description;
       if (input.payout !== undefined) updateData.payout = input.payout;
-      if (input.deadline !== undefined) updateData.deadline = new Date(input.deadline);
+      if (input.deadline !== undefined && input.deadline !== null) {
+        updateData.deadline = new Date(input.deadline);
+      }
 
       const [updatedMilestone] = await this.db
         .update(milestonesV2Table)

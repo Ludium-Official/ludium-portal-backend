@@ -1,5 +1,9 @@
 import type { MilestoneV2 as DBMilestoneV2 } from '@/db/schemas/v2/milestonesV2';
+import { programsV2Table } from '@/db/schemas/v2/programsV2';
+import { usersV2Table } from '@/db/schemas/v2/usersV2';
 import builder from '@/graphql/builder';
+import type { Context } from '@/types';
+import { eq } from 'drizzle-orm';
 import { ProgramV2Type } from './programs';
 import { UserV2Type } from './users';
 
@@ -44,33 +48,29 @@ export const MilestoneV2Type = builder.objectRef<DBMilestoneV2>('MilestoneV2').i
     program: t.field({
       type: ProgramV2Type,
       description: 'Program this milestone belongs to',
-      resolve: async (milestone, _args, ctx) => {
-        const milestoneWithProgram = await ctx.db.query.milestonesV2Table.findFirst({
-          where: (milestones, { eq }) => eq(milestones.id, milestone.id),
-          with: {
-            program: true,
-          },
-        });
-        if (!milestoneWithProgram?.program) {
+      resolve: async (milestone, _args, ctx: Context) => {
+        const [program] = await ctx.db
+          .select()
+          .from(programsV2Table)
+          .where(eq(programsV2Table.id, milestone.programId));
+        if (!program) {
           throw new Error('Program not found');
         }
-        return milestoneWithProgram.program;
+        return program;
       },
     }),
     applicant: t.field({
       type: UserV2Type,
       description: 'User who owns this milestone',
-      resolve: async (milestone, _args, ctx) => {
-        const milestoneWithApplicant = await ctx.db.query.milestonesV2Table.findFirst({
-          where: (milestones, { eq }) => eq(milestones.id, milestone.id),
-          with: {
-            applicant: true,
-          },
-        });
-        if (!milestoneWithApplicant?.applicant) {
+      resolve: async (milestone, _args, ctx: Context) => {
+        const [applicant] = await ctx.db
+          .select()
+          .from(usersV2Table)
+          .where(eq(usersV2Table.id, milestone.applicantId));
+        if (!applicant) {
           throw new Error('Applicant not found');
         }
-        return milestoneWithApplicant.applicant;
+        return applicant;
       },
     }),
   }),

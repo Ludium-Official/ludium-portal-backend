@@ -1,8 +1,13 @@
 import {
   type ApplicationV2 as DBApplicationV2,
   applicationStatusV2Values,
+  applicationsV2Table,
 } from '@/db/schemas/v2/applicationsV2';
+import { programsV2Table } from '@/db/schemas/v2/programsV2';
+import { usersV2Table } from '@/db/schemas/v2/usersV2';
 import builder from '@/graphql/builder';
+import type { Context } from '@/types';
+import { eq } from 'drizzle-orm';
 import { ProgramV2Type } from './programs';
 import { UserV2Type } from './users';
 
@@ -46,33 +51,29 @@ export const ApplicationV2Type = builder.objectRef<DBApplicationV2>('Application
     program: t.field({
       type: ProgramV2Type,
       description: 'Program this application is for',
-      resolve: async (application, _args, ctx) => {
-        const program = await ctx.db.query.applicationsV2Table.findFirst({
-          where: (applications, { eq }) => eq(applications.id, application.id),
-          with: {
-            program: true,
-          },
-        });
-        if (!program?.program) {
+      resolve: async (application, _args, ctx: Context) => {
+        const [program] = await ctx.db
+          .select()
+          .from(programsV2Table)
+          .where(eq(programsV2Table.id, application.programId));
+        if (!program) {
           throw new Error('Program not found');
         }
-        return program.program;
+        return program;
       },
     }),
     applicant: t.field({
       type: UserV2Type,
       description: 'User who submitted this application',
-      resolve: async (application, _args, ctx) => {
-        const applicationWithApplicant = await ctx.db.query.applicationsV2Table.findFirst({
-          where: (applications, { eq }) => eq(applications.id, application.id),
-          with: {
-            applicant: true,
-          },
-        });
-        if (!applicationWithApplicant?.applicant) {
+      resolve: async (application, _args, ctx: Context) => {
+        const [applicant] = await ctx.db
+          .select()
+          .from(usersV2Table)
+          .where(eq(usersV2Table.id, application.applicantId));
+        if (!applicant) {
           throw new Error('Applicant not found');
         }
-        return applicationWithApplicant.applicant;
+        return applicant;
       },
     }),
   }),
