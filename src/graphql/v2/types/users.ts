@@ -1,5 +1,6 @@
 import { type UserV2 as DBUser, loginTypesV2, userV2Roles } from '@/db/schemas/v2/usersV2';
 import builder from '@/graphql/builder';
+import { ProgramV2Type } from './programs';
 
 // ============================================================================
 // Enums
@@ -82,6 +83,22 @@ export const UserV2Type = builder.objectRef<DBUser>('UserV2').implement({
     updatedAt: t.expose('updatedAt', {
       type: 'Date',
       description: 'User last update timestamp',
+    }),
+
+    // Relations - User's created programs
+    createdPrograms: t.field({
+      type: [ProgramV2Type],
+      description: 'Programs created by this user',
+      resolve: async (user, _args, ctx) => {
+        // Using Drizzle relations to fetch related programs
+        const programs = await ctx.db.query.usersV2Table.findFirst({
+          where: (users, { eq }) => eq(users.id, user.id),
+          with: {
+            createdPrograms: true, // This uses the userV2Relations we defined!
+          },
+        });
+        return programs?.createdPrograms ?? [];
+      },
     }),
   }),
 });

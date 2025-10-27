@@ -1,4 +1,11 @@
-import { type NewProgramV2, programsV2Table } from '@/db/schemas';
+import {
+  type NewProgramV2,
+  type NewUserV2,
+  applicationsV2Table,
+  milestonesV2Table,
+  programsV2Table,
+  usersV2Table,
+} from '@/db/schemas';
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
@@ -6,14 +13,34 @@ import { createTestServer } from './helper';
 
 describe('Programs V2 GraphQL API', () => {
   let server: FastifyInstance;
+  let testUserId: number;
 
   beforeAll(async () => {
     server = await createTestServer();
+
+    // Create a test user for all program tests
+    const testUser: NewUserV2 = {
+      walletAddress: '0xTestUser1234567890123456789012345678901234',
+      loginType: 'wallet',
+      role: 'user',
+    };
+    const [insertedUser] = await db.insert(usersV2Table).values(testUser).returning();
+    testUserId = insertedUser.id;
   });
 
   afterEach(async () => {
-    // Clean up the tables
-    await db.execute(sql`TRUNCATE TABLE ${programsV2Table} RESTART IDENTITY CASCADE`);
+    // Clean up: truncate tables in dependency order with CASCADE
+    // CASCADE will automatically truncate all tables that have foreign key references
+    await db.execute(
+      sql`TRUNCATE TABLE ${milestonesV2Table}, ${applicationsV2Table}, ${programsV2Table} RESTART IDENTITY CASCADE`,
+    );
+  });
+
+  afterAll(async () => {
+    // Clean up: truncate all tables with CASCADE
+    await db.execute(
+      sql`TRUNCATE TABLE ${milestonesV2Table}, ${applicationsV2Table}, ${programsV2Table}, ${usersV2Table} RESTART IDENTITY CASCADE`,
+    );
   });
 
   it('should create a new program via mutation', async () => {
@@ -46,6 +73,7 @@ describe('Programs V2 GraphQL API', () => {
         price: '1500',
         currency: 'USDC',
         status: 'open',
+        creatorId: testUserId,
       },
     };
 
@@ -87,6 +115,7 @@ describe('Programs V2 GraphQL API', () => {
       price: '100',
       currency: 'ETH',
       status: 'closed',
+      creatorId: testUserId,
     };
     const [insertedProgram] = await db.insert(programsV2Table).values(newProgram).returning();
 
@@ -131,6 +160,7 @@ describe('Programs V2 GraphQL API', () => {
       price: '1000',
       currency: 'USDC',
       status: 'draft',
+      creatorId: testUserId,
     };
     const [insertedProgram] = await db.insert(programsV2Table).values(newProgram).returning();
 
@@ -186,6 +216,7 @@ describe('Programs V2 GraphQL API', () => {
       price: '100',
       currency: 'USDC',
       status: 'draft',
+      creatorId: testUserId,
     };
     const [insertedProgram] = await db.insert(programsV2Table).values(newProgram).returning();
 
