@@ -13,6 +13,7 @@ export const CreateProgramV2Input = builder.inputType('CreateProgramV2Input', {
     network: t.string({ required: true }),
     price: t.string({ required: true }),
     currency: t.string({ required: true }),
+    creatorId: t.id({ required: true }),
   }),
 });
 
