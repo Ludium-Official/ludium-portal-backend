@@ -5,6 +5,7 @@ import type { Context } from '@/types/context';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { CreateUserV2Input, UpdateUserV2Input } from '../inputs/users';
 import {
   createUserV2Resolver,
   deleteUserV2Resolver,
@@ -65,7 +66,7 @@ describe('Users V2 GraphQL Resolvers', () => {
 
   describe('createUserV2Resolver', () => {
     it('should create a new user with all fields', async () => {
-      const input = {
+      const input: typeof CreateUserV2Input.$inferInput = {
         loginType: 'wallet',
         walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
         email: 'test@example.com',
@@ -100,7 +101,7 @@ describe('Users V2 GraphQL Resolvers', () => {
     });
 
     it('should create a user with minimal fields', async () => {
-      const input = {
+      const input: typeof CreateUserV2Input.$inferInput = {
         loginType: 'google',
         walletAddress: '0xabcdef1234567890abcdef1234567890abcdef12',
         email: 'minimal@example.com',
@@ -120,7 +121,7 @@ describe('Users V2 GraphQL Resolvers', () => {
     });
 
     it('should create an admin user', async () => {
-      const input = {
+      const input: typeof CreateUserV2Input.$inferInput = {
         loginType: 'wallet',
         walletAddress: '0xadmin1234567890admin1234567890admin1234',
         role: 'admin',
@@ -350,7 +351,7 @@ describe('Users V2 GraphQL Resolvers', () => {
     });
 
     it('should update user role', async () => {
-      const input = {
+      const input: typeof UpdateUserV2Input.$inferInput = {
         id: testUser.id.toString(),
         role: 'admin',
       };
