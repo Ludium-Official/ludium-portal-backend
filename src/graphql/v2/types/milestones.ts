@@ -1,6 +1,6 @@
-import type { MilestoneV2 as DBMilestoneV2 } from '@/db/schemas/v2/milestonesV2';
-import { programsV2Table } from '@/db/schemas/v2/programsV2';
-import { usersV2Table } from '@/db/schemas/v2/usersV2';
+import type { MilestoneV2 as DBMilestoneV2 } from '@/db/schemas/v2/milestones';
+import { programsV2Table } from '@/db/schemas/v2/programs';
+import { usersV2Table } from '@/db/schemas/v2/users';
 import builder from '@/graphql/builder';
 import type { Context } from '@/types';
 import { eq } from 'drizzle-orm';

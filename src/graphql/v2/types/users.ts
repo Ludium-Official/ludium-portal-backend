@@ -1,10 +1,5 @@
-import {
-  type UserV2 as DBUser,
-  loginTypesV2,
-  userV2Roles,
-  usersV2Table,
-} from '@/db/schemas/v2/usersV2';
-import { programsV2Table } from '@/db/schemas/v2/programsV2';
+import { programsV2Table } from '@/db/schemas/v2/programs';
+import { type UserV2 as DBUser, loginTypesV2, userV2Roles } from '@/db/schemas/v2/users';
 import builder from '@/graphql/builder';
 import type { Context } from '@/types';
 import { eq } from 'drizzle-orm';

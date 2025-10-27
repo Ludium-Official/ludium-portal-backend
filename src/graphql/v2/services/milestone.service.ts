@@ -1,5 +1,5 @@
-import type { MilestoneV2, NewMilestoneV2 } from '@/db/schemas/v2/milestonesV2';
-import { milestonesV2Table } from '@/db/schemas/v2/milestonesV2';
+import type { MilestoneV2, NewMilestoneV2 } from '@/db/schemas/v2/milestones';
+import { milestonesV2Table } from '@/db/schemas/v2/milestones';
 import type {
   CreateMilestoneV2Input,
   MilestonesV2QueryInput,

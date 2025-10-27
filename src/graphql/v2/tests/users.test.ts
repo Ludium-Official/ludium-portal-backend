@@ -1,5 +1,5 @@
-import { usersV2Table } from '@/db/schemas/v2/usersV2';
-import type { NewUserV2, UserV2 } from '@/db/schemas/v2/usersV2';
+import { usersV2Table } from '@/db/schemas/v2/users';
+import type { NewUserV2, UserV2 } from '@/db/schemas/v2/users';
 import { db } from '@/db/test-db';
 import type { Context } from '@/types/context';
 import { sql } from 'drizzle-orm';

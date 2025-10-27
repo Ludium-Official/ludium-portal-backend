@@ -1,5 +1,5 @@
-import type { ApplicationV2, NewApplicationV2 } from '@/db/schemas/v2/applicationsV2';
-import { applicationsV2Table } from '@/db/schemas/v2/applicationsV2';
+import type { ApplicationV2, NewApplicationV2 } from '@/db/schemas/v2/applications';
+import { applicationsV2Table } from '@/db/schemas/v2/applications';
 import type {
   ApplicationsV2QueryInput,
   CreateApplicationV2Input,

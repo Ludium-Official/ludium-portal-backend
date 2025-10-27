@@ -1,5 +1,6 @@
 import {
   type User as DbUser,
+  type UserV2 as DbUserV2,
   applicationsTable,
   milestonesTable,
   programUserRolesTable,
@@ -13,6 +14,7 @@ import fp from 'fastify-plugin';
 export interface RequestAuth {
   identity?: { id?: string };
   user?: DbUser | null;
+  userV2?: DbUserV2 | null;
 }
 
 export interface DecodedToken {
@@ -47,6 +49,13 @@ export class AuthHandler {
       return null;
     }
     return request.auth.user;
+  }
+
+  getUserV2(request: FastifyRequest) {
+    if (!request.auth?.userV2) {
+      return null;
+    }
+    return request.auth.userV2;
   }
 
   async isUserInProgramRole(

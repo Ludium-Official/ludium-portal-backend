@@ -1,10 +1,9 @@
 import {
   type ApplicationV2 as DBApplicationV2,
   applicationStatusV2Values,
-  applicationsV2Table,
-} from '@/db/schemas/v2/applicationsV2';
-import { programsV2Table } from '@/db/schemas/v2/programsV2';
-import { usersV2Table } from '@/db/schemas/v2/usersV2';
+} from '@/db/schemas/v2/applications';
+import { programsV2Table } from '@/db/schemas/v2/programs';
+import { usersV2Table } from '@/db/schemas/v2/users';
 import builder from '@/graphql/builder';
 import type { Context } from '@/types';
 import { eq } from 'drizzle-orm';
