@@ -1,5 +1,4 @@
 import type { Args, Context, Root } from '@/types';
-import { requireUserV2 } from '@/utils/auth';
 import type {
   CreateUserV2Input,
   UpdateUserV2Input,
@@ -69,6 +68,9 @@ export async function deleteUserV2Resolver(_root: Root, args: { id: string }, ct
 
 // Get user from context (authenticated user)
 export async function getProfileV2Resolver(_root: Root, _args: Args, ctx: Context) {
-  const user = requireUserV2(ctx);
-  return user;
+  // ctx.user is already set by auth plugin from JWT token
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  return ctx.userV2;
 }

@@ -24,14 +24,18 @@ const mockJwtSign = (payload: unknown, _options: unknown) => {
 // Mock FastifyInstance
 const mockServer = {
   log: {
-    info: () => {},
-    warn: () => {},
-    error: () => {},
-    child: () => ({ info: () => {}, warn: () => {}, error: () => {} }),
+    info: (...args: unknown[]) => console.log('[INFO]', ...args),
+    warn: (...args: unknown[]) => console.warn('[WARN]', ...args),
+    error: (...args: unknown[]) => console.error('[ERROR]', ...args),
+    child: () => ({
+      info: (...args: unknown[]) => console.log('[INFO]', ...args),
+      warn: (...args: unknown[]) => console.warn('[WARN]', ...args),
+      error: (...args: unknown[]) => console.error('[ERROR]', ...args),
+    }),
     level: 'info',
-    fatal: () => {},
-    debug: () => {},
-    trace: () => {},
+    fatal: (...args: unknown[]) => console.error('[FATAL]', ...args),
+    debug: (...args: unknown[]) => console.log('[DEBUG]', ...args),
+    trace: (...args: unknown[]) => console.log('[TRACE]', ...args),
   },
   jwt: {
     sign: mockJwtSign,

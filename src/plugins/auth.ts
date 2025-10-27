@@ -5,6 +5,7 @@ import {
   milestonesTable,
   programUserRolesTable,
   usersTable,
+  usersV2Table,
 } from '@/db/schemas';
 import type { Context } from '@/types';
 import { and, eq } from 'drizzle-orm';
@@ -30,7 +31,7 @@ export class AuthHandler {
   constructor(private server: FastifyInstance) {}
 
   isUser(request: FastifyRequest) {
-    if (!request.auth?.user) {
+    if (!request.auth?.user && !request.auth?.userV2) {
       return false;
     }
     return true;
@@ -137,21 +138,43 @@ export class AuthHandler {
 }
 
 async function requestHandler(decodedToken: DecodedToken, db: Context['db']) {
-  if (!decodedToken.payload.id) {
-    return null;
-  }
-
-  // Convert number ID to string if needed
   const userId = String(decodedToken.payload.id);
-
-  const [user] = await db.selectDistinct().from(usersTable).where(eq(usersTable.id, userId));
+  const numericId = Number(userId);
 
   const auth: RequestAuth = {
     identity: {
-      id: decodedToken.payload.id,
+      id: userId,
     },
-    user: user,
+    user: null, // 기본값 초기화
+    userV2: null, // 기본값 초기화
   };
+
+  // 숫자 ID인지 먼저 체크 (V2 User)
+  if (Number.isInteger(numericId) && numericId > 0) {
+    const [userV2] = await db
+      .selectDistinct()
+      .from(usersV2Table)
+      .where(eq(usersV2Table.id, numericId));
+    if (userV2) {
+      auth.userV2 = userV2;
+      console.log('👉 auth (v2 user found)', auth);
+    }
+  } else {
+    // 숫자가 아니면 UUID로 간주 (V1 User)
+    const uuidRegex =
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (uuidRegex.test(userId)) {
+      const [user] = await db.selectDistinct().from(usersTable).where(eq(usersTable.id, userId));
+      if (user) {
+        auth.user = user;
+        console.log('👉 auth (v1 user found)', auth);
+      }
+    }
+  }
+
+  if (!auth.user && !auth.userV2) {
+    console.log('👉 auth (user not found in v1 or v2)');
+  }
 
   return auth;
 }
@@ -168,8 +191,9 @@ const authPlugin = (
     server.addHook('onRequest', async (request) => {
       try {
         const decodedToken = await request.jwtVerify<DecodedToken>();
-
+        server.log.debug(`[AuthPlugin] Decoded token: ${JSON.stringify(decodedToken)}`);
         const auth = await requestHandler(decodedToken, server.db);
+        server.log.debug(`[AuthPlugin] auth: ${JSON.stringify(auth)}`);
         request.auth = auth;
       } catch (error) {
         server.log.error('No token provided', error);

@@ -1,3 +1,0 @@
-mutation login($email: String, $walletAddress: String!, $loginType: String!) {
-  login(email: $email, walletAddress: $walletAddress, loginType: $loginType)
-}
