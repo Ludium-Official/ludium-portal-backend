@@ -9,7 +9,7 @@ import {
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { createTestServer } from './helper';
+import { createTestServer } from '../helper';
 
 describe('Programs V2 GraphQL API', () => {
   let server: FastifyInstance;

@@ -5,7 +5,7 @@ import type { Context } from '@/types/context';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { CreateUserV2Input, UpdateUserV2Input } from '../inputs/users';
+import type { CreateUserV2Input, UpdateUserV2Input } from '../../inputs/users';
 import {
   createUserV2Resolver,
   deleteUserV2Resolver,
@@ -14,7 +14,7 @@ import {
   loginV2Resolver,
   queryUsersV2Resolver,
   updateUserV2Resolver,
-} from '../resolvers/users';
+} from '../../resolvers/users';
 
 // Mock JWT sign function
 const mockJwtSign = (payload: unknown, _options: unknown) => {

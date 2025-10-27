@@ -1,11 +1,11 @@
 import { schema } from '@/graphql/types';
-import authPlugin from '@/plugins/auth';
 import argon2Plugin from '@/plugins/argon2';
+import authPlugin from '@/plugins/auth';
 import dbPlugin from '@/plugins/db';
 import loadEnv from '@/plugins/env';
+import jwtPlugin from '@fastify/jwt';
 import Fastify, { type FastifyInstance } from 'fastify';
 import mercurius from 'mercurius';
-import jwtPlugin from '@fastify/jwt';
 import 'dotenv/config';
 
 export async function createTestServer(): Promise<FastifyInstance> {

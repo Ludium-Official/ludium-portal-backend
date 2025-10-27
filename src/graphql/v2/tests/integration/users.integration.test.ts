@@ -2,7 +2,7 @@ import { type NewUserV2, usersV2Table } from '@/db/schemas';
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { createTestServer } from './helper';
+import { createTestServer } from '../helper';
 
 describe('Users V2 GraphQL API - Integration Tests', () => {
   let server: FastifyInstance;
