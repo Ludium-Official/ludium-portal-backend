@@ -85,7 +85,7 @@ builder.mutationFields((t) => ({
 builder.mutationFields((t) => ({
   updateProfileV2: t.field({
     type: UserV2Type,
-    authScopes: { user: true },
+    authScopes: { userV2: true },
     args: {
       input: t.arg({
         type: UpdateProfileV2Input,

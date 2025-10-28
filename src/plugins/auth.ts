@@ -4,6 +4,7 @@ import {
   applicationsTable,
   milestonesTable,
   programUserRolesTable,
+  programsV2Table,
   usersTable,
   usersV2Table,
 } from '@/db/schemas';
@@ -122,6 +123,27 @@ export class AuthHandler {
       );
 
     return programRoles.map((role) => role.roleType);
+  }
+
+  async isProgramCreatorV2(request: FastifyRequest, programId: string): Promise<boolean> {
+    const user = this.getUserV2(request);
+    if (!user) return false;
+
+    const numericProgramId = Number.parseInt(programId, 10);
+    if (Number.isNaN(numericProgramId)) {
+      return false;
+    }
+
+    const [program] = await this.server.db
+      .select()
+      .from(programsV2Table)
+      .where(eq(programsV2Table.id, numericProgramId));
+
+    if (!program) {
+      return false;
+    }
+
+    return program.creatorId === user.id;
   }
 
   async getUserForSubscription(decodedToken: DecodedToken) {

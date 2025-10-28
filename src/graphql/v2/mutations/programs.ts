@@ -5,29 +5,44 @@ import {
   deleteProgramV2Resolver,
   updateProgramV2Resolver,
 } from '../resolvers/programs';
-import { ProgramV2Type } from '../types/programs';
+import { ProgramV2Ref } from '../types/programs';
 
-builder.mutationFields((t) => ({
-  createProgramV2: t.field({
-    type: ProgramV2Type,
+builder.mutationField('createProgramV2', (t) =>
+  t.field({
+    type: ProgramV2Ref,
+    authScopes: {
+      userV2: true,
+    },
     args: {
       input: t.arg({ type: CreateProgramV2Input, required: true }),
     },
     resolve: createProgramV2Resolver,
   }),
-  updateProgramV2: t.field({
-    type: ProgramV2Type,
+);
+
+builder.mutationField('updateProgramV2', (t) =>
+  t.field({
+    type: ProgramV2Ref,
+    authScopes: (_parent, args) => ({
+      isProgramCreatorV2: { programId: args.id },
+    }),
     args: {
       id: t.arg.id({ required: true }),
       input: t.arg({ type: UpdateProgramV2Input, required: true }),
     },
     resolve: updateProgramV2Resolver,
   }),
-  deleteProgramV2: t.field({
-    type: ProgramV2Type,
+);
+
+builder.mutationField('deleteProgramV2', (t) =>
+  t.field({
+    type: 'ID',
+    authScopes: (_parent, args) => ({
+      isProgramCreatorV2: { programId: args.id },
+    }),
     args: {
       id: t.arg.id({ required: true }),
     },
     resolve: deleteProgramV2Resolver,
   }),
-}));
+);

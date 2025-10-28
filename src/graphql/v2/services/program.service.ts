@@ -41,23 +41,32 @@ export class ProgramV2Service {
     return program;
   }
 
-  async create(input: typeof CreateProgramV2Input.$inferInput): Promise<ProgramV2> {
+  async create(
+    input: typeof CreateProgramV2Input.$inferInput,
+    creatorId: number,
+  ): Promise<ProgramV2> {
     const values = {
       ...input,
       deadline: new Date(input.deadline),
-      creatorId: Number.parseInt(input.creatorId, 10),
+      invitedMembers: input.invitedMembers ?? [],
+      creatorId,
     };
     const [newProgram] = await this.db.insert(programsV2Table).values(values).returning();
     return newProgram;
   }
 
   async update(id: string, input: typeof UpdateProgramV2Input.$inferInput): Promise<ProgramV2> {
-    const values: Record<string, unknown> = {};
+    const values: Record<string, unknown> = {
+      updatedAt: new Date(),
+    };
+
     for (const [key, value] of Object.entries(input)) {
-      if (key === 'deadline' && value) {
-        values[key] = new Date(value as string);
-      } else if (value !== null) {
-        values[key] = value;
+      if (value !== undefined && value !== null) {
+        if (key === 'deadline') {
+          values[key] = value instanceof Date ? value : new Date(value as string);
+        } else {
+          values[key] = value;
+        }
       }
     }
 
@@ -83,5 +92,31 @@ export class ProgramV2Service {
       throw new Error('Program not found');
     }
     return deletedProgram;
+  }
+
+  async getByCreatorId(
+    creatorId: number,
+    pagination?: { limit?: number; offset?: number },
+  ): Promise<{ data: ProgramV2[]; count: number }> {
+    const limit = pagination?.limit || 10;
+    const offset = pagination?.offset || 0;
+
+    const data = await this.db
+      .select()
+      .from(programsV2Table)
+      .where(eq(programsV2Table.creatorId, creatorId))
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(programsV2Table.createdAt));
+
+    const [totalCount] = await this.db
+      .select({ count: count() })
+      .from(programsV2Table)
+      .where(eq(programsV2Table.creatorId, creatorId));
+
+    return {
+      data,
+      count: totalCount.count,
+    };
   }
 }

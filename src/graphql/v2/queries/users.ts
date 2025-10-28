@@ -18,7 +18,7 @@ import { PaginatedUsersV2Type, UserV2Type } from '../types/users';
 builder.queryFields((t) => ({
   profileV2: t.field({
     type: UserV2Type,
-    authScopes: { user: true },
+    authScopes: { userV2: true },
     resolve: getProfileV2Resolver,
     description: 'Get current authenticated user profile',
   }),

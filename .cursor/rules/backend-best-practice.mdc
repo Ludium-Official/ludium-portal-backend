@@ -437,13 +437,108 @@ src/graphql/v2/
 - **NEVER** mix V1 and V2 code in the same files
 - **ALWAYS** create new files in the appropriate V2 subdirectory
 - **NEVER** modify `src/graphql/builder.ts` for V2-specific code
-- **ALWAYS** maintain the separation between types, resolvers, mutations, and queries
+- **ALWAYS** maintain the separation between types, resolvers, mutations, queries, inputs, and services
+
+#### Separation of Concerns (CRITICAL - MUST FOLLOW):
+
+Each part has a **specific and non-overlapping** role in the GraphQL API:
+
+1. **`mutations/`** - API Endpoint Definitions Only
+   - Define the GraphQL mutation schema using `builder.mutationField()`
+   - Set `authScopes` for authorization
+   - Define arguments using `t.arg()`
+   - **ONLY** reference resolver functions - NO business logic or DB access
+   - **NEVER** directly access `ctx.db` or implement business logic in mutations
+
+2. **`queries/`** - API Endpoint Definitions Only
+   - Define the GraphQL query schema using `builder.queryFields()`
+   - Set `authScopes` for authorization
+   - Define arguments using `t.arg()`
+   - **ONLY** reference resolver functions - NO business logic or DB access
+   - **NEVER** directly access `ctx.db` or implement business logic in queries
+
+3. **`resolvers/`** - Business Logic Orchestration
+   - Implement resolver functions that handle request validation and orchestration
+   - Extract data from context (e.g., `ctx.userV2`, `ctx.db`)
+   - Call service layer methods to perform actual operations
+   - Handle errors and transform responses
+   - **NEVER** directly access `ctx.db` for complex operations
+   - **ALWAYS** delegate to service layer for database operations
+
+4. **`services/`** - Database Operations & Complex Business Logic
+   - Handle all database queries (SELECT, INSERT, UPDATE, DELETE)
+   - Implement complex business logic and data transformations
+   - Perform validation and error handling specific to database operations
+   - **ALWAYS** use `this.db` for database access
+   - Return typed results
+
+5. **`inputs/`** - Input Type Definitions
+   - Define GraphQL input types using `builder.inputType()`
+   - Define validation rules and constraints
+   - **ONLY** type definitions - NO logic
+
+6. **`types/`** - Output Type Definitions
+   - Define GraphQL output types using `builder.objectRef()`
+   - Define field resolvers for computed/related fields
+   - **ONLY** type definitions and field-level logic - NO business logic
+
+**CRITICAL RULE**: Mutations and Queries files should NEVER contain:
+- Direct database access (`ctx.db.insert()`, `ctx.db.select()`, etc.)
+- Complex business logic
+- Data transformations
+- Anything other than API endpoint definitions
+
+**Example of CORRECT structure**:
+
+```typescript
+// ✅ CORRECT: mutations/programs.ts - API definition only
+import { createProgramV2Resolver } from '../resolvers/programs';
+
+builder.mutationField('createProgramV2', (t) =>
+  t.field({
+    type: ProgramV2Ref,
+    authScopes: { userV2: true },
+    args: { input: t.arg({ type: CreateProgramV2Input, required: true }) },
+    resolve: createProgramV2Resolver,  // Only reference to resolver
+  })
+);
+
+// ✅ CORRECT: resolvers/programs.ts - Orchestration
+export async function createProgramV2Resolver(
+  _root: Root,
+  args: { input: typeof CreateProgramV2Input.$inferInput },
+  ctx: Context,
+) {
+  if (!ctx.userV2) throw new Error('User not authenticated');
+  const service = new ProgramV2Service(ctx.db);
+  return await service.create(args.input, ctx.userV2.id);  // Delegate to service
+}
+
+// ✅ CORRECT: services/program.service.ts - Database operations
+async create(input: CreateProgramV2Input, creatorId: number): Promise<ProgramV2> {
+  const values = { ...input, creatorId };
+  const [program] = await this.db.insert(programsV2Table).values(values).returning();
+  return program;
+}
+
+// ❌ WRONG: mutations/programs.ts - DO NOT DO THIS
+builder.mutationField('createProgramV2', (t) =>
+  t.field({
+    resolve: async (_, { input }, ctx) => {
+      // ❌ NEVER directly access ctx.db in mutations
+      const [program] = await ctx.db.insert(...).values(...).returning();
+      return program;
+    }
+  })
+);
+```
 
 #### Naming Conventions:
 
 - **Types**: `{Entity}V2Type` (e.g., `UserV2Type`, `ProgramV2Type`)
 - **Inputs**: `{Action}{Entity}V2Input` (e.g., `CreateUserV2Input`, `UpdateProgramV2Input`)
 - **Resolvers**: `{action}{Entity}V2Resolver` (e.g., `getUserV2Resolver`, `createProgramV2Resolver`)
+- **Services**: `{Entity}V2Service` (e.g., `UserV2Service`, `ProgramV2Service`)
 - **Files**: `{entity}.ts` in appropriate subdirectory
 
 #### Code Quality Standards:
@@ -453,6 +548,7 @@ src/graphql/v2/
 - **MUST** implement proper error handling
 - **MUST** include JSDoc documentation
 - **MUST** follow the unified query pattern for list operations
+- **MUST** strictly follow the separation of concerns as defined above
 
 ### 3. V2 Architecture Improvements (RECOMMENDED)
 

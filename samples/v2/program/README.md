@@ -12,6 +12,7 @@ This directory contains sample GraphQL queries, mutations, variables, and expect
 ### Mutations
 
 - `create-program-mutation.graphql` - Create a new program
+- `create-program-with-invites-mutation.graphql` - Create a new program with invited members
 - `update-program-mutation.graphql` - Update an existing program
 - `delete-program-mutation.graphql` - Delete a program
 
@@ -20,6 +21,7 @@ This directory contains sample GraphQL queries, mutations, variables, and expect
 - `program-query-variables.json` - Variables for single program query
 - `programs-query-variables.json` - Variables for programs list query
 - `create-program-variables.json` - Variables for create program mutation
+- `create-program-with-invites-variables.json` - Variables for create program with invited members
 - `update-program-variables.json` - Variables for update program mutation
 - `delete-program-variables.json` - Variables for delete program mutation
 
@@ -28,6 +30,7 @@ This directory contains sample GraphQL queries, mutations, variables, and expect
 - `program-response.json` - Expected response for single program query
 - `programs-response.json` - Expected response for programs list query
 - `create-program-response.json` - Expected response for create program mutation
+- `create-program-with-invites-response.json` - Expected response for create program with invited members
 - `update-program-response.json` - Expected response for update program mutation
 - `delete-program-response.json` - Expected response for delete program mutation
 

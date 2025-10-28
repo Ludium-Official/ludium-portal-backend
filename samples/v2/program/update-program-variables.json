@@ -1,15 +1,8 @@
 {
   "id": "1",
   "input": {
-    "title": "Advanced Web3 Development Program",
-    "description": "An advanced program for experienced developers to master Web3 technologies.",
-    "skills": ["solidity", "react", "web3", "ethereum", "typescript", "rust"],
-    "deadline": "2024-12-31T23:59:59Z",
-    "invitedMembers": ["senior-dev@example.com"],
-    "status": "open",
-    "visibility": "public",
-    "network": "ethereum",
-    "price": "1500",
-    "currency": "ETH"
+    "title": "New Updated Title",
+    "description": "New updated description.",
+    "status": "open"
   }
 }
