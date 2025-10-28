@@ -101,6 +101,41 @@ export const UpdateUserV2Input = builder.inputType('UpdateUserV2Input', {
   }),
 });
 
+/**
+ * Input type for updating current user's profile
+ * Similar to UpdateUserV2Input but without the id field (uses authenticated user's ID)
+ */
+export const UpdateProfileV2Input = builder.inputType('UpdateProfileV2Input', {
+  fields: (t) => ({
+    // Optional fields that can be updated in profile
+    email: t.string({
+      description: 'User email address',
+      validate: { email: true },
+    }),
+    firstName: t.string({
+      description: 'User first name',
+    }),
+    lastName: t.string({
+      description: 'User last name',
+    }),
+    organizationName: t.string({
+      description: 'User organization name',
+    }),
+    profileImage: t.string({
+      description: 'User profile image URL',
+    }),
+    bio: t.string({
+      description: 'User bio/description',
+    }),
+    skills: t.stringList({
+      description: 'User skills array',
+    }),
+    links: t.stringList({
+      description: 'User links array',
+    }),
+  }),
+});
+
 // ============================================================================
 // Query Inputs
 // ============================================================================

@@ -2,6 +2,7 @@ import { usersV2Table } from '@/db/schemas/v2/users';
 import type { NewUserV2, UserV2 } from '@/db/schemas/v2/users';
 import type {
   CreateUserV2Input,
+  UpdateProfileV2Input,
   UpdateUserV2Input,
   UserV2QueryFilterInput,
   UsersV2QueryInput,
@@ -368,5 +369,35 @@ export class UserV2Service {
     }
     await this.db.delete(usersV2Table).where(eq(usersV2Table.id, Number.parseInt(id)));
     return true;
+  }
+
+  async updateProfile(
+    input: typeof UpdateProfileV2Input.$inferInput,
+    userId: number,
+  ): Promise<UserV2> {
+    const [existingUser] = await this.db
+      .select()
+      .from(usersV2Table)
+      .where(eq(usersV2Table.id, userId));
+    if (!existingUser) {
+      throw new Error('User not found');
+    }
+    const updateData: Partial<Omit<NewUserV2, 'id'>> = {};
+    if (input.email !== undefined) updateData.email = input.email ?? null;
+    if (input.firstName !== undefined) updateData.firstName = input.firstName ?? null;
+    if (input.lastName !== undefined) updateData.lastName = input.lastName ?? null;
+    if (input.organizationName !== undefined)
+      updateData.organizationName = input.organizationName ?? null;
+    if (input.profileImage !== undefined) updateData.profileImage = input.profileImage ?? null;
+    if (input.bio !== undefined) updateData.bio = input.bio ?? null;
+    if (input.skills !== undefined) updateData.skills = input.skills ?? null;
+    if (input.links !== undefined) updateData.links = input.links ?? null;
+
+    const [updatedUser] = await this.db
+      .update(usersV2Table)
+      .set(updateData)
+      .where(eq(usersV2Table.id, userId))
+      .returning();
+    return updatedUser;
   }
 }

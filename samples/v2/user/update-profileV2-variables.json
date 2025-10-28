@@ -1,0 +1,12 @@
+{
+  "input": {
+    "firstName": "Updated First Name",
+    "lastName": "Updated Last Name",
+    "email": "updated@example.com",
+    "organizationName": "Updated Organization",
+    "profileImage": "https://example.com/profile.jpg",
+    "bio": "Updated bio",
+    "skills": ["TypeScript", "React", "Node.js"],
+    "links": ["https://github.com/user", "https://twitter.com/user"]
+  }
+}

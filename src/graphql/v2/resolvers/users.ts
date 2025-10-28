@@ -1,6 +1,7 @@
 import type { Args, Context, Root } from '@/types';
 import type {
   CreateUserV2Input,
+  UpdateProfileV2Input,
   UpdateUserV2Input,
   UserV2QueryFilterInput,
   UsersV2QueryInput,
@@ -73,4 +74,20 @@ export async function getProfileV2Resolver(_root: Root, _args: Args, ctx: Contex
     throw new Error('Unauthorized');
   }
   return ctx.userV2;
+}
+
+/**
+ * Update current authenticated user's profile
+ * Uses the user from JWT token context
+ */
+export async function updateProfileV2Resolver(
+  _root: Root,
+  args: { input: typeof UpdateProfileV2Input.$inferInput },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  const userService = new UserV2Service(ctx.db, ctx.server);
+  return userService.updateProfile(args.input, ctx.userV2.id);
 }
