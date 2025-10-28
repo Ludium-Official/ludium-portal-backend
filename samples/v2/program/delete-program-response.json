@@ -1,20 +1,5 @@
 {
   "data": {
-    "deleteProgramV2": {
-      "id": "1",
-      "title": "Advanced Web3 Development Program",
-      "description": "An advanced program for experienced developers to master Web3 technologies.",
-      "skills": ["solidity", "react", "web3", "ethereum", "typescript", "rust"],
-      "deadline": "2024-12-31T23:59:59Z",
-      "invitedMembers": ["senior-dev@example.com"],
-      "status": "open",
-      "visibility": "public",
-      "network": "ethereum",
-      "price": "1500",
-      "currency": "ETH",
-      "createdAt": "2024-01-15T10:30:00Z",
-      "updatedAt": "2024-01-20T15:45:00Z",
-      "__typename": "ProgramV2"
-    }
+    "deleteProgramV2": "1"
   }
 }

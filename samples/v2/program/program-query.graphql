@@ -1,18 +1,9 @@
-query programV2($id: ID!) {
+query GetProgramV2($id: ID!) {
   programV2(id: $id) {
     id
     title
     description
     skills
-    deadline
-    invitedMembers
     status
-    visibility
-    network
-    price
-    currency
-    createdAt
-    updatedAt
-    __typename
   }
 }
