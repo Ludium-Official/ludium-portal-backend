@@ -1,9 +1,15 @@
 import builder from '@/graphql/builder';
 import {
   getApplicationV2Resolver,
+  getApplicationsByProgramV2Resolver,
   getApplicationsV2Resolver,
+  getMyApplicationsV2Resolver,
 } from '@/graphql/v2/resolvers/applications';
-import { ApplicationsV2QueryInput } from '../inputs/applications';
+import {
+  ApplicationsByProgramV2QueryInput,
+  ApplicationsV2QueryInput,
+  MyApplicationsV2QueryInput,
+} from '../inputs/applications';
 import { ApplicationV2Type, PaginatedApplicationsV2Type } from '../types/applications';
 
 builder.queryFields((t) => ({
@@ -31,5 +37,30 @@ builder.queryFields((t) => ({
     },
     resolve: getApplicationsV2Resolver,
     description: 'Get paginated list of applications with filtering options',
+  }),
+  applicationsByProgramV2: t.field({
+    type: PaginatedApplicationsV2Type,
+    authScopes: { userV2: true },
+    args: {
+      query: t.arg({
+        type: ApplicationsByProgramV2QueryInput,
+        required: true,
+        description: 'Program ID and pagination options',
+      }),
+    },
+    resolve: getApplicationsByProgramV2Resolver,
+    description: 'Get all applications for a specific program (only by program creator)',
+  }),
+  myApplicationsV2: t.field({
+    type: PaginatedApplicationsV2Type,
+    authScopes: { userV2: true },
+    args: {
+      query: t.arg({
+        type: MyApplicationsV2QueryInput,
+        description: 'Pagination options',
+      }),
+    },
+    resolve: getMyApplicationsV2Resolver,
+    description: 'Get all applications submitted by the current user',
   }),
 }));

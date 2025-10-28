@@ -1,0 +1,11 @@
+{
+  "data": {
+    "reviewApplicationV2": {
+      "id": "1",
+      "status": "accepted",
+      "rejectedReason": "Welcome aboard! Looking forward to working with you.",
+      "updatedAt": "2024-01-20T14:00:00.000Z"
+    }
+  }
+}
+

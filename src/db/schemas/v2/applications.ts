@@ -1,10 +1,10 @@
 import { relations } from 'drizzle-orm';
-import { integer, pgEnum, pgTable, serial, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { programsV2Table } from './programs';
 import { usersV2Table } from './users';
 
 // V2 status enum per renewed spec
-export const applicationStatusV2Values = ['pending', 'accepted', 'rejected', 'deleted'] as const;
+export const applicationStatusV2Values = ['applied', 'accepted', 'rejected', 'deleted'] as const;
 export const applicationStatusV2Enum = pgEnum('application_status_v2', applicationStatusV2Values);
 
 export const applicationsV2Table = pgTable('applications_v2', {
@@ -16,7 +16,11 @@ export const applicationsV2Table = pgTable('applications_v2', {
   applicantId: integer('applicant_id')
     .notNull()
     .references(() => usersV2Table.id, { onDelete: 'cascade' }),
-  status: applicationStatusV2Enum('status').default('pending').notNull(),
+  status: applicationStatusV2Enum('status').default('applied').notNull(),
+  content: text('content').default(''),
+  rejectedReason: text('rejected_reason').default(''),
+  picked: boolean('picked').default(false).notNull(),
+  // metadata
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()

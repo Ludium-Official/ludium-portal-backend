@@ -1,0 +1,9 @@
+mutation UpdateApplicationV2($id: ID!, $input: UpdateApplicationV2Input!) {
+  updateApplicationV2(id: $id, input: $input) {
+    id
+    content
+    status
+    updatedAt
+  }
+}
+

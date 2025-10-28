@@ -1,0 +1,6 @@
+mutation DeleteApplicationV2($id: ID!) {
+  deleteApplicationV2(id: $id) {
+    id
+  }
+}
+

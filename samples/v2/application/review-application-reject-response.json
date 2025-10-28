@@ -1,0 +1,11 @@
+{
+  "data": {
+    "reviewApplicationV2": {
+      "id": "1",
+      "status": "rejected",
+      "rejectedReason": "Unfortunately, we cannot proceed with your application at this time. Thank you for your interest.",
+      "updatedAt": "2024-01-20T14:00:00.000Z"
+    }
+  }
+}
+

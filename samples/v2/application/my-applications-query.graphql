@@ -1,0 +1,23 @@
+query MyApplicationsV2($query: MyApplicationsV2QueryInput) {
+  myApplicationsV2(query: $query) {
+    data {
+      id
+      programId
+      status
+      content
+      picked
+      createdAt
+      program {
+        id
+        title
+        deadline
+      }
+    }
+    count
+    totalPages
+    currentPage
+    hasNextPage
+    hasPreviousPage
+  }
+}
+

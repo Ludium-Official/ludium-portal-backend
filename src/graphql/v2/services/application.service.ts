@@ -1,8 +1,12 @@
 import type { ApplicationV2, NewApplicationV2 } from '@/db/schemas/v2/applications';
 import { applicationsV2Table } from '@/db/schemas/v2/applications';
+import { programsV2Table } from '@/db/schemas/v2/programs';
 import type {
+  ApplicationsByProgramV2QueryInput,
   ApplicationsV2QueryInput,
   CreateApplicationV2Input,
+  MyApplicationsV2QueryInput,
+  ReviewApplicationV2Input,
   UpdateApplicationV2Input,
 } from '@/graphql/v2/inputs/applications';
 import type { Context } from '@/types';
@@ -123,15 +127,146 @@ export class ApplicationV2Service {
     }
   }
 
-  async create(input: typeof CreateApplicationV2Input.$inferInput): Promise<ApplicationV2> {
+  async getByProgram(
+    query: typeof ApplicationsByProgramV2QueryInput.$inferInput,
+    userId: number,
+  ): Promise<PaginatedApplicationsV2Result> {
+    const startTime = Date.now();
+    const page = query?.page ?? 1;
+    const limit = query?.limit ?? 10;
+    const programId = Number.parseInt(query.programId, 10);
+
+    this.server.log.info(
+      `🚀 Starting ApplicationV2Service.getByProgram for programId: ${programId}, userId: ${userId}`,
+    );
+
+    try {
+      // Verify that the user is the creator of the program
+      const [program] = await this.db
+        .select()
+        .from(programsV2Table)
+        .where(eq(programsV2Table.id, programId));
+
+      if (!program) {
+        throw new Error('Program not found');
+      }
+
+      if (program.creatorId !== userId) {
+        throw new Error('Unauthorized to view applications for this program');
+      }
+
+      // Get all applications for this program
+      const whereClause = eq(applicationsV2Table.programId, programId);
+
+      const [totalResult] = await this.db
+        .select({ count: count() })
+        .from(applicationsV2Table)
+        .where(whereClause);
+      const totalCount = totalResult.count;
+      const totalPages = Math.ceil(totalCount / limit);
+      const offset = (page - 1) * limit;
+
+      const data = await this.db
+        .select()
+        .from(applicationsV2Table)
+        .where(whereClause)
+        .orderBy(desc(applicationsV2Table.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      const duration = Date.now() - startTime;
+      this.server.log.info(
+        `✅ ApplicationV2Service.getByProgram completed in ${duration}ms - found ${data.length} applications`,
+      );
+
+      return {
+        data,
+        count: totalCount,
+        totalPages,
+        currentPage: page,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ ApplicationV2Service.getByProgram failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  async getMyApplications(
+    query: typeof MyApplicationsV2QueryInput.$inferInput,
+    userId: number,
+  ): Promise<PaginatedApplicationsV2Result> {
+    const startTime = Date.now();
+    const page = query?.page ?? 1;
+    const limit = query?.limit ?? 10;
+
+    this.server.log.info(
+      `🚀 Starting ApplicationV2Service.getMyApplications for userId: ${userId}`,
+    );
+
+    try {
+      // Get all applications by this user (applicant)
+      const whereClause = eq(applicationsV2Table.applicantId, userId);
+
+      const [totalResult] = await this.db
+        .select({ count: count() })
+        .from(applicationsV2Table)
+        .where(whereClause);
+      const totalCount = totalResult.count;
+      const totalPages = Math.ceil(totalCount / limit);
+      const offset = (page - 1) * limit;
+
+      const data = await this.db
+        .select()
+        .from(applicationsV2Table)
+        .where(whereClause)
+        .orderBy(desc(applicationsV2Table.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      const duration = Date.now() - startTime;
+      this.server.log.info(
+        `✅ ApplicationV2Service.getMyApplications completed in ${duration}ms - found ${data.length} applications`,
+      );
+
+      return {
+        data,
+        count: totalCount,
+        totalPages,
+        currentPage: page,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ ApplicationV2Service.getMyApplications failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  async create(
+    input: typeof CreateApplicationV2Input.$inferInput,
+    applicantId: number,
+  ): Promise<ApplicationV2> {
     const startTime = Date.now();
     this.server.log.info('🚀 Starting ApplicationV2Service.create');
 
     try {
       const applicationData: NewApplicationV2 = {
         programId: Number.parseInt(input.programId, 10),
-        applicantId: Number.parseInt(input.applicantId, 10),
-        status: input.status ?? 'pending',
+        applicantId,
+        status: input.status ?? 'applied',
+        content: input.content ?? '',
       };
 
       const [newApplication] = await this.db
@@ -157,6 +292,7 @@ export class ApplicationV2Service {
   async update(
     id: string,
     input: typeof UpdateApplicationV2Input.$inferInput,
+    userId: number,
   ): Promise<ApplicationV2> {
     const startTime = Date.now();
     this.server.log.info(`🚀 Starting ApplicationV2Service.update for id: ${id}`);
@@ -171,9 +307,23 @@ export class ApplicationV2Service {
         throw new Error('Application not found');
       }
 
+      // Only applicant can update their application
+      if (existingApplication.applicantId !== userId) {
+        throw new Error('Unauthorized to update this application');
+      }
+
+      type UpdateApplicationV2InputType = typeof UpdateApplicationV2Input.$inferInput;
+
+      const typedInput: UpdateApplicationV2InputType = input;
+      const updateData: Partial<Pick<ApplicationV2, 'content'>> = {};
+
+      if (typedInput.content !== undefined) {
+        updateData.content = typedInput.content ?? '';
+      }
+
       const [updatedApplication] = await this.db
         .update(applicationsV2Table)
-        .set({ status: input.status })
+        .set(updateData)
         .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)))
         .returning();
 
@@ -192,19 +342,148 @@ export class ApplicationV2Service {
     }
   }
 
-  async delete(id: string): Promise<ApplicationV2> {
+  async review(
+    id: string,
+    input: typeof ReviewApplicationV2Input.$inferInput,
+    userId: number,
+  ): Promise<ApplicationV2> {
+    const startTime = Date.now();
+    this.server.log.info(`🚀 Starting ApplicationV2Service.review for id: ${id}`);
+
+    try {
+      // First, get the application to check if it exists
+      const [application] = await this.db
+        .select()
+        .from(applicationsV2Table)
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)));
+
+      if (!application) {
+        throw new Error('Application not found');
+      }
+
+      // Then, get the program to check creator
+      const [program] = await this.db
+        .select()
+        .from(programsV2Table)
+        .where(eq(programsV2Table.id, application.programId));
+
+      if (!program) {
+        throw new Error('Program not found');
+      }
+
+      // Only program creator can review applications
+      if (program.creatorId !== userId) {
+        throw new Error('Unauthorized to review this application');
+      }
+
+      type ReviewApplicationV2InputType = typeof ReviewApplicationV2Input.$inferInput;
+      const typedInput: ReviewApplicationV2InputType = input;
+      const updateData: Partial<Pick<ApplicationV2, 'status' | 'rejectedReason'>> = {};
+
+      if (typedInput.status !== undefined) {
+        updateData.status = typedInput.status as ApplicationV2['status'];
+      }
+      if (typedInput.rejectedReason !== undefined) {
+        updateData.rejectedReason = typedInput.rejectedReason ?? null;
+      }
+
+      const [reviewedApplication] = await this.db
+        .update(applicationsV2Table)
+        .set(updateData)
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)))
+        .returning();
+
+      const duration = Date.now() - startTime;
+      this.server.log.info(`✅ ApplicationV2Service.review completed in ${duration}ms`);
+
+      return reviewedApplication;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ ApplicationV2Service.review failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  async pick(id: string, input: { picked: boolean }, userId: number): Promise<ApplicationV2> {
+    const startTime = Date.now();
+    this.server.log.info(`🚀 Starting ApplicationV2Service.pick for id: ${id}`);
+
+    try {
+      // First, get the application to check if it exists
+      const [application] = await this.db
+        .select()
+        .from(applicationsV2Table)
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)));
+
+      if (!application) {
+        throw new Error('Application not found');
+      }
+
+      // Then, get the program to check creator
+      const [program] = await this.db
+        .select()
+        .from(programsV2Table)
+        .where(eq(programsV2Table.id, application.programId));
+
+      if (!program) {
+        throw new Error('Program not found');
+      }
+
+      // Only program creator can pick applications
+      if (program.creatorId !== userId) {
+        throw new Error('Unauthorized to pick this application');
+      }
+
+      const updateData = { picked: input.picked };
+
+      const [pickedApplication] = await this.db
+        .update(applicationsV2Table)
+        .set(updateData)
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)))
+        .returning();
+
+      const duration = Date.now() - startTime;
+      this.server.log.info(`✅ ApplicationV2Service.pick completed in ${duration}ms`);
+
+      return pickedApplication;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ ApplicationV2Service.pick failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  async delete(id: string, userId: number): Promise<ApplicationV2> {
     const startTime = Date.now();
     this.server.log.info(`🚀 Starting ApplicationV2Service.delete for id: ${id}`);
 
     try {
+      // First check if the application exists and belongs to the user
+      const [existingApplication] = await this.db
+        .select()
+        .from(applicationsV2Table)
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)));
+
+      if (!existingApplication) {
+        throw new Error('Application not found');
+      }
+
+      if (existingApplication.applicantId !== userId) {
+        throw new Error('Unauthorized to delete this application');
+      }
+
       const [deletedApplication] = await this.db
         .delete(applicationsV2Table)
         .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)))
         .returning();
-
-      if (!deletedApplication) {
-        throw new Error('Application not found');
-      }
 
       const duration = Date.now() - startTime;
       this.server.log.info(`✅ ApplicationV2Service.delete completed in ${duration}ms`);
