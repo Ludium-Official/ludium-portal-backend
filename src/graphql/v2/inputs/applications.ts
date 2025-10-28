@@ -14,6 +14,9 @@ export const CreateApplicationV2Input = builder.inputType('CreateApplicationV2In
       required: true,
       description: 'ID of the program to apply for',
     }),
+    content: t.string({
+      description: 'Content of the application submitted by the applicant',
+    }),
     status: t.field({
       type: ApplicationStatusV2Enum,
       description: 'Application status (defaults to applied)',
@@ -27,7 +30,7 @@ export const CreateApplicationV2Input = builder.inputType('CreateApplicationV2In
  */
 export const UpdateApplicationV2Input = builder.inputType('UpdateApplicationV2Input', {
   fields: (t) => ({
-    applicationContent: t.string({
+    content: t.string({
       description: 'Updated application content',
     }),
   }),

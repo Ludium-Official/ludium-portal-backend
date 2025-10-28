@@ -31,12 +31,18 @@ export const ApplicationV2Type = builder.objectRef<DBApplicationV2>('Application
     id: t.exposeID('id', {
       description: 'Application unique identifier',
     }),
+    programId: t.exposeID('programId', {
+      description: 'ID of the program this application is for',
+    }),
+    applicantId: t.exposeID('applicantId', {
+      description: 'ID of the user who submitted this application',
+    }),
     status: t.field({
       type: ApplicationStatusV2Enum,
       resolve: (application) => application.status,
       description: 'Application status',
     }),
-    applicationContent: t.exposeString('applicationContent', {
+    content: t.exposeString('content', {
       description: 'Content of the application submitted by the applicant',
     }),
     rejectedReason: t.exposeString('rejectedReason', {
