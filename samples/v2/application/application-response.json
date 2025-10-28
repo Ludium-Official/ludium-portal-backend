@@ -1,0 +1,27 @@
+{
+  "data": {
+    "applicationV2": {
+      "id": "1",
+      "programId": "1",
+      "applicantId": "2",
+      "status": "accepted",
+      "content": "I am a great candidate for this program.",
+      "rejectedReason": "Welcome aboard!",
+      "picked": true,
+      "createdAt": "2024-01-20T12:00:00.000Z",
+      "updatedAt": "2024-01-20T14:00:00.000Z",
+      "program": {
+        "id": "1",
+        "title": "Test Program",
+        "description": "A test program description"
+      },
+      "applicant": {
+        "id": "2",
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "john@example.com"
+      }
+    }
+  }
+}
+

@@ -1,0 +1,25 @@
+query GetApplicationV2($id: ID!) {
+  applicationV2(id: $id) {
+    id
+    programId
+    applicantId
+    status
+    content
+    rejectedReason
+    picked
+    createdAt
+    updatedAt
+    program {
+      id
+      title
+      description
+    }
+    applicant {
+      id
+      firstName
+      lastName
+      email
+    }
+  }
+}
+
