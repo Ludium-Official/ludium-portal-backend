@@ -1,6 +1,165 @@
 ---
 globs: src/**
-alwaysApply: false
+alwaysApply: true
+description: Ludium Backend development guidelines, best practices, and V2 architecture protection rules
+---
+
+# Ludium Backend Development Guidelines & Best Practices
+
+## 🎯 Project Context
+
+This is the official backend API for the **Ludium Portal**, a global platform for Web3 builders. The project provides a robust, scalable, and secure GraphQL API to support our frontend application and open-source contributors.
+
+**Key Context:**
+
+- Monolithic API architecture (not microservices)
+- Primary interface: GraphQL API at `/graphql` endpoint
+- REST endpoints only for specific cases (webhooks, health checks)
+- Transitioning to open-source model - clarity and documentation are paramount
+
+## 🏗️ Technology Stack
+
+### Core Technologies:
+
+- **Language:** TypeScript with strict typing
+- **Framework:** Fastify (high-performance Node.js framework)
+- **Database:** PostgreSQL with Drizzle ORM
+- **GraphQL:** Mercurius (Fastify plugin) + Pothos (code-first schema builder)
+- **Authentication:** JWT-based with Argon2 password hashing
+- **Containerization:** Docker and Docker Compose
+
+### Data Flow:
+
+1. GraphQL requests → `/graphql` endpoint
+2. Fastify server processes through plugins (auth, file uploads)
+3. GraphQL resolvers handle business logic
+4. Drizzle ORM interacts with PostgreSQL
+
+## 📁 Project-Specific Directory Structure
+
+### Database Changes:
+
+- **`src/db/schemas/`** - Drizzle ORM schema definitions
+- **`src/db/migrations/`** - Auto-generated SQL migrations (DO NOT EDIT)
+
+### API Changes:
+
+- **`src/graphql/types/`** - Pothos schema definitions (GraphQL types, queries, mutations)
+- **`src/graphql/resolvers/`** - Business logic implementation
+- **`src/graphql/schema.graphql`** - Auto-generated (DO NOT EDIT)
+
+### Other Important Directories:
+
+- **`src/plugins/`** - Core Fastify plugins (auth, database connection)
+- **`src/utils/`** - Utility functions for complex business logic
+
+## 🚨 Project-Specific Constraints
+
+### NEVER Access These Files:
+
+- `.env*` files
+- `.gcp.json`
+- `docker-compose.yml`
+- `*.sql` files in migrations
+- `src/graphql/schema.graphql`
+
+### Dependencies:
+
+- Do NOT add third-party libraries without explicit instruction
+- Keep dependency tree lean and secure
+
+## 🔧 Project-Specific Coding Standards
+
+### Naming Conventions:
+
+- **Imports:** ALWAYS use absolute path aliases (`@/db/schemas`) - NEVER relative paths
+- **Comments:** Explain "why" (business logic) not just "what"
+- **Files:** `kebab-case`
+- **Interfaces, Types, Classes:** `PascalCase`
+- **Constants:** `UPPER_SNAKE_CASE`
+- **Enums:** `PascalCase` for enum, `UPPER_SNAKE_CASE` for members
+- **Variables, Functions:** `camelCase`
+
+### Database (Drizzle ORM):
+
+- **Schema Files:** Each table gets its own file in `src/db/schemas/`
+- **Table Naming:** `camelCase` + `Table` (e.g., `usersTable`, `programsTable`)
+- **Migrations:** NEVER modify schema directly - update schema files, then run `npm run db:gen`
+
+### GraphQL:
+
+- **Schema Builder:** Use Pothos for code-first, type-safe approach
+- **Domain Structure:** Separate API definitions (`types`) from business logic (`resolvers`)
+- **Documentation:** When updating v2 schema, update GRAPHQL_EXAMPLES.md
+
+### Code Quality:
+
+- All code MUST pass Biome checks (`npm run check`)
+- Do NOT manually edit auto-generated files
+- Use absolute imports exclusively (`@/` prefix)
+- **Formatting:** Use Biome (`npm run check` before committing)
+
+## 📋 Development Workflow
+
+### Database Changes:
+
+1. **Update Schema:** Modify appropriate file in `src/db/schemas/`
+2. **Generate Migration:** Run `npm run db:gen`
+3. **Review:** Check generated `.sql` file in `src/db/migrations/`
+4. **Test:** Test database operations
+
+### GraphQL Changes:
+
+1. **Define types** in `src/graphql/v2/types/`
+2. **Define inputs** in `src/graphql/v2/inputs/`
+3. **Implement resolvers** in `src/graphql/v2/resolvers/`
+4. **Add mutations/queries** in `src/graphql/v2/{mutations,queries}/`
+5. **Implement services** in `src/graphql/v2/services/`
+6. **Add tests** in `src/graphql/v2/tests/`
+7. **Update GRAPHQL_EXAMPLES.md** if needed
+8. Add proper error handling
+9. Include JSDoc documentation
+10. Test with GraphQL playground
+
+## 🎨 Project-Specific Patterns
+
+### Error Handling (Ludium Style):
+
+```typescript
+try {
+  const result = await ctx.db.select()...;
+  ctx.server.log.info({ msg: "Operation completed", result });
+} catch (error) {
+  ctx.server.log.error({
+    msg: "Database operation failed",
+    error: error.message,
+    operation: "operation_name"
+  });
+  throw new Error("User-friendly error message");
+}
+```
+
+### Logging:
+
+- Use Fastify logger (`ctx.server.log`) instead of `console.log`
+- Include structured logging with metadata
+- Use appropriate log levels (info, warn, error, debug)
+
+### GraphQL Resolvers:
+
+- Keep resolvers focused on API concerns
+- Extract business logic to service layer (`src/graphql/v2/services/`)
+- Include proper TypeScript types
+- Handle errors gracefully
+
+### Performance:
+
+- Use transactions for multi-step database operations
+- Consider timeout scenarios for long-running queries
+- Include query execution time logging
+- Monitor database connection pool status
+- Track response times and error rates
+
 ---
 
 # Backend Development Best Practices
