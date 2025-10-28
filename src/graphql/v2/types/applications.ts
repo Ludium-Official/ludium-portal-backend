@@ -36,6 +36,15 @@ export const ApplicationV2Type = builder.objectRef<DBApplicationV2>('Application
       resolve: (application) => application.status,
       description: 'Application status',
     }),
+    applicationContent: t.exposeString('applicationContent', {
+      description: 'Content of the application submitted by the applicant',
+    }),
+    rejectedReason: t.exposeString('rejectedReason', {
+      description: 'Reason for rejection if the application was rejected',
+    }),
+    picked: t.exposeBoolean('picked', {
+      description: 'Whether this application has been picked',
+    }),
     createdAt: t.field({
       type: 'DateTime',
       resolve: (application) => application.createdAt,

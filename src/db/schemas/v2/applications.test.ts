@@ -53,7 +53,7 @@ describe('Applications V2 Table', () => {
     const newApplication: NewApplicationV2 = {
       programId: testProgramId,
       applicantId: testUserId,
-      status: 'pending',
+      status: 'applied',
     };
 
     const insertedApplications = await db
@@ -65,7 +65,7 @@ describe('Applications V2 Table', () => {
     expect(application).toBeDefined();
     expect(application.programId).toBe(newApplication.programId);
     expect(application.applicantId).toBe(newApplication.applicantId);
-    expect(application.status).toBe('pending');
+    expect(application.status).toBe('applied');
     expect(application.createdAt).toBeDefined();
     expect(application.updatedAt).toBeDefined();
 
@@ -123,7 +123,7 @@ describe('Applications V2 Table', () => {
     expect(application.status).toBe('deleted');
   });
 
-  it('should default to pending status when status is not provided', async () => {
+  it('should default to applied status when status is not provided', async () => {
     const newApplication: NewApplicationV2 = {
       programId: testProgramId,
       applicantId: testUserId,
@@ -132,14 +132,14 @@ describe('Applications V2 Table', () => {
     const [application] = await db.insert(applicationsV2Table).values(newApplication).returning();
 
     expect(application).toBeDefined();
-    expect(application.status).toBe('pending');
+    expect(application.status).toBe('applied');
   });
 
   it('should enforce foreign key constraint for programId', async () => {
     const newApplication: NewApplicationV2 = {
       programId: 999999, // Non-existent program ID
       applicantId: testUserId,
-      status: 'pending',
+      status: 'applied',
     };
 
     await expect(db.insert(applicationsV2Table).values(newApplication)).rejects.toThrow();
@@ -149,7 +149,7 @@ describe('Applications V2 Table', () => {
     const newApplication: NewApplicationV2 = {
       programId: testProgramId,
       applicantId: 999999, // Non-existent user ID
-      status: 'pending',
+      status: 'applied',
     };
 
     await expect(db.insert(applicationsV2Table).values(newApplication)).rejects.toThrow();
@@ -160,7 +160,7 @@ describe('Applications V2 Table', () => {
     const newApplication: NewApplicationV2 = {
       programId: testProgramId,
       applicantId: testUserId,
-      status: 'pending',
+      status: 'applied',
     };
     await db.insert(applicationsV2Table).values(newApplication);
 
@@ -225,7 +225,7 @@ describe('Applications V2 Table', () => {
     const newApplication: NewApplicationV2 = {
       programId: anotherProgramId,
       applicantId: anotherUserId,
-      status: 'pending',
+      status: 'applied',
     };
     await db.insert(applicationsV2Table).values(newApplication);
 
@@ -265,7 +265,7 @@ describe('Applications V2 Table', () => {
     const application1: NewApplicationV2 = {
       programId: testProgramId,
       applicantId: testUserId,
-      status: 'pending',
+      status: 'applied',
     };
     const application2: NewApplicationV2 = {
       programId: secondProgramId,
@@ -301,12 +301,12 @@ describe('Applications V2 Table', () => {
     const application1: NewApplicationV2 = {
       programId: testProgramId,
       applicantId: testUserId,
-      status: 'pending',
+      status: 'applied',
     };
     const application2: NewApplicationV2 = {
       programId: testProgramId,
       applicantId: secondUserId,
-      status: 'pending',
+      status: 'applied',
     };
 
     const [app1] = await db.insert(applicationsV2Table).values(application1).returning();
