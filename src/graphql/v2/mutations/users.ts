@@ -3,9 +3,10 @@ import {
   createUserV2Resolver,
   deleteUserV2Resolver,
   loginV2Resolver,
+  updateProfileV2Resolver,
   updateUserV2Resolver,
 } from '@/graphql/v2/resolvers/users';
-import { CreateUserV2Input, UpdateUserV2Input } from '../inputs/users';
+import { CreateUserV2Input, UpdateProfileV2Input, UpdateUserV2Input } from '../inputs/users';
 import { LoginTypeEnum } from '../types/users';
 import { UserV2Type } from '../types/users';
 
@@ -75,6 +76,25 @@ builder.mutationFields((t) => ({
     },
     resolve: updateUserV2Resolver,
     description: 'Update an existing user',
+  }),
+}));
+
+/**
+ * Update current authenticated user's profile
+ */
+builder.mutationFields((t) => ({
+  updateProfileV2: t.field({
+    type: UserV2Type,
+    authScopes: { user: true },
+    args: {
+      input: t.arg({
+        type: UpdateProfileV2Input,
+        required: true,
+        description: 'Profile update data',
+      }),
+    },
+    resolve: updateProfileV2Resolver,
+    description: 'Update current authenticated user profile',
   }),
 }));
 
