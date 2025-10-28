@@ -45,6 +45,7 @@ export class ProgramV2Service {
     const values = {
       ...input,
       deadline: new Date(input.deadline),
+      creatorId: Number.parseInt(input.creatorId, 10),
     };
     const [newProgram] = await this.db.insert(programsV2Table).values(values).returning();
     return newProgram;

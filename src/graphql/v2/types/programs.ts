@@ -2,7 +2,7 @@ import {
   type ProgramV2 as DBProgramV2,
   programStatusV2Values,
   programVisibilityV2Values,
-} from '@/db/schemas/v2/programsV2';
+} from '@/db/schemas/v2/programs';
 import builder from '@/graphql/builder';
 
 export const ProgramVisibilityEnum = builder.enumType('ProgramVisibilityV2', {

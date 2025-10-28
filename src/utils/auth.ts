@@ -1,4 +1,4 @@
-import type { User } from '@/db/schemas';
+import type { User, UserV2 } from '@/db/schemas';
 import type { DecodedToken } from '@/plugins/auth';
 import type { Context, EnvConfig } from '@/types';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -25,6 +25,14 @@ export function requireUser(ctx: Context): User {
     throw new Error('Unauthorized');
   }
   return user;
+}
+
+export function requireUserV2(ctx: Context): UserV2 {
+  const userV2 = ctx.server.auth.getUserV2(ctx.request);
+  if (!userV2) {
+    throw new Error('Unauthorized');
+  }
+  return userV2;
 }
 
 export async function requireUserForSubscription(ctx: Context) {

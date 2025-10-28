@@ -1,4 +1,3 @@
-// import { writeFileSync } from 'node:fs';
 import builder from '@/graphql/builder';
 
 import './common';
@@ -22,5 +21,3 @@ import './swapped';
 import '../v2';
 
 export const schema = builder.toSchema();
-// const schemaAsString = printSchema(lexicographicSortSchema(schema));
-// writeFileSync('./src/graphql/schema.graphql', schemaAsString);

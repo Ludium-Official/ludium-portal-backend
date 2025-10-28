@@ -1,5 +1,6 @@
 import builder from '@/graphql/builder';
 import {
+  getProfileV2Resolver,
   getUserV2Resolver,
   getUsersV2Resolver,
   queryUsersV2Resolver,
@@ -10,6 +11,18 @@ import { PaginatedUsersV2Type, UserV2Type } from '../types/users';
 // ============================================================================
 // User Queries
 // ============================================================================
+
+/**
+ * Get current user's profile (authenticated user)
+ */
+builder.queryFields((t) => ({
+  profileV2: t.field({
+    type: UserV2Type,
+    authScopes: { user: true },
+    resolve: getProfileV2Resolver,
+    description: 'Get current authenticated user profile',
+  }),
+}));
 
 /**
  * Get a single user by ID

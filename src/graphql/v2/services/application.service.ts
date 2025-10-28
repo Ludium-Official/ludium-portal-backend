@@ -1,0 +1,223 @@
+import type { ApplicationV2, NewApplicationV2 } from '@/db/schemas/v2/applications';
+import { applicationsV2Table } from '@/db/schemas/v2/applications';
+import type {
+  ApplicationsV2QueryInput,
+  CreateApplicationV2Input,
+  UpdateApplicationV2Input,
+} from '@/graphql/v2/inputs/applications';
+import type { Context } from '@/types';
+import { and, count, desc, eq } from 'drizzle-orm';
+
+interface PaginatedApplicationsV2Result {
+  data: ApplicationV2[];
+  count: number;
+  totalPages: number;
+  currentPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export class ApplicationV2Service {
+  constructor(
+    private db: Context['db'],
+    private server: Context['server'],
+  ) {}
+
+  async getById(id: string): Promise<ApplicationV2> {
+    const startTime = Date.now();
+    this.server.log.info(`🚀 Starting ApplicationV2Service.getById for id: ${id}`);
+
+    try {
+      const [application] = await this.db
+        .select()
+        .from(applicationsV2Table)
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)));
+
+      const duration = Date.now() - startTime;
+
+      if (!application) {
+        this.server.log.warn(`❌ Application not found with id: ${id}`);
+        throw new Error('Application not found');
+      }
+
+      this.server.log.info(`✅ ApplicationV2Service.getById completed in ${duration}ms`);
+      return application;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ ApplicationV2Service.getById failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  async getMany(
+    query?: typeof ApplicationsV2QueryInput.$inferInput | null,
+  ): Promise<PaginatedApplicationsV2Result> {
+    const startTime = Date.now();
+    const page = query?.page ?? 1;
+    const limit = query?.limit ?? 10;
+
+    this.server.log.info(
+      `🚀 Starting ApplicationV2Service.getMany with params: ${JSON.stringify(query)}`,
+    );
+
+    try {
+      const whereConditions = [];
+
+      if (query?.programId) {
+        whereConditions.push(
+          eq(applicationsV2Table.programId, Number.parseInt(query.programId, 10)),
+        );
+      }
+      if (query?.applicantId) {
+        whereConditions.push(
+          eq(applicationsV2Table.applicantId, Number.parseInt(query.applicantId, 10)),
+        );
+      }
+      if (query?.status) {
+        whereConditions.push(eq(applicationsV2Table.status, query.status));
+      }
+
+      const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+      const [totalResult] = await this.db
+        .select({ count: count() })
+        .from(applicationsV2Table)
+        .where(whereClause);
+      const totalCount = totalResult.count;
+      const totalPages = Math.ceil(totalCount / limit);
+      const offset = (page - 1) * limit;
+
+      const data = await this.db
+        .select()
+        .from(applicationsV2Table)
+        .where(whereClause)
+        .orderBy(desc(applicationsV2Table.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      const duration = Date.now() - startTime;
+      this.server.log.info(
+        `✅ ApplicationV2Service.getMany completed in ${duration}ms - found ${data.length} applications`,
+      );
+
+      return {
+        data,
+        count: totalCount,
+        totalPages,
+        currentPage: page,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ ApplicationV2Service.getMany failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  async create(input: typeof CreateApplicationV2Input.$inferInput): Promise<ApplicationV2> {
+    const startTime = Date.now();
+    this.server.log.info('🚀 Starting ApplicationV2Service.create');
+
+    try {
+      const applicationData: NewApplicationV2 = {
+        programId: Number.parseInt(input.programId, 10),
+        applicantId: Number.parseInt(input.applicantId, 10),
+        status: input.status ?? 'pending',
+      };
+
+      const [newApplication] = await this.db
+        .insert(applicationsV2Table)
+        .values(applicationData)
+        .returning();
+
+      const duration = Date.now() - startTime;
+      this.server.log.info(`✅ ApplicationV2Service.create completed in ${duration}ms`);
+
+      return newApplication;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ ApplicationV2Service.create failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  async update(
+    id: string,
+    input: typeof UpdateApplicationV2Input.$inferInput,
+  ): Promise<ApplicationV2> {
+    const startTime = Date.now();
+    this.server.log.info(`🚀 Starting ApplicationV2Service.update for id: ${id}`);
+
+    try {
+      const [existingApplication] = await this.db
+        .select()
+        .from(applicationsV2Table)
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)));
+
+      if (!existingApplication) {
+        throw new Error('Application not found');
+      }
+
+      const [updatedApplication] = await this.db
+        .update(applicationsV2Table)
+        .set({ status: input.status })
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)))
+        .returning();
+
+      const duration = Date.now() - startTime;
+      this.server.log.info(`✅ ApplicationV2Service.update completed in ${duration}ms`);
+
+      return updatedApplication;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ ApplicationV2Service.update failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  async delete(id: string): Promise<ApplicationV2> {
+    const startTime = Date.now();
+    this.server.log.info(`🚀 Starting ApplicationV2Service.delete for id: ${id}`);
+
+    try {
+      const [deletedApplication] = await this.db
+        .delete(applicationsV2Table)
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)))
+        .returning();
+
+      if (!deletedApplication) {
+        throw new Error('Application not found');
+      }
+
+      const duration = Date.now() - startTime;
+      this.server.log.info(`✅ ApplicationV2Service.delete completed in ${duration}ms`);
+
+      return deletedApplication;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ ApplicationV2Service.delete failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+}

@@ -1,11 +1,11 @@
-import { usersV2Table } from '@/db/schemas/v2/usersV2';
-import type { NewUserV2, UserV2 } from '@/db/schemas/v2/usersV2';
+import { usersV2Table } from '@/db/schemas/v2/users';
+import type { NewUserV2, UserV2 } from '@/db/schemas/v2/users';
 import { db } from '@/db/test-db';
 import type { Context } from '@/types/context';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { CreateUserV2Input, UpdateUserV2Input } from '../inputs/users';
+import type { CreateUserV2Input, UpdateUserV2Input } from '../../inputs/users';
 import {
   createUserV2Resolver,
   deleteUserV2Resolver,
@@ -14,7 +14,7 @@ import {
   loginV2Resolver,
   queryUsersV2Resolver,
   updateUserV2Resolver,
-} from '../resolvers/users';
+} from '../../resolvers/users';
 
 // Mock JWT sign function
 const mockJwtSign = (payload: unknown, _options: unknown) => {
@@ -24,14 +24,18 @@ const mockJwtSign = (payload: unknown, _options: unknown) => {
 // Mock FastifyInstance
 const mockServer = {
   log: {
-    info: () => {},
-    warn: () => {},
-    error: () => {},
-    child: () => ({ info: () => {}, warn: () => {}, error: () => {} }),
+    info: (...args: unknown[]) => console.log('[INFO]', ...args),
+    warn: (...args: unknown[]) => console.warn('[WARN]', ...args),
+    error: (...args: unknown[]) => console.error('[ERROR]', ...args),
+    child: () => ({
+      info: (...args: unknown[]) => console.log('[INFO]', ...args),
+      warn: (...args: unknown[]) => console.warn('[WARN]', ...args),
+      error: (...args: unknown[]) => console.error('[ERROR]', ...args),
+    }),
     level: 'info',
-    fatal: () => {},
-    debug: () => {},
-    trace: () => {},
+    fatal: (...args: unknown[]) => console.error('[FATAL]', ...args),
+    debug: (...args: unknown[]) => console.log('[DEBUG]', ...args),
+    trace: (...args: unknown[]) => console.log('[TRACE]', ...args),
   },
   jwt: {
     sign: mockJwtSign,

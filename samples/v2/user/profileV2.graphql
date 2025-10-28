@@ -1,12 +1,13 @@
-mutation createUserV2($input: CreateUserV2Input!) {
-  createUserV2(input: $input) {
+# get current user info in the users table 
+query profileV2 {
+  profileV2 {
     id
-    role
-    loginType
-    walletAddress
     email
     firstName
     lastName
+    role
+    loginType
+    walletAddress
     organizationName
     profileImage
     bio
@@ -14,6 +15,5 @@ mutation createUserV2($input: CreateUserV2Input!) {
     links
     createdAt
     updatedAt
-    __typename
   }
 }

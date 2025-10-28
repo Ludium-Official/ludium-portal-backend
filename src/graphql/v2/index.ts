@@ -1,6 +1,10 @@
 import './types';
 import './inputs/programs';
 import './inputs/users';
+import './inputs/applications';
+import './inputs/milestones';
 import './queries';
 import './mutations/programs';
 import './mutations/users';
+import './mutations/applications';
+import './mutations/milestones';

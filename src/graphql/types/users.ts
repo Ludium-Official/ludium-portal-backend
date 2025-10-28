@@ -245,10 +245,12 @@ builder.queryFields((t) => ({
     },
     resolve: getUserByIdResolver,
   }),
+  // V1 profile - deprecated, use V2 profile instead
   profile: t.field({
     type: User,
     authScopes: { user: true },
     resolve: getProfileResolver,
+    description: 'Get current user profile (deprecated: use profileV2 instead)',
   }),
 }));
 

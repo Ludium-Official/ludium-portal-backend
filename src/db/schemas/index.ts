@@ -16,5 +16,7 @@ export * from './investments';
 export * from './milestone-payouts';
 export * from './fees';
 // v2
-export * from './v2/programsV2';
-export * from './v2/usersV2';
+export * from './v2/applications';
+export * from './v2/milestones';
+export * from './v2/programs';
+export * from './v2/users';

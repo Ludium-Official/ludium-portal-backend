@@ -44,7 +44,8 @@ const registerPlugins = (server: FastifyInstance) => {
           reply,
           server,
           db: server.db,
-          user: request.user,
+          user: request.auth?.user,
+          userV2: request.auth?.userV2,
         };
       },
       graphiql: true,

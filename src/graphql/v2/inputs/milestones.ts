@@ -1,0 +1,85 @@
+import builder from '@/graphql/builder';
+
+// ============================================================================
+// Mutation Inputs
+// ============================================================================
+
+/**
+ * Input type for creating a new milestone
+ */
+export const CreateMilestoneV2Input = builder.inputType('CreateMilestoneV2Input', {
+  fields: (t) => ({
+    programId: t.id({
+      required: true,
+      description: 'ID of the program',
+    }),
+    applicantId: t.id({
+      required: true,
+      description: 'ID of the applicant (user)',
+    }),
+    title: t.string({
+      required: true,
+      description: 'Milestone title',
+    }),
+    description: t.string({
+      required: true,
+      description: 'Milestone description',
+    }),
+    payout: t.string({
+      required: true,
+      description: 'Milestone payout amount',
+    }),
+    deadline: t.field({
+      type: 'DateTime',
+      required: true,
+      description: 'Milestone deadline',
+    }),
+  }),
+});
+
+/**
+ * Input type for updating an existing milestone
+ */
+export const UpdateMilestoneV2Input = builder.inputType('UpdateMilestoneV2Input', {
+  fields: (t) => ({
+    title: t.string({
+      description: 'Milestone title',
+    }),
+    description: t.string({
+      description: 'Milestone description',
+    }),
+    payout: t.string({
+      description: 'Milestone payout amount',
+    }),
+    deadline: t.field({
+      type: 'DateTime',
+      description: 'Milestone deadline',
+    }),
+  }),
+});
+
+// ============================================================================
+// Query Inputs
+// ============================================================================
+
+/**
+ * Pagination and filtering input for milestones queries
+ */
+export const MilestonesV2QueryInput = builder.inputType('MilestonesV2QueryInput', {
+  fields: (t) => ({
+    page: t.int({
+      description: 'Page number (1-based)',
+      defaultValue: 1,
+    }),
+    limit: t.int({
+      description: 'Number of items per page',
+      defaultValue: 10,
+    }),
+    programId: t.id({
+      description: 'Filter by program ID',
+    }),
+    applicantId: t.id({
+      description: 'Filter by applicant ID',
+    }),
+  }),
+});

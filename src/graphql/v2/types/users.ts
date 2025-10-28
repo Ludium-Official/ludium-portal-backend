@@ -1,5 +1,9 @@
-import { type UserV2 as DBUser, loginTypesV2, userV2Roles } from '@/db/schemas/v2/usersV2';
+import { programsV2Table } from '@/db/schemas/v2/programs';
+import { type UserV2 as DBUser, loginTypesV2, userV2Roles } from '@/db/schemas/v2/users';
 import builder from '@/graphql/builder';
+import type { Context } from '@/types';
+import { eq } from 'drizzle-orm';
+import { ProgramV2Type } from './programs';
 
 // ============================================================================
 // Enums
@@ -82,6 +86,20 @@ export const UserV2Type = builder.objectRef<DBUser>('UserV2').implement({
     updatedAt: t.expose('updatedAt', {
       type: 'Date',
       description: 'User last update timestamp',
+    }),
+
+    // Relations - User's created programs
+    createdPrograms: t.field({
+      type: [ProgramV2Type],
+      description: 'Programs created by this user',
+      resolve: async (user, _args, ctx: Context) => {
+        // Fetch programs created by this user
+        const programs = await ctx.db
+          .select()
+          .from(programsV2Table)
+          .where(eq(programsV2Table.creatorId, user.id));
+        return programs ?? [];
+      },
     }),
   }),
 });
