@@ -1,3 +1,5 @@
+import '../mutations';
+
 export * from './programs';
 export * from './users';
 export * from './applications';
