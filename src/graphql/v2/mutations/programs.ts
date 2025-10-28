@@ -1,6 +1,4 @@
-import { programsV2Table } from '@/db/schemas';
 import builder from '@/graphql/builder';
-import { eq } from 'drizzle-orm';
 import { CreateProgramV2Input, UpdateProgramV2Input } from '../inputs/programs';
 import {
   createProgramV2Resolver,
@@ -120,16 +118,7 @@ builder.mutationField('deleteProgramV2', (t) =>
     args: {
       id: t.arg.id({ required: true }),
     },
-    resolve: async (_, { id }, ctx) => {
-      const numericId = Number.parseInt(id, 10);
-      if (Number.isNaN(numericId)) {
-        throw new Error('Invalid program ID');
-      }
-
-      await ctx.db.delete(programsV2Table).where(eq(programsV2Table.id, numericId));
-
-      return id;
-    },
+    resolve: deleteProgramV2Resolver,
   }),
 );
 )
