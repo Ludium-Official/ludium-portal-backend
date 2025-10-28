@@ -208,21 +208,17 @@ const authPlugin = (
 ): void => {
   const authHandler = new AuthHandler(server);
   server.decorate('auth', authHandler);
-
-  if (server.config.NODE_ENV !== 'development') {
-    server.addHook('onRequest', async (request) => {
-      try {
-        const decodedToken = await request.jwtVerify<DecodedToken>();
-        server.log.debug(`[AuthPlugin] Decoded token: ${JSON.stringify(decodedToken)}`);
-        const auth = await requestHandler(decodedToken, server.db);
-        server.log.debug(`[AuthPlugin] auth: ${JSON.stringify(auth)}`);
-        request.auth = auth;
-      } catch (error) {
-        server.log.error('No token provided', error);
-      }
-    });
-  }
-
+  server.addHook('onRequest', async (request) => {
+    try {
+      const decodedToken = await request.jwtVerify<DecodedToken>();
+      server.log.debug(`[AuthPlugin] Decoded token: ${JSON.stringify(decodedToken)}`);
+      const auth = await requestHandler(decodedToken, server.db);
+      server.log.debug(`[AuthPlugin] auth: ${JSON.stringify(auth)}`);
+      request.auth = auth;
+    } catch (error) {
+      server.log.error('No token provided', error);
+    }
+  });
   done();
 };
 
