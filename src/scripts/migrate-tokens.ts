@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { networksTable } from '../db/schemas/v2/networks';
-import { tokensTable, type NewTokenType } from '../db/schemas/v2/tokens';
+import { type NewTokenType, tokensTable } from '../db/schemas/v2/tokens';
 
 async function migrateTokens() {
   console.log('Starting token migration...');

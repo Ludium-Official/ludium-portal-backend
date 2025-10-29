@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { networksTable, type NewNetworkType } from '../db/schemas/v2/networks';
+import { type NewNetworkType, networksTable } from '../db/schemas/v2/networks';
 
 async function migrateNetworks() {
   console.log('Starting network migration...');
