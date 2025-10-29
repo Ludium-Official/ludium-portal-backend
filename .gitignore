@@ -219,3 +219,6 @@ ludiumprod
 # personal
 TODO
 .cursor/docs/
+
+# migration backup
+ludium-portal-backend-v1-backup
