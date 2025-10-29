@@ -19,7 +19,8 @@
     "db:seed": "tsx -r dotenv-expand/config ./src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
     "test": "vitest run",
-    "prepare": "husky"
+    "prepare": "husky",
+    "migrate-users": "tsx ./src/scripts/migrate-users.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",
@@ -40,7 +41,7 @@
     "graphql-subscriptions": "^3.0.0",
     "graphql-upload-minimal": "^1.6.1",
     "mercurius": "^16.1.0",
-    "postgres": "^3.4.6"
+    "postgres": "^3.4.7"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
