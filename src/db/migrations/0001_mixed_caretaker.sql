@@ -1,0 +1,1 @@
+ALTER TABLE "programs_v2" ADD CONSTRAINT "programs_v2_token_id_tokens_id_fk" FOREIGN KEY ("token_id") REFERENCES "public"."tokens"("id") ON DELETE cascade ON UPDATE no action;

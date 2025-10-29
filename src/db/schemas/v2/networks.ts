@@ -1,5 +1,6 @@
 // @src/db/schemas/v2/networks.ts
 
+import { relations } from 'drizzle-orm';
 import { boolean, integer, pgTable, serial, varchar } from 'drizzle-orm/pg-core';
 
 export const networksTable = pgTable('networks', {
@@ -21,6 +22,15 @@ export const networksTable = pgTable('networks', {
   // KR: 이 네트워크의 블록 익스플로러 URL
   exploreUrl: varchar('explore_url', { length: 256 }),
 });
+
+export const networksRelations = relations(networksTable, ({ many }) => ({
+  // EN: Programs that use this network
+  // KR: 이 네트워크를 사용하는 프로그램들
+  programs: many(() => import('./programs').then((m) => m.programsV2Table)),
+  // EN: Tokens that exist on this network
+  // KR: 이 네트워크에 존재하는 토큰들
+  tokens: many(() => import('./tokens').then((m) => m.tokensTable)),
+}));
 
 export type NetworkType = typeof networksTable.$inferSelect;
 export type NewNetworkType = typeof networksTable.$inferInsert;

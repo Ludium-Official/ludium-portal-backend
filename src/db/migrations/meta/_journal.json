@@ -5,99 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1755071777081,
-      "tag": "0000_spicy_rockslide",
+      "when": 1761715741575,
+      "tag": "0000_same_nick_fury",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1755482365508,
-      "tag": "0001_huge_sue_storm",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1756116659323,
-      "tag": "0002_perpetual_bill_hollister",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1756892697743,
-      "tag": "0003_peaceful_lake",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1757382481708,
-      "tag": "0004_gigantic_tyger_tiger",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1757412567136,
-      "tag": "0005_legal_tempest",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1760857405829,
-      "tag": "0006_reflective_shard",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1761118924858,
-      "tag": "0007_petite_azazel",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1761536148837,
-      "tag": "0008_curious_white_queen",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1761541741611,
-      "tag": "0009_motionless_gideon",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1761543790590,
-      "tag": "0010_fluffy_mastermind",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1761666534714,
-      "tag": "0011_parched_moira_mactaggert",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1761669289855,
-      "tag": "0012_thin_jack_power",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1761713878939,
-      "tag": "0013_modern_wendell_rand",
+      "when": 1761716173052,
+      "tag": "0001_mixed_caretaker",
       "breakpoints": true
     }
   ]

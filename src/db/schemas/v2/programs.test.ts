@@ -1,10 +1,14 @@
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
 import { type NewProgramV2, programsV2Table } from './programs';
+import { networksTable, type NewNetworkType } from './networks';
+import { tokensTable, type NewTokenType } from './tokens';
 import { type NewUserV2, usersV2Table } from './users';
 
 describe('Programs V2 Table', () => {
   let testUserId: number;
+  let testNetworkId: number;
+  let testTokenId: number;
 
   beforeAll(async () => {
     // Create a test user that will be used for all tests
@@ -15,6 +19,25 @@ describe('Programs V2 Table', () => {
     };
     const [insertedUser] = await db.insert(usersV2Table).values(testUser).returning();
     testUserId = insertedUser.id;
+
+    // Create a test network
+    const testNetwork: NewNetworkType = {
+      chainId: 1,
+      chainName: 'ethereum',
+      mainnet: true,
+      exploreUrl: 'https://etherscan.io',
+    };
+    const [insertedNetwork] = await db.insert(networksTable).values(testNetwork).returning();
+    testNetworkId = insertedNetwork.id;
+
+    // Create a test token
+    const testToken: NewTokenType = {
+      chainInfoId: testNetworkId,
+      tokenName: 'USDC',
+      tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+    };
+    const [insertedToken] = await db.insert(tokensTable).values(testToken).returning();
+    testTokenId = insertedToken.id;
   });
 
   afterEach(async () => {
@@ -23,7 +46,10 @@ describe('Programs V2 Table', () => {
   });
 
   afterAll(async () => {
-    // Clean up user at the end
+    // Clean up all test data
+    await db.execute(sql`TRUNCATE TABLE programs_v2 RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE tokens RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE networks RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
   });
 
@@ -35,9 +61,9 @@ describe('Programs V2 Table', () => {
       skills: ['TypeScript', 'Drizzle'],
       deadline,
       visibility: 'public',
-      network: 'mainnet',
+      networkId: testNetworkId,
       price: '1000',
-      currency: 'USDC',
+      token_id: testTokenId,
       status: 'draft',
       creatorId: testUserId,
     };
@@ -50,9 +76,9 @@ describe('Programs V2 Table', () => {
     expect(program.description).toBe(newProgram.description);
     expect(program.status).toBe(newProgram.status);
     expect(program.visibility).toBe(newProgram.visibility);
-    expect(program.network).toBe(newProgram.network);
+    expect(program.networkId).toBe(newProgram.networkId);
     expect(program.price).toBe(newProgram.price);
-    expect(program.currency).toBe(newProgram.currency);
+    expect(program.token_id).toBe(newProgram.token_id);
     expect(program.skills).toEqual(newProgram.skills);
     expect(program.deadline).toEqual(deadline);
     expect(program.creatorId).toEqual(newProgram.creatorId);
