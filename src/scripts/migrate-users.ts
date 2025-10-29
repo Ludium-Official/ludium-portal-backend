@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { drizzle as drizzleDb1 } from 'drizzle-orm/postgres-js';
 import { drizzle as drizzleDb2 } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
@@ -10,11 +10,11 @@ import { type NewUserV2, usersV2Table } from '../db/schemas/v2/users';
 async function migrateUsers() {
   console.log('Starting user migration...');
 
-  const db1Url = process.env.DB1_URL;
-  const db2Url = process.env.DB2_URL;
+  const db1Url = process.env.PROD_DB_URL;
+  const db2Url = process.env.DEV_DB_URL;
 
   if (!db1Url || !db2Url) {
-    console.error('Error: Please define DB1_URL and DB2_URL in your .env file.');
+    console.error('Error: Please define PROD_DB_URL and DEV_DB_URL in your .env file.');
     process.exit(1);
   }
 
@@ -55,6 +55,17 @@ async function migrateUsers() {
       }
     }
 
+    // 기존 데이터 삭제 옵션 (환경 변수로 제어)
+    const clearExistingData = process.env.CLEAR_EXISTING_USERS === 'true';
+    if (clearExistingData) {
+      console.log('Clearing existing users_v2 data...');
+      // TRUNCATE 사용: 테이블 구조는 유지하고 데이터만 삭제
+      // RESTART IDENTITY: 시퀀스도 초기화
+      // CASCADE: 외래 키로 참조하는 데이터도 함께 삭제
+      await db2.execute(sql`TRUNCATE TABLE ${usersV2Table} RESTART IDENTITY CASCADE`);
+      console.log('✅ Existing data cleared.');
+    }
+
     let migratedCount = 0;
     let alreaydExisted = 0;
     const existingUsers = await db2.select().from(usersV2Table);
@@ -62,7 +73,7 @@ async function migrateUsers() {
     for (const oldUser of oldUsers) {
       if (!oldUser.walletAddress) {
         console.log(
-          `PANIC: walletAddress is null for user ${oldUser.email}. Skipping migration for this user.`,
+          `❌ PANIC: walletAddress is null for user ${oldUser.email}. Skipping migration for this user.`,
         );
         continue;
       }
@@ -71,7 +82,7 @@ async function migrateUsers() {
       const newUser: NewUserV2 = {
         // @ts-ignore
         role: oldUser.role === 'superadmin' ? 'admin' : oldUser.role,
-        loginType: 'wallet',
+        loginType: (oldUser.loginType || 'wallet') as 'google' | 'wallet' | 'farcaster',
         email: oldUser.email,
         walletAddress: oldUser.walletAddress,
         firstName: oldUser.firstName,
@@ -86,7 +97,9 @@ async function migrateUsers() {
       };
 
       if (existingUsers.some((u) => u.walletAddress === newUser.walletAddress)) {
-        console.log(`User with wallet address ${newUser.walletAddress} already exists. Skipping.`);
+        // console.log(
+        //   `User with wallet address ${newUser.walletAddress} already exists. Skipping.`,
+        // );
         alreaydExisted++;
         continue;
       }
@@ -94,9 +107,9 @@ async function migrateUsers() {
       try {
         await db2.insert(usersV2Table).values(newUser);
         migratedCount++;
-        console.log(`Successfully migrated user: ${oldUser.email}`);
+        console.log(`✅ Successfully migrated user: ${oldUser.email}`);
       } catch (error) {
-        console.error(`Failed to migrate user: ${oldUser.email}`, error);
+        console.error(`❌ Failed to migrate user: ${oldUser.email}`, error);
       }
     }
 
