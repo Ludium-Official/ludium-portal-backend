@@ -1,8 +1,8 @@
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
+import { type NewNetworkType, networksTable } from './networks';
 import { type NewProgramV2, programsV2Table } from './programs';
-import { networksTable, type NewNetworkType } from './networks';
-import { tokensTable, type NewTokenType } from './tokens';
+import { type NewTokenType, tokensTable } from './tokens';
 import { type NewUserV2, usersV2Table } from './users';
 
 describe('Programs V2 Table', () => {
