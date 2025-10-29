@@ -1,1 +1,0 @@
-ALTER TYPE "public"."onchain_contract_status_v2" RENAME TO "onchain_contract_status";

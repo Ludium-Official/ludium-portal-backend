@@ -1,2 +1,0 @@
-CREATE TYPE "public"."milestone_status_v2" AS ENUM('draft', 'progress', 'finished', 'reviewed', 'completed');--> statement-breakpoint
-ALTER TABLE "milestones_v2" ADD COLUMN "status" "milestone_status_v2" DEFAULT 'draft' NOT NULL;
