@@ -22,7 +22,8 @@
     "test:integration": "vitest run ./src/graphql/v2/tests/integration",
     "test:e2e": "vitest run ./src/graphql/v2/tests/e2e",
     "test": "vitest run",
-    "prepare": "husky"
+    "prepare": "husky",
+    "migrate-users": "tsx ./src/scripts/migrate-users.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",
@@ -43,7 +44,7 @@
     "graphql-subscriptions": "^3.0.0",
     "graphql-upload-minimal": "^1.6.1",
     "mercurius": "^16.1.0",
-    "postgres": "^3.4.6"
+    "postgres": "^3.4.7"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
