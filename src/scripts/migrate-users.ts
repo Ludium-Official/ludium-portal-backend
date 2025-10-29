@@ -1,11 +1,11 @@
 import 'dotenv/config';
+import { eq, inArray } from 'drizzle-orm';
 import { drizzle as drizzleDb1 } from 'drizzle-orm/postgres-js';
 import { drizzle as drizzleDb2 } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { usersTable, usersToKeywordsTable } from '../db/schemas/users';
 import { keywordsTable } from '../db/schemas/keywords';
-import { NewUserV2, usersV2Table } from '../db/schemas/v2/users';
-import { eq, inArray } from 'drizzle-orm';
+import { usersTable, usersToKeywordsTable } from '../db/schemas/users';
+import { type NewUserV2, usersV2Table } from '../db/schemas/v2/users';
 
 async function migrateUsers() {
   console.log('Starting user migration...');
@@ -14,9 +14,7 @@ async function migrateUsers() {
   const db2Url = process.env.DB2_URL;
 
   if (!db1Url || !db2Url) {
-    console.error(
-      'Error: Please define DB1_URL and DB2_URL in your .env file.'
-    );
+    console.error('Error: Please define DB1_URL and DB2_URL in your .env file.');
     process.exit(1);
   }
 
@@ -44,10 +42,7 @@ async function migrateUsers() {
         keywordType: usersToKeywordsTable.type,
       })
       .from(usersToKeywordsTable)
-      .leftJoin(
-        keywordsTable,
-        eq(keywordsTable.id, usersToKeywordsTable.keywordId)
-      )
+      .leftJoin(keywordsTable, eq(keywordsTable.id, usersToKeywordsTable.keywordId))
       .where(inArray(usersToKeywordsTable.userId, userIds));
 
     const skillsMap = new Map<string, string[]>();
@@ -56,7 +51,7 @@ async function migrateUsers() {
         if (!skillsMap.has(uk.userId)) {
           skillsMap.set(uk.userId, []);
         }
-        skillsMap.get(uk.userId)!.push(uk.keywordName);
+        skillsMap.get(uk.userId)?.push(uk.keywordName);
       }
     }
 
@@ -67,14 +62,12 @@ async function migrateUsers() {
     for (const oldUser of oldUsers) {
       if (!oldUser.walletAddress) {
         console.log(
-          `PANIC: walletAddress is null for user ${oldUser.email}. Skipping migration for this user.`
+          `PANIC: walletAddress is null for user ${oldUser.email}. Skipping migration for this user.`,
         );
         continue;
       }
 
-      const imageUrl = oldUser.image?.startsWith('https://')
-        ? oldUser.image
-        : '';
+      const imageUrl = oldUser.image?.startsWith('https://') ? oldUser.image : '';
       const newUser: NewUserV2 = {
         // @ts-ignore
         role: oldUser.role === 'superadmin' ? 'admin' : oldUser.role,
@@ -92,12 +85,8 @@ async function migrateUsers() {
         updatedAt: oldUser.updatedAt,
       };
 
-      if (
-        existingUsers.some((u) => u.walletAddress === newUser.walletAddress)
-      ) {
-        console.log(
-          `User with wallet address ${newUser.walletAddress} already exists. Skipping.`
-        );
+      if (existingUsers.some((u) => u.walletAddress === newUser.walletAddress)) {
+        console.log(`User with wallet address ${newUser.walletAddress} already exists. Skipping.`);
         alreaydExisted++;
         continue;
       }
@@ -112,9 +101,7 @@ async function migrateUsers() {
     }
 
     console.log('----------------------------------------');
-    console.log(
-      `Migration complete. Migrated ${migratedCount} out of ${oldUsers.length} users.`
-    );
+    console.log(`Migration complete. Migrated ${migratedCount} out of ${oldUsers.length} users.`);
     console.log(`Users already existed in DB2: ${alreaydExisted}`);
     console.log('----------------------------------------');
   } catch (error) {
