@@ -24,7 +24,9 @@
     "test:e2e": "vitest run ./src/graphql/v2/tests/e2e",
     "test": "vitest run",
     "prepare": "husky",
-    "migrate-users": "tsx ./src/scripts/migrate-users.ts"
+    "migrate-users": "tsx ./src/scripts/migrate-users.ts",
+    "migrate-networks": "tsx ./src/scripts/migrate-networks.ts",
+    "migrate-tokens": "tsx ./src/scripts/migrate-tokens.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",
