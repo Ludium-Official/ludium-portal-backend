@@ -97,7 +97,7 @@ export const UserV2Type = builder.objectRef<DBUser>('UserV2').implement({
         const programs = await ctx.db
           .select()
           .from(programsV2Table)
-          .where(eq(programsV2Table.creatorId, user.id));
+          .where(eq(programsV2Table.sponsorId, user.id));
         return programs ?? [];
       },
     }),

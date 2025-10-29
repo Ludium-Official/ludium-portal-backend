@@ -1,5 +1,7 @@
 import { relations } from 'drizzle-orm';
 import { integer, pgEnum, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { networksTable } from './networks';
+import { tokensTable } from './tokens';
 import { usersV2Table } from './users';
 
 // V2 status enum per renewed spec
@@ -25,12 +27,16 @@ export const programsV2Table = pgTable('programs_v2', {
   invitedMembers: text('invited_members').array(), // TODO: who?
   status: programStatusV2Enum('status').default('draft').notNull(),
   visibility: programVisibilityV2Enum('visibility').notNull(),
-  network: varchar('network', { length: 64 }).notNull(),
+  networkId: integer('network_id')
+    .notNull()
+    .references(() => networksTable.id, { onDelete: 'cascade' }),
   price: varchar('price', { length: 64 }).notNull(),
-  currency: varchar('currency', { length: 16 }).notNull(),
+  token_id: integer('token_id')
+    .notNull()
+    .references(() => tokensTable.id, { onDelete: 'cascade' }),
 
   // Creator reference (who created this program)
-  creatorId: integer('creator_id')
+  sponsorId: integer('sponsor_id')
     .notNull()
     .references(() => usersV2Table.id, { onDelete: 'cascade' }),
 
@@ -44,10 +50,17 @@ export const programsV2Table = pgTable('programs_v2', {
 // Relations
 export const programV2Relations = relations(programsV2Table, ({ one }) => ({
   creator: one(usersV2Table, {
-    fields: [programsV2Table.creatorId],
+    fields: [programsV2Table.sponsorId],
     references: [usersV2Table.id],
   }),
-  // Program → Applications relation is defined in applicationV2.ts
+  network: one(networksTable, {
+    fields: [programsV2Table.networkId],
+    references: [networksTable.id],
+  }),
+  token: one(tokensTable, {
+    fields: [programsV2Table.token_id],
+    references: [tokensTable.id],
+  }),
 }));
 
 // User relations (defined here to avoid circular dependency at module load time)

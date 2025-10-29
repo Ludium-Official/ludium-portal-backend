@@ -10,9 +10,9 @@ export const CreateProgramV2Input = builder.inputType('CreateProgramV2Input', {
     invitedMembers: t.stringList(),
     status: t.field({ type: ProgramV2StatusEnum, required: true }),
     visibility: t.field({ type: ProgramVisibilityEnum, required: true }),
-    network: t.string({ required: true }),
+    networkId: t.int({ required: true }),
     price: t.string({ required: true }),
-    currency: t.string({ required: true }),
+    token_id: t.int({ required: true }),
   }),
 });
 
@@ -25,8 +25,8 @@ export const UpdateProgramV2Input = builder.inputType('UpdateProgramV2Input', {
     invitedMembers: t.stringList(),
     status: t.field({ type: ProgramV2StatusEnum }),
     visibility: t.field({ type: ProgramVisibilityEnum }),
-    network: t.string(),
+    networkId: t.int(),
     price: t.string(),
-    currency: t.string(),
+    token_id: t.int(),
   }),
 });

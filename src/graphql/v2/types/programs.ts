@@ -37,9 +37,9 @@ export const ProgramV2Type = ProgramV2Ref.implement({
       type: ProgramVisibilityEnum,
       resolve: (program) => program.visibility,
     }),
-    network: t.exposeString('network'),
+    networkId: t.exposeInt('networkId'),
     price: t.exposeString('price'),
-    currency: t.exposeString('currency'),
+    token_id: t.exposeInt('token_id'),
     createdAt: t.field({
       type: 'DateTime',
       resolve: (program) => program.createdAt,

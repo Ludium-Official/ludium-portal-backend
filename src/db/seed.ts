@@ -82,7 +82,7 @@ async function seed() {
 
         return {
           ...program,
-          creatorId: sponsorId, // Use creatorId instead of sponsorId
+          sponsorId: sponsorId, // Use sponsorId instead of sponsorId
         };
       });
 

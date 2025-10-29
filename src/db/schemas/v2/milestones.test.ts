@@ -1,12 +1,16 @@
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
 import { type NewMilestoneV2, milestonesV2Table } from './milestones';
+import { type NewNetworkType, networksTable } from './networks';
 import { type NewProgramV2, programsV2Table } from './programs';
+import { type NewTokenType, tokensTable } from './tokens';
 import { type NewUserV2, usersV2Table } from './users';
 
 describe('Milestones V2 Table', () => {
   let testUserId: number;
   let testProgramId: number;
+  let testNetworkId: number;
+  let testTokenId: number;
 
   beforeAll(async () => {
     // Create a test user
@@ -20,6 +24,25 @@ describe('Milestones V2 Table', () => {
     const [insertedUser] = await db.insert(usersV2Table).values(testUser).returning();
     testUserId = insertedUser.id;
 
+    // Create a test network
+    const testNetwork: NewNetworkType = {
+      chainId: 1,
+      chainName: 'ethereum',
+      mainnet: true,
+      exploreUrl: 'https://etherscan.io',
+    };
+    const [insertedNetwork] = await db.insert(networksTable).values(testNetwork).returning();
+    testNetworkId = insertedNetwork.id;
+
+    // Create a test token
+    const testToken: NewTokenType = {
+      chainInfoId: testNetworkId,
+      tokenName: 'USDC',
+      tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+    };
+    const [insertedToken] = await db.insert(tokensTable).values(testToken).returning();
+    testTokenId = insertedToken.id;
+
     // Create a test program
     const deadline = new Date();
     const testProgram: NewProgramV2 = {
@@ -28,11 +51,11 @@ describe('Milestones V2 Table', () => {
       skills: ['TypeScript', 'Drizzle'],
       deadline,
       visibility: 'public',
-      network: 'mainnet',
+      networkId: testNetworkId,
       price: '1000',
-      currency: 'USDC',
+      token_id: testTokenId,
       status: 'open',
-      creatorId: testUserId,
+      sponsorId: testUserId,
     };
     const [insertedProgram] = await db.insert(programsV2Table).values(testProgram).returning();
     testProgramId = insertedProgram.id;
@@ -46,6 +69,8 @@ describe('Milestones V2 Table', () => {
   afterAll(async () => {
     // Clean up programs and users at the end
     await db.execute(sql`TRUNCATE TABLE programs_v2 RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE tokens RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE networks RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
   });
 
@@ -197,11 +222,11 @@ describe('Milestones V2 Table', () => {
       skills: ['TypeScript', 'Drizzle'],
       deadline,
       visibility: 'public',
-      network: 'mainnet',
+      networkId: testNetworkId,
       price: '1000',
-      currency: 'USDC',
+      token_id: testTokenId,
       status: 'open',
-      creatorId: testUserId,
+      sponsorId: testUserId,
     };
     const [recreatedProgram] = await db.insert(programsV2Table).values(testProgram).returning();
     testProgramId = recreatedProgram.id;
@@ -226,11 +251,11 @@ describe('Milestones V2 Table', () => {
       skills: ['React', 'Node.js'],
       deadline,
       visibility: 'public',
-      network: 'testnet',
+      networkId: testNetworkId,
       price: '500',
-      currency: 'ETH',
+      token_id: testTokenId,
       status: 'open',
-      creatorId: anotherUserId,
+      sponsorId: anotherUserId,
     };
     const [anotherProgramInserted] = await db
       .insert(programsV2Table)
@@ -305,11 +330,11 @@ describe('Milestones V2 Table', () => {
       skills: ['MongoDB', 'Express'],
       deadline,
       visibility: 'private',
-      network: 'mainnet',
+      networkId: testNetworkId,
       price: '2000',
-      currency: 'USDC',
+      token_id: testTokenId,
       status: 'draft',
-      creatorId: testUserId,
+      sponsorId: testUserId,
     };
     const [secondProgramInserted] = await db
       .insert(programsV2Table)
@@ -346,5 +371,45 @@ describe('Milestones V2 Table', () => {
     expect(milestone2Inserted.programId).toBe(secondProgramId);
     expect(milestone1Inserted.title).toBe('Milestone in Program 1');
     expect(milestone2Inserted.title).toBe('Milestone in Program 2');
+  });
+
+  it('should default status to draft when not provided', async () => {
+    const milestoneDeadline = new Date('2025-12-31');
+    const newMilestone: NewMilestoneV2 = {
+      programId: testProgramId,
+      applicantId: testUserId,
+      title: 'Status Default Milestone',
+      description: 'Should default to draft',
+      payout: '100',
+      deadline: milestoneDeadline,
+    };
+
+    const [milestone] = await db.insert(milestonesV2Table).values(newMilestone).returning();
+    expect(milestone.status).toBe('draft');
+  });
+
+  it('should allow status to be set to progress/finished/reviewed/completed', async () => {
+    const milestoneDeadline = new Date('2025-12-31');
+
+    const statuses: Array<'progress' | 'finished' | 'reviewed' | 'completed'> = [
+      'progress',
+      'finished',
+      'reviewed',
+      'completed',
+    ];
+
+    for (const status of statuses) {
+      const milestoneInput: NewMilestoneV2 = {
+        programId: testProgramId,
+        applicantId: testUserId,
+        title: `Milestone with status ${status}`,
+        description: 'Testing status enum',
+        payout: '10',
+        deadline: milestoneDeadline,
+        status,
+      };
+      const [inserted] = await db.insert(milestonesV2Table).values(milestoneInput).returning();
+      expect(inserted.status).toBe(status);
+    }
   });
 });

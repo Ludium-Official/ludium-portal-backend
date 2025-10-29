@@ -43,13 +43,13 @@ export class ProgramV2Service {
 
   async create(
     input: typeof CreateProgramV2Input.$inferInput,
-    creatorId: number,
+    sponsorId: number,
   ): Promise<ProgramV2> {
     const values = {
       ...input,
       deadline: new Date(input.deadline),
       invitedMembers: input.invitedMembers ?? [],
-      creatorId,
+      sponsorId,
     };
     const [newProgram] = await this.db.insert(programsV2Table).values(values).returning();
     return newProgram;
@@ -94,8 +94,8 @@ export class ProgramV2Service {
     return deletedProgram;
   }
 
-  async getByCreatorId(
-    creatorId: number,
+  async getBySponsorId(
+    sponsorId: number,
     pagination?: { limit?: number; offset?: number },
   ): Promise<{ data: ProgramV2[]; count: number }> {
     const limit = pagination?.limit || 10;
@@ -104,7 +104,7 @@ export class ProgramV2Service {
     const data = await this.db
       .select()
       .from(programsV2Table)
-      .where(eq(programsV2Table.creatorId, creatorId))
+      .where(eq(programsV2Table.sponsorId, sponsorId))
       .limit(limit)
       .offset(offset)
       .orderBy(desc(programsV2Table.createdAt));
@@ -112,7 +112,7 @@ export class ProgramV2Service {
     const [totalCount] = await this.db
       .select({ count: count() })
       .from(programsV2Table)
-      .where(eq(programsV2Table.creatorId, creatorId));
+      .where(eq(programsV2Table.sponsorId, sponsorId));
 
     return {
       data,

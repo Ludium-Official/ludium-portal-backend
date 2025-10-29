@@ -57,20 +57,20 @@ export async function deleteProgramV2Resolver(_root: Root, args: { id: string },
   return args.id;
 }
 
-export async function getProgramsByCreatorIdV2Resolver(
+export async function getProgramsBysponsorIdV2Resolver(
   _root: Root,
   args: {
-    creatorId: string;
+    sponsorId: string;
     pagination?: typeof PaginationInput.$inferInput | null;
   },
   ctx: Context,
 ) {
   const programService = new ProgramV2Service(ctx.db);
-  const numericCreatorId = Number.parseInt(args.creatorId, 10);
-  if (Number.isNaN(numericCreatorId)) {
+  const numericsponsorId = Number.parseInt(args.sponsorId, 10);
+  if (Number.isNaN(numericsponsorId)) {
     throw new Error('Invalid creator ID');
   }
-  return programService.getByCreatorId(numericCreatorId, {
+  return programService.getBysponsorId(numericsponsorId, {
     limit: args.pagination?.limit ?? undefined,
     offset: args.pagination?.offset ?? undefined,
   });

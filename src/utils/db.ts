@@ -23,11 +23,11 @@ export async function isInSameScope(params: {
   switch (entity) {
     case 'program_creator': {
       const [program] = await db
-        .select({ creatorId: programsTable.creatorId })
+        .select({ sponsorId: programsTable.sponsorId })
         .from(programsTable)
         .where(eq(programsTable.id, entityId));
 
-      if (program.creatorId !== userId) {
+      if (program.sponsorId !== userId) {
         return false;
       }
       return true;

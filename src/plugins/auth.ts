@@ -143,7 +143,7 @@ export class AuthHandler {
       return false;
     }
 
-    return program.creatorId === user.id;
+    return program.sponsorId === user.id;
   }
 
   async getUserForSubscription(decodedToken: DecodedToken) {
