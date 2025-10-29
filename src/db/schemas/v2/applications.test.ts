@@ -3,10 +3,14 @@ import { sql } from 'drizzle-orm';
 import { type NewApplicationV2, applicationsV2Table } from './applications';
 import { type NewProgramV2, programsV2Table } from './programs';
 import { type NewUserV2, usersV2Table } from './users';
+import { type NewNetworkType, networksTable } from './networks';
+import { type NewTokenType, tokensTable } from './tokens';
 
 describe('Applications V2 Table', () => {
   let testUserId: number;
   let testProgramId: number;
+  let testNetworkId: number;
+  let testTokenId: number;
 
   beforeAll(async () => {
     // Create a test user (applicant)
@@ -20,6 +24,25 @@ describe('Applications V2 Table', () => {
     const [insertedUser] = await db.insert(usersV2Table).values(testUser).returning();
     testUserId = insertedUser.id;
 
+    // Create a test network
+    const testNetwork: NewNetworkType = {
+      chainId: 1,
+      chainName: 'ethereum',
+      mainnet: true,
+      exploreUrl: 'https://etherscan.io',
+    };
+    const [insertedNetwork] = await db.insert(networksTable).values(testNetwork).returning();
+    testNetworkId = insertedNetwork.id;
+
+    // Create a test token
+    const testToken: NewTokenType = {
+      chainInfoId: testNetworkId,
+      tokenName: 'USDC',
+      tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+    };
+    const [insertedToken] = await db.insert(tokensTable).values(testToken).returning();
+    testTokenId = insertedToken.id;
+
     // Create a test program
     const deadline = new Date();
     const testProgram: NewProgramV2 = {
@@ -28,11 +51,11 @@ describe('Applications V2 Table', () => {
       skills: ['TypeScript', 'Drizzle'],
       deadline,
       visibility: 'public',
-      network: 'mainnet',
+      networkId: testNetworkId,
       price: '1000',
-      currency: 'USDC',
+      token_id: testTokenId,
       status: 'open',
-      creatorId: testUserId,
+      sponsorId: testUserId,
     };
     const [insertedProgram] = await db.insert(programsV2Table).values(testProgram).returning();
     testProgramId = insertedProgram.id;
@@ -46,6 +69,8 @@ describe('Applications V2 Table', () => {
   afterAll(async () => {
     // Clean up programs and users at the end
     await db.execute(sql`TRUNCATE TABLE programs_v2 RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE networks RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
   });
 
@@ -182,11 +207,11 @@ describe('Applications V2 Table', () => {
       skills: ['TypeScript', 'Drizzle'],
       deadline,
       visibility: 'public',
-      network: 'mainnet',
+      networkId: testNetworkId,
       price: '1000',
-      currency: 'USDC',
+      token_id: testTokenId,
       status: 'open',
-      creatorId: testUserId,
+      sponsorId: testUserId,
     };
     const [recreatedProgram] = await db.insert(programsV2Table).values(testProgram).returning();
     testProgramId = recreatedProgram.id;
@@ -209,11 +234,11 @@ describe('Applications V2 Table', () => {
       skills: ['React'],
       deadline,
       visibility: 'public',
-      network: 'testnet',
+      networkId: testNetworkId,
       price: '500',
-      currency: 'ETH',
+      token_id: testTokenId,
       status: 'open',
-      creatorId: anotherUserId,
+      sponsorId: anotherUserId,
     };
     const [anotherProgramInserted] = await db
       .insert(programsV2Table)
@@ -249,11 +274,11 @@ describe('Applications V2 Table', () => {
       skills: ['Node.js', 'PostgreSQL'],
       deadline,
       visibility: 'public',
-      network: 'mainnet',
+      networkId: testNetworkId,
       price: '2000',
-      currency: 'USDC',
+      token_id: testTokenId,
       status: 'open',
-      creatorId: testUserId,
+      sponsorId: testUserId,
     };
     const [secondProgramInserted] = await db
       .insert(programsV2Table)
@@ -281,7 +306,7 @@ describe('Applications V2 Table', () => {
     expect(app1.id).not.toBe(app2.id);
     expect(app1.programId).toBe(testProgramId);
     expect(app2.programId).toBe(secondProgramId);
-    expect(app1.status).toBe('pending');
+    expect(app1.status).toBe('applied');
     expect(app2.status).toBe('accepted');
   });
 

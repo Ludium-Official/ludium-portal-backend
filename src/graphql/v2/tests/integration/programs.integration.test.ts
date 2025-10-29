@@ -1,4 +1,6 @@
 import { type NewProgramV2, type NewUserV2, programsV2Table, usersV2Table } from '@/db/schemas';
+import { type NewNetworkType, networksTable } from '@/db/schemas/v2/networks';
+import { type NewTokenType, tokensTable } from '@/db/schemas/v2/tokens';
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
@@ -7,6 +9,8 @@ import { createTestServer } from '../helper';
 describe('Programs V2 GraphQL API - Integration Tests', () => {
   let server: FastifyInstance;
   let testUserId: number;
+  let testNetworkId: number;
+  let testTokenId: number;
   let authToken: string;
 
   beforeAll(async () => {
@@ -25,6 +29,25 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
     };
     const [insertedUser] = await db.insert(usersV2Table).values(testUser).returning();
     testUserId = insertedUser.id;
+
+    // Create a test network
+    const testNetwork: NewNetworkType = {
+      chainId: 1,
+      chainName: 'ethereum',
+      mainnet: true,
+      exploreUrl: 'https://etherscan.io',
+    };
+    const [insertedNetwork] = await db.insert(networksTable).values(testNetwork).returning();
+    testNetworkId = insertedNetwork.id;
+
+    // Create a test token
+    const testToken: NewTokenType = {
+      chainInfoId: testNetworkId,
+      tokenName: 'USDC',
+      tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+    };
+    const [insertedToken] = await db.insert(tokensTable).values(testToken).returning();
+    testTokenId = insertedToken.id;
 
     // Login to get auth token
     const loginMutation = `
@@ -53,12 +76,16 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
   afterEach(async () => {
     // Clean up
     await db.execute(sql`TRUNCATE TABLE programs_v2 RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE tokens RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE networks RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
   });
 
   afterAll(async () => {
     // Final clean up
     await db.execute(sql`TRUNCATE TABLE programs_v2 RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE tokens RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE networks RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
   });
 
@@ -77,9 +104,9 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
             deadline
             status
             visibility
-            network
+            networkId
             price
-            currency
+            token_id
             invitedMembers
             createdAt
             updatedAt
@@ -94,9 +121,9 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
           skills: ['GraphQL', 'TypeScript', 'Node.js'],
           deadline: deadline.toISOString(),
           visibility: 'public',
-          network: 'mainnet',
+          networkId: testNetworkId,
           price: '1500',
-          currency: 'USDC',
+          token_id: testTokenId,
           status: 'open',
         },
       };
@@ -131,9 +158,9 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
       expect(program.status).toBe(variables.input.status);
       expect(program.visibility).toBe(variables.input.visibility);
       expect(program.skills).toEqual(variables.input.skills);
-      expect(program.network).toBe(variables.input.network);
+      expect(program.networkId).toBe(variables.input.networkId);
       expect(program.price).toBe(variables.input.price);
-      expect(program.currency).toBe(variables.input.currency);
+      expect(program.token_id).toBe(variables.input.token_id);
       expect(program.invitedMembers).toEqual([]);
     });
 
@@ -154,9 +181,9 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
           skills: ['test'],
           deadline: new Date().toISOString(),
           visibility: 'public',
-          network: 'mainnet',
+          networkId: testNetworkId,
           price: '100',
-          currency: 'USDC',
+          token_id: testTokenId,
           status: 'open',
         },
       };
@@ -198,9 +225,9 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
           skills: ['React', 'Vue'],
           deadline: deadline.toISOString(),
           visibility: 'private',
-          network: 'testnet',
+          networkId: testNetworkId,
           price: '500',
-          currency: 'ETH',
+          token_id: testTokenId,
           status: 'open',
           invitedMembers: ['user1@example.com', 'user2@example.com'],
         },
@@ -238,11 +265,11 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
         skills: ['old-skill'],
         deadline,
         visibility: 'public',
-        network: 'mainnet',
+        networkId: testNetworkId,
         price: '1000',
-        currency: 'USDC',
+        token_id: testTokenId,
         status: 'draft',
-        creatorId: testUserId,
+        sponsorId: testUserId,
       };
       const [insertedProgram] = await db.insert(programsV2Table).values(newProgram).returning();
 
@@ -335,11 +362,11 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
         skills: ['test'],
         deadline,
         visibility: 'public',
-        network: 'mainnet',
+        networkId: testNetworkId,
         price: '1000',
-        currency: 'USDC',
+        token_id: testTokenId,
         status: 'draft',
-        creatorId: testUserId, // Created by testUser, not otherUser
+        sponsorId: testUserId, // Created by testUser, not otherUser
       };
       const [insertedProgram] = await db.insert(programsV2Table).values(newProgram).returning();
 
@@ -389,11 +416,11 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
         skills: ['skill1', 'skill2'],
         deadline,
         visibility: 'public',
-        network: 'mainnet',
+        networkId: testNetworkId,
         price: '1000',
-        currency: 'USDC',
+        token_id: testTokenId,
         status: 'draft',
-        creatorId: testUserId,
+        sponsorId: testUserId,
       };
       const [insertedProgram] = await db.insert(programsV2Table).values(newProgram).returning();
 
@@ -451,11 +478,11 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
         skills: ['disposable'],
         deadline,
         visibility: 'public',
-        network: 'mainnet',
+        networkId: testNetworkId,
         price: '100',
-        currency: 'USDC',
+        token_id: testTokenId,
         status: 'draft',
-        creatorId: testUserId,
+        sponsorId: testUserId,
       };
       const [insertedProgram] = await db.insert(programsV2Table).values(newProgram).returning();
 
@@ -538,11 +565,11 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
         skills: ['test'],
         deadline,
         visibility: 'public',
-        network: 'mainnet',
+        networkId: testNetworkId,
         price: '1000',
-        currency: 'USDC',
+        token_id: testTokenId,
         status: 'draft',
-        creatorId: testUserId,
+        sponsorId: testUserId,
       };
       const [insertedProgram] = await db.insert(programsV2Table).values(newProgram).returning();
 
@@ -588,11 +615,11 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
         skills: ['testing', 'query'],
         deadline,
         visibility: 'public',
-        network: 'mainnet',
+        networkId: testNetworkId,
         price: '100',
-        currency: 'ETH',
+        token_id: testTokenId,
         status: 'open',
-        creatorId: testUserId,
+        sponsorId: testUserId,
       };
       const [insertedProgram] = await db.insert(programsV2Table).values(newProgram).returning();
 
@@ -651,11 +678,11 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
           skills: ['skill1'],
           deadline,
           visibility: 'public',
-          network: 'mainnet',
+          networkId: testNetworkId,
           price: '100',
-          currency: 'USDC',
+          token_id: testTokenId,
           status: 'open',
-          creatorId: testUserId,
+          sponsorId: testUserId,
         },
         {
           title: 'Program 2',
@@ -663,11 +690,11 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
           skills: ['skill2'],
           deadline,
           visibility: 'public',
-          network: 'mainnet',
+          networkId: testNetworkId,
           price: '200',
-          currency: 'ETH',
+          token_id: testTokenId,
           status: 'open',
-          creatorId: testUserId,
+          sponsorId: testUserId,
         },
         {
           title: 'Program 3',
@@ -675,11 +702,11 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
           skills: ['skill3'],
           deadline,
           visibility: 'private',
-          network: 'testnet',
+          networkId: testNetworkId,
           price: '300',
-          currency: 'USDC',
+          token_id: testTokenId,
           status: 'closed',
-          creatorId: testUserId,
+          sponsorId: testUserId,
         },
       ];
 

@@ -65,7 +65,7 @@ describe('Programs V2 Table', () => {
       price: '1000',
       token_id: testTokenId,
       status: 'draft',
-      creatorId: testUserId,
+      sponsorId: testUserId,
     };
 
     const insertedPrograms = await db.insert(programsV2Table).values(newProgram).returning();
@@ -81,7 +81,7 @@ describe('Programs V2 Table', () => {
     expect(program.token_id).toBe(newProgram.token_id);
     expect(program.skills).toEqual(newProgram.skills);
     expect(program.deadline).toEqual(deadline);
-    expect(program.creatorId).toEqual(newProgram.creatorId);
+    expect(program.sponsorId).toEqual(newProgram.sponsorId);
 
     const selectedPrograms = await db
       .select()

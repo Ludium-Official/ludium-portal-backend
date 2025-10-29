@@ -331,11 +331,12 @@ CREATE TABLE "applications_v2" (
 CREATE TABLE "milestones_v2" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"program_id" integer NOT NULL,
-	"applicant_id" integer NOT NULL,
+	"sponsor_id" integer NOT NULL,
 	"title" varchar(256) NOT NULL,
 	"description" text NOT NULL,
-	"price" varchar(64) NOT NULL,
+	"price" varchar(238) NOT NULL,
 	"deadline" timestamp with time zone NOT NULL,
+	"files" text[],
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -350,9 +351,9 @@ CREATE TABLE "programs_v2" (
 	"status" "program_status_v2" DEFAULT 'draft' NOT NULL,
 	"visibility" "program_visibility_v2" NOT NULL,
 	"network_id" integer NOT NULL,
-	"token_id" integer NOT NULL,
 	"price" varchar(64) NOT NULL,
-	"creator_id" integer NOT NULL,
+	"token_id" integer NOT NULL,
+	"sponsor_id" integer NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -431,7 +432,8 @@ ALTER TABLE "milestone_payouts" ADD CONSTRAINT "milestone_payouts_investment_id_
 ALTER TABLE "applications_v2" ADD CONSTRAINT "applications_v2_program_id_programs_v2_id_fk" FOREIGN KEY ("program_id") REFERENCES "public"."programs_v2"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "applications_v2" ADD CONSTRAINT "applications_v2_applicant_id_users_v2_id_fk" FOREIGN KEY ("applicant_id") REFERENCES "public"."users_v2"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "milestones_v2" ADD CONSTRAINT "milestones_v2_program_id_programs_v2_id_fk" FOREIGN KEY ("program_id") REFERENCES "public"."programs_v2"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "milestones_v2" ADD CONSTRAINT "milestones_v2_applicant_id_users_v2_id_fk" FOREIGN KEY ("applicant_id") REFERENCES "public"."users_v2"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "milestones_v2" ADD CONSTRAINT "milestones_v2_sponsor_id_users_v2_id_fk" FOREIGN KEY ("sponsor_id") REFERENCES "public"."users_v2"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "programs_v2" ADD CONSTRAINT "programs_v2_network_id_networks_id_fk" FOREIGN KEY ("network_id") REFERENCES "public"."networks"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "programs_v2" ADD CONSTRAINT "programs_v2_creator_id_users_v2_id_fk" FOREIGN KEY ("creator_id") REFERENCES "public"."users_v2"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "programs_v2" ADD CONSTRAINT "programs_v2_token_id_tokens_id_fk" FOREIGN KEY ("token_id") REFERENCES "public"."tokens"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "programs_v2" ADD CONSTRAINT "programs_v2_sponsor_id_users_v2_id_fk" FOREIGN KEY ("sponsor_id") REFERENCES "public"."users_v2"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "tokens" ADD CONSTRAINT "tokens_chain_info_id_networks_id_fk" FOREIGN KEY ("chain_info_id") REFERENCES "public"."networks"("id") ON DELETE cascade ON UPDATE no action;

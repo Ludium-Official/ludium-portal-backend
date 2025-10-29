@@ -51,7 +51,7 @@ export async function getMilestoneResolver(_root: Root, args: { id: string }, ct
   }
 
   const [program] = await ctx.db
-    .select({ visibility: programsTable.visibility, creatorId: programsTable.creatorId })
+    .select({ visibility: programsTable.visibility, sponsorId: programsTable.sponsorId })
     .from(programsTable)
     .where(eq(programsTable.id, application.programId));
 
@@ -69,7 +69,7 @@ export async function getMilestoneResolver(_root: Root, args: { id: string }, ct
     }
 
     // Allow access if user is the applicant or program creator
-    if (application.applicantId === user.id || program.creatorId === user.id) {
+    if (application.applicantId === user.id || program.sponsorId === user.id) {
       return milestone;
     }
 
@@ -108,7 +108,7 @@ export async function getMilestonesResolver(
   }
 
   const [program] = await ctx.db
-    .select({ visibility: programsTable.visibility, creatorId: programsTable.creatorId })
+    .select({ visibility: programsTable.visibility, sponsorId: programsTable.sponsorId })
     .from(programsTable)
     .where(eq(programsTable.id, application.programId));
 
@@ -125,7 +125,7 @@ export async function getMilestonesResolver(
       // Admin can access all milestones, continue
     } else {
       // Allow access if user is the applicant or program creator
-      if (application.applicantId !== user.id && program.creatorId !== user.id) {
+      if (application.applicantId !== user.id && program.sponsorId !== user.id) {
         // Check if user has any role in the program
         const userRole = await ctx.db
           .select()
@@ -185,7 +185,7 @@ export async function getMilestonesByApplicationIdResolver(
   }
 
   const [program] = await ctx.db
-    .select({ visibility: programsTable.visibility, creatorId: programsTable.creatorId })
+    .select({ visibility: programsTable.visibility, sponsorId: programsTable.sponsorId })
     .from(programsTable)
     .where(eq(programsTable.id, application.programId));
 
@@ -202,7 +202,7 @@ export async function getMilestonesByApplicationIdResolver(
       // Admin can access all milestones, continue
     } else {
       // Allow access if user is the applicant or program creator
-      if (application.applicantId !== user.id && program.creatorId !== user.id) {
+      if (application.applicantId !== user.id && program.sponsorId !== user.id) {
         // Check if user has any role in the program
         const userRole = await ctx.db
           .select()

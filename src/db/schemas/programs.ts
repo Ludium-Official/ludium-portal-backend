@@ -51,7 +51,7 @@ export const programsTable = pgTable('programs', {
   price: varchar('price', { length: 256 }).notNull(),
   currency: varchar('currency', { length: 10 }).default('ETH').notNull(),
   deadline: timestamp('deadline').notNull(),
-  creatorId: uuid('creator_id')
+  sponsorId: uuid('creator_id')
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
   status: programStatusEnum('status').default('pending'),
@@ -109,7 +109,7 @@ export const programsTable = pgTable('programs', {
 // Program relations
 export const programRelations = relations(programsTable, ({ one, many }) => ({
   creator: one(usersTable, {
-    fields: [programsTable.creatorId],
+    fields: [programsTable.sponsorId],
     references: [usersTable.id],
     relationName: 'program_creator',
   }),

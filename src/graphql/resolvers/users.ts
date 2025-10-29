@@ -353,7 +353,7 @@ export async function getUserInvestmentStatisticsResolver(
       fundingEndDate: programsTable.fundingEndDate,
     })
     .from(programsTable)
-    .where(and(eq(programsTable.creatorId, args.userId), eq(programsTable.type, 'funding')));
+    .where(and(eq(programsTable.sponsorId, args.userId), eq(programsTable.type, 'funding')));
 
   // Map host program statuses
   const now = new Date();

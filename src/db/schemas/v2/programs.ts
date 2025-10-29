@@ -36,7 +36,7 @@ export const programsV2Table = pgTable('programs_v2', {
     .references(() => tokensTable.id, { onDelete: 'cascade' }),
 
   // Creator reference (who created this program)
-  creatorId: integer('creator_id')
+  sponsorId: integer('sponsor_id')
     .notNull()
     .references(() => usersV2Table.id, { onDelete: 'cascade' }),
 
@@ -50,7 +50,7 @@ export const programsV2Table = pgTable('programs_v2', {
 // Relations
 export const programV2Relations = relations(programsV2Table, ({ one }) => ({
   creator: one(usersV2Table, {
-    fields: [programsV2Table.creatorId],
+    fields: [programsV2Table.sponsorId],
     references: [usersV2Table.id],
   }),
   network: one(networksTable, {

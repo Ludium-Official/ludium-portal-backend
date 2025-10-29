@@ -15,7 +15,7 @@ export async function hasPrivateProgramAccess(
   const [program] = await db.select().from(programsTable).where(eq(programsTable.id, programId));
   if (!program) return false;
 
-  if (program.creatorId === userId) {
+  if (program.sponsorId === userId) {
     return true;
   }
 
@@ -42,7 +42,7 @@ export async function canAccessProgram(
   db: DB,
 ): Promise<{ canAccess: boolean; reason?: string }> {
   const [program] = await db
-    .select({ visibility: programsTable.visibility, creatorId: programsTable.creatorId })
+    .select({ visibility: programsTable.visibility, sponsorId: programsTable.sponsorId })
     .from(programsTable)
     .where(eq(programsTable.id, programId));
 
@@ -87,7 +87,7 @@ export async function canApplyToProgram(
   }
 
   const [program] = await db
-    .select({ visibility: programsTable.visibility, creatorId: programsTable.creatorId })
+    .select({ visibility: programsTable.visibility, sponsorId: programsTable.sponsorId })
     .from(programsTable)
     .where(eq(programsTable.id, programId));
 
@@ -96,7 +96,7 @@ export async function canApplyToProgram(
   }
 
   // Check if user is the program creator
-  if (program.creatorId === userId) {
+  if (program.sponsorId === userId) {
     return { canApply: false, reason: 'Program creators cannot apply to their own programs' };
   }
 

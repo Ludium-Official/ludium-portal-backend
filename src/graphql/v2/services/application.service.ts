@@ -151,7 +151,7 @@ export class ApplicationV2Service {
         throw new Error('Program not found');
       }
 
-      if (program.creatorId !== userId) {
+      if (program.sponsorId !== userId) {
         throw new Error('Unauthorized to view applications for this program');
       }
 
@@ -372,7 +372,7 @@ export class ApplicationV2Service {
       }
 
       // Only program creator can review applications
-      if (program.creatorId !== userId) {
+      if (program.sponsorId !== userId) {
         throw new Error('Unauthorized to review this application');
       }
 
@@ -434,7 +434,7 @@ export class ApplicationV2Service {
       }
 
       // Only program creator can pick applications
-      if (program.creatorId !== userId) {
+      if (program.sponsorId !== userId) {
         throw new Error('Unauthorized to pick this application');
       }
 

@@ -39,8 +39,8 @@ export async function getProgramsResolver(
 
   const filterPromises = filter.map(async (f) => {
     switch (f.field) {
-      case 'creatorId':
-        return f.value ? eq(programsTable.creatorId, f.value) : undefined;
+      case 'sponsorId':
+        return f.value ? eq(programsTable.sponsorId, f.value) : undefined;
       case 'validatorId': {
         if (!f.value) return undefined;
         // Get programs where user has validator role
@@ -71,7 +71,7 @@ export async function getProgramsResolver(
       }
       case 'userId': {
         if (!f.value) return undefined;
-        const creatorCondition = eq(programsTable.creatorId, f.value);
+        const creatorCondition = eq(programsTable.sponsorId, f.value);
 
         const userRoles = await ctx.db
           .select()
@@ -198,7 +198,7 @@ export async function getProgramsResolver(
     data = data.filter((program) => {
       if (program.visibility === 'private') {
         // Allow access if user is creator or has a role (validator, etc.)
-        return program.creatorId === user.id || userProgramIds.has(program.id);
+        return program.sponsorId === user.id || userProgramIds.has(program.id);
       }
       // Public and restricted programs are visible
       return true;
@@ -243,7 +243,7 @@ export async function getProgramResolver(_root: Root, args: { id: string }, ctx:
     }
 
     // Check if user is the creator first (fast path)
-    if (program.creatorId === user.id) {
+    if (program.sponsorId === user.id) {
       return program; // Creator always has access
     }
 
@@ -310,7 +310,7 @@ export function createProgramResolver(
       price: inputData.price || '0',
       currency: inputData.currency || 'ETH',
       deadline: inputData.deadline ? new Date(inputData.deadline) : new Date(),
-      creatorId: user.id,
+      sponsorId: user.id,
       status: inputData.status ?? 'pending',
       visibility: inputData.visibility || 'public',
       network: inputData.network,
@@ -592,7 +592,7 @@ export function acceptProgramResolver(_root: Root, args: { id: string }, ctx: Co
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'program',
       action: 'accepted',
-      recipientId: program.creatorId,
+      recipientId: program.sponsorId,
       entityId: program.id,
       metadata: { category: 'progress' },
     });
@@ -632,7 +632,7 @@ export function rejectProgramResolver(
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'program',
       action: 'rejected',
-      recipientId: program.creatorId,
+      recipientId: program.sponsorId,
       entityId: program.id,
       metadata: { category: 'progress' },
     });
@@ -669,7 +669,7 @@ export function publishProgramResolver(
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'program',
       action: 'submitted',
-      recipientId: program.creatorId,
+      recipientId: program.sponsorId,
       entityId: program.id,
       metadata: { category: 'progress' },
     });
@@ -1272,7 +1272,7 @@ export async function reclaimProgramResolver(
     }
 
     // Check if user is the sponsor/creator
-    if (program.creatorId !== user.id) {
+    if (program.sponsorId !== user.id) {
       // Check if user has sponsor role
       const [sponsorRole] = await t
         .select()
@@ -1376,12 +1376,12 @@ export async function reclaimProgramResolver(
         image: usersTable.image,
       })
       .from(usersTable)
-      .where(eq(usersTable.id, program.creatorId));
+      .where(eq(usersTable.id, program.sponsorId));
 
     await ctx.server.pubsub.publish('notifications', t, {
       type: 'program',
       action: 'completed',
-      recipientId: program.creatorId,
+      recipientId: program.sponsorId,
       entityId: program.id,
       metadata: {
         category: 'reclaim',

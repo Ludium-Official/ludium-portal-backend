@@ -144,7 +144,7 @@ export const ProgramType = ProgramRef.implement({
     }),
     creator: t.field({
       type: User,
-      resolve: async (program, _args, ctx) => getUserResolver({}, { id: program.creatorId }, ctx),
+      resolve: async (program, _args, ctx) => getUserResolver({}, { id: program.sponsorId }, ctx),
     }),
     validators: t.field({
       type: [User],

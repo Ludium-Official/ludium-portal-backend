@@ -1,5 +1,5 @@
 {
-  "id": "b764ce0e-6dcb-4042-9b50-d4a03f82b9d7",
+  "id": "74452a5e-0416-43df-8b86-d1d0ca5dbe22",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -2397,8 +2397,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "applicant_id": {
-          "name": "applicant_id",
+        "sponsor_id": {
+          "name": "sponsor_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -2417,7 +2417,7 @@
         },
         "price": {
           "name": "price",
-          "type": "varchar(64)",
+          "type": "varchar(238)",
           "primaryKey": false,
           "notNull": true
         },
@@ -2426,6 +2426,12 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true
+        },
+        "files": {
+          "name": "files",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -2457,12 +2463,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "milestones_v2_applicant_id_users_v2_id_fk": {
-          "name": "milestones_v2_applicant_id_users_v2_id_fk",
+        "milestones_v2_sponsor_id_users_v2_id_fk": {
+          "name": "milestones_v2_sponsor_id_users_v2_id_fk",
           "tableFrom": "milestones_v2",
           "tableTo": "users_v2",
           "columnsFrom": [
-            "applicant_id"
+            "sponsor_id"
           ],
           "columnsTo": [
             "id"
@@ -2544,14 +2550,14 @@
           "primaryKey": false,
           "notNull": true
         },
-        "currency": {
-          "name": "currency",
-          "type": "varchar(16)",
+        "token_id": {
+          "name": "token_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "creator_id": {
-          "name": "creator_id",
+        "sponsor_id": {
+          "name": "sponsor_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -2586,12 +2592,25 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "programs_v2_creator_id_users_v2_id_fk": {
-          "name": "programs_v2_creator_id_users_v2_id_fk",
+        "programs_v2_token_id_tokens_id_fk": {
+          "name": "programs_v2_token_id_tokens_id_fk",
+          "tableFrom": "programs_v2",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "programs_v2_sponsor_id_users_v2_id_fk": {
+          "name": "programs_v2_sponsor_id_users_v2_id_fk",
           "tableFrom": "programs_v2",
           "tableTo": "users_v2",
           "columnsFrom": [
-            "creator_id"
+            "sponsor_id"
           ],
           "columnsTo": [
             "id"

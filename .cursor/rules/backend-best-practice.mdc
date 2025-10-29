@@ -674,8 +674,8 @@ export async function createProgramV2Resolver(
 }
 
 // ✅ CORRECT: services/program.service.ts - Database operations
-async create(input: CreateProgramV2Input, creatorId: number): Promise<ProgramV2> {
-  const values = { ...input, creatorId };
+async create(input: CreateProgramV2Input, sponsorId: number): Promise<ProgramV2> {
+  const values = { ...input, sponsorId };
   const [program] = await this.db.insert(programsV2Table).values(values).returning();
   return program;
 }

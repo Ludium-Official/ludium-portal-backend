@@ -2,7 +2,7 @@ import builder from '@/graphql/builder';
 import { PaginationInput } from '@/graphql/types/common';
 import {
   getProgramV2Resolver,
-  getProgramsByCreatorIdV2Resolver,
+  getProgramsBysponsorIdV2Resolver,
   getProgramsV2Resolver,
 } from '@/graphql/v2/resolvers/programs';
 import { PaginatedProgramV2Type, ProgramV2Type } from '../types/programs';
@@ -24,13 +24,13 @@ builder.queryFields((t) => ({
     },
     resolve: getProgramV2Resolver,
   }),
-  programsByCreatorIdV2: t.field({
+  programsBysponsorIdV2: t.field({
     type: PaginatedProgramV2Type,
     authScopes: { userV2: true },
     args: {
-      creatorId: t.arg.id({ required: true }),
+      sponsorId: t.arg.id({ required: true }),
       pagination: t.arg({ type: PaginationInput, required: false }),
     },
-    resolve: getProgramsByCreatorIdV2Resolver,
+    resolve: getProgramsBysponsorIdV2Resolver,
   }),
 }));

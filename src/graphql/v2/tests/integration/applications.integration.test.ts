@@ -25,7 +25,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
   // Users
   let programCreator: NewUserV2;
   let applicant: NewUserV2;
-  let programCreatorId: number;
+  let programsponsorId: number;
   let applicantId: number;
   let creatorAuthToken: string;
   let applicantAuthToken: string;
@@ -59,7 +59,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
 
     const [creatorUser] = await db.insert(usersV2Table).values(programCreator).returning();
     const [applicantUser] = await db.insert(usersV2Table).values(applicant).returning();
-    programCreatorId = creatorUser.id;
+    programsponsorId = creatorUser.id;
     applicantId = applicantUser.id;
 
     // 2. Log in to get auth tokens
@@ -110,7 +110,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       price: '1000',
       currency: 'USDC',
       status: 'open',
-      creatorId: programCreatorId,
+      sponsorId: programsponsorId,
     };
     const [insertedProgram] = await db.insert(programsV2Table).values(testProgram).returning();
     testProgramId = insertedProgram.id;
@@ -546,7 +546,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       // Create an application for another user to ensure filtering works
       await db.insert(applicationsV2Table).values({
         programId: testProgramId,
-        applicantId: programCreatorId, // Different applicant
+        applicantId: programsponsorId, // Different applicant
         content: 'Not my app',
         status: ApplicationStatus.APPLIED,
       });
@@ -594,7 +594,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
         },
         {
           programId: testProgramId,
-          applicantId: programCreatorId, // Creator also applies
+          applicantId: programsponsorId, // Creator also applies
           content: 'Creator app',
           status: ApplicationStatus.ACCEPTED,
         },
