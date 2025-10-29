@@ -34,17 +34,35 @@ async function migrateTokens() {
 
     console.log(`Found ${networks.length} networks in database.`);
 
+    // 토큰 주소 정보 (제공된 정보 기반)
+    const tokenAddresses: Record<string, Record<string, string>> = {
+      base: {
+        USDT: '0xfde4c96c8593536e31f229ea8f37b2ada2699bb2',
+        USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      },
+      arbitrum: {
+        USDT: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+        USDC: '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
+      },
+      educhain: {
+        USDT: '0x7277cc818e3f3ffbb169c6da9cc77fc2d2a34895',
+        USDC: '0x836d275563bab5e93fd6ca62a95db7065da94342',
+      },
+    };
+
     // 토큰 데이터 정의 (currency, network)
+    // 네이티브 토큰은 0x0 주소 사용
     const tokenData: Array<{ currency: string; network: string }> = [
       { currency: 'ETH', network: 'base' },
       { currency: 'CTC', network: 'creditcoin' },
       { currency: 'EDU', network: 'educhain' },
-      { currency: 'USDT', network: 'base' },
-      { currency: 'USDT', network: 'arbitrum' },
-      { currency: 'ETH', network: 'educhain' },
       { currency: 'ETH', network: 'arbitrum' },
+      { currency: 'USDT', network: 'base' },
+      { currency: 'USDC', network: 'base' },
+      { currency: 'USDT', network: 'arbitrum' },
       { currency: 'USDC', network: 'arbitrum' },
       { currency: 'USDT', network: 'educhain' },
+      { currency: 'USDC', network: 'educhain' },
     ];
 
     // 기존 데이터 삭제 옵션 (환경 변수로 제어)
@@ -83,10 +101,17 @@ async function migrateTokens() {
           continue;
         }
 
+        // 토큰 주소 찾기 (제공된 정보에서 우선, 없으면 0x0)
+        const networkName = token.network.toLowerCase();
+        const currencyName = token.currency.toUpperCase();
+        const tokenAddress =
+          tokenAddresses[networkName]?.[currencyName] ||
+          '0x0000000000000000000000000000000000000000';
+
         const newToken: NewTokenType = {
           chainInfoId: networkId,
           tokenName: token.currency,
-          tokenAddress: '0x0', // 일단 모두 0x0으로 설정
+          tokenAddress,
         };
 
         await db.insert(tokensTable).values(newToken);

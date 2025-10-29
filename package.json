@@ -26,7 +26,8 @@
     "prepare": "husky",
     "migrate-users": "tsx ./src/scripts/migrate-users.ts",
     "migrate-networks": "tsx ./src/scripts/migrate-networks.ts",
-    "migrate-tokens": "tsx ./src/scripts/migrate-tokens.ts"
+    "migrate-tokens": "tsx ./src/scripts/migrate-tokens.ts",
+    "migrate-programs": "tsx ./src/scripts/migrate-programs.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",
