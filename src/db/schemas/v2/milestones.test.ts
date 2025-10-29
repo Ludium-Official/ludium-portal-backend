@@ -372,4 +372,44 @@ describe('Milestones V2 Table', () => {
     expect(milestone1Inserted.title).toBe('Milestone in Program 1');
     expect(milestone2Inserted.title).toBe('Milestone in Program 2');
   });
+
+  it('should default status to draft when not provided', async () => {
+    const milestoneDeadline = new Date('2025-12-31');
+    const newMilestone: NewMilestoneV2 = {
+      programId: testProgramId,
+      applicantId: testUserId,
+      title: 'Status Default Milestone',
+      description: 'Should default to draft',
+      payout: '100',
+      deadline: milestoneDeadline,
+    };
+
+    const [milestone] = await db.insert(milestonesV2Table).values(newMilestone).returning();
+    expect(milestone.status).toBe('draft');
+  });
+
+  it('should allow status to be set to progress/finished/reviewed/completed', async () => {
+    const milestoneDeadline = new Date('2025-12-31');
+
+    const statuses: Array<'progress' | 'finished' | 'reviewed' | 'completed'> = [
+      'progress',
+      'finished',
+      'reviewed',
+      'completed',
+    ];
+
+    for (const status of statuses) {
+      const milestoneInput: NewMilestoneV2 = {
+        programId: testProgramId,
+        applicantId: testUserId,
+        title: `Milestone with status ${status}`,
+        description: 'Testing status enum',
+        payout: '10',
+        deadline: milestoneDeadline,
+        status,
+      };
+      const [inserted] = await db.insert(milestonesV2Table).values(milestoneInput).returning();
+      expect(inserted.status).toBe(status);
+    }
+  });
 });

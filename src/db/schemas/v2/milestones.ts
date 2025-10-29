@@ -1,9 +1,19 @@
 import { relations } from 'drizzle-orm';
-import { integer, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { integer, pgEnum, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { programsV2Table } from './programs';
 import { usersV2Table } from './users';
 
 // V2 status enum per renewed spec
+
+// TODO: Add annotation for English description
+export const milestoneStatusV2Values = [
+  'draft', // 초깃값, 스폰서가 마일스톤을 작성 중일 때
+  'progress', // 마일스톤 작성 완료 후 빌더가 개발을 시작할 때, 온체인에 create contract 과 함께 업데이트
+  'finished', // 빌더가 개발을 완료했을 때, 스폰서에게 리뷰 요청
+  'reviewed', // 스폰서가 빌더의 작업을 리뷰를 마쳤을 때, 릴레이어가 해당 상태에서만 paid 업데이트 가능
+  'completed', // 최종적으로 마일스톤을 완료 후, 릴레이어가 payout 까지 마쳤을 때 tx까지 같이 업데이트
+] as const;
+export const milestoneStatusV2Enum = pgEnum('milestone_status_v2', milestoneStatusV2Values);
 
 export const milestonesV2Table = pgTable('milestones_v2', {
   id: serial('id').primaryKey(),
@@ -23,6 +33,7 @@ export const milestonesV2Table = pgTable('milestones_v2', {
     withTimezone: true,
   }).notNull(),
   files: text('files').array(),
+  status: milestoneStatusV2Enum('status').default('draft').notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })
     .defaultNow()
