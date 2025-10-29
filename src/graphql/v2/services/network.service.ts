@@ -40,9 +40,27 @@ export class NetworkV2Service {
   }
 
   async update(id: string, input: typeof UpdateNetworkV2Input.$inferInput): Promise<NetworkType> {
+    const updateData: Partial<{
+      chainId: number;
+      chainName: string;
+      mainnet: boolean;
+      exploreUrl: string;
+    }> = {};
+    if (input.chainId !== null && input.chainId !== undefined) {
+      updateData.chainId = input.chainId;
+    }
+    if (input.chainName !== null && input.chainName !== undefined) {
+      updateData.chainName = input.chainName;
+    }
+    if (input.mainnet !== null && input.mainnet !== undefined) {
+      updateData.mainnet = input.mainnet;
+    }
+    if (input.exploreUrl !== null && input.exploreUrl !== undefined) {
+      updateData.exploreUrl = input.exploreUrl;
+    }
     const [row] = await this.db
       .update(networksTable)
-      .set(input)
+      .set(updateData)
       .where(eq(networksTable.id, Number.parseInt(id, 10)))
       .returning();
     if (!row) throw new Error('Network not found');

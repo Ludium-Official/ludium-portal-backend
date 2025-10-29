@@ -44,9 +44,19 @@ export class SmartContractsV2Service {
     id: string,
     input: typeof UpdateSmartContractV2Input.$inferInput,
   ): Promise<SmartContract> {
+    const updateData: Partial<{
+      name: string;
+      address: string;
+    }> = {};
+    if (input.name !== null && input.name !== undefined) {
+      updateData.name = input.name;
+    }
+    if (input.address !== null && input.address !== undefined) {
+      updateData.address = input.address;
+    }
     const [row] = await this.db
       .update(smartContractsTable)
-      .set(input)
+      .set(updateData)
       .where(eq(smartContractsTable.id, Number.parseInt(id, 10)))
       .returning();
     if (!row) throw new Error('Smart contract not found');

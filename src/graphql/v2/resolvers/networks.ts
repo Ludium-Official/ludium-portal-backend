@@ -1,15 +1,19 @@
+import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateNetworkV2Input, UpdateNetworkV2Input } from '@/graphql/v2/inputs/networks';
 import { NetworkV2Service } from '@/graphql/v2/services/network.service';
 import type { Context, Root } from '@/types';
 
 export async function getNetworksV2Resolver(
   _root: Root,
-  args: { pagination?: { limit?: number; offset?: number } },
+  args: { pagination?: typeof PaginationInput.$inferInput | null },
   ctx: Context,
 ) {
   try {
     const service = new NetworkV2Service(ctx.db);
-    return await service.getMany(args.pagination);
+    const pagination = args.pagination
+      ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
+      : undefined;
+    return await service.getMany(pagination);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     ctx.server.log.error({

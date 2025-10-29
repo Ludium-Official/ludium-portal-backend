@@ -8,7 +8,7 @@ import type { Context, Root } from '@/types';
 
 export async function getSmartContractsV2Resolver(
   _root: Root,
-  args: { pagination?: typeof PaginationInput.$inferInput | null; chainInfoId?: number },
+  args: { pagination?: typeof PaginationInput.$inferInput | null; chainInfoId?: number | null },
   ctx: Context,
 ) {
   try {
@@ -16,7 +16,8 @@ export async function getSmartContractsV2Resolver(
     const pagination = args.pagination
       ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
       : undefined;
-    return service.getMany(pagination, args.chainInfoId);
+    const chainInfoId = args.chainInfoId ?? undefined;
+    return service.getMany(pagination, chainInfoId);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     ctx.server.log.error({
