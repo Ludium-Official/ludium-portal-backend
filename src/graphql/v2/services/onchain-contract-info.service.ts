@@ -80,7 +80,14 @@ export class OnchainContractInfoV2Service {
   async create(
     input: typeof CreateOnchainContractInfoV2Input.$inferInput,
   ): Promise<OnchainContractInfo> {
-    const [row] = await this.db.insert(onchainContractInfoTable).values(input).returning();
+    const createData = {
+      programId: input.programId,
+      applicantId: input.applicantId,
+      contentHash: input.contentHash,
+      tx: input.tx,
+      ...(input.status !== null && input.status !== undefined ? { status: input.status } : {}),
+    };
+    const [row] = await this.db.insert(onchainContractInfoTable).values(createData).returning();
     return row;
   }
 
@@ -88,9 +95,23 @@ export class OnchainContractInfoV2Service {
     id: string,
     input: typeof UpdateOnchainContractInfoV2Input.$inferInput,
   ): Promise<OnchainContractInfo> {
+    const updateData: Partial<{
+      status: 'completed' | 'active' | 'canceled' | 'updated' | 'paused';
+      contentHash: string;
+      tx: string;
+    }> = {};
+    if (input.status !== null && input.status !== undefined) {
+      updateData.status = input.status;
+    }
+    if (input.contentHash !== null && input.contentHash !== undefined) {
+      updateData.contentHash = input.contentHash;
+    }
+    if (input.tx !== null && input.tx !== undefined) {
+      updateData.tx = input.tx;
+    }
     const [row] = await this.db
       .update(onchainContractInfoTable)
-      .set(input)
+      .set(updateData)
       .where(eq(onchainContractInfoTable.id, Number.parseInt(id, 10)))
       .returning();
     if (!row) throw new Error('Onchain contract info not found');

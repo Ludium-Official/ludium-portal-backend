@@ -70,7 +70,7 @@ export async function getProgramsBysponsorIdV2Resolver(
   if (Number.isNaN(numericsponsorId)) {
     throw new Error('Invalid creator ID');
   }
-  return programService.getBysponsorId(numericsponsorId, {
+  return programService.getBySponsorId(numericsponsorId, {
     limit: args.pagination?.limit ?? undefined,
     offset: args.pagination?.offset ?? undefined,
   });

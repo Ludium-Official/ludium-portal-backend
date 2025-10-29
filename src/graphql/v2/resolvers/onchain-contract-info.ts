@@ -1,3 +1,4 @@
+import type { PaginationInput } from '@/graphql/types/common';
 import type {
   CreateOnchainContractInfoV2Input,
   UpdateOnchainContractInfoV2Input,
@@ -7,12 +8,15 @@ import type { Context, Root } from '@/types';
 
 export async function getOnchainContractInfosV2Resolver(
   _root: Root,
-  args: { pagination?: { limit?: number; offset?: number } },
+  args: { pagination?: typeof PaginationInput.$inferInput | null },
   ctx: Context,
 ) {
   try {
     const service = new OnchainContractInfoV2Service(ctx.db);
-    return await service.getMany(args.pagination);
+    const pagination = args.pagination
+      ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
+      : undefined;
+    return await service.getMany(pagination);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     ctx.server.log.error({
@@ -45,12 +49,15 @@ export async function getOnchainContractInfoV2Resolver(
 
 export async function getOnchainContractInfosByProgramV2Resolver(
   _root: Root,
-  args: { programId: number; pagination?: { limit?: number; offset?: number } },
+  args: { programId: number; pagination?: typeof PaginationInput.$inferInput | null },
   ctx: Context,
 ) {
   try {
     const service = new OnchainContractInfoV2Service(ctx.db);
-    return await service.getByProgramId(args.programId, args.pagination);
+    const pagination = args.pagination
+      ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
+      : undefined;
+    return await service.getByProgramId(args.programId, pagination);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     ctx.server.log.error({
@@ -64,12 +71,15 @@ export async function getOnchainContractInfosByProgramV2Resolver(
 
 export async function getOnchainContractInfosByApplicantV2Resolver(
   _root: Root,
-  args: { applicantId: number; pagination?: { limit?: number; offset?: number } },
+  args: { applicantId: number; pagination?: typeof PaginationInput.$inferInput | null },
   ctx: Context,
 ) {
   try {
     const service = new OnchainContractInfoV2Service(ctx.db);
-    return await service.getByApplicantId(args.applicantId, args.pagination);
+    const pagination = args.pagination
+      ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
+      : undefined;
+    return await service.getByApplicantId(args.applicantId, pagination);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     ctx.server.log.error({

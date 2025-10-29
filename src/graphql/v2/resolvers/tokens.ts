@@ -1,15 +1,19 @@
+import type { PaginationInput } from '@/graphql/types/common';
 import type { CreateTokenV2Input, UpdateTokenV2Input } from '@/graphql/v2/inputs/tokens';
 import { TokenV2Service } from '@/graphql/v2/services/token.service';
 import type { Context, Root } from '@/types';
 
 export async function getTokensV2Resolver(
   _root: Root,
-  args: { pagination?: { limit?: number; offset?: number } },
+  args: { pagination?: typeof PaginationInput.$inferInput | null },
   ctx: Context,
 ) {
   try {
     const service = new TokenV2Service(ctx.db);
-    return await service.getMany(args.pagination);
+    const pagination = args.pagination
+      ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
+      : undefined;
+    return await service.getMany(pagination);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     ctx.server.log.error({
@@ -38,12 +42,15 @@ export async function getTokenV2Resolver(_root: Root, args: { id: string }, ctx:
 
 export async function getTokensByNetworkV2Resolver(
   _root: Root,
-  args: { networkId: number; pagination?: { limit?: number; offset?: number } },
+  args: { networkId: number; pagination?: typeof PaginationInput.$inferInput | null },
   ctx: Context,
 ) {
   try {
     const service = new TokenV2Service(ctx.db);
-    return await service.getByNetworkId(args.networkId, args.pagination);
+    const pagination = args.pagination
+      ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
+      : undefined;
+    return await service.getByNetworkId(args.networkId, pagination);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     ctx.server.log.error({

@@ -77,7 +77,14 @@ export class OnchainProgramInfoV2Service {
   async create(
     input: typeof CreateOnchainProgramInfoV2Input.$inferInput,
   ): Promise<OnchainProgramInfo> {
-    const [row] = await this.db.insert(onchainProgramInfoTable).values(input).returning();
+    const createData = {
+      programId: input.programId,
+      smartContractId: input.smartContractId,
+      onchainProgramId: input.onchainProgramId,
+      tx: input.tx,
+      ...(input.status !== null && input.status !== undefined ? { status: input.status } : {}),
+    };
+    const [row] = await this.db.insert(onchainProgramInfoTable).values(createData).returning();
     return row;
   }
 
@@ -85,9 +92,19 @@ export class OnchainProgramInfoV2Service {
     id: string,
     input: typeof UpdateOnchainProgramInfoV2Input.$inferInput,
   ): Promise<OnchainProgramInfo> {
+    const updateData: Partial<{
+      status: 'active' | 'paused' | 'completed' | 'cancelled';
+      tx: string;
+    }> = {};
+    if (input.status !== null && input.status !== undefined) {
+      updateData.status = input.status;
+    }
+    if (input.tx !== null && input.tx !== undefined) {
+      updateData.tx = input.tx;
+    }
     const [row] = await this.db
       .update(onchainProgramInfoTable)
-      .set(input)
+      .set(updateData)
       .where(eq(onchainProgramInfoTable.id, Number.parseInt(id, 10)))
       .returning();
     if (!row) throw new Error('Onchain program info not found');
