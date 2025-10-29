@@ -18,6 +18,9 @@
     "db:clean": "npm run db:down && rm -rf ./src/db/migrations && rm -rf .pgdata",
     "db:seed": "tsx -r dotenv-expand/config ./src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
+    "test:db": "vitest run ./src/db",
+    "test:integration": "vitest run ./src/graphql/v2/tests/integration",
+    "test:e2e": "vitest run ./src/graphql/v2/tests/e2e",
     "test": "vitest run",
     "prepare": "husky"
   },
