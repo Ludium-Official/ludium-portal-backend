@@ -92,6 +92,13 @@
       "when": 1761669289855,
       "tag": "0012_thin_jack_power",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1761713878939,
+      "tag": "0013_modern_wendell_rand",
+      "breakpoints": true
     }
   ]
 }

@@ -20,3 +20,5 @@ export * from './v2/applications';
 export * from './v2/milestones';
 export * from './v2/programs';
 export * from './v2/users';
+export * from './v2/networks';
+export * from './v2/tokens';
