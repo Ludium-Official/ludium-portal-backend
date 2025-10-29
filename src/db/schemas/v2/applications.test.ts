@@ -1,10 +1,10 @@
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
 import { type NewApplicationV2, applicationsV2Table } from './applications';
-import { type NewProgramV2, programsV2Table } from './programs';
-import { type NewUserV2, usersV2Table } from './users';
 import { type NewNetworkType, networksTable } from './networks';
+import { type NewProgramV2, programsV2Table } from './programs';
 import { type NewTokenType, tokensTable } from './tokens';
+import { type NewUserV2, usersV2Table } from './users';
 
 describe('Applications V2 Table', () => {
   let testUserId: number;
@@ -110,13 +110,13 @@ describe('Applications V2 Table', () => {
     const newApplication: NewApplicationV2 = {
       programId: testProgramId,
       applicantId: testUserId,
-      status: 'accepted',
+      status: 'hired',
     };
 
     const [application] = await db.insert(applicationsV2Table).values(newApplication).returning();
 
     expect(application).toBeDefined();
-    expect(application.status).toBe('accepted');
+    expect(application.status).toBe('hired');
   });
 
   it('should create an application with rejected status', async () => {
@@ -133,19 +133,6 @@ describe('Applications V2 Table', () => {
 
     expect(application).toBeDefined();
     expect(application.status).toBe('rejected');
-  });
-
-  it('should create an application with deleted status', async () => {
-    const newApplication: NewApplicationV2 = {
-      programId: testProgramId,
-      applicantId: testUserId,
-      status: 'deleted',
-    };
-
-    const [application] = await db.insert(applicationsV2Table).values(newApplication).returning();
-
-    expect(application).toBeDefined();
-    expect(application.status).toBe('deleted');
   });
 
   it('should default to applied status when status is not provided', async () => {
@@ -295,7 +282,7 @@ describe('Applications V2 Table', () => {
     const application2: NewApplicationV2 = {
       programId: secondProgramId,
       applicantId: testUserId,
-      status: 'accepted',
+      status: 'hired',
     };
 
     const [app1] = await db.insert(applicationsV2Table).values(application1).returning();
@@ -307,7 +294,7 @@ describe('Applications V2 Table', () => {
     expect(app1.programId).toBe(testProgramId);
     expect(app2.programId).toBe(secondProgramId);
     expect(app1.status).toBe('applied');
-    expect(app2.status).toBe('accepted');
+    expect(app2.status).toBe('hired');
   });
 
   it('should allow multiple applications from different users to the same program', async () => {

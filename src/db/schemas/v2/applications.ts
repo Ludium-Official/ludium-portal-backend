@@ -4,7 +4,7 @@ import { programsV2Table } from './programs';
 import { usersV2Table } from './users';
 
 // V2 status enum per renewed spec
-export const applicationStatusV2Values = ['applied', 'accepted', 'rejected', 'deleted'] as const;
+export const applicationStatusV2Values = ['applied', 'hired', 'rejected'] as const;
 export const applicationStatusV2Enum = pgEnum('application_status_v2', applicationStatusV2Values);
 
 export const applicationsV2Table = pgTable('applications_v2', {
