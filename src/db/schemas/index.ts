@@ -23,3 +23,5 @@ export * from './v2/users';
 export * from './v2/networks';
 export * from './v2/tokens';
 export * from './v2/onchain-contract-info';
+export * from './v2/onchain-program-info';
+export * from './v2/smart-contracts';

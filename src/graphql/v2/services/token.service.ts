@@ -59,9 +59,23 @@ export class TokenV2Service {
   }
 
   async update(id: string, input: typeof UpdateTokenV2Input.$inferInput): Promise<TokenType> {
+    const updateData: Partial<{
+      chainInfoId: number;
+      tokenName: string;
+      tokenAddress: string;
+    }> = {};
+    if (input.chainInfoId !== null && input.chainInfoId !== undefined) {
+      updateData.chainInfoId = input.chainInfoId;
+    }
+    if (input.tokenName !== null && input.tokenName !== undefined) {
+      updateData.tokenName = input.tokenName;
+    }
+    if (input.tokenAddress !== null && input.tokenAddress !== undefined) {
+      updateData.tokenAddress = input.tokenAddress;
+    }
     const [row] = await this.db
       .update(tokensTable)
-      .set(input)
+      .set(updateData)
       .where(eq(tokensTable.id, Number.parseInt(id, 10)))
       .returning();
     if (!row) throw new Error('Token not found');
