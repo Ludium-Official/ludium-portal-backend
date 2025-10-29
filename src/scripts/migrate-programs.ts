@@ -6,7 +6,7 @@ import postgres from 'postgres';
 import { programsTable } from '../db/schemas/programs';
 import { usersTable } from '../db/schemas/users';
 import { networksTable } from '../db/schemas/v2/networks';
-import { programsV2Table, type NewProgramV2 } from '../db/schemas/v2/programs';
+import { type NewProgramV2, programsV2Table } from '../db/schemas/v2/programs';
 import { tokensTable } from '../db/schemas/v2/tokens';
 import { usersV2Table } from '../db/schemas/v2/users';
 
