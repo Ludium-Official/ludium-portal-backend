@@ -1,11 +1,13 @@
 import {
-  type NewProgramV2,
-  type NewUserV2,
+  type NewTokenType,
   applicationsV2Table,
   programsV2Table,
+  tokensTable,
   usersV2Table,
 } from '@/db/schemas';
+import type { NewProgramV2, NewUserV2 } from '@/db/schemas';
 import { applicationStatusV2Values } from '@/db/schemas/v2/applications';
+import { networksTable } from '@/db/schemas/v2/networks';
 import { db } from '@/db/test-db';
 import { eq, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
@@ -14,9 +16,8 @@ import { createTestServer } from '../helper';
 // Application status values from DB schema (Single Source of Truth)
 const ApplicationStatus = {
   APPLIED: applicationStatusV2Values[0], // 'applied'
-  ACCEPTED: applicationStatusV2Values[1], // 'accepted'
+  HIRED: applicationStatusV2Values[1], // 'hired'
   REJECTED: applicationStatusV2Values[2], // 'rejected'
-  DELETED: applicationStatusV2Values[3], // 'deleted'
 } as const;
 
 describe('Applications V2 GraphQL API - Integration Tests', () => {
@@ -97,7 +98,25 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
     });
     applicantAuthToken = JSON.parse(applicantLoginResponse.body).data.loginV2;
 
-    // 3. Create a test program
+    // 3. Seed network required for program
+    const [net] = await db
+      .insert(networksTable)
+      .values({
+        chainId: 11155111,
+        chainName: 'Sepolia',
+        mainnet: false,
+      })
+      .returning();
+
+    // 4. Seed token required for program
+    const testToken: NewTokenType = {
+      chainInfoId: net.id,
+      tokenName: 'USDC',
+      tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+    };
+    const [token] = await db.insert(tokensTable).values(testToken).returning();
+
+    // 5. Create a test program
     const deadline = new Date();
     deadline.setMonth(deadline.getMonth() + 1);
     testProgram = {
@@ -106,9 +125,9 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       skills: ['testing', 'graphql'],
       deadline,
       visibility: 'public',
-      network: 'mainnet',
+      networkId: net.id,
       price: '1000',
-      currency: 'USDC',
+      token_id: token.id,
       status: 'open',
       sponsorId: programsponsorId,
     };
@@ -120,6 +139,8 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
     // Clean up all tables
     await db.execute(sql`TRUNCATE TABLE applications_v2 RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE programs_v2 RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE networks RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE tokens RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
   });
 
@@ -127,6 +148,8 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
     // Final clean up
     await db.execute(sql`TRUNCATE TABLE applications_v2 RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE programs_v2 RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE networks RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE tokens RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
     await server.close();
   });
@@ -301,7 +324,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       const variables = {
         id: testApplicationId.toString(),
         input: {
-          status: ApplicationStatus.ACCEPTED,
+          status: ApplicationStatus.HIRED,
           rejectedReason: 'Welcome aboard!',
         },
       };
@@ -316,7 +339,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       expect(response.statusCode).toBe(200);
       const result = JSON.parse(response.body);
       const application = result.data.reviewApplicationV2;
-      expect(application.status).toBe(ApplicationStatus.ACCEPTED);
+      expect(application.status).toBe(ApplicationStatus.HIRED);
       expect(application.rejectedReason).toBe(variables.input.rejectedReason);
     });
 
@@ -328,7 +351,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       `;
       const variables = {
         id: testApplicationId.toString(),
-        input: { status: ApplicationStatus.ACCEPTED },
+        input: { status: ApplicationStatus.HIRED },
       };
 
       const response = await server.inject({
@@ -540,7 +563,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
           programId: testProgramId,
           applicantId: applicantId,
           content: 'My second app',
-          status: ApplicationStatus.ACCEPTED,
+          status: ApplicationStatus.HIRED,
         },
       ]);
       // Create an application for another user to ensure filtering works
@@ -596,7 +619,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
           programId: testProgramId,
           applicantId: programsponsorId, // Creator also applies
           content: 'Creator app',
-          status: ApplicationStatus.ACCEPTED,
+          status: ApplicationStatus.HIRED,
         },
       ]);
     });
