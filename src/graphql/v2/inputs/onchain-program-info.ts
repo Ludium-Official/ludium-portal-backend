@@ -24,3 +24,16 @@ export const UpdateOnchainProgramInfoV2Input = builder.inputType(
     }),
   },
 );
+
+// Helper input for composite create (no programId; networkId is derived from program)
+export const OnchainProgramInfoForCreateWithProgramV2Input = builder.inputType(
+  'OnchainProgramInfoForCreateWithProgramV2Input',
+  {
+    fields: (t) => ({
+      smartContractId: t.int({ required: true }),
+      onchainProgramId: t.int({ required: true }),
+      tx: t.string({ required: true }),
+      status: t.field({ type: OnchainProgramStatusV2Enum }),
+    }),
+  },
+);

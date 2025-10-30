@@ -1,5 +1,6 @@
 import builder from '@/graphql/builder';
 import { ProgramV2StatusEnum, ProgramVisibilityEnum } from '../types/programs';
+import { OnchainProgramInfoForCreateWithProgramV2Input } from './onchain-program-info';
 
 export const CreateProgramV2Input = builder.inputType('CreateProgramV2Input', {
   fields: (t) => ({
@@ -30,3 +31,13 @@ export const UpdateProgramV2Input = builder.inputType('UpdateProgramV2Input', {
     token_id: t.int(),
   }),
 });
+
+export const CreateProgramWithOnchainV2Input = builder.inputType(
+  'CreateProgramWithOnchainV2Input',
+  {
+    fields: (t) => ({
+      program: t.field({ type: CreateProgramV2Input, required: true }),
+      onchain: t.field({ type: OnchainProgramInfoForCreateWithProgramV2Input, required: true }),
+    }),
+  },
+);

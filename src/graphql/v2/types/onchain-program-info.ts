@@ -14,6 +14,7 @@ export const OnchainProgramInfoV2Type = OnchainProgramInfoV2Ref.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     programId: t.exposeInt('programId'),
+    networkId: t.exposeInt('networkId'),
     smartContractId: t.exposeInt('smartContractId'),
     onchainProgramId: t.exposeInt('onchainProgramId'),
     status: t.field({ type: OnchainProgramStatusV2Enum, resolve: (p) => p.status }),

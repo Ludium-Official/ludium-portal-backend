@@ -1,11 +1,16 @@
 import builder from '@/graphql/builder';
-import { CreateProgramV2Input, UpdateProgramV2Input } from '../inputs/programs';
+import {
+  CreateProgramV2Input,
+  CreateProgramWithOnchainV2Input,
+  UpdateProgramV2Input,
+} from '../inputs/programs';
 import {
   createProgramV2Resolver,
   deleteProgramV2Resolver,
   updateProgramV2Resolver,
 } from '../resolvers/programs';
-import { ProgramV2Ref } from '../types/programs';
+import { createProgramWithOnchainV2Resolver } from '../resolvers/programs';
+import { CreateProgramWithOnchainV2Payload, ProgramV2Ref } from '../types/programs';
 
 builder.mutationField('createProgramV2', (t) =>
   t.field({
@@ -17,6 +22,15 @@ builder.mutationField('createProgramV2', (t) =>
       input: t.arg({ type: CreateProgramV2Input, required: true }),
     },
     resolve: createProgramV2Resolver,
+  }),
+);
+
+builder.mutationField('createProgramWithOnchainV2', (t) =>
+  t.field({
+    type: CreateProgramWithOnchainV2Payload,
+    authScopes: { userV2: true },
+    args: { input: t.arg({ type: CreateProgramWithOnchainV2Input, required: true }) },
+    resolve: createProgramWithOnchainV2Resolver,
   }),
 );
 

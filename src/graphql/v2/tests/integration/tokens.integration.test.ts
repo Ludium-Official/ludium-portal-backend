@@ -81,11 +81,19 @@ describe('Tokens V2 GraphQL API - Integration Tests', () => {
             chainInfoId: networkId,
             tokenName: 'USDC',
             tokenAddress: '0x0000000000000000000000000000000000000001',
+            decimals: 6,
           },
         },
       },
     });
-    const created = JSON.parse(createRes.body).data.createTokenV2;
+    expect(createRes.statusCode).toBe(200);
+    const createResult = JSON.parse(createRes.body);
+    if (createResult.errors) {
+      console.error('GraphQL errors:', JSON.stringify(createResult.errors, null, 2));
+    }
+    expect(createResult.errors).toBeUndefined();
+    expect(createResult.data).toBeDefined();
+    const created = createResult.data.createTokenV2;
     expect(created.tokenName).toBe('USDC');
 
     const listQuery = `
@@ -99,7 +107,10 @@ describe('Tokens V2 GraphQL API - Integration Tests', () => {
       headers: { authorization: `Bearer ${authToken}` },
       payload: { query: listQuery, variables: { pagination: { limit: 10, offset: 0 } } },
     });
-    expect(JSON.parse(listRes.body).data.tokensV2.count).toBe(1);
+    expect(listRes.statusCode).toBe(200);
+    const listResult = JSON.parse(listRes.body);
+    expect(listResult.errors).toBeUndefined();
+    expect(listResult.data.tokensV2.count).toBe(1);
 
     const byNetworkQuery = `
       query TokensByNetwork($networkId: Int!, $pagination: PaginationInput) {
@@ -115,7 +126,10 @@ describe('Tokens V2 GraphQL API - Integration Tests', () => {
         variables: { networkId, pagination: { limit: 10, offset: 0 } },
       },
     });
-    const byNetwork = JSON.parse(byNetworkRes.body).data.tokensByNetworkV2;
+    expect(byNetworkRes.statusCode).toBe(200);
+    const byNetworkResult = JSON.parse(byNetworkRes.body);
+    expect(byNetworkResult.errors).toBeUndefined();
+    const byNetwork = byNetworkResult.data.tokensByNetworkV2;
     expect(byNetwork.count).toBe(1);
     expect(byNetwork.data[0].chainInfoId).toBe(networkId);
 
@@ -133,7 +147,10 @@ describe('Tokens V2 GraphQL API - Integration Tests', () => {
         variables: { id: created.id, input: { tokenName: 'WETH' } },
       },
     });
-    expect(JSON.parse(updateRes.body).data.updateTokenV2.tokenName).toBe('WETH');
+    expect(updateRes.statusCode).toBe(200);
+    const updateResult = JSON.parse(updateRes.body);
+    expect(updateResult.errors).toBeUndefined();
+    expect(updateResult.data.updateTokenV2.tokenName).toBe('WETH');
 
     const deleteMutation = `
       mutation DeleteToken($id: ID!) { deleteTokenV2(id: $id) { id } }
@@ -144,7 +161,10 @@ describe('Tokens V2 GraphQL API - Integration Tests', () => {
       headers: { authorization: `Bearer ${authToken}` },
       payload: { query: deleteMutation, variables: { id: created.id } },
     });
-    expect(JSON.parse(deleteRes.body).data.deleteTokenV2.id).toBe(created.id);
+    expect(deleteRes.statusCode).toBe(200);
+    const deleteResult = JSON.parse(deleteRes.body);
+    expect(deleteResult.errors).toBeUndefined();
+    expect(deleteResult.data.deleteTokenV2.id).toBe(created.id);
 
     const rows = await db.select().from(tokensTable);
     expect(rows.length).toBe(0);

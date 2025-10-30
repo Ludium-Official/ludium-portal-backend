@@ -1,9 +1,8 @@
-import {
-  type ProgramV2 as DBProgramV2,
-  programStatusV2Values,
-  programVisibilityV2Values,
-} from '@/db/schemas/v2/programs';
+import type { OnchainProgramInfo as DBOnchainProgramInfo } from '@/db/schemas/v2/onchain-program-info';
+import type { ProgramV2 as DBProgramV2 } from '@/db/schemas/v2/programs';
+import { programStatusV2Values, programVisibilityV2Values } from '@/db/schemas/v2/programs';
 import builder from '@/graphql/builder';
+import { OnchainProgramInfoV2Type } from '../types/onchain-program-info';
 
 export const ProgramVisibilityEnum = builder.enumType('ProgramVisibilityV2', {
   values: programVisibilityV2Values,
@@ -63,5 +62,17 @@ export const PaginatedProgramV2Type = builder
         type: 'Int',
         resolve: (parent) => parent.count,
       }),
+    }),
+  });
+
+// Composite payload for creating program together with onchain info
+export const CreateProgramWithOnchainV2Payload = builder
+  .objectRef<{ program: DBProgramV2; onchain: DBOnchainProgramInfo }>(
+    'CreateProgramWithOnchainV2Payload',
+  )
+  .implement({
+    fields: (t) => ({
+      program: t.field({ type: ProgramV2Type, resolve: (p) => p.program }),
+      onchain: t.field({ type: OnchainProgramInfoV2Type, resolve: (p) => p.onchain }),
     }),
   });

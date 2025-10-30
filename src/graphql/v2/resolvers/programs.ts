@@ -1,7 +1,12 @@
 import type { PaginationInput } from '@/graphql/types/common';
-import type { CreateProgramV2Input, UpdateProgramV2Input } from '@/graphql/v2/inputs/programs';
+import type {
+  CreateProgramV2Input,
+  CreateProgramWithOnchainV2Input,
+  UpdateProgramV2Input,
+} from '@/graphql/v2/inputs/programs';
 import type { Context, Root } from '@/types';
 import { ProgramV2Service } from '../services';
+import { OnchainProgramInfoV2Service } from '../services/onchain-program-info.service';
 
 export async function getProgramsV2Resolver(
   _root: Root,
@@ -73,5 +78,35 @@ export async function getProgramsBysponsorIdV2Resolver(
   return programService.getBySponsorId(numericsponsorId, {
     limit: args.pagination?.limit ?? undefined,
     offset: args.pagination?.offset ?? undefined,
+  });
+}
+
+export async function createProgramWithOnchainV2Resolver(
+  _root: Root,
+  args: {
+    input: typeof CreateProgramWithOnchainV2Input.$inferInput;
+  },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('User not authenticated');
+  }
+
+  const userId = ctx.userV2.id;
+  return ctx.db.transaction(async (t) => {
+    // Create program
+    const createdProgram = await new ProgramV2Service(t).create(args.input.program, userId);
+
+    // Create onchain program info using program's networkId
+    const onchain = await new OnchainProgramInfoV2Service(t).create({
+      programId: createdProgram.id,
+      networkId: createdProgram.networkId,
+      smartContractId: args.input.onchain.smartContractId,
+      onchainProgramId: args.input.onchain.onchainProgramId,
+      tx: args.input.onchain.tx,
+      status: args.input.onchain.status ?? undefined,
+    });
+
+    return { program: createdProgram, onchain };
   });
 }
