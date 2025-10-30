@@ -52,6 +52,7 @@ describe('Onchain Contract Info V2 GraphQL API - Integration Tests', () => {
       chainInfoId: net.id,
       tokenName: 'USDC',
       tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+      decimals: 6,
     };
     const [token] = await db.insert(tokensTable).values(testToken).returning();
 

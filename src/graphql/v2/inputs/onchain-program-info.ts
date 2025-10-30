@@ -6,6 +6,7 @@ export const CreateOnchainProgramInfoV2Input = builder.inputType(
   {
     fields: (t) => ({
       programId: t.int({ required: true }),
+      networkId: t.int({ required: true }),
       smartContractId: t.int({ required: true }),
       onchainProgramId: t.int({ required: true }),
       tx: t.string({ required: true }),

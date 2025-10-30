@@ -34,6 +34,7 @@ describe('OnchainProgramInfoTable', () => {
         chainInfoId: networkId,
         tokenName: 'USDC',
         tokenAddress: '0x0000000000000000000000000000000000000001',
+        decimals: 6,
       })
       .returning();
     tokenId = tok.id;
@@ -96,6 +97,7 @@ describe('OnchainProgramInfoTable', () => {
       .insert(onchainProgramInfoTable)
       .values({
         programId,
+        networkId,
         smartContractId: contractId,
         onchainProgramId: 1,
         status: 'active',
@@ -115,6 +117,7 @@ describe('OnchainProgramInfoTable', () => {
       .insert(onchainProgramInfoTable)
       .values({
         programId,
+        networkId,
         smartContractId: contractId,
         onchainProgramId: 999,
         status: 'active',

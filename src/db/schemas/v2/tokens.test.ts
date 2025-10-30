@@ -34,6 +34,7 @@ describe('TokensTable', () => {
       chainInfoId: testNetwork.id,
       tokenName: 'USDC',
       tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+      decimals: 6,
     };
 
     const [token] = await db.insert(tokensTable).values(tokenData).returning();
@@ -50,16 +51,19 @@ describe('TokensTable', () => {
         chainInfoId: testNetwork.id,
         tokenName: 'USDC',
         tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+        decimals: 6,
       },
       {
         chainInfoId: testNetwork.id,
         tokenName: 'ETH',
         tokenAddress: '0x0000000000000000000000000000000000000000',
+        decimals: 18,
       },
       {
         chainInfoId: testNetwork.id,
         tokenName: 'WETH',
         tokenAddress: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+        decimals: 18,
       },
     ];
 
@@ -76,6 +80,7 @@ describe('TokensTable', () => {
       chainInfoId: 99999, // Non-existent network ID
       tokenName: 'USDC',
       tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+      decimals: 6,
     };
 
     await expect(db.insert(tokensTable).values(tokenData)).rejects.toThrow();
@@ -98,11 +103,13 @@ describe('TokensTable', () => {
         chainInfoId: testNetwork.id,
         tokenName: 'USDC',
         tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+        decimals: 6,
       },
       {
         chainInfoId: network2.id,
         tokenName: 'USDC',
         tokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+        decimals: 6,
       },
     ];
 
@@ -122,11 +129,13 @@ describe('TokensTable', () => {
         chainInfoId: testNetwork.id,
         tokenName: 'USDC',
         tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+        decimals: 6,
       },
       {
         chainInfoId: testNetwork.id,
         tokenName: 'ETH',
         tokenAddress: '0x0000000000000000000000000000000000000000',
+        decimals: 18,
       },
     ]);
 
@@ -144,6 +153,7 @@ describe('TokensTable', () => {
       chainInfoId: network2.id,
       tokenName: 'MATIC',
       tokenAddress: '0x0000000000000000000000000000000000000000',
+      decimals: 18,
     });
 
     // Query tokens for the first network
@@ -163,6 +173,7 @@ describe('TokensTable', () => {
       chainInfoId: testNetwork.id,
       tokenName: 'LONG',
       tokenAddress: address42,
+      decimals: 6,
     };
 
     const [token] = await db.insert(tokensTable).values(tokenData).returning();
@@ -176,11 +187,13 @@ describe('TokensTable', () => {
         chainInfoId: testNetwork.id,
         tokenName: 'USDC-USD',
         tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+        decimals: 6,
       },
       {
         chainInfoId: testNetwork.id,
         tokenName: 'WETH/ETH',
         tokenAddress: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+        decimals: 18,
       },
     ];
 
@@ -189,6 +202,8 @@ describe('TokensTable', () => {
     expect(tokens).toHaveLength(2);
     expect(tokens[0].tokenName).toBe('USDC-USD');
     expect(tokens[1].tokenName).toBe('WETH/ETH');
+    expect(tokens[0].decimals).toBe(6);
+    expect(tokens[1].decimals).toBe(18);
   });
 
   it('should cascade delete when network is deleted', async () => {
@@ -198,11 +213,13 @@ describe('TokensTable', () => {
         chainInfoId: testNetwork.id,
         tokenName: 'USDC',
         tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+        decimals: 6,
       },
       {
         chainInfoId: testNetwork.id,
         tokenName: 'ETH',
         tokenAddress: '0x0000000000000000000000000000000000000000',
+        decimals: 18,
       },
     ]);
 
