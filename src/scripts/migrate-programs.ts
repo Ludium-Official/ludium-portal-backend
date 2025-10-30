@@ -1,16 +1,18 @@
 import 'dotenv/config';
-import { sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { drizzle as drizzleDb1 } from 'drizzle-orm/postgres-js';
 import { drizzle as drizzleDb2 } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { programsTable } from '../db/schemas/programs';
+import { keywordsTable } from '../db/schemas/keywords';
+import { programsTable, programsToKeywordsTable } from '../db/schemas/programs';
 import { usersTable } from '../db/schemas/users';
 import { networksTable } from '../db/schemas/v2/networks';
 import { type NewProgramV2, programsV2Table } from '../db/schemas/v2/programs';
 import { tokensTable } from '../db/schemas/v2/tokens';
 import { usersV2Table } from '../db/schemas/v2/users';
 
-type ProgramStatusV2 = 'under_review' | 'open' | 'closed' | 'draft';
+type ProgramStatusV2 = 'open' | 'closed' | 'draft';
+
 type ProgramVisibilityV2 = 'private' | 'restricted' | 'public';
 
 /**
@@ -19,12 +21,9 @@ type ProgramVisibilityV2 = 'private' | 'restricted' | 'public';
 function mapStatus(v1Status: string): ProgramStatusV2 {
   const statusMap: Record<string, ProgramStatusV2> = {
     pending: 'draft',
-    payment_required: 'under_review',
-    rejected: 'closed',
+    payment_required: 'draft',
     published: 'open',
-    closed: 'closed',
     completed: 'closed',
-    cancelled: 'closed',
   };
 
   return statusMap[v1Status] || 'draft';
@@ -76,6 +75,9 @@ async function migratePrograms() {
         status: programsTable.status,
         visibility: programsTable.visibility,
         network: programsTable.network,
+        type: programsTable.type,
+        createdAt: programsTable.createdAt,
+        updatedAt: programsTable.updatedAt,
       })
       .from(programsTable);
 
@@ -85,6 +87,31 @@ async function migratePrograms() {
       console.log('No programs to migrate.');
       return;
     }
+
+    // V1 programs의 keywords 조회
+    console.log('Fetching program keywords from V1 database...');
+    const programIds = v1Programs.map((p) => p.id);
+    const programKeywords = await db1
+      .select({
+        programId: programsToKeywordsTable.programId,
+        keywordName: keywordsTable.name,
+      })
+      .from(programsToKeywordsTable)
+      // @ts-expect-error - Drizzle ORM type inference issue with leftJoin
+      .leftJoin(keywordsTable, eq(keywordsTable.id, programsToKeywordsTable.keywordId))
+      .where(inArray(programsToKeywordsTable.programId, programIds));
+
+    const skillsMap = new Map<string, string[]>();
+    for (const pk of programKeywords) {
+      if (pk.programId && pk.keywordName) {
+        if (!skillsMap.has(pk.programId)) {
+          skillsMap.set(pk.programId, []);
+        }
+        skillsMap.get(pk.programId)?.push(pk.keywordName);
+      }
+    }
+
+    console.log(`Found keywords for ${skillsMap.size} programs.`);
 
     // V2 데이터 조회
     console.log('Fetching V2 reference data...');
@@ -192,17 +219,29 @@ async function migratePrograms() {
           continue;
         }
 
+        if (v1Program.type === 'funding') {
+          console.warn(
+            `⚠️  Funding program not supported. Skipping program ${v1Program.id} (${v1Program.name}).`,
+          );
+          skippedCount++;
+          continue;
+        }
+
         const newProgram: NewProgramV2 = {
           title: v1Program.name,
-          description: v1Program.description || v1Program.summary || '',
-          skills: [], // V1에는 skills가 없으므로 빈 배열
+          description: ['summary', v1Program.summary, 'description', v1Program.description]
+            .filter(Boolean)
+            .join('\n\n'),
+          skills: skillsMap.get(v1Program.id) || [],
           deadline: v1Program.deadline,
-          status: mapStatus(v1Program.status || 'pending'),
+          status: mapStatus(v1Program.status || 'draft'),
           visibility: mapVisibility(v1Program.visibility || 'public'),
           networkId,
           price: v1Program.price,
           token_id: tokenId,
           sponsorId: v2UserId,
+          createdAt: v1Program.createdAt,
+          updatedAt: v1Program.updatedAt,
         };
 
         await db2.insert(programsV2Table).values(newProgram);

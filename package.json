@@ -24,10 +24,15 @@
     "test:e2e": "vitest run ./src/graphql/v2/tests/e2e",
     "test": "vitest run",
     "prepare": "husky",
-    "migrate-users": "tsx ./src/scripts/migrate-users.ts",
-    "migrate-networks": "tsx ./src/scripts/migrate-networks.ts",
-    "migrate-tokens": "tsx ./src/scripts/migrate-tokens.ts",
-    "migrate-programs": "tsx ./src/scripts/migrate-programs.ts"
+    "migrate:db": "tsx ./src/scripts/migrate-db.ts",
+    "migrate:users": "tsx ./src/scripts/migrate-users.ts",
+    "migrate:networks": "tsx ./src/scripts/migrate-networks.ts",
+    "migrate:tokens": "tsx ./src/scripts/migrate-tokens.ts",
+    "migrate:sm": "tsx ./src/scripts/migrate-smart-contracts.ts",
+    "migrate:programs": "tsx ./src/scripts/migrate-programs.ts",
+    "migrate:opinfo": "tsx ./src/scripts/migrate-onchain-program-info.ts",
+    "migrate:applications": "tsx ./src/scripts/migrate-applications.ts",
+    "migrate:milestones": "tsx ./src/scripts/migrate-milestones.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",

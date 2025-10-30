@@ -1,0 +1,1 @@
+ALTER TABLE "applications_v2" ADD COLUMN "title" text DEFAULT '';

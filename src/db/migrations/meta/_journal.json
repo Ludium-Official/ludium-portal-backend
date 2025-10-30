@@ -50,6 +50,20 @@
       "when": 1761731408976,
       "tag": "0006_absent_madame_web",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1761777575193,
+      "tag": "0007_flawless_goliath",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1761797569384,
+      "tag": "0008_milky_bloodstorm",
+      "breakpoints": true
     }
   ]
 }

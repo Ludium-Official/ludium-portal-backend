@@ -42,6 +42,7 @@ async function migrateUsers() {
         keywordType: usersToKeywordsTable.type,
       })
       .from(usersToKeywordsTable)
+      // @ts-expect-error - Drizzle ORM type inference issue with leftJoin
       .leftJoin(keywordsTable, eq(keywordsTable.id, usersToKeywordsTable.keywordId))
       .where(inArray(usersToKeywordsTable.userId, userIds));
 
@@ -89,7 +90,7 @@ async function migrateUsers() {
         lastName: oldUser.lastName,
         organizationName: oldUser.organizationName,
         profileImage: imageUrl,
-        bio: [oldUser.about, oldUser.summary].filter(Boolean).join('\n\n'),
+        bio: ['about', oldUser.about, 'summary', oldUser.summary].filter(Boolean).join('\n\n'),
         skills: skillsMap.get(oldUser.id) || [],
         links: oldUser.links ? oldUser.links.map((link) => link.url) : [],
         createdAt: oldUser.createdAt,

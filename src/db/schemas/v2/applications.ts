@@ -17,6 +17,7 @@ export const applicationsV2Table = pgTable('applications_v2', {
     .notNull()
     .references(() => usersV2Table.id, { onDelete: 'cascade' }),
   status: applicationStatusV2Enum('status').default('applied').notNull(),
+  title: text('title').default(''),
   content: text('content').default(''),
   rejectedReason: text('rejected_reason').default(''),
   picked: boolean('picked').default(false).notNull(),

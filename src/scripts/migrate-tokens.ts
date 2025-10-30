@@ -69,7 +69,7 @@ async function migrateTokens() {
     const clearExistingData = process.env.CLEAR_EXISTING_TOKENS === 'true';
     if (clearExistingData) {
       console.log('Clearing existing tokens data...');
-      await db.execute(sql`TRUNCATE TABLE ${tokensTable} RESTART IDENTITY`);
+      await db.execute(sql`TRUNCATE TABLE ${tokensTable} RESTART IDENTITY CASCADE`);
       console.log('✅ Existing data cleared.');
     }
 
