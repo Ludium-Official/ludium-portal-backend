@@ -162,29 +162,5 @@
         "verified": false
       }
     }
-  },
-  "base-sepolia": {
-    "chainId": 84532,
-    "contracts": {
-      "LdRecruitment": {
-        "address": "0x0000000000000000000000000000000000000000"
-      }
-    }
-  },
-  "arbitrum-sepolia": {
-    "chainId": 421614,
-    "contracts": {
-      "LdRecruitment": {
-        "address": "0x0000000000000000000000000000000000000000"
-      }
-    }
-  },
-  "educhain-testnet": {
-    "chainId": 656476,
-    "contracts": {
-      "LdRecruitment": {
-        "address": "0x0000000000000000000000000000000000000000"
-      }
-    }
   }
 }

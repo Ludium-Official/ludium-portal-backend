@@ -71,13 +71,6 @@
       "when": 1761806698634,
       "tag": "0009_next_mystique",
       "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1761809749062,
-      "tag": "0010_red_talos",
-      "breakpoints": true
     }
   ]
 }
