@@ -42,6 +42,25 @@ async function migrateNetworks() {
         chainName: 'educhain',
         mainnet: true,
       },
+      // Testnets
+      {
+        chainId: 84532,
+        chainName: 'base-sepolia',
+        mainnet: false,
+        exploreUrl: 'https://basescan.org/sepolia',
+      },
+      {
+        chainId: 421614,
+        chainName: 'arbitrum-sepolia',
+        mainnet: false,
+        exploreUrl: 'https://arbiscan.io/sepolia',
+      },
+      {
+        chainId: 656476,
+        chainName: 'educhain-testnet',
+        mainnet: false,
+        exploreUrl: 'https://explorer.educhain.org/testnet',
+      },
     ];
 
     // 기존 데이터 삭제 옵션 (환경 변수로 제어)

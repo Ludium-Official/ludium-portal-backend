@@ -127,11 +127,13 @@ describe('NetworksTable', () => {
         chainInfoId: network.id,
         tokenName: 'USDC',
         tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+        decimals: 6,
       },
       {
         chainInfoId: network.id,
         tokenName: 'ETH',
         tokenAddress: '0x0000000000000000000000000000000000000000',
+        decimals: 18,
       },
     ]);
 

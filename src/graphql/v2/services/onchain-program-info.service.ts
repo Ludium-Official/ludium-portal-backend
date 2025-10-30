@@ -79,6 +79,7 @@ export class OnchainProgramInfoV2Service {
   ): Promise<OnchainProgramInfo> {
     const createData = {
       programId: input.programId,
+      networkId: input.networkId,
       smartContractId: input.smartContractId,
       onchainProgramId: input.onchainProgramId,
       tx: input.tx,

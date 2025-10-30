@@ -20,6 +20,7 @@ export const tokensTable = pgTable('tokens', {
   // EN: Token contract address on the blockchain
   // KR: 블록체인상의 토큰 컨트랙트 주소
   tokenAddress: varchar('token_address', { length: 42 }).notNull(),
+  decimals: integer('decimals').notNull(),
 });
 
 export const tokensRelations = relations(tokensTable, ({ one }) => ({

@@ -45,6 +45,7 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
       chainInfoId: testNetworkId,
       tokenName: 'USDC',
       tokenAddress: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0',
+      decimals: 6,
     };
     const [insertedToken] = await db.insert(tokensTable).values(testToken).returning();
     testTokenId = insertedToken.id;

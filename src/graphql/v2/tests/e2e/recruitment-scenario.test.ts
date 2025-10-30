@@ -153,6 +153,7 @@ describe('E2E Contract Scenario Test', () => {
       chainInfoId: net.id,
       tokenName: 'USDC',
       tokenAddress: '0x1234000000000000000000000000000000000000',
+      decimals: 6,
     };
     const [token] = await db.insert(tokensTable).values(testToken).returning();
     tokenId = token.id;
