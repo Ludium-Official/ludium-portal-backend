@@ -1,0 +1,1734 @@
+type Application {
+  applicant: User
+  comments: [Comment!]
+  content: String
+  currentFundingAmount: String
+  fundingProgress: Float
+  fundingSuccessful: Boolean
+  fundingTarget: String
+  id: ID
+  investmentCount: Int
+  investmentTerms: [InvestmentTerm!]
+  investors: [Investor!]
+  links: [Link!]
+  metadata: JSON
+  milestones: [Milestone!]
+  name: String
+  onChainProjectId: Int
+  price: String
+  program: Program
+  rejectionReason: String
+  status: ApplicationStatus
+  summary: String
+  walletAddress: String
+}
+
+enum ApplicationStatus {
+  accepted
+  completed
+  pending
+  rejected
+  submitted
+}
+
+enum ApplicationStatusV2 {
+  applied
+  hired
+  rejected
+}
+
+type ApplicationV2 {
+  """User who submitted this application"""
+  applicant: UserV2
+
+  """ID of the user who submitted this application"""
+  applicantId: ID
+
+  """Content of the application submitted by the applicant"""
+  content: String
+
+  """Application creation timestamp"""
+  createdAt: DateTime
+
+  """Application unique identifier"""
+  id: ID
+
+  """Whether this application has been picked"""
+  picked: Boolean
+
+  """Program this application is for"""
+  program: ProgramV2
+
+  """ID of the program this application is for"""
+  programId: ID
+
+  """Reason for rejection if the application was rejected"""
+  rejectedReason: String
+
+  """Application status"""
+  status: ApplicationStatusV2
+
+  """Application last update timestamp"""
+  updatedAt: DateTime
+}
+
+input ApplicationsByProgramV2QueryInput {
+  """Number of items per page"""
+  limit: Int = 10
+
+  """Page number (1-based)"""
+  page: Int = 1
+
+  """Program ID to get applications for"""
+  programId: ID!
+}
+
+input ApplicationsV2QueryInput {
+  """Filter by applicant ID"""
+  applicantId: ID
+
+  """Number of items per page"""
+  limit: Int = 10
+
+  """Page number (1-based)"""
+  page: Int = 1
+
+  """Filter by program ID"""
+  programId: ID
+
+  """Filter by application status"""
+  status: ApplicationStatusV2
+}
+
+input AssignUserTierInput {
+  maxInvestmentAmount: String!
+  programId: ID!
+  tier: InvestmentTier!
+  userId: ID!
+}
+
+input BulkAssignTiersInput {
+  assignments: [AssignUserTierInput!]!
+  programId: ID!
+}
+
+type CarouselItem {
+  displayOrder: Int
+  id: ID
+  isActive: Boolean
+  itemId: String
+  itemType: CarouselItemType
+}
+
+union CarouselItemData = Post | Program
+
+enum CarouselItemType {
+  post
+  program
+}
+
+input CheckMilestoneInput {
+  id: String!
+  rejectionReason: String
+  status: CheckMilestoneStatus!
+}
+
+enum CheckMilestoneStatus {
+  completed
+  rejected
+}
+
+type ClaimableFees {
+  amount: String
+  canClaim: Boolean
+  claimedAt: DateTime
+  feePercentage: Float
+  pendingEndDate: DateTime
+  reason: String
+}
+
+type Comment {
+  author: User
+  commentableId: String
+  commentableType: String
+  content: String
+  createdAt: DateTime
+  id: ID
+  parent: Comment
+  replies: [Comment!]
+}
+
+enum CommentableTypeEnum {
+  application
+  milestone
+  post
+  program
+}
+
+input CreateApplicationInput {
+  content: String!
+  fundingTarget: String
+  investmentTerms: [CreateInvestmentTermInput!]
+  links: [LinkInput!]
+  metadata: JSON
+  milestones: [CreateMilestoneInput!]!
+  name: String!
+  price: String!
+  programId: String!
+  status: ApplicationStatus!
+  summary: String!
+  walletAddress: String
+}
+
+input CreateApplicationV2Input {
+  """Content of the application submitted by the applicant"""
+  content: String
+
+  """ID of the program to apply for"""
+  programId: ID!
+
+  """Application status (defaults to applied)"""
+  status: ApplicationStatusV2
+}
+
+input CreateCarouselItemInput {
+  isActive: Boolean!
+  itemId: String!
+  itemType: CarouselItemType!
+}
+
+input CreateCommentInput {
+  commentableId: ID!
+  commentableType: CommentableTypeEnum!
+  content: String!
+  parentId: ID
+}
+
+input CreateInvestmentInput {
+  amount: String!
+  investmentTermId: ID
+  projectId: ID!
+  txHash: String
+}
+
+input CreateInvestmentTermInput {
+  description: String
+  price: String!
+  purchaseLimit: Int
+  title: String!
+}
+
+input CreateMilestoneInput {
+  currency: String! = "ETH"
+  deadline: DateTime!
+  description: String!
+  links: [LinkInput!]
+  percentage: String!
+  summary: String!
+  title: String!
+}
+
+input CreateMilestoneV2Input {
+  """ID of the applicant (user)"""
+  applicantId: ID!
+
+  """Milestone deadline"""
+  deadline: DateTime!
+
+  """Milestone description"""
+  description: String!
+
+  """Milestone payout amount"""
+  payout: String!
+
+  """ID of the program"""
+  programId: ID!
+
+  """Milestone title"""
+  title: String!
+}
+
+input CreateNetworkV2Input {
+  chainId: Int!
+  chainName: String!
+  exploreUrl: String
+  mainnet: Boolean!
+}
+
+input CreateOnchainContractInfoV2Input {
+  applicantId: Int!
+  contentHash: String!
+  programId: Int!
+  status: OnchainContractStatusV2
+  tx: String!
+}
+
+input CreateOnchainProgramInfoV2Input {
+  networkId: Int!
+  onchainProgramId: Int!
+  programId: Int!
+  smartContractId: Int!
+  status: OnchainProgramStatusV2
+  tx: String!
+}
+
+input CreatePostInput {
+  content: String!
+  image: Upload
+  keywords: [ID!]
+  summary: String!
+  title: String!
+}
+
+input CreateProgramInput {
+  applicationEndDate: DateTime
+  applicationStartDate: DateTime
+  contractAddress: String
+  currency: String
+  customFeePercentage: Int
+  deadline: DateTime!
+  description: String
+  feePercentage: Int
+  fundingCondition: FundingCondition
+  fundingEndDate: DateTime
+  fundingStartDate: DateTime
+  image: Upload!
+  keywords: [String!]!
+  links: [LinkInput!]
+  name: String!
+  network: String!
+  price: String!
+  status: ProgramStatus = pending
+  summary: String
+  tierSettings: JSON
+  type: ProgramType = regular
+  visibility: ProgramVisibility
+}
+
+input CreateProgramV2Input {
+  deadline: DateTime!
+  description: String!
+  invitedMembers: [String!]
+  networkId: Int!
+  price: String!
+  skills: [String!]!
+  status: ProgramStatusV2!
+  title: String!
+  token_id: Int!
+  visibility: ProgramVisibilityV2!
+}
+
+input CreateProgramWithOnchainV2Input {
+  onchain: OnchainProgramInfoForCreateWithProgramV2Input!
+  program: CreateProgramV2Input!
+}
+
+type CreateProgramWithOnchainV2Payload {
+  onchain: OnchainProgramInfoV2
+  program: ProgramV2
+}
+
+input CreateSmartContractV2Input {
+  address: String!
+  chainInfoId: Int!
+  name: String!
+}
+
+input CreateTokenV2Input {
+  chainInfoId: Int!
+  decimals: Int!
+  tokenAddress: String!
+  tokenName: String!
+}
+
+input CreateUserV2Input {
+  """User bio/description"""
+  bio: String
+
+  """User email address"""
+  email: String
+
+  """User first name"""
+  firstName: String
+
+  """User last name"""
+  lastName: String
+
+  """User links array"""
+  links: [String!]
+
+  """User login type"""
+  loginType: LoginTypeEnum!
+
+  """User organization name"""
+  organizationName: String
+
+  """User profile image URL"""
+  profileImage: String
+
+  """User role (defaults to user)"""
+  role: UserRoleV2
+
+  """User skills array"""
+  skills: [String!]
+
+  """User wallet address"""
+  walletAddress: String!
+}
+
+"""
+A date string, such as 2007-12-03, compliant with the `full-date` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
+"""
+scalar Date
+
+"""
+A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
+"""
+scalar DateTime
+
+type EnrichedCarouselItem {
+  data: CarouselItemData
+  displayOrder: Int
+  id: ID
+  isActive: Boolean
+  itemId: String
+  itemType: CarouselItemType
+}
+
+type FeeClaim {
+  amount: String
+  claimedAt: DateTime
+  claimedBy: ID
+  createdAt: DateTime
+  id: ID
+  programId: ID
+  status: String
+  txHash: String
+}
+
+input FilterInput {
+  field: String!
+  value: String
+  values: [String!]
+}
+
+enum FundingCondition {
+  open
+  tier
+}
+
+type Investment {
+  amount: String
+  canReclaim: Boolean
+  id: ID
+  project: Application
+  reclaimTxHash: String
+  reclaimed: Boolean
+  reclaimedAt: Date
+  status: InvestmentStatus
+  supporter: User
+  tier: String
+  txHash: String
+}
+
+type InvestmentStatsByStatus {
+  applicationOngoing: Int
+  fundingOngoing: Int
+  programCompleted: Int
+  projectOngoing: Int
+  ready: Int
+  refund: Int
+}
+
+enum InvestmentStatus {
+  confirmed
+  failed
+  pending
+  refunded
+}
+
+type InvestmentTerm {
+  applicationId: ID
+  createdAt: DateTime
+  currentPurchases: Int
+  description: String
+  id: ID
+  price: String
+  purchaseLimit: Int
+  remainingPurchases: Int
+  title: String
+  updatedAt: DateTime
+}
+
+enum InvestmentTier {
+  bronze
+  gold
+  platinum
+  silver
+}
+
+type Investor {
+  amount: String
+  createdAt: String
+  email: String
+  firstName: String
+  investmentStatus: String
+  lastName: String
+  maxInvestmentAmount: String
+  tier: String
+  userId: ID
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
+type Keyword {
+  id: ID
+  name: String
+}
+
+enum KeywordType {
+  role
+  skill
+}
+
+type Link {
+  title: String
+  url: String
+}
+
+input LinkInput {
+  title: String
+  url: String
+}
+
+enum LoginTypeEnum {
+  farcaster
+  google
+  wallet
+}
+
+type Milestone {
+  """Whether this milestone can be reclaimed (unpaid past deadline)"""
+  canReclaim: Boolean
+  comments: [Comment!]
+  currency: String
+  deadline: DateTime
+  description: String
+  file: String
+  id: ID
+  links: [Link!]
+  percentage: String
+  price: String
+  reclaimTxHash: String
+  reclaimed: Boolean
+  reclaimedAt: DateTime
+  rejectionReason: String
+  status: MilestoneStatus
+  summary: String
+  title: String
+}
+
+type MilestonePayout {
+  amount: String
+  createdAt: Date
+  errorMessage: String
+  id: ID
+  investment: Investment
+  milestone: Milestone
+  percentage: String
+  processedAt: Date
+  status: PayoutStatus
+  txHash: String
+}
+
+enum MilestoneStatus {
+  completed
+  draft
+  pending
+  rejected
+  submitted
+}
+
+type MilestoneV2 {
+  """User who owns this milestone"""
+  applicant: UserV2
+
+  """Milestone creation timestamp"""
+  createdAt: DateTime
+
+  """Milestone deadline"""
+  deadline: DateTime
+
+  """Milestone description"""
+  description: String
+
+  """Milestone unique identifier"""
+  id: ID
+
+  """Milestone payout amount"""
+  payout: String
+
+  """Program this milestone belongs to"""
+  program: ProgramV2
+
+  """Milestone title"""
+  title: String
+
+  """Milestone last update timestamp"""
+  updatedAt: DateTime
+}
+
+input MilestonesV2QueryInput {
+  """Filter by applicant ID"""
+  applicantId: ID
+
+  """Number of items per page"""
+  limit: Int = 10
+
+  """Page number (1-based)"""
+  page: Int = 1
+
+  """Filter by program ID"""
+  programId: ID
+}
+
+type Mutation {
+  acceptApplication(id: ID!, onChainProjectId: Int, tierSyncInfo: TierSyncInfo): Application
+  acceptProgram(id: ID!): Program
+  addProgramKeyword(keyword: String!, programId: ID!): Keyword
+  addUserKeyword(keyword: String!, type: KeywordType, userId: ID!): Keyword
+  assignValidatorToProgram(programId: ID!, validatorId: ID!): Program
+  banUser(reason: String, userId: ID!): User
+  checkMilestone(input: CheckMilestoneInput!): Milestone
+  claimProgramFees(programId: ID!, txHash: String!): FeeClaim
+  createApplication(input: CreateApplicationInput!): Application
+
+  """Create a new application"""
+  createApplicationV2(
+    """Application creation data"""
+    input: CreateApplicationV2Input!
+  ): ApplicationV2
+  createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
+  createComment(input: CreateCommentInput!): Comment
+  createInvestment(input: CreateInvestmentInput!): Investment
+  createInvestmentTerm(applicationId: ID!, input: CreateInvestmentTermInput!): InvestmentTerm
+
+  """Create a new milestone"""
+  createMilestoneV2(
+    """Milestone creation data"""
+    input: CreateMilestoneV2Input!
+  ): MilestoneV2
+  createNetworkV2(input: CreateNetworkV2Input!): NetworkV2
+  createOnchainContractInfoV2(input: CreateOnchainContractInfoV2Input!): OnchainContractInfoV2
+  createOnchainProgramInfoV2(input: CreateOnchainProgramInfoV2Input!): OnchainProgramInfoV2
+  createPost(input: CreatePostInput!): Post
+  createProgram(input: CreateProgramInput!): Program
+  createProgramV2(input: CreateProgramV2Input!): ProgramV2
+  createProgramWithOnchainV2(input: CreateProgramWithOnchainV2Input!): CreateProgramWithOnchainV2Payload
+  createSmartContractV2(input: CreateSmartContractV2Input!): SmartContractV2
+  createTokenV2(input: CreateTokenV2Input!): TokenV2
+  createUser(input: UserInput!): User
+
+  """Create a new user"""
+  createUserV2(
+    """User creation data"""
+    input: CreateUserV2Input!
+  ): UserV2
+
+  """Delete an application by ID (only by the applicant)"""
+  deleteApplicationV2(
+    """Application ID"""
+    id: ID!
+  ): ApplicationV2
+  deleteCarouselItem(id: ID!): CarouselItem
+  deleteInvestmentTerm(id: ID!): Boolean
+
+  """Delete a milestone by ID"""
+  deleteMilestoneV2(
+    """Milestone ID"""
+    id: ID!
+  ): MilestoneV2
+  deleteNetworkV2(id: ID!): NetworkV2
+  deleteOnchainContractInfoV2(id: ID!): OnchainContractInfoV2
+  deleteOnchainProgramInfoV2(id: ID!): OnchainProgramInfoV2
+  deleteProgram(id: ID!): Boolean
+  deleteProgramV2(id: ID!): ID
+  deleteSmartContractV2(id: ID!): SmartContractV2
+  deleteTokenV2(id: ID!): TokenV2
+  deleteUser(id: ID!): User
+
+  """Delete a user by ID"""
+  deleteUserV2(
+    """User ID to delete"""
+    id: ID!
+  ): Boolean
+  demoteFromAdmin(userId: ID!): User
+  generateSwappedUrl(amount: String!, currencyCode: String!, userId: String!, walletAddress: String!): SwappedUrlResponse
+  hidePost(id: ID!): Post
+  hideProgram(id: ID!): Program
+  incrementPostView(postId: ID!): Int
+  inviteUserToProgram(maxInvestmentAmount: String, programId: ID!, tier: InvestmentTier, userId: ID!): Program
+  login(email: String, loginType: String!, walletAddress: String!): String
+
+  """Login or create user account and return JWT token"""
+  loginV2(
+    """User email address (optional)"""
+    email: String
+
+    """Login type (google, wallet, farcaster)"""
+    loginType: LoginTypeEnum!
+
+    """User wallet address"""
+    walletAddress: String!
+  ): String
+  markAllNotificationsAsRead: Boolean
+  markNotificationAsRead(id: ID!): Boolean
+
+  """
+  Pick or unpick application (bookmark favorite, only by program creator)
+  """
+  pickApplicationV2(
+    """Application ID"""
+    id: ID!
+
+    """Pick/unpick data (bookmark, only by program creator)"""
+    input: PickApplicationV2Input!
+  ): ApplicationV2
+  processMilestonePayouts(input: ProcessPayoutsInput!): [MilestonePayout!]
+  promoteToAdmin(userId: ID!): User
+  reclaimInvestment(input: ReclaimInvestmentInput!): Investment
+
+  """Reclaim funds from an unpaid milestone past its deadline"""
+  reclaimMilestone(milestoneId: ID!, txHash: String): Milestone
+  reclaimProgram(programId: ID!, txHash: String): Program
+  rejectApplication(id: ID!, rejectionReason: String): Application
+  rejectProgram(id: ID!, rejectionReason: String): Program
+  removeProgramKeyword(keyword: String!, programId: ID!): Boolean
+  removeUserFromProgram(programId: ID!, userId: ID!): Program
+  removeUserKeyword(keyword: String!, type: KeywordType, userId: ID!): Boolean
+  removeValidatorFromProgram(programId: ID!, validatorId: ID!): Program
+  reorderCarouselItems(items: [ReorderCarouselItemInput!]!): [CarouselItem!]
+
+  """Review and accept/reject application (only by program creator)"""
+  reviewApplicationV2(
+    """Application ID"""
+    id: ID!
+
+    """Review decision data (only by program creator)"""
+    input: ReviewApplicationV2Input!
+  ): ApplicationV2
+  showPost(id: ID!): Post
+  showProgram(id: ID!): Program
+  submitMilestone(input: SubmitMilestoneInput!): Milestone
+  submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
+  syncApplicationTiers(applicationId: ID!): TierSyncResult
+  unbanUser(userId: ID!): User
+  updateApplication(input: UpdateApplicationInput!): Application
+
+  """Update application content (only by applicant)"""
+  updateApplicationV2(
+    """Application ID"""
+    id: ID!
+
+    """Application update data (only by applicant)"""
+    input: UpdateApplicationV2Input!
+  ): ApplicationV2
+  updateCarouselItem(input: UpdateCarouselItemInput!): CarouselItem
+  updateComment(input: UpdateCommentInput!): Comment
+  updateInvestmentTerm(input: UpdateInvestmentTermInput!): InvestmentTerm
+  updateMilestone(input: UpdateMilestoneInput!): Milestone
+
+  """Update an existing milestone"""
+  updateMilestoneV2(
+    """Milestone ID"""
+    id: ID!
+
+    """Milestone update data"""
+    input: UpdateMilestoneV2Input!
+  ): MilestoneV2
+  updateNetworkV2(id: ID!, input: UpdateNetworkV2Input!): NetworkV2
+  updateOnchainContractInfoV2(id: ID!, input: UpdateOnchainContractInfoV2Input!): OnchainContractInfoV2
+  updateOnchainProgramInfoV2(id: ID!, input: UpdateOnchainProgramInfoV2Input!): OnchainProgramInfoV2
+  updatePost(input: UpdatePostInput!): Post
+  updateProfile(input: UserUpdateInput!): User
+
+  """Update current authenticated user profile"""
+  updateProfileV2(
+    """Profile update data"""
+    input: UpdateProfileV2Input!
+  ): UserV2
+  updateProgram(input: UpdateProgramInput!): Program
+  updateProgramV2(id: ID!, input: UpdateProgramV2Input!): ProgramV2
+  updateSmartContractV2(id: ID!, input: UpdateSmartContractV2Input!): SmartContractV2
+  updateTokenV2(id: ID!, input: UpdateTokenV2Input!): TokenV2
+  updateUser(input: UserUpdateInput!): User
+
+  """Update an existing user"""
+  updateUserV2(
+    """User update data"""
+    input: UpdateUserV2Input!
+  ): UserV2
+}
+
+input MyApplicationsV2QueryInput {
+  """Number of items per page"""
+  limit: Int = 10
+
+  """Page number (1-based)"""
+  page: Int = 1
+}
+
+type NetworkV2 {
+  chainId: Int
+  chainName: String
+  exploreUrl: String
+  id: ID
+  mainnet: Boolean
+}
+
+type Notification {
+  action: NotificationAction
+  content: String
+  createdAt: Date
+  entityId: ID
+  id: ID
+  metadata: JSON
+  readAt: Date
+  title: String
+  type: NotificationType
+}
+
+enum NotificationAction {
+  accepted
+  broadcast
+  completed
+  created
+  invited
+  rejected
+  submitted
+}
+
+type NotificationResult {
+  count: Int
+  data: [Notification!]
+}
+
+enum NotificationType {
+  application
+  comment
+  milestone
+  program
+  system
+}
+
+type OnchainContractInfoV2 {
+  applicantId: Int
+  contentHash: String
+  createdAt: DateTime
+  id: ID
+  programId: Int
+  status: OnchainContractStatusV2
+  tx: String
+}
+
+enum OnchainContractStatusV2 {
+  active
+  canceled
+  completed
+  paused
+  updated
+}
+
+input OnchainProgramInfoForCreateWithProgramV2Input {
+  onchainProgramId: Int!
+  smartContractId: Int!
+  status: OnchainProgramStatusV2
+  tx: String!
+}
+
+type OnchainProgramInfoV2 {
+  createdAt: DateTime
+  id: ID
+  networkId: Int
+  onchainProgramId: Int
+  programId: Int
+  smartContractId: Int
+  status: OnchainProgramStatusV2
+  tx: String
+}
+
+enum OnchainProgramStatusV2 {
+  active
+  cancelled
+  completed
+  paused
+}
+
+type PaginatedApplications {
+  count: Int
+  data: [Application!]
+}
+
+type PaginatedApplicationsV2 {
+  """Total number of applications matching the query"""
+  count: Int
+
+  """Current page number"""
+  currentPage: Int
+
+  """List of applications for the current page"""
+  data: [ApplicationV2!]
+
+  """Whether there is a next page"""
+  hasNextPage: Boolean
+
+  """Whether there is a previous page"""
+  hasPreviousPage: Boolean
+
+  """Total number of pages"""
+  totalPages: Int
+}
+
+type PaginatedComments {
+  count: Int
+  data: [Comment!]
+}
+
+type PaginatedInvestments {
+  count: Int
+  data: [Investment!]
+}
+
+type PaginatedMilestonePayouts {
+  count: Int
+  data: [MilestonePayout!]
+}
+
+type PaginatedMilestones {
+  count: Int
+  data: [Milestone!]
+}
+
+type PaginatedMilestonesV2 {
+  """Total number of milestones matching the query"""
+  count: Int
+
+  """Current page number"""
+  currentPage: Int
+
+  """List of milestones for the current page"""
+  data: [MilestoneV2!]
+
+  """Whether there is a next page"""
+  hasNextPage: Boolean
+
+  """Whether there is a previous page"""
+  hasPreviousPage: Boolean
+
+  """Total number of pages"""
+  totalPages: Int
+}
+
+type PaginatedNetworksV2 {
+  count: Int
+  data: [NetworkV2!]
+}
+
+type PaginatedOnchainContractInfoV2 {
+  count: Int
+  data: [OnchainContractInfoV2!]
+}
+
+type PaginatedOnchainProgramInfoV2 {
+  count: Int
+  data: [OnchainProgramInfoV2!]
+}
+
+type PaginatedPosts {
+  count: Int
+  data: [Post!]
+}
+
+type PaginatedPrograms {
+  count: Int
+  data: [Program!]
+}
+
+type PaginatedProgramsV2 {
+  count: Int
+  data: [ProgramV2!]
+}
+
+type PaginatedSmartContractsV2 {
+  count: Int
+  data: [SmartContractV2!]
+}
+
+type PaginatedTokensV2 {
+  count: Int
+  data: [TokenV2!]
+}
+
+type PaginatedUsers {
+  count: Int
+  data: [User!]
+}
+
+type PaginatedUsersV2 {
+  """Current page number"""
+  currentPage: Int
+
+  """Whether there is a next page"""
+  hasNextPage: Boolean
+
+  """Whether there is a previous page"""
+  hasPreviousPage: Boolean
+
+  """Total number of users matching the query"""
+  totalCount: Int
+
+  """Total number of pages"""
+  totalPages: Int
+
+  """List of users for the current page"""
+  users: [UserV2!]
+}
+
+input PaginationInput {
+  filter: [FilterInput!]
+  limit: Int
+  offset: Int
+  sort: SortEnum
+}
+
+input PaginationInputV2 {
+  filter: [FilterInput!]
+  limit: Int
+  page: Int
+  sort: SortEnum
+}
+
+enum PayoutStatus {
+  completed
+  failed
+  pending
+  processing
+}
+
+input PickApplicationV2Input {
+  """Whether to mark this application as picked (bookmark)"""
+  picked: Boolean!
+}
+
+type Post {
+  author: User
+  comments: [Comment!]
+  content: String
+  createdAt: Date
+  id: ID
+  image: String
+  keywords: [Keyword!]
+  summary: String
+  title: String
+  viewCount: Int
+  visibility: PostVisibility
+}
+
+enum PostVisibility {
+  private
+  public
+  restricted
+}
+
+input ProcessPayoutsInput {
+  contractAddress: String!
+  milestoneId: ID!
+}
+
+type Program {
+  applicationEndDate: DateTime
+  applicationStartDate: DateTime
+  applications: [Application!]
+
+  """Whether this program can be reclaimed (unused past deadline)"""
+  canReclaim: Boolean
+  comments: [Comment!]
+  contractAddress: String
+  creator: User
+  currency: String
+  customFeePercentage: Int
+  deadline: DateTime
+  description: String
+  detailedStatus: JSON
+  educhainProgramId: Int
+  feePercentage: Int
+  fundingCondition: FundingCondition
+  fundingEndDate: DateTime
+  fundingStartDate: DateTime
+  id: ID
+  image: String
+  invitedBuilders: [User!]
+  keywords: [Keyword!]
+  links: [Link!]
+  maxFundingAmount: String
+  name: String
+  network: String
+  price: String
+  reclaimTxHash: String
+  reclaimed: Boolean
+  reclaimedAt: DateTime
+  rejectionReason: String
+  status: ProgramStatus
+  summary: String
+  supporters: [Supporter!]
+  tierSettings: JSON
+  txHash: String
+  type: ProgramType
+  userTierAssignment: UserTierAssignment
+  validators: [User!]
+  visibility: ProgramVisibility
+}
+
+type ProgramStatsByStatus {
+  completed: Int
+  confirmed: Int
+  notConfirmed: Int
+  paymentRequired: Int
+  published: Int
+  refund: Int
+}
+
+enum ProgramStatus {
+  cancelled
+  closed
+  completed
+  payment_required
+  pending
+  published
+  rejected
+}
+
+enum ProgramStatusV2 {
+  closed
+  declined
+  draft
+  open
+  under_review
+}
+
+enum ProgramType {
+  funding
+  regular
+}
+
+type ProgramV2 {
+  createdAt: DateTime
+  deadline: DateTime
+  description: String
+  id: ID
+  invitedMembers: [String!]
+  networkId: Int
+  price: String
+  skills: [String!]
+  status: ProgramStatusV2
+  title: String
+  token_id: Int
+  updatedAt: DateTime
+  visibility: ProgramVisibilityV2
+}
+
+enum ProgramVisibility {
+  private
+  public
+  restricted
+}
+
+enum ProgramVisibilityV2 {
+  private
+  public
+  restricted
+}
+
+type Query {
+  adminUsers(includesBanned: Boolean, onlyBanned: Boolean, pagination: PaginationInput, role: UserRole): PaginatedUsers
+  application(id: ID!): Application
+
+  """Get a single application by ID"""
+  applicationV2(
+    """Application ID"""
+    id: ID!
+  ): ApplicationV2
+  applications(pagination: PaginationInput): PaginatedApplications
+
+  """Get all applications for a specific program (only by program creator)"""
+  applicationsByProgramV2(
+    """Program ID and pagination options"""
+    query: ApplicationsByProgramV2QueryInput!
+  ): PaginatedApplicationsV2
+
+  """Get paginated list of applications with filtering options"""
+  applicationsV2(
+    """Query options including pagination and filtering"""
+    query: ApplicationsV2QueryInput
+  ): PaginatedApplicationsV2
+  carouselItems: [EnrichedCarouselItem!]
+  claimableFees(programId: ID!): ClaimableFees
+  comment(id: ID!): Comment
+  comments(pagination: PaginationInput, topLevelOnly: Boolean = false): PaginatedComments
+  commentsByCommentable(commentableId: ID!, commentableType: CommentableTypeEnum!): [Comment!]
+  countNotifications: Int
+  getSwappedStatus(userId: String!): SwappedStatusResponse
+  investment(id: ID!): Investment
+  investmentTerm(id: ID!): InvestmentTerm
+  investmentTermsByApplicationId(applicationId: ID!): [InvestmentTerm!]
+  investments(pagination: PaginationInput, projectId: ID, supporterId: ID): PaginatedInvestments
+  keywords: [Keyword!]
+  milestone(id: ID!): Milestone
+  milestonePayout(id: ID!): MilestonePayout
+  milestonePayouts(investmentId: ID, milestoneId: ID, pagination: PaginationInput, status: PayoutStatus): PaginatedMilestonePayouts
+
+  """Get a single milestone by ID"""
+  milestoneV2(
+    """Milestone ID"""
+    id: ID!
+  ): MilestoneV2
+  milestones(applicationId: ID!, pagination: PaginationInput): PaginatedMilestones
+
+  """Get paginated list of milestones with filtering options"""
+  milestonesV2(
+    """Query options including pagination and filtering"""
+    query: MilestonesV2QueryInput
+  ): PaginatedMilestonesV2
+
+  """Get all applications submitted by the current user"""
+  myApplicationsV2(
+    """Pagination options"""
+    query: MyApplicationsV2QueryInput
+  ): PaginatedApplicationsV2
+  networkV2(id: ID!): NetworkV2
+  networksV2(pagination: PaginationInput): PaginatedNetworksV2
+  notifications(pagination: PaginationInput): NotificationResult
+  onchainContractInfoV2(id: ID!): OnchainContractInfoV2
+  onchainContractInfosByApplicantV2(applicantId: Int!, pagination: PaginationInput): PaginatedOnchainContractInfoV2
+  onchainContractInfosByProgramV2(pagination: PaginationInput, programId: Int!): PaginatedOnchainContractInfoV2
+  onchainContractInfosV2(pagination: PaginationInput): PaginatedOnchainContractInfoV2
+  onchainProgramInfoV2(id: ID!): OnchainProgramInfoV2
+  onchainProgramInfosByProgramV2(pagination: PaginationInput, programId: Int!): PaginatedOnchainProgramInfoV2
+  onchainProgramInfosBySmartContractV2(pagination: PaginationInput, smartContractId: Int!): PaginatedOnchainProgramInfoV2
+  onchainProgramInfosV2(pagination: PaginationInput): PaginatedOnchainProgramInfoV2
+  post(id: ID!): Post
+  posts(pagination: PaginationInput): PaginatedPosts
+
+  """Get current user profile (deprecated: use profileV2 instead)"""
+  profile: User
+
+  """Get current authenticated user profile"""
+  profileV2: UserV2
+  program(id: ID!): Program
+  programV2(id: ID!): ProgramV2
+  programs(pagination: PaginationInput): PaginatedPrograms
+  programsBysponsorIdV2(pagination: PaginationInput, sponsorId: ID!): PaginatedProgramsV2
+  programsV2(pagination: PaginationInput): PaginatedProgramsV2
+
+  """
+  Query users with dynamic field=value filters (AND condition, no pagination)
+  """
+  queryUsersV2(
+    """Dynamic filter criteria (field=value pairs combined with AND logic)"""
+    filter: [UserV2QueryFilterInput!]
+  ): [UserV2!]
+  smartContractV2(id: ID!): SmartContractV2
+  smartContractsV2(chainInfoId: Int, pagination: PaginationInput): PaginatedSmartContractsV2
+  tokenV2(id: ID!): TokenV2
+  tokensByNetworkV2(networkId: Int!, pagination: PaginationInput): PaginatedTokensV2
+  tokensV2(pagination: PaginationInput): PaginatedTokensV2
+  user(id: ID!): User
+
+  """Get a single user by ID"""
+  userV2(
+    """User ID"""
+    id: ID!
+  ): UserV2
+  users(pagination: PaginationInput): PaginatedUsers
+
+  """Get paginated list of users with comprehensive filtering options"""
+  usersV2(
+    """Query options including pagination, filtering, searching, and sorting"""
+    query: UsersV2QueryInput
+  ): PaginatedUsersV2
+}
+
+input ReclaimInvestmentInput {
+  investmentId: ID!
+  txHash: String!
+}
+
+input ReorderCarouselItemInput {
+  displayOrder: Int!
+  id: String!
+}
+
+input ReviewApplicationV2Input {
+  """Reason for rejection (required when status is rejected)"""
+  rejectedReason: String
+
+  """Review decision: accepted or rejected"""
+  status: ApplicationStatusV2!
+}
+
+type SmartContractV2 {
+  address: String
+  chainInfoId: Int
+  id: ID
+  name: String
+  network: NetworkV2
+}
+
+enum SortEnum {
+  asc
+  desc
+}
+
+input SubmitMilestoneInput {
+  description: String
+  file: Upload
+  id: String!
+  links: [LinkInput!]
+  status: SubmitMilestoneStatus!
+}
+
+enum SubmitMilestoneStatus {
+  draft
+  submitted
+}
+
+type Subscription {
+  countNotifications: Int
+  notifications(pagination: PaginationInput): NotificationResult
+}
+
+type Supporter {
+  email: String
+  firstName: String
+  lastName: String
+  maxInvestmentAmount: String
+  tier: String
+  userId: ID
+  walletAddress: String
+}
+
+type SwappedStatusResponse {
+  data: String
+  message: String
+  orderId: String
+  status: String
+}
+
+type SwappedUrlResponse {
+  originalUrl: String
+  signature: String
+  signedUrl: String
+}
+
+type TierAssignmentData {
+  maxInvestmentAmount: String
+  tier: String
+  userId: String
+  walletAddress: String
+}
+
+input TierSyncInfo {
+  contractAddress: String!
+  programOwnerAddress: String!
+}
+
+type TierSyncResult {
+  contractAddress: String
+  message: String
+  projectId: Int
+  success: Boolean
+  tierAssignments: [TierAssignmentData!]
+}
+
+type TokenV2 {
+  chainInfoId: Int
+  id: ID
+  tokenAddress: String
+  tokenName: String
+}
+
+input UpdateApplicationInput {
+  content: String
+  id: String!
+  links: [LinkInput!]
+  metadata: JSON
+  name: String
+  status: ApplicationStatus
+  summary: String
+}
+
+input UpdateApplicationV2Input {
+  """Updated application content"""
+  content: String
+}
+
+input UpdateCarouselItemInput {
+  displayOrder: Int
+  id: String!
+  isActive: Boolean
+  itemId: String
+  itemType: CarouselItemType
+}
+
+input UpdateCommentInput {
+  content: String
+  id: ID!
+}
+
+input UpdateInvestmentTermInput {
+  description: String
+  id: String!
+  price: String
+  purchaseLimit: Int
+  title: String
+}
+
+input UpdateMilestoneInput {
+  currency: String
+  deadline: DateTime
+  description: String
+  id: String!
+  links: [LinkInput!]
+  percentage: String
+  status: MilestoneStatus
+  summary: String
+  title: String
+}
+
+input UpdateMilestoneV2Input {
+  """Milestone deadline"""
+  deadline: DateTime
+
+  """Milestone description"""
+  description: String
+
+  """Milestone payout amount"""
+  payout: String
+
+  """Milestone title"""
+  title: String
+}
+
+input UpdateNetworkV2Input {
+  chainId: Int
+  chainName: String
+  exploreUrl: String
+  mainnet: Boolean
+}
+
+input UpdateOnchainContractInfoV2Input {
+  contentHash: String
+  status: OnchainContractStatusV2
+  tx: String
+}
+
+input UpdateOnchainProgramInfoV2Input {
+  status: OnchainProgramStatusV2
+  tx: String
+}
+
+input UpdatePostInput {
+  content: String
+  id: ID!
+  image: Upload
+  keywords: [ID!]
+  summary: String
+  title: String
+}
+
+input UpdateProfileV2Input {
+  """User bio/description"""
+  bio: String
+
+  """User email address"""
+  email: String
+
+  """User first name"""
+  firstName: String
+
+  """User last name"""
+  lastName: String
+
+  """User links array"""
+  links: [String!]
+
+  """User organization name"""
+  organizationName: String
+
+  """User profile image URL"""
+  profileImage: String
+
+  """User skills array"""
+  skills: [String!]
+}
+
+input UpdateProgramInput {
+  applicationEndDate: DateTime
+  applicationStartDate: DateTime
+  currency: String
+  customFeePercentage: Int
+  deadline: DateTime
+  description: String
+  feePercentage: Int
+  fundingCondition: FundingCondition
+  fundingEndDate: DateTime
+  fundingStartDate: DateTime
+  id: ID!
+  image: Upload
+  keywords: [String!]
+  links: [LinkInput!]
+  name: String
+  network: String
+  price: String
+  status: ProgramStatus
+  summary: String
+  tierSettings: JSON
+  type: ProgramType
+  visibility: ProgramVisibility
+}
+
+input UpdateProgramV2Input {
+  deadline: DateTime
+  description: String
+  invitedMembers: [String!]
+  networkId: Int
+  price: String
+  skills: [String!]
+  status: ProgramStatusV2
+  title: String
+  token_id: Int
+  visibility: ProgramVisibilityV2
+}
+
+input UpdateSmartContractV2Input {
+  address: String
+  name: String
+}
+
+input UpdateTokenV2Input {
+  chainInfoId: Int
+  decimals: Int
+  tokenAddress: String
+  tokenName: String
+}
+
+input UpdateUserV2Input {
+  """User bio/description"""
+  bio: String
+
+  """User email address"""
+  email: String
+
+  """User first name"""
+  firstName: String
+
+  """User ID to update"""
+  id: ID!
+
+  """User last name"""
+  lastName: String
+
+  """User links array"""
+  links: [String!]
+
+  """User organization name"""
+  organizationName: String
+
+  """User profile image URL"""
+  profileImage: String
+
+  """User role"""
+  role: UserRoleV2
+
+  """User skills array"""
+  skills: [String!]
+
+  """User wallet address"""
+  walletAddress: String
+}
+
+scalar Upload
+
+type User {
+  about: String
+  avatar: Upload
+  banned: Boolean
+  bannedAt: Date
+  bannedReason: String
+  email: String
+  firstName: String
+  id: ID
+  image: String
+  investmentStatistics: UserInvestmentStatistics
+  keywords: [Keyword!]
+  lastName: String
+  links: [Link!]
+  loginType: String
+  organizationName: String
+  programStatistics: UserProgramStatistics
+  role: UserRole
+  roleKeywords: [Keyword!]
+  skillKeywords: [Keyword!]
+  summary: String
+  walletAddress: String
+}
+
+input UserInput {
+  about: String
+  email: String!
+  firstName: String
+  image: Upload
+  keywords: [String!]
+  lastName: String
+  links: [LinkInput!]
+  loginType: String
+  organizationName: String
+  password: String!
+  summary: String
+  walletAddress: String
+}
+
+type UserInvestmentStatistics {
+  asHost: InvestmentStatsByStatus
+  asProject: InvestmentStatsByStatus
+  asSupporter: InvestmentStatsByStatus
+}
+
+type UserProgramStatistics {
+  asBuilder: ProgramStatsByStatus
+  asSponsor: ProgramStatsByStatus
+  asValidator: ProgramStatsByStatus
+}
+
+enum UserRole {
+  admin
+  superadmin
+  user
+}
+
+enum UserRoleV2 {
+  admin
+  user
+}
+
+type UserTierAssignment {
+  createdAt: DateTime
+  currentInvestment: String
+  maxInvestmentAmount: String
+  remainingCapacity: String
+  tier: String
+  userId: ID
+}
+
+input UserUpdateInput {
+  about: String
+  email: String
+  firstName: String
+  id: ID!
+  image: Upload
+  keywords: [String!]
+  lastName: String
+  links: [LinkInput!]
+  loginType: String
+  organizationName: String
+  roleKeywords: [String!]
+  skillKeywords: [String!]
+  summary: String
+  walletAddress: String
+}
+
+type UserV2 {
+  """User biography"""
+  bio: String
+
+  """User creation timestamp"""
+  createdAt: Date
+
+  """Programs created by this user"""
+  createdPrograms: [ProgramV2!]
+
+  """User email address"""
+  email: String
+
+  """User first name"""
+  firstName: String
+
+  """User unique identifier"""
+  id: ID
+
+  """User last name"""
+  lastName: String
+
+  """User external links"""
+  links: [String!]
+
+  """Authentication method used by the user"""
+  loginType: LoginTypeEnum
+
+  """User organization name"""
+  organizationName: String
+
+  """User profile image URL"""
+  profileImage: String
+
+  """User role (user or admin)"""
+  role: UserRoleV2
+
+  """User skills list"""
+  skills: [String!]
+
+  """User last update timestamp"""
+  updatedAt: Date
+
+  """User wallet address"""
+  walletAddress: String
+}
+
+input UserV2QueryFilterInput {
+  """
+  Field name to filter by (walletAddress, email, role, loginType, firstName, lastName, organizationName)
+  """
+  field: String!
+
+  """Value to filter for"""
+  value: String
+}
+
+input UsersV2QueryInput {
+  """Filter users with/without email"""
+  hasEmail: Boolean
+
+  """Number of items per page"""
+  limit: Int = 10
+
+  """Filter by login type"""
+  loginType: LoginTypeEnum
+
+  """Page number (1-based)"""
+  page: Int = 1
+
+  """Filter by user role"""
+  role: UserRoleV2
+
+  """Search term for walletAddress, email, firstName, lastName"""
+  search: String
+
+  """Field to sort by (createdAt, updatedAt, firstName, lastName)"""
+  sortBy: String = "createdAt"
+
+  """Sort order (asc/desc)"""
+  sortOrder: String = "desc"
+}

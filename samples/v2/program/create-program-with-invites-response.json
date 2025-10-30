@@ -1,9 +1,0 @@
-{
-  "data": {
-    "createProgramV2": {
-      "id": "1",
-      "title": "Program with Invites",
-      "invitedMembers": ["user1@example.com", "user2@example.com"]
-    }
-  }
-}

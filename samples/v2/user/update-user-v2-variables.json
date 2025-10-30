@@ -1,0 +1,14 @@
+{
+  "input": {
+    "bio": "Example bio",
+    "email": "example@example.com",
+    "firstName": "Example firstName",
+    "lastName": "Example lastName",
+    "links": "Example links",
+    "organizationName": "Example organizationName",
+    "profileImage": "Example profileImage",
+    "role": "admin",
+    "skills": "Example skills",
+    "walletAddress": "Example walletAddress"
+  }
+}

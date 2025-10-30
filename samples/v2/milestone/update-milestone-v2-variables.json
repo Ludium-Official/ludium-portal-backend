@@ -1,0 +1,9 @@
+{
+  "id": "1",
+  "input": {
+    "deadline": "2025-11-30T23:11:49.863Z",
+    "description": "Example description",
+    "payout": "Example payout",
+    "title": "Example title"
+  }
+}

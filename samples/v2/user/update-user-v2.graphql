@@ -1,0 +1,14 @@
+# Update an existing user
+
+mutation UpdateUserV2($input: UpdateUserV2Input!) {
+  updateUserV2(input: $input) {
+    bio
+    createdPrograms
+    email
+    firstName
+    lastName
+    links
+    loginType
+    organizationName
+  }
+}

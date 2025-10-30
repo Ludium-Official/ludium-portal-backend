@@ -1,0 +1,4 @@
+query ProgramsBysponsorIdV2($pagination: PaginationInput, $sponsorId: ID!) {
+  programsBysponsorIdV2(pagination: $pagination, sponsorId: $sponsorId) {
+  }
+}

@@ -1,0 +1,6 @@
+# Get all applications for a specific program (only by program creator)
+
+query ApplicationsByProgramV2($query: ApplicationsByProgramV2QueryInput!) {
+  applicationsByProgramV2(query: $query) {
+  }
+}

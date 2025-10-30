@@ -1,0 +1,4 @@
+query OnchainProgramInfosBySmartContractV2($pagination: PaginationInput, $smartContractId: Int!) {
+  onchainProgramInfosBySmartContractV2(pagination: $pagination, smartContractId: $smartContractId) {
+  }
+}

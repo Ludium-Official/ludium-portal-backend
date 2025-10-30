@@ -1,9 +1,0 @@
-mutation UpdateProgramV2($id: ID!, $input: UpdateProgramV2Input!) {
-  updateProgramV2(id: $id, input: $input) {
-    id
-    title
-    description
-    status
-    updatedAt
-  }
-}

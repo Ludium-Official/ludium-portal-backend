@@ -1,8 +1,0 @@
-mutation PickApplicationV2($id: ID!, $input: PickApplicationV2Input!) {
-  pickApplicationV2(id: $id, input: $input) {
-    id
-    picked
-    updatedAt
-  }
-}
-

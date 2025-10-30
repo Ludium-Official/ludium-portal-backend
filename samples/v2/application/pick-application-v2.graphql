@@ -1,0 +1,14 @@
+# Pick or unpick application (bookmark favorite, only by program creator)
+
+mutation PickApplicationV2($id: ID!, $input: PickApplicationV2Input!) {
+  pickApplicationV2(id: $id, input: $input) {
+    applicant
+    applicantId
+    content
+    picked
+    program
+    programId
+    rejectedReason
+    status
+  }
+}

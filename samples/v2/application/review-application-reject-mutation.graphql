@@ -1,9 +1,0 @@
-mutation ReviewApplicationV2($id: ID!, $input: ReviewApplicationV2Input!) {
-  reviewApplicationV2(id: $id, input: $input) {
-    id
-    status
-    rejectedReason
-    updatedAt
-  }
-}
-

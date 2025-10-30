@@ -1,8 +1,0 @@
-mutation CreateProgramV2WithInvites($input: CreateProgramV2Input!) {
-  createProgramV2(input: $input) {
-    id
-    title
-    invitedMembers
-  }
-}
-

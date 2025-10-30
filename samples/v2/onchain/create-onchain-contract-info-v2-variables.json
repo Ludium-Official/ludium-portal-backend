@@ -1,0 +1,9 @@
+{
+  "input": {
+    "applicantId": 1,
+    "contentHash": "Example contentHash",
+    "programId": 1,
+    "status": "active",
+    "tx": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

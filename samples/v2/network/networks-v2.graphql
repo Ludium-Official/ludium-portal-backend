@@ -1,0 +1,4 @@
+query NetworksV2($pagination: PaginationInput) {
+  networksV2(pagination: $pagination) {
+  }
+}

@@ -23,6 +23,7 @@
     "test:integration": "vitest run ./src/graphql/v2/tests/integration",
     "test:e2e": "vitest run ./src/graphql/v2/tests/e2e",
     "test": "vitest run",
+    "generate:samples": "tsx ./src/scripts/generate-graphql-samples.ts",
     "prepare": "husky",
     "migrate:db": "tsx ./src/scripts/migrate-db.ts",
     "migrate:users": "tsx ./src/scripts/migrate-users.ts",

@@ -1,0 +1,8 @@
+mutation CreateSmartContractV2($input: CreateSmartContractV2Input!) {
+  createSmartContractV2(input: $input) {
+    address
+    chainInfoId
+    name
+    network
+  }
+}

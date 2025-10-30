@@ -1,0 +1,4 @@
+mutation DeleteProgramV2($id: ID!) {
+  deleteProgramV2(id: $id) {
+  }
+}

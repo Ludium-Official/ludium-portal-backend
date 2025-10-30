@@ -1,0 +1,6 @@
+# Get a single user by ID
+
+query UserV2($id: ID!) {
+  userV2(id: $id) {
+  }
+}

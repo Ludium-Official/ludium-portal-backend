@@ -1,0 +1,14 @@
+# Update current authenticated user profile
+
+mutation UpdateProfileV2($input: UpdateProfileV2Input!) {
+  updateProfileV2(input: $input) {
+    bio
+    createdPrograms
+    email
+    firstName
+    lastName
+    links
+    loginType
+    organizationName
+  }
+}

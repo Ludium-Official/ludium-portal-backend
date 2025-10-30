@@ -1,0 +1,4 @@
+query ProgramsV2($pagination: PaginationInput) {
+  programsV2(pagination: $pagination) {
+  }
+}
