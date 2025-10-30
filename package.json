@@ -32,7 +32,8 @@
     "migrate:programs": "tsx ./src/scripts/migrate-programs.ts",
     "migrate:opinfo": "tsx ./src/scripts/migrate-onchain-program-info.ts",
     "migrate:applications": "tsx ./src/scripts/migrate-applications.ts",
-    "migrate:milestones": "tsx ./src/scripts/migrate-milestones.ts"
+    "migrate:milestones": "tsx ./src/scripts/migrate-milestones.ts",
+    "migrate:all": "bash scripts/run-migrations.sh"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",

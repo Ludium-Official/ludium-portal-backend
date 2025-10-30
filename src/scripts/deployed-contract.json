@@ -5,6 +5,9 @@
     "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
     "timestamp": "2025-09-15T06:20:14.935Z",
     "contracts": {
+      "LdRecruitment": {
+        "address": "0x9770Ee14B1f92F79d2E7fdA6460B2637eE6E87D7"
+      },
       "LdTimeLock": {
         "address": "0x256500233360be3c3CcadBC017085C30c6e0aE09",
         "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
@@ -43,6 +46,9 @@
     "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
     "timestamp": "2025-09-15T06:27:39.990Z",
     "contracts": {
+      "LdRecruitment": {
+        "address": "0x1Bd3E5FbBf07A8291C78830F41d8a4ae52f75631"
+      },
       "LdTimeLock": {
         "address": "0x554FB16481bE6C5826aB6A6E4B910BfBf7E12D65",
         "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
@@ -81,6 +87,9 @@
     "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
     "timestamp": "2025-09-15T06:30:42.216Z",
     "contracts": {
+      "LdRecruitment": {
+        "address": "0x9770Ee14B1f92F79d2E7fdA6460B2637eE6E87D7"
+      },
       "LdTimeLock": {
         "address": "0x3E600DBB360D8E721106c508E50eF612D35d01e8",
         "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
@@ -119,6 +128,9 @@
     "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
     "timestamp": "2025-09-15T06:36:11.723Z",
     "contracts": {
+      "LdRecruitment": {
+        "address": "0x0000000000000000000000000000000000000000"
+      },
       "LdTimeLock": {
         "address": "0x3295f6b83B7dd9F920F2F987D363bd08eec7a1E0",
         "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
