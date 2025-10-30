@@ -1,0 +1,1 @@
+ALTER TABLE "tokens" ADD COLUMN "decimals" integer NOT NULL;

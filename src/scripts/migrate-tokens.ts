@@ -40,29 +40,48 @@ async function migrateTokens() {
         USDT: '0xfde4c96c8593536e31f229ea8f37b2ada2699bb2',
         USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
       },
+      'base-sepolia': {
+        USDT: '0x73b4a58138cccbda822df9449feda5eac6669ebd',
+        USDC: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+      },
       arbitrum: {
         USDT: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
         USDC: '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
+      },
+      'arbitrum-sepolia': {
+        USDT: '0xe5b6c29411b3ad31c3613bba0145293fc9957256',
+        USDC: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
       },
       educhain: {
         USDT: '0x7277cc818e3f3ffbb169c6da9cc77fc2d2a34895',
         USDC: '0x836d275563bab5e93fd6ca62a95db7065da94342',
       },
+      'educhain-testnet': {
+        USDT: '0x3BfB66999C22c0189B0D837D12D5A4004844EC12',
+        USDC: '0x19EeaDcBA1801Afec43e87Cefcd4239E13fc294d',
+      },
     };
 
     // 토큰 데이터 정의 (currency, network)
     // 네이티브 토큰은 0x0 주소 사용
-    const tokenData: Array<{ currency: string; network: string }> = [
-      { currency: 'ETH', network: 'base' },
-      { currency: 'CTC', network: 'creditcoin' },
-      { currency: 'EDU', network: 'educhain' },
-      { currency: 'ETH', network: 'arbitrum' },
-      { currency: 'USDT', network: 'base' },
-      { currency: 'USDC', network: 'base' },
-      { currency: 'USDT', network: 'arbitrum' },
-      { currency: 'USDC', network: 'arbitrum' },
-      { currency: 'USDT', network: 'educhain' },
-      { currency: 'USDC', network: 'educhain' },
+    const tokenData: Array<{ currency: string; network: string; decimals: number }> = [
+      { currency: 'ETH', network: 'base', decimals: 18 },
+      { currency: 'CTC', network: 'creditcoin', decimals: 18 },
+      { currency: 'EDU', network: 'educhain', decimals: 18 },
+      { currency: 'ETH', network: 'arbitrum', decimals: 18 },
+      // USDT, USDC
+      { currency: 'USDT', network: 'base', decimals: 6 },
+      { currency: 'USDC', network: 'base', decimals: 6 },
+      { currency: 'USDT', network: 'base-sepolia', decimals: 6 },
+      { currency: 'USDC', network: 'base-sepolia', decimals: 6 },
+      { currency: 'USDT', network: 'arbitrum', decimals: 6 },
+      { currency: 'USDC', network: 'arbitrum', decimals: 6 },
+      { currency: 'USDT', network: 'arbitrum-sepolia', decimals: 6 },
+      { currency: 'USDC', network: 'arbitrum-sepolia', decimals: 6 },
+      { currency: 'USDT', network: 'educhain', decimals: 6 },
+      { currency: 'USDC', network: 'educhain', decimals: 6 },
+      { currency: 'USDT', network: 'educhain-testnet', decimals: 6 },
+      { currency: 'USDC', network: 'educhain-testnet', decimals: 6 },
     ];
 
     // 기존 데이터 삭제 옵션 (환경 변수로 제어)
@@ -112,6 +131,7 @@ async function migrateTokens() {
           chainInfoId: networkId,
           tokenName: token.currency,
           tokenAddress,
+          decimals: token.decimals,
         };
 
         await db.insert(tokensTable).values(newToken);
