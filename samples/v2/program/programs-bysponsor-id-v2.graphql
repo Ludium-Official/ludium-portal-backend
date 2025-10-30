@@ -1,4 +1,15 @@
 query ProgramsBysponsorIdV2($pagination: PaginationInput, $sponsorId: ID!) {
   programsBysponsorIdV2(pagination: $pagination, sponsorId: $sponsorId) {
+   count
+   data {
+     deadline
+     description
+     invitedMembers
+     networkId
+     price
+     skills
+     status
+     title
+   }
   }
 }

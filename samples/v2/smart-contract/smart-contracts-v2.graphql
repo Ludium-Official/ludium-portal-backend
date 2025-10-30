@@ -1,4 +1,10 @@
 query SmartContractsV2($chainInfoId: Int, $pagination: PaginationInput) {
   smartContractsV2(chainInfoId: $chainInfoId, pagination: $pagination) {
+   count
+   data {
+     address
+     chainInfoId
+     name
+   }
   }
 }

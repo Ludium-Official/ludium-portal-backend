@@ -2,5 +2,11 @@
 
 query MilestoneV2($id: ID!) {
   milestoneV2(id: $id) {
+    applicant
+    deadline
+    description
+    payout
+    program
+    title
   }
 }

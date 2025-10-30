@@ -10,5 +10,9 @@ mutation CreateUserV2($input: CreateUserV2Input!) {
     links
     loginType
     organizationName
+    profileImage
+    role
+    skills
+    walletAddress
   }
 }

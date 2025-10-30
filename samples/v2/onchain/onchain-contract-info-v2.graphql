@@ -1,4 +1,9 @@
 query OnchainContractInfoV2($id: ID!) {
   onchainContractInfoV2(id: $id) {
+    applicantId
+    contentHash
+    programId
+    status
+    tx
   }
 }

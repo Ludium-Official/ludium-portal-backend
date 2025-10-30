@@ -2,5 +2,19 @@
 
 query UsersV2($query: UsersV2QueryInput) {
   usersV2(query: $query) {
+   currentPage
+   hasNextPage
+   hasPreviousPage
+   totalCount
+   totalPages
+   users {
+     bio
+     email
+     firstName
+     lastName
+     links
+     loginType
+     organizationName
+   }
   }
 }

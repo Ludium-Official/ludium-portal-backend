@@ -8,5 +8,7 @@ mutation UpdateProgramV2($id: ID!, $input: UpdateProgramV2Input!) {
     skills
     status
     title
+    token_id
+    visibility
   }
 }

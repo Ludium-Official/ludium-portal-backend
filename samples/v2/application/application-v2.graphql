@@ -2,5 +2,13 @@
 
 query ApplicationV2($id: ID!) {
   applicationV2(id: $id) {
+    applicant
+    applicantId
+    content
+    picked
+    program
+    programId
+    rejectedReason
+    status
   }
 }

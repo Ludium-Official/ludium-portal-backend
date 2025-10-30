@@ -184,22 +184,35 @@ function generateGraphQLOperation(operation: Operation, introspection: Introspec
   }
 
   // Get return type fields
-  const rootType = introspection.__schema.types.find(
-    (t) => t.name === 'Mutation' || t.name === 'Query',
-  );
+  // Find the correct root type (Query or Mutation) based on operation type
+  const rootTypeName = type === 'query' ? 'Query' : 'Mutation';
+  const rootType = introspection.__schema.types.find((t) => t.name === rootTypeName);
 
   let returnTypeName = 'ID';
   if (isObjectType(rootType) && rootType.fields) {
     const field = rootType.fields.find((f) => f.name === name);
     if (field) {
-      const unwrappedType = unwrapType(field.type);
-      if (unwrappedType.kind === 'OBJECT' && hasName(unwrappedType)) {
-        returnTypeName = unwrappedType.name;
-      } else if (unwrappedType.kind === 'NON_NULL' || unwrappedType.kind === 'LIST') {
-        const furtherUnwrapped = unwrapType(unwrappedType.ofType);
-        if (hasName(furtherUnwrapped)) {
-          returnTypeName = furtherUnwrapped.name;
+      // Unwrap NON_NULL and LIST wrappers to get the actual type
+      let currentType: IntrospectionTypeRef = field.type;
+
+      // Unwrap NON_NULL
+      if (currentType.kind === 'NON_NULL') {
+        currentType = currentType.ofType;
+      }
+
+      // Unwrap LIST
+      if (currentType.kind === 'LIST') {
+        currentType = currentType.ofType;
+        // List items might also be NON_NULL
+        if (currentType.kind === 'NON_NULL') {
+          currentType = currentType.ofType;
         }
+      }
+
+      // Now we should have the actual OBJECT type
+      const unwrappedType = unwrapType(currentType);
+      if (hasName(unwrappedType)) {
+        returnTypeName = unwrappedType.name;
       }
     }
   }
@@ -208,32 +221,34 @@ function generateGraphQLOperation(operation: Operation, introspection: Introspec
   // For mutations: include id only if needed for subsequent operations
   // For queries: id is optional (auto-generated)
   let fieldSelection = '';
-  if (returnTypeName.includes('Payload') || returnTypeName.includes('Paginated')) {
-    // For complex types, include nested fields recursively
+  const returnType = introspection.__schema.types.find((t) => t.name === returnTypeName);
+
+  if (!returnType || !isObjectType(returnType) || !returnType.fields) {
+    // Type not found or has no fields - return empty selection
+    fieldSelection = '';
+  } else if (returnTypeName.includes('Payload') || returnTypeName.includes('Paginated')) {
+    // For complex types (Payload, Paginated), include nested fields recursively
     // Exclude id from nested objects (auto-generated)
     fieldSelection = getFieldsWithNesting(introspection, returnTypeName, 0, 2, '   ', false);
   } else {
-    // For simple types, get fields and format
-    // Exclude id from top level (auto-generated, frontend doesn't need it)
-    const type = introspection.__schema.types.find((t) => t.name === returnTypeName);
-    if (type && isObjectType(type) && type.fields) {
-      const commonFields = type.fields
-        .filter((f) => f.name !== 'id' && f.name !== 'createdAt' && f.name !== 'updatedAt')
-        .slice(0, 8)
-        .map((f) => f.name);
-      if (commonFields.length > 0) {
-        fieldSelection = `    ${commonFields.join('\n    ')}\n`;
-      } else {
-        // Fallback: include some basic fields if available
-        const fallbackFields = type.fields
-          .filter((f) => f.name !== 'id')
-          .slice(0, 5)
-          .map((f) => f.name);
-        fieldSelection = `    ${fallbackFields.join('\n    ')}\n`;
-      }
+    // For simple object types, get all fields except auto-generated ones
+    // Exclude id, createdAt, updatedAt from top level (auto-generated, frontend doesn't need them)
+    const commonFields = returnType.fields
+      .filter((f) => f.name !== 'id' && f.name !== 'createdAt' && f.name !== 'updatedAt')
+      .map((f) => f.name);
+
+    if (commonFields.length > 0) {
+      fieldSelection = `    ${commonFields.join('\n    ')}\n`;
     } else {
-      // No fields available
-      fieldSelection = '';
+      // Fallback: if all fields were filtered out, include all fields except id
+      const allFields = returnType.fields.filter((f) => f.name !== 'id').map((f) => f.name);
+
+      if (allFields.length > 0) {
+        fieldSelection = `    ${allFields.join('\n    ')}\n`;
+      } else {
+        // Last resort: include id if nothing else is available
+        fieldSelection = '    id\n';
+      }
     }
   }
 

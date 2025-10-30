@@ -2,5 +2,17 @@
 
 query QueryUsersV2($filter: [UserV2QueryFilterInput!]) {
   queryUsersV2(filter: $filter) {
+    bio
+    createdPrograms
+    email
+    firstName
+    lastName
+    links
+    loginType
+    organizationName
+    profileImage
+    role
+    skills
+    walletAddress
   }
 }

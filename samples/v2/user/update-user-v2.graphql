@@ -10,5 +10,9 @@ mutation UpdateUserV2($input: UpdateUserV2Input!) {
     links
     loginType
     organizationName
+    profileImage
+    role
+    skills
+    walletAddress
   }
 }

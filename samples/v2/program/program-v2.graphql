@@ -1,4 +1,14 @@
 query ProgramV2($id: ID!) {
   programV2(id: $id) {
+    deadline
+    description
+    invitedMembers
+    networkId
+    price
+    skills
+    status
+    title
+    token_id
+    visibility
   }
 }

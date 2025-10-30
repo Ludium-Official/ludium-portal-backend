@@ -1,4 +1,12 @@
 query OnchainContractInfosV2($pagination: PaginationInput) {
   onchainContractInfosV2(pagination: $pagination) {
+   count
+   data {
+     applicantId
+     contentHash
+     programId
+     status
+     tx
+   }
   }
 }

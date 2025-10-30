@@ -1,4 +1,13 @@
 query OnchainProgramInfosV2($pagination: PaginationInput) {
   onchainProgramInfosV2(pagination: $pagination) {
+   count
+   data {
+     networkId
+     onchainProgramId
+     programId
+     smartContractId
+     status
+     tx
+   }
   }
 }

@@ -8,5 +8,7 @@ mutation CreateProgramV2($input: CreateProgramV2Input!) {
     skills
     status
     title
+    token_id
+    visibility
   }
 }

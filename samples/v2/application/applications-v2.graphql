@@ -2,5 +2,18 @@
 
 query ApplicationsV2($query: ApplicationsV2QueryInput) {
   applicationsV2(query: $query) {
+   count
+   currentPage
+   data {
+     applicantId
+     content
+     picked
+     programId
+     rejectedReason
+     status
+   }
+   hasNextPage
+   hasPreviousPage
+   totalPages
   }
 }

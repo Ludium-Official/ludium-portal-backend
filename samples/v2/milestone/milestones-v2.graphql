@@ -2,5 +2,16 @@
 
 query MilestonesV2($query: MilestonesV2QueryInput) {
   milestonesV2(query: $query) {
+   count
+   currentPage
+   data {
+     deadline
+     description
+     payout
+     title
+   }
+   hasNextPage
+   hasPreviousPage
+   totalPages
   }
 }
