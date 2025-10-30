@@ -18,11 +18,22 @@
     "db:clean": "npm run db:down && rm -rf ./src/db/migrations && rm -rf .pgdata",
     "db:seed": "tsx -r dotenv-expand/config ./src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
+    "db:dump-restore": "tsx ./src/scripts/dump-restore.ts",
     "test:db": "vitest run ./src/db",
     "test:integration": "vitest run ./src/graphql/v2/tests/integration",
     "test:e2e": "vitest run ./src/graphql/v2/tests/e2e",
     "test": "vitest run",
-    "prepare": "husky"
+    "prepare": "husky",
+    "migrate:db": "tsx ./src/scripts/migrate-db.ts",
+    "migrate:users": "tsx ./src/scripts/migrate-users.ts",
+    "migrate:networks": "tsx ./src/scripts/migrate-networks.ts",
+    "migrate:tokens": "tsx ./src/scripts/migrate-tokens.ts",
+    "migrate:sm": "tsx ./src/scripts/migrate-smart-contracts.ts",
+    "migrate:programs": "tsx ./src/scripts/migrate-programs.ts",
+    "migrate:opinfo": "tsx ./src/scripts/migrate-onchain-program-info.ts",
+    "migrate:applications": "tsx ./src/scripts/migrate-applications.ts",
+    "migrate:milestones": "tsx ./src/scripts/migrate-milestones.ts",
+    "migrate:all": "bash scripts/run-migrations.sh"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",
@@ -43,7 +54,7 @@
     "graphql-subscriptions": "^3.0.0",
     "graphql-upload-minimal": "^1.6.1",
     "mercurius": "^16.1.0",
-    "postgres": "^3.4.6"
+    "postgres": "^3.4.7"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

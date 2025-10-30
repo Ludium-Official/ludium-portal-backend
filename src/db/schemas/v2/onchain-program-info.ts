@@ -2,6 +2,7 @@
 
 import { relations } from 'drizzle-orm';
 import { integer, pgEnum, pgTable, serial, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { networksTable } from './networks';
 import { programsV2Table } from './programs';
 import { smartContractsTable } from './smart-contracts';
 
@@ -17,6 +18,9 @@ export const onchainProgramInfoTable = pgTable('onchain_program_info', {
   programId: integer('program_id')
     .notNull()
     .references(() => programsV2Table.id, { onDelete: 'cascade' }),
+  networkId: integer('network_id')
+    .notNull()
+    .references(() => networksTable.id, { onDelete: 'cascade' }),
   smartContractId: integer('smart_contract_id')
     .notNull()
     .references(() => smartContractsTable.id, { onDelete: 'cascade' }),
@@ -32,22 +36,15 @@ export const onchainProgramInfoRelations = relations(onchainProgramInfoTable, ({
     fields: [onchainProgramInfoTable.programId],
     references: [programsV2Table.id],
   }),
+  network: one(networksTable, {
+    fields: [onchainProgramInfoTable.networkId],
+    references: [networksTable.id],
+  }),
   smartContract: one(smartContractsTable, {
     fields: [onchainProgramInfoTable.smartContractId],
     references: [smartContractsTable.id],
   }),
 }));
-
-// Reverse relations
-export const programsV2OnchainProgramInfoRelation = relations(programsV2Table, ({ many }) => ({
-  onchainProgramInfos: many(onchainProgramInfoTable),
-}));
-export const smartContractsOnchainProgramInfoRelation = relations(
-  smartContractsTable,
-  ({ many }) => ({
-    onchainProgramInfos: many(onchainProgramInfoTable),
-  }),
-);
 
 export type OnchainProgramInfo = typeof onchainProgramInfoTable.$inferSelect;
 export type NewOnchainProgramInfo = typeof onchainProgramInfoTable.$inferInsert;

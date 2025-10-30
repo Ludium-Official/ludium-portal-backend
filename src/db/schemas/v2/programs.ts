@@ -5,7 +5,13 @@ import { tokensTable } from './tokens';
 import { usersV2Table } from './users';
 
 // V2 status enum per renewed spec
-export const programStatusV2Values = ['under_review', 'open', 'closed', 'draft'] as const;
+export const programStatusV2Values = [
+  'draft', // 1.  스폰서가 프로그램을 작성 중일 때
+  'under_review', // 2.1 프로그램 작성 완료 후, 스폰서가 제출한 상태. 루디움이 리뷰 후 open 해야함
+  'open', // 3.1 루디움이 스폰서가 작성한 프로그램 오픈 application 받기 시작
+  'declined', // 3.2 루디움이 스폰서가 작성한 프로그램 거절 -> closed? or under review?
+  'closed', // 4. 모집이 종료되었을 때, 프로그램 종료됨
+] as const;
 export const programStatusV2Enum = pgEnum('program_status_v2', programStatusV2Values);
 
 export const programVisibilityV2Values = ['private', 'restricted', 'public'] as const;
