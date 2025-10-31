@@ -747,5 +747,219 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
       expect(result.data.programsV2.data).toHaveLength(2);
       expect(result.data.programsV2.count).toBe(3);
     });
+
+    it('should fetch programs with sponsor, network, and token information', async () => {
+      const deadline = new Date();
+      deadline.setMonth(deadline.getMonth() + 1);
+
+      const newProgram: NewProgramV2 = {
+        title: 'Program with Relations',
+        description: 'A program to test sponsor, network, and token fields',
+        skills: ['testing', 'sponsor', 'network', 'token'],
+        deadline,
+        visibility: 'public',
+        networkId: testNetworkId,
+        price: '500',
+        token_id: testTokenId,
+        status: 'open',
+        sponsorId: testUserId,
+      };
+      const [insertedProgram] = await db.insert(programsV2Table).values(newProgram).returning();
+
+      const query = `
+        query GetProgramsV2 {
+          programsV2 {
+            data {
+              id
+              title
+              description
+              sponsor {
+                id
+                walletAddress
+                email
+                firstName
+                lastName
+              }
+              network {
+                id
+                chainId
+                chainName
+                mainnet
+                exploreUrl
+              }
+              token {
+                id
+                chainInfoId
+                tokenName
+                tokenAddress
+              }
+            }
+            count
+          }
+        }
+      `;
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          query,
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const result = JSON.parse(response.body);
+
+      if (result.errors) {
+        console.error('GraphQL Errors:', JSON.stringify(result.errors, null, 2));
+      }
+
+      expect(result.data).toBeDefined();
+      expect(result.data.programsV2).toBeDefined();
+      expect(result.data.programsV2.data).toBeInstanceOf(Array);
+      expect(result.data.programsV2.data.length).toBeGreaterThan(0);
+
+      // Find the program we just created
+      const program = result.data.programsV2.data.find(
+        (p: { id: string }) => p.id === insertedProgram.id.toString(),
+      );
+
+      expect(program).toBeDefined();
+      expect(program.title).toBe(newProgram.title);
+
+      // Test sponsor information
+      expect(program.sponsor).toBeDefined();
+      expect(program.sponsor.id).toBe(testUserId.toString());
+      expect(program.sponsor.walletAddress).toBe('0xTestCreator1234567890123456789012345678901234');
+      expect(program.sponsor.email).toBe('creator@example.com');
+      expect(program.sponsor.firstName).toBe('Test');
+      expect(program.sponsor.lastName).toBe('Creator');
+
+      // Test network information
+      expect(program.network).toBeDefined();
+      expect(program.network.id).toBe(testNetworkId.toString());
+      expect(program.network.chainId).toBe(1);
+      expect(program.network.chainName).toBe('ethereum');
+      expect(program.network.mainnet).toBe(true);
+      expect(program.network.exploreUrl).toBe('https://etherscan.io');
+
+      // Test token information
+      expect(program.token).toBeDefined();
+      expect(program.token.id).toBe(testTokenId.toString());
+      expect(program.token.chainInfoId).toBe(testNetworkId);
+      expect(program.token.tokenName).toBe('USDC');
+      expect(program.token.tokenAddress).toBe('0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0');
+    });
+
+    it('should handle pagination correctly', async () => {
+      const deadline = new Date();
+      deadline.setMonth(deadline.getMonth() + 1);
+
+      // Create 5 programs
+      const programs: NewProgramV2[] = Array.from({ length: 5 }, (_, i) => ({
+        title: `Program ${i + 1}`,
+        description: `Program number ${i + 1}`,
+        skills: [`skill${i + 1}`],
+        deadline,
+        visibility: 'public',
+        networkId: testNetworkId,
+        price: `${(i + 1) * 100}`,
+        token_id: testTokenId,
+        status: 'open',
+        sponsorId: testUserId,
+      }));
+
+      await db.insert(programsV2Table).values(programs);
+
+      // Test first page
+      const query = `
+        query GetProgramsV2($pagination: PaginationInput) {
+          programsV2(pagination: $pagination) {
+            data {
+              id
+              title
+            }
+            count
+          }
+        }
+      `;
+
+      const firstPageResponse = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          query,
+          variables: { pagination: { limit: 2, offset: 0 } },
+        },
+      });
+
+      expect(firstPageResponse.statusCode).toBe(200);
+      const firstPageResult = JSON.parse(firstPageResponse.body);
+      expect(firstPageResult.data.programsV2.data).toHaveLength(2);
+      expect(firstPageResult.data.programsV2.count).toBeGreaterThanOrEqual(5);
+
+      // Test second page
+      const secondPageResponse = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          query,
+          variables: { pagination: { limit: 2, offset: 2 } },
+        },
+      });
+
+      expect(secondPageResponse.statusCode).toBe(200);
+      const secondPageResult = JSON.parse(secondPageResponse.body);
+      expect(secondPageResult.data.programsV2.data).toHaveLength(2);
+      expect(secondPageResult.data.programsV2.count).toBe(firstPageResult.data.programsV2.count);
+
+      // Ensure different programs are returned
+      const firstPageIds = firstPageResult.data.programsV2.data.map((p: { id: string }) => p.id);
+      const secondPageIds = secondPageResult.data.programsV2.data.map((p: { id: string }) => p.id);
+      expect(firstPageIds).not.toEqual(secondPageIds);
+    });
+
+    it('should return empty array when no programs exist', async () => {
+      // Ensure no programs exist (they should be cleaned up in afterEach)
+      const query = `
+        query GetProgramsV2 {
+          programsV2 {
+            data {
+              id
+              title
+            }
+            count
+          }
+        }
+      `;
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          query,
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const result = JSON.parse(response.body);
+
+      expect(result.data).toBeDefined();
+      expect(result.data.programsV2).toBeDefined();
+      expect(result.data.programsV2.data).toEqual([]);
+      expect(result.data.programsV2.count).toBe(0);
+    });
   });
 });

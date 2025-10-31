@@ -1,7 +1,10 @@
 import { type ProgramV2, programsV2Table } from '@/db/schemas';
+import { networksTable } from '@/db/schemas/v2/networks';
+import { tokensTable } from '@/db/schemas/v2/tokens';
+import { usersV2Table } from '@/db/schemas/v2/users';
 import type { CreateProgramV2Input, UpdateProgramV2Input } from '@/graphql/v2/inputs/programs';
 import type { Context } from '@/types';
-import { count, desc, eq } from 'drizzle-orm';
+import { count, desc, eq, getTableColumns } from 'drizzle-orm';
 
 export class ProgramV2Service {
   constructor(private db: Context['db']) {}
@@ -14,31 +17,61 @@ export class ProgramV2Service {
     const offset = pagination?.offset || 0;
 
     const data = await this.db
-      .select()
+      .select({
+        ...getTableColumns(programsV2Table),
+        sponsor: getTableColumns(usersV2Table),
+        network: getTableColumns(networksTable),
+        token: getTableColumns(tokensTable),
+      })
       .from(programsV2Table)
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(usersV2Table, eq(programsV2Table.sponsorId, usersV2Table.id))
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(networksTable, eq(programsV2Table.networkId, networksTable.id))
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
       .limit(limit)
       .offset(offset)
       .orderBy(desc(programsV2Table.createdAt));
 
     const [totalCount] = await this.db.select({ count: count() }).from(programsV2Table);
 
+    // Extract program data (joined data is not needed in return type)
+    const programs = data.map((row) => {
+      const { sponsor, network, token, ...program } = row;
+      return program as ProgramV2;
+    });
+
     return {
-      data,
+      data: programs,
       count: totalCount.count,
     };
   }
 
   async getById(id: string): Promise<ProgramV2> {
-    const [program] = await this.db
-      .select()
+    const [result] = await this.db
+      .select({
+        ...getTableColumns(programsV2Table),
+        sponsor: getTableColumns(usersV2Table),
+        network: getTableColumns(networksTable),
+        token: getTableColumns(tokensTable),
+      })
       .from(programsV2Table)
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(usersV2Table, eq(programsV2Table.sponsorId, usersV2Table.id))
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(networksTable, eq(programsV2Table.networkId, networksTable.id))
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
       .where(eq(programsV2Table.id, Number.parseInt(id, 10)));
 
-    if (!program) {
+    if (!result) {
       throw new Error('Program not found');
     }
 
-    return program;
+    // Extract program data (joined data is not needed in return type)
+    const { sponsor, network, token, ...program } = result;
+    return program as ProgramV2;
   }
 
   async create(
@@ -102,8 +135,19 @@ export class ProgramV2Service {
     const offset = pagination?.offset || 0;
 
     const data = await this.db
-      .select()
+      .select({
+        ...getTableColumns(programsV2Table),
+        sponsor: getTableColumns(usersV2Table),
+        network: getTableColumns(networksTable),
+        token: getTableColumns(tokensTable),
+      })
       .from(programsV2Table)
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(usersV2Table, eq(programsV2Table.sponsorId, usersV2Table.id))
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(networksTable, eq(programsV2Table.networkId, networksTable.id))
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
       .where(eq(programsV2Table.sponsorId, sponsorId))
       .limit(limit)
       .offset(offset)
@@ -114,8 +158,14 @@ export class ProgramV2Service {
       .from(programsV2Table)
       .where(eq(programsV2Table.sponsorId, sponsorId));
 
+    // Extract program data (joined data is not needed in return type)
+    const programs = data.map((row) => {
+      const { sponsor, network, token, ...program } = row;
+      return program as ProgramV2;
+    });
+
     return {
-      data,
+      data: programs,
       count: totalCount.count,
     };
   }
