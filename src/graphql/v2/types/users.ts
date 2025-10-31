@@ -23,10 +23,16 @@ export const UserRoleEnum = builder.enumType('UserRoleV2', {
 // ============================================================================
 
 /**
+ * User V2 Object Reference
+ * Export this to avoid circular dependencies
+ */
+export const UserV2Ref = builder.objectRef<DBUser>('UserV2');
+
+/**
  * User V2 GraphQL type
  * Represents a user entity with all its properties
  */
-export const UserV2Type = builder.objectRef<DBUser>('UserV2').implement({
+export const UserV2Type = UserV2Ref.implement({
   fields: (t) => ({
     // Primary fields
     id: t.exposeID('id', {
