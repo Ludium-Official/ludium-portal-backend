@@ -105,6 +105,14 @@ export const ProgramV2Type = ProgramV2Ref.implement({
         return token;
       },
     }),
+    applicationCount: t.field({
+      type: 'Int',
+      description: 'The number of applications submitted by builders for this program',
+      resolve: (program) => {
+        // applicationCount is added by the service layer
+        return (program as DBProgramV2 & { applicationCount?: number }).applicationCount ?? 0;
+      },
+    }),
   }),
 });
 

@@ -1,10 +1,11 @@
 import { type ProgramV2, programsV2Table } from '@/db/schemas';
+import { applicationsV2Table } from '@/db/schemas/v2/applications';
 import { networksTable } from '@/db/schemas/v2/networks';
 import { tokensTable } from '@/db/schemas/v2/tokens';
 import { usersV2Table } from '@/db/schemas/v2/users';
 import type { CreateProgramV2Input, UpdateProgramV2Input } from '@/graphql/v2/inputs/programs';
 import type { Context } from '@/types';
-import { count, desc, eq, getTableColumns } from 'drizzle-orm';
+import { count, desc, eq, getTableColumns, sql } from 'drizzle-orm';
 
 export class ProgramV2Service {
   constructor(private db: Context['db']) {}
@@ -12,7 +13,7 @@ export class ProgramV2Service {
   async getMany(pagination?: {
     limit?: number;
     offset?: number;
-  }): Promise<{ data: ProgramV2[]; count: number }> {
+  }): Promise<{ data: (ProgramV2 & { applicationCount: number })[]; count: number }> {
     const limit = pagination?.limit || 10;
     const offset = pagination?.offset || 0;
 
@@ -22,6 +23,11 @@ export class ProgramV2Service {
         sponsor: getTableColumns(usersV2Table),
         network: getTableColumns(networksTable),
         token: getTableColumns(tokensTable),
+        applicationCount: sql<number>`
+          (SELECT COUNT(*)::int 
+           FROM ${applicationsV2Table} 
+           WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
+        `.as('application_count'),
       })
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
@@ -38,8 +44,11 @@ export class ProgramV2Service {
 
     // Extract program data (joined data is not needed in return type)
     const programs = data.map((row) => {
-      const { sponsor, network, token, ...program } = row;
-      return program as ProgramV2;
+      const { sponsor, network, token, applicationCount, ...program } = row;
+      return {
+        ...(program as ProgramV2),
+        applicationCount: applicationCount ?? 0,
+      };
     });
 
     return {
@@ -48,13 +57,18 @@ export class ProgramV2Service {
     };
   }
 
-  async getById(id: string): Promise<ProgramV2> {
+  async getById(id: string): Promise<ProgramV2 & { applicationCount: number }> {
     const [result] = await this.db
       .select({
         ...getTableColumns(programsV2Table),
         sponsor: getTableColumns(usersV2Table),
         network: getTableColumns(networksTable),
         token: getTableColumns(tokensTable),
+        applicationCount: sql<number>`
+          (SELECT COUNT(*)::int 
+           FROM ${applicationsV2Table} 
+           WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
+        `.as('application_count'),
       })
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
@@ -70,8 +84,11 @@ export class ProgramV2Service {
     }
 
     // Extract program data (joined data is not needed in return type)
-    const { sponsor, network, token, ...program } = result;
-    return program as ProgramV2;
+    const { sponsor, network, token, applicationCount, ...program } = result;
+    return {
+      ...(program as ProgramV2),
+      applicationCount: applicationCount ?? 0,
+    };
   }
 
   async create(
@@ -130,7 +147,7 @@ export class ProgramV2Service {
   async getBySponsorId(
     sponsorId: number,
     pagination?: { limit?: number; offset?: number },
-  ): Promise<{ data: ProgramV2[]; count: number }> {
+  ): Promise<{ data: (ProgramV2 & { applicationCount: number })[]; count: number }> {
     const limit = pagination?.limit || 10;
     const offset = pagination?.offset || 0;
 
@@ -140,6 +157,11 @@ export class ProgramV2Service {
         sponsor: getTableColumns(usersV2Table),
         network: getTableColumns(networksTable),
         token: getTableColumns(tokensTable),
+        applicationCount: sql<number>`
+          (SELECT COUNT(*)::int 
+           FROM ${applicationsV2Table} 
+           WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
+        `.as('application_count'),
       })
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
@@ -160,8 +182,11 @@ export class ProgramV2Service {
 
     // Extract program data (joined data is not needed in return type)
     const programs = data.map((row) => {
-      const { sponsor, network, token, ...program } = row;
-      return program as ProgramV2;
+      const { sponsor, network, token, applicationCount, ...program } = row;
+      return {
+        ...(program as ProgramV2),
+        applicationCount: applicationCount ?? 0,
+      };
     });
 
     return {
