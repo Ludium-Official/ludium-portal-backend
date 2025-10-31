@@ -961,5 +961,408 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
       expect(result.data.programsV2.data).toEqual([]);
       expect(result.data.programsV2.count).toBe(0);
     });
+
+    it('should fetch programs with pagination input (limit and offset)', async () => {
+      const deadline = new Date();
+      deadline.setMonth(deadline.getMonth() + 1);
+
+      // Create 10 programs for pagination testing
+      const programs: NewProgramV2[] = Array.from({ length: 10 }, (_, i) => ({
+        title: `Pagination Program ${i + 1}`,
+        description: `Program number ${i + 1} for pagination testing`,
+        skills: [`skill${i + 1}`, 'pagination'],
+        deadline,
+        visibility: 'public',
+        networkId: testNetworkId,
+        price: `${(i + 1) * 100}`,
+        token_id: testTokenId,
+        status: 'open',
+        sponsorId: testUserId,
+      }));
+
+      await db.insert(programsV2Table).values(programs);
+
+      const query = `
+        query GetProgramsV2($pagination: PaginationInput) {
+          programsV2(pagination: $pagination) {
+            data {
+              id
+              title
+              description
+              skills
+              status
+            }
+            count
+          }
+        }
+      `;
+
+      // Test with limit 3, offset 0 (first page)
+      const firstPageResponse = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          query,
+          variables: {
+            pagination: {
+              limit: 3,
+              offset: 0,
+            },
+          },
+        },
+      });
+
+      expect(firstPageResponse.statusCode).toBe(200);
+      const firstPageResult = JSON.parse(firstPageResponse.body);
+
+      if (firstPageResult.errors) {
+        console.error('GraphQL Errors:', JSON.stringify(firstPageResult.errors, null, 2));
+      }
+
+      expect(firstPageResult.data).toBeDefined();
+      expect(firstPageResult.data.programsV2).toBeDefined();
+      expect(firstPageResult.data.programsV2.data).toHaveLength(3);
+      expect(firstPageResult.data.programsV2.count).toBeGreaterThanOrEqual(10);
+
+      // Test with limit 3, offset 3 (second page)
+      const secondPageResponse = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          query,
+          variables: {
+            pagination: {
+              limit: 3,
+              offset: 3,
+            },
+          },
+        },
+      });
+
+      expect(secondPageResponse.statusCode).toBe(200);
+      const secondPageResult = JSON.parse(secondPageResponse.body);
+
+      expect(secondPageResult.data).toBeDefined();
+      expect(secondPageResult.data.programsV2).toBeDefined();
+      expect(secondPageResult.data.programsV2.data).toHaveLength(3);
+      expect(secondPageResult.data.programsV2.count).toBe(firstPageResult.data.programsV2.count);
+
+      // Verify different programs are returned on different pages
+      const firstPageIds = firstPageResult.data.programsV2.data.map((p: { id: string }) => p.id);
+      const secondPageIds = secondPageResult.data.programsV2.data.map((p: { id: string }) => p.id);
+      expect(firstPageIds).not.toEqual(secondPageIds);
+      expect(new Set([...firstPageIds, ...secondPageIds]).size).toBe(6); // No duplicates
+
+      // Test with default pagination (no input provided)
+      const defaultResponse = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          query,
+          variables: {},
+        },
+      });
+
+      expect(defaultResponse.statusCode).toBe(200);
+      const defaultResult = JSON.parse(defaultResponse.body);
+      expect(defaultResult.data.programsV2.data.length).toBeGreaterThan(0);
+      expect(defaultResult.data.programsV2.count).toBeGreaterThanOrEqual(10);
+    });
+  });
+
+  describe('programsBysponsorIdV2', () => {
+    it('should fetch programs by sponsor ID with pagination', async () => {
+      const deadline = new Date();
+      deadline.setMonth(deadline.getMonth() + 1);
+
+      // Create another user (sponsor)
+      const otherSponsor: NewUserV2 = {
+        walletAddress: '0xOtherSponsor1234567890123456789012345678901234',
+        loginType: 'wallet',
+        role: 'user',
+        email: 'othersponsor@example.com',
+        firstName: 'Other',
+        lastName: 'Sponsor',
+      };
+      const [insertedOtherSponsor] = await db.insert(usersV2Table).values(otherSponsor).returning();
+      const otherSponsorId = insertedOtherSponsor.id;
+
+      // Create programs for testUserId (current sponsor)
+      const programsForTestUser: NewProgramV2[] = Array.from({ length: 5 }, (_, i) => ({
+        title: `Test User Program ${i + 1}`,
+        description: `Program ${i + 1} by test user`,
+        skills: [`skill${i + 1}`],
+        deadline,
+        visibility: 'public',
+        networkId: testNetworkId,
+        price: `${(i + 1) * 100}`,
+        token_id: testTokenId,
+        status: 'open',
+        sponsorId: testUserId,
+      }));
+
+      // Create programs for otherSponsorId
+      const programsForOtherSponsor: NewProgramV2[] = Array.from({ length: 3 }, (_, i) => ({
+        title: `Other Sponsor Program ${i + 1}`,
+        description: `Program ${i + 1} by other sponsor`,
+        skills: [`otherskill${i + 1}`],
+        deadline,
+        visibility: 'public',
+        networkId: testNetworkId,
+        price: `${(i + 1) * 200}`,
+        token_id: testTokenId,
+        status: 'open',
+        sponsorId: otherSponsorId,
+      }));
+
+      await db.insert(programsV2Table).values([...programsForTestUser, ...programsForOtherSponsor]);
+
+      const query = `
+        query GetProgramsBySponsorV2($sponsorId: ID!, $pagination: PaginationInput) {
+          programsBysponsorIdV2(sponsorId: $sponsorId, pagination: $pagination) {
+            data {
+              id
+              title
+              description
+              status
+              sponsor {
+                id
+                walletAddress
+                email
+                firstName
+                lastName
+              }
+            }
+            count
+          }
+        }
+      `;
+
+      // Test fetching programs by testUserId with pagination
+      const response = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          query,
+          variables: {
+            sponsorId: testUserId.toString(),
+            pagination: {
+              limit: 3,
+              offset: 0,
+            },
+          },
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const result = JSON.parse(response.body);
+
+      if (result.errors) {
+        console.error('GraphQL Errors:', JSON.stringify(result.errors, null, 2));
+      }
+
+      expect(result.data).toBeDefined();
+      expect(result.data.programsBysponsorIdV2).toBeDefined();
+      expect(result.data.programsBysponsorIdV2.data).toHaveLength(3);
+      expect(result.data.programsBysponsorIdV2.count).toBe(5); // Total programs for testUserId
+
+      // Verify all returned programs belong to the correct sponsor
+      for (const program of result.data.programsBysponsorIdV2.data) {
+        expect(program.sponsor.id).toBe(testUserId.toString());
+      }
+
+      // Test fetching second page
+      const secondPageResponse = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          query,
+          variables: {
+            sponsorId: testUserId.toString(),
+            pagination: {
+              limit: 3,
+              offset: 3,
+            },
+          },
+        },
+      });
+
+      expect(secondPageResponse.statusCode).toBe(200);
+      const secondPageResult = JSON.parse(secondPageResponse.body);
+      expect(secondPageResult.data.programsBysponsorIdV2.data).toHaveLength(2); // Remaining 2 programs
+      expect(secondPageResult.data.programsBysponsorIdV2.count).toBe(5);
+
+      // Test fetching programs by other sponsor
+      const otherSponsorResponse = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          query,
+          variables: {
+            sponsorId: otherSponsorId.toString(),
+            pagination: {
+              limit: 10,
+              offset: 0,
+            },
+          },
+        },
+      });
+
+      expect(otherSponsorResponse.statusCode).toBe(200);
+      const otherSponsorResult = JSON.parse(otherSponsorResponse.body);
+      expect(otherSponsorResult.data.programsBysponsorIdV2.data).toHaveLength(3);
+      expect(otherSponsorResult.data.programsBysponsorIdV2.count).toBe(3);
+
+      // Verify all returned programs belong to other sponsor
+      for (const program of otherSponsorResult.data.programsBysponsorIdV2.data) {
+        expect(program.sponsor.id).toBe(otherSponsorId.toString());
+      }
+    });
+
+    it('should fetch programs by sponsor ID without pagination (default values)', async () => {
+      const deadline = new Date();
+      deadline.setMonth(deadline.getMonth() + 1);
+
+      const newProgram: NewProgramV2 = {
+        title: 'Program for Sponsor Query',
+        description: 'A program to test sponsor query without pagination',
+        skills: ['testing', 'sponsor'],
+        deadline,
+        visibility: 'public',
+        networkId: testNetworkId,
+        price: '500',
+        token_id: testTokenId,
+        status: 'open',
+        sponsorId: testUserId,
+      };
+      await db.insert(programsV2Table).values(newProgram);
+
+      const query = `
+        query GetProgramsBySponsorV2($sponsorId: ID!) {
+          programsBysponsorIdV2(sponsorId: $sponsorId) {
+            data {
+              id
+              title
+              description
+              sponsor {
+                id
+                walletAddress
+                email
+              }
+              network {
+                id
+                chainName
+              }
+              token {
+                id
+                tokenName
+              }
+            }
+            count
+          }
+        }
+      `;
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          query,
+          variables: {
+            sponsorId: testUserId.toString(),
+          },
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const result = JSON.parse(response.body);
+
+      if (result.errors) {
+        console.error('GraphQL Errors:', JSON.stringify(result.errors, null, 2));
+      }
+
+      expect(result.data).toBeDefined();
+      expect(result.data.programsBysponsorIdV2).toBeDefined();
+      expect(result.data.programsBysponsorIdV2.data).toBeInstanceOf(Array);
+      expect(result.data.programsBysponsorIdV2.data.length).toBeGreaterThan(0);
+      expect(result.data.programsBysponsorIdV2.count).toBeGreaterThan(0);
+
+      // Verify sponsor information is included
+      const program = result.data.programsBysponsorIdV2.data.find(
+        (p: { title: string }) => p.title === newProgram.title,
+      );
+      expect(program).toBeDefined();
+      expect(program.sponsor.id).toBe(testUserId.toString());
+      expect(program.sponsor.walletAddress).toBe('0xTestCreator1234567890123456789012345678901234');
+      expect(program.network).toBeDefined();
+      expect(program.token).toBeDefined();
+    });
+
+    it('should return empty array when sponsor has no programs', async () => {
+      // Create a new user with no programs
+      const newSponsor: NewUserV2 = {
+        walletAddress: '0xNewSponsor1234567890123456789012345678901234',
+        loginType: 'wallet',
+        role: 'user',
+        email: 'newsponsor@example.com',
+      };
+      const [insertedNewSponsor] = await db.insert(usersV2Table).values(newSponsor).returning();
+      const newSponsorId = insertedNewSponsor.id;
+
+      const query = `
+        query GetProgramsBySponsorV2($sponsorId: ID!) {
+          programsBysponsorIdV2(sponsorId: $sponsorId) {
+            data {
+              id
+              title
+            }
+            count
+          }
+        }
+      `;
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          query,
+          variables: {
+            sponsorId: newSponsorId.toString(),
+          },
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const result = JSON.parse(response.body);
+
+      expect(result.data).toBeDefined();
+      expect(result.data.programsBysponsorIdV2).toBeDefined();
+      expect(result.data.programsBysponsorIdV2.data).toEqual([]);
+      expect(result.data.programsBysponsorIdV2.count).toBe(0);
+    });
   });
 });

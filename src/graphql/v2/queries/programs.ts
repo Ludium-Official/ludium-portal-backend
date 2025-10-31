@@ -11,25 +11,42 @@ builder.queryFields((t) => ({
   programsV2: t.field({
     type: PaginatedProgramV2Type,
     authScopes: { userV2: true },
+    description: 'Get all programs with pagination. Default limit is 10, default offset is 0.',
     args: {
-      pagination: t.arg({ type: PaginationInput, required: false }),
+      pagination: t.arg({
+        type: PaginationInput,
+        required: false,
+        description:
+          'Pagination options: limit (default: 10) and offset (default: 0). Supports sorting and filtering.',
+      }),
     },
     resolve: getProgramsV2Resolver,
   }),
   programV2: t.field({
     type: ProgramV2Type,
     authScopes: { userV2: true },
+    description: 'Get a single program by ID.',
     args: {
-      id: t.arg.id({ required: true }),
+      id: t.arg.id({ required: true, description: 'The ID of the program to fetch.' }),
     },
     resolve: getProgramV2Resolver,
   }),
   programsBysponsorIdV2: t.field({
     type: PaginatedProgramV2Type,
     authScopes: { userV2: true },
+    description:
+      'Get all programs by sponsor ID with pagination. Default limit is 10, default offset is 0. Returns all programs created by a specific sponsor.',
     args: {
-      sponsorId: t.arg.id({ required: true }),
-      pagination: t.arg({ type: PaginationInput, required: false }),
+      sponsorId: t.arg.id({
+        required: true,
+        description: 'The ID of the sponsor (user) to fetch programs for.',
+      }),
+      pagination: t.arg({
+        type: PaginationInput,
+        required: false,
+        description:
+          'Pagination options: limit (default: 10) and offset (default: 0). Supports sorting and filtering.',
+      }),
     },
     resolve: getProgramsBysponsorIdV2Resolver,
   }),
