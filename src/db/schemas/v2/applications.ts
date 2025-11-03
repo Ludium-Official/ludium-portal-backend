@@ -1,5 +1,14 @@
 import { relations } from 'drizzle-orm';
-import { boolean, integer, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  integer,
+  pgEnum,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { programsV2Table } from './programs';
 import { usersV2Table } from './users';
 
@@ -21,6 +30,8 @@ export const applicationsV2Table = pgTable('applications_v2', {
   content: text('content').default(''),
   rejectedReason: text('rejected_reason').default(''),
   picked: boolean('picked').default(false).notNull(),
+  // chatroom message id
+  chatroomMessageId: uuid('chatroom_message_id').unique(),
   // metadata
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' })

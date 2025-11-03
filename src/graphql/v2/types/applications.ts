@@ -51,6 +51,10 @@ export const ApplicationV2Type = builder.objectRef<DBApplicationV2>('Application
     picked: t.exposeBoolean('picked', {
       description: 'Whether this application has been picked',
     }),
+    chatroomMessageId: t.exposeString('chatroomMessageId', {
+      nullable: true,
+      description: 'Chatroom message ID for this application (set by program sponsor)',
+    }),
     createdAt: t.field({
       type: 'DateTime',
       resolve: (application) => application.createdAt,

@@ -4,12 +4,14 @@ import {
   deleteApplicationV2Resolver,
   pickApplicationV2Resolver,
   reviewApplicationV2Resolver,
+  updateApplicationChatroomV2Resolver,
   updateApplicationV2Resolver,
 } from '@/graphql/v2/resolvers/applications';
 import {
   CreateApplicationV2Input,
   PickApplicationV2Input,
   ReviewApplicationV2Input,
+  UpdateApplicationChatroomV2Input,
   UpdateApplicationV2Input,
 } from '../inputs/applications';
 import { ApplicationV2Type } from '../types/applications';
@@ -50,7 +52,9 @@ builder.mutationFields((t) => ({
   }),
   reviewApplicationV2: t.field({
     type: ApplicationV2Type,
-    authScopes: { userV2: true },
+    authScopes: (_parent, args) => ({
+      isApplicationProgramSponsor: { applicationId: args.id },
+    }),
     args: {
       id: t.arg.id({
         required: true,
@@ -67,7 +71,10 @@ builder.mutationFields((t) => ({
   }),
   pickApplicationV2: t.field({
     type: ApplicationV2Type,
-    authScopes: { userV2: true },
+    // NOTE: To pick an application as an bookmark, we need to be the program sponsor
+    authScopes: (_parent, args) => ({
+      isApplicationProgramSponsor: { applicationId: args.id },
+    }),
     args: {
       id: t.arg.id({
         required: true,
@@ -87,6 +94,7 @@ builder.mutationFields((t) => ({
 builder.mutationFields((t) => ({
   deleteApplicationV2: t.field({
     type: ApplicationV2Type,
+    // TODO: To delete an application, we need to be the applicant
     authScopes: { userV2: true },
     args: {
       id: t.arg.id({
@@ -96,5 +104,26 @@ builder.mutationFields((t) => ({
     },
     resolve: deleteApplicationV2Resolver,
     description: 'Delete an application by ID (only by the applicant)',
+  }),
+  updateApplicationChatroomV2: t.field({
+    type: ApplicationV2Type,
+    // NOTE: To add message id to the application, we need to be the program sponsor
+    authScopes: (_parent, args) => ({
+      isApplicationProgramSponsor: { applicationId: args.id },
+    }),
+    args: {
+      id: t.arg.id({
+        required: true,
+        description: 'Application ID',
+      }),
+      input: t.arg({
+        type: UpdateApplicationChatroomV2Input,
+        required: true,
+        description: 'Input to update chatroom message ID (generates random UUID)',
+      }),
+    },
+    resolve: updateApplicationChatroomV2Resolver,
+    description:
+      'Update chatroom message ID for an application (only by program sponsor). Generates a random UUID.',
   }),
 }));
