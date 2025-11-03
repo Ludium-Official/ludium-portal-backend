@@ -365,7 +365,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       expect(response.statusCode).toBe(200);
       const result = JSON.parse(response.body);
       expect(result.errors).toBeDefined();
-      expect(result.errors[0].message).toMatch(/unauthorized/i);
+      expect(result.errors[0].message).toMatch(/Not authorized|unauthorized/i);
     });
   });
 
@@ -434,7 +434,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       expect(response.statusCode).toBe(200);
       const result = JSON.parse(response.body);
       expect(result.errors).toBeDefined();
-      expect(result.errors[0].message).toMatch(/unauthorized/i);
+      expect(result.errors[0].message).toMatch(/Not authorized|unauthorized/i);
     });
   });
 
@@ -502,6 +502,173 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       const result = JSON.parse(response.body);
       expect(result.errors).toBeDefined();
       expect(result.errors[0].message).toMatch(/unauthorized/i);
+    });
+  });
+
+  describe('updateApplicationChatroomV2', () => {
+    let testApplicationId: number;
+
+    beforeEach(async () => {
+      const [app] = await db
+        .insert(applicationsV2Table)
+        .values({
+          programId: testProgramId,
+          applicantId: applicantId,
+          content: 'Application for chatroom',
+          status: ApplicationStatus.APPLIED,
+        })
+        .returning();
+      testApplicationId = app.id;
+    });
+
+    it('should update chatroom message ID by the program sponsor', async () => {
+      const mutation = `
+        mutation UpdateApplicationChatroomV2($id: ID!, $input: UpdateApplicationChatroomV2Input!) {
+          updateApplicationChatroomV2(id: $id, input: $input) {
+            id
+            chatroomMessageId
+          }
+        }
+      `;
+      const variables = {
+        id: testApplicationId.toString(),
+        input: {},
+      };
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: { authorization: `Bearer ${creatorAuthToken}` },
+        payload: { query: mutation, variables },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const result = JSON.parse(response.body);
+
+      if (result.errors) {
+        console.error('GraphQL Errors:', JSON.stringify(result.errors, null, 2));
+      }
+
+      expect(result.data).toBeDefined();
+      const application = result.data.updateApplicationChatroomV2;
+
+      expect(application.id).toBe(testApplicationId.toString());
+      expect(application.chatroomMessageId).toBeDefined();
+      // UUID v4 형식 확인 (xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx)
+      expect(application.chatroomMessageId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      );
+
+      // Verify it's saved in the database
+      const [savedApp] = await db
+        .select()
+        .from(applicationsV2Table)
+        .where(eq(applicationsV2Table.id, testApplicationId));
+      expect(savedApp.chatroomMessageId).toBe(application.chatroomMessageId);
+    });
+
+    it('should generate a new UUID on each call', async () => {
+      const mutation = `
+        mutation UpdateApplicationChatroomV2($id: ID!, $input: UpdateApplicationChatroomV2Input!) {
+          updateApplicationChatroomV2(id: $id, input: $input) {
+            id
+            chatroomMessageId
+          }
+        }
+      `;
+
+      // First call
+      const firstResponse = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: { authorization: `Bearer ${creatorAuthToken}` },
+        payload: {
+          query: mutation,
+          variables: {
+            id: testApplicationId.toString(),
+            input: {},
+          },
+        },
+      });
+
+      const firstResult = JSON.parse(firstResponse.body);
+      const firstUuid = firstResult.data.updateApplicationChatroomV2.chatroomMessageId;
+
+      // Second call
+      const secondResponse = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: { authorization: `Bearer ${creatorAuthToken}` },
+        payload: {
+          query: mutation,
+          variables: {
+            id: testApplicationId.toString(),
+            input: {},
+          },
+        },
+      });
+
+      const secondResult = JSON.parse(secondResponse.body);
+      const secondUuid = secondResult.data.updateApplicationChatroomV2.chatroomMessageId;
+
+      // UUIDs should be different (new UUID generated each time)
+      expect(firstUuid).toBeDefined();
+      expect(secondUuid).toBeDefined();
+      expect(firstUuid).not.toBe(secondUuid);
+    });
+
+    it('should not be updated by the applicant', async () => {
+      const mutation = `
+        mutation UpdateApplicationChatroomV2($id: ID!, $input: UpdateApplicationChatroomV2Input!) {
+          updateApplicationChatroomV2(id: $id, input: $input) {
+            id
+            chatroomMessageId
+          }
+        }
+      `;
+      const variables = {
+        id: testApplicationId.toString(),
+        input: {},
+      };
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        headers: { authorization: `Bearer ${applicantAuthToken}` },
+        payload: { query: mutation, variables },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const result = JSON.parse(response.body);
+
+      expect(result.errors).toBeDefined();
+      expect(result.errors[0].message).toMatch(/Not authorized|unauthorized/i);
+    });
+
+    it('should not be updated without auth token', async () => {
+      const mutation = `
+        mutation UpdateApplicationChatroomV2($id: ID!, $input: UpdateApplicationChatroomV2Input!) {
+          updateApplicationChatroomV2(id: $id, input: $input) {
+            id
+          }
+        }
+      `;
+      const variables = {
+        id: testApplicationId.toString(),
+        input: {},
+      };
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: { query: mutation, variables },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const result = JSON.parse(response.body);
+
+      expect(result.errors).toBeDefined();
+      expect(result.errors[0].message).toMatch(/Not authorized/);
     });
   });
   // #endregion

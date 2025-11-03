@@ -56,6 +56,9 @@ const builder = new SchemaBuilder<{
     isProgramCreatorV2: {
       programId: string;
     };
+    isApplicationProgramSponsor: {
+      applicationId: string;
+    };
   };
   Scalars: {
     DateTime: {
@@ -102,6 +105,12 @@ const builder = new SchemaBuilder<{
       },
       isProgramCreatorV2: async ({ programId }) => {
         return await context.server.auth.isProgramCreatorV2(context.request, programId);
+      },
+      isApplicationProgramSponsor: async ({ applicationId }) => {
+        return await context.server.auth.isApplicationProgramSponsor(
+          context.request,
+          applicationId,
+        );
       },
     }),
   },

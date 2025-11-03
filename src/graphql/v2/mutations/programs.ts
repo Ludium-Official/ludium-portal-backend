@@ -37,9 +37,13 @@ builder.mutationField('createProgramWithOnchainV2', (t) =>
 builder.mutationField('updateProgramV2', (t) =>
   t.field({
     type: ProgramV2Ref,
-    authScopes: (_parent, args) => ({
-      isProgramCreatorV2: { programId: args.id },
-    }),
+    // Auth scopes are handled dynamically in the resolver
+    // For draft → under_review: creator only
+    // For under_review → open/declined: admin only
+    // For other updates: creator only (default)
+    authScopes: {
+      userV2: true,
+    },
     args: {
       id: t.arg.id({ required: true }),
       input: t.arg({ type: UpdateProgramV2Input, required: true }),

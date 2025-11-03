@@ -66,6 +66,24 @@ export const PickApplicationV2Input = builder.inputType('PickApplicationV2Input'
   }),
 });
 
+/**
+ * Input type for updating chatroom message ID by the program sponsor
+ * This generates a random UUID for the chatroom message ID
+ * Note: Currently no input fields are needed as UUID is generated server-side
+ * A placeholder field is required by GraphQL schema validation
+ */
+export const UpdateApplicationChatroomV2Input = builder.inputType(
+  'UpdateApplicationChatroomV2Input',
+  {
+    fields: (t) => ({
+      _placeholder: t.boolean({
+        description: 'Placeholder field (GraphQL requires at least one field in input types)',
+        defaultValue: false,
+      }),
+    }),
+  },
+);
+
 // ============================================================================
 // Query Inputs
 // ============================================================================

@@ -6,6 +6,7 @@ import type {
   MyApplicationsV2QueryInput,
   PickApplicationV2Input,
   ReviewApplicationV2Input,
+  UpdateApplicationChatroomV2Input,
   UpdateApplicationV2Input,
 } from '../inputs/applications';
 import { ApplicationV2Service } from '../services';
@@ -81,7 +82,8 @@ export async function reviewApplicationV2Resolver(
     throw new Error('Unauthorized');
   }
   const applicationService = new ApplicationV2Service(ctx.db, ctx.server);
-  return applicationService.review(args.id, args.input, ctx.userV2.id);
+  // Note: Authorization is handled by auth scope (isApplicationProgramSponsor)
+  return applicationService.review(args.id, args.input);
 }
 
 export async function pickApplicationV2Resolver(
@@ -93,7 +95,8 @@ export async function pickApplicationV2Resolver(
     throw new Error('Unauthorized');
   }
   const applicationService = new ApplicationV2Service(ctx.db, ctx.server);
-  return applicationService.pick(args.id, args.input, ctx.userV2.id);
+  // Note: Authorization is handled by auth scope (isApplicationProgramSponsor)
+  return applicationService.pick(args.id, args.input);
 }
 
 export async function deleteApplicationV2Resolver(_root: Root, args: { id: string }, ctx: Context) {
@@ -102,4 +105,19 @@ export async function deleteApplicationV2Resolver(_root: Root, args: { id: strin
   }
   const applicationService = new ApplicationV2Service(ctx.db, ctx.server);
   return applicationService.delete(args.id, ctx.userV2.id);
+}
+
+export async function updateApplicationChatroomV2Resolver(
+  _root: Root,
+  args: {
+    id: string;
+    input: typeof UpdateApplicationChatroomV2Input.$inferInput;
+  },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  const applicationService = new ApplicationV2Service(ctx.db, ctx.server);
+  return applicationService.updateChatroomMessageId(args.id);
 }

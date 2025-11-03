@@ -125,7 +125,7 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
           networkId: testNetworkId,
           price: '1500',
           token_id: testTokenId,
-          status: 'open',
+          // status is not allowed - programs are always created as 'draft'
         },
       };
 
@@ -156,7 +156,7 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
       expect(program.id).toBeDefined();
       expect(program.title).toBe(variables.input.title);
       expect(program.description).toBe(variables.input.description);
-      expect(program.status).toBe(variables.input.status);
+      expect(program.status).toBe('draft'); // Programs are always created as draft
       expect(program.visibility).toBe(variables.input.visibility);
       expect(program.skills).toEqual(variables.input.skills);
       expect(program.networkId).toBe(variables.input.networkId);
@@ -185,7 +185,7 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
           networkId: testNetworkId,
           price: '100',
           token_id: testTokenId,
-          status: 'open',
+          // status is not allowed - programs are always created as 'draft'
         },
       };
 
@@ -229,7 +229,7 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
           networkId: testNetworkId,
           price: '500',
           token_id: testTokenId,
-          status: 'open',
+          // status is not allowed - programs are always created as 'draft'
           invitedMembers: ['user1@example.com', 'user2@example.com'],
         },
       };
@@ -291,7 +291,8 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
         input: {
           title: 'New Updated Title',
           description: 'New updated description.',
-          status: 'open',
+          // Note: status change from 'draft' to 'open' is not allowed without proper workflow
+          // (draft → under_review requires onchain_program_id, under_review → open requires admin)
         },
       };
 
@@ -322,7 +323,7 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
       expect(updatedProgram.id).toBe(insertedProgram.id.toString());
       expect(updatedProgram.title).toBe(variables.input.title);
       expect(updatedProgram.description).toBe(variables.input.description);
-      expect(updatedProgram.status).toBe(variables.input.status);
+      expect(updatedProgram.status).toBe('draft'); // Status remains draft (no status change in this update)
     });
 
     it('should not update a program by non-creator', async () => {
@@ -404,7 +405,10 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
       const result = JSON.parse(response.body);
 
       expect(result.errors).toBeDefined();
-      expect(result.errors[0].message).toMatch(/unauthorized|Not authorized/i);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0].message).toMatch(
+        /Only the program creator|unauthorized|Not authorized/i,
+      );
     });
 
     it('should partially update program fields', async () => {
@@ -441,7 +445,7 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
         id: insertedProgram.id.toString(),
         input: {
           title: 'Only Title Updated',
-          status: 'open',
+          // Note: status change from 'draft' to 'open' is not allowed without proper workflow
         },
       };
 
@@ -462,7 +466,7 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
 
       expect(result.data).toBeDefined();
       expect(result.data.updateProgramV2.title).toBe('Only Title Updated');
-      expect(result.data.updateProgramV2.status).toBe('open');
+      expect(result.data.updateProgramV2.status).toBe('draft'); // Status remains draft
       expect(result.data.updateProgramV2.description).toBe('Original Description');
       expect(result.data.updateProgramV2.skills).toEqual(['skill1', 'skill2']);
     });
@@ -744,8 +748,10 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
 
       expect(result.data).toBeDefined();
       expect(result.data.programsV2).toBeDefined();
+      // GetProgramsV2 only returns programs with visibility='public' AND status='open'
+      // Program 3 has visibility='private', so it's not included
       expect(result.data.programsV2.data).toHaveLength(2);
-      expect(result.data.programsV2.count).toBe(3);
+      expect(result.data.programsV2.count).toBe(2); // Only public and open programs
     });
 
     it('should fetch programs with sponsor, network, and token information', async () => {

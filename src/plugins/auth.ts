@@ -2,6 +2,7 @@ import {
   type User as DbUser,
   type UserV2 as DbUserV2,
   applicationsTable,
+  applicationsV2Table,
   milestonesTable,
   programUserRolesTable,
   programsV2Table,
@@ -146,6 +147,39 @@ export class AuthHandler {
     return program.sponsorId === user.id;
   }
 
+  async isApplicationProgramSponsor(
+    request: FastifyRequest,
+    applicationId: string,
+  ): Promise<boolean> {
+    const user = this.getUserV2(request);
+    if (!user) return false;
+
+    const numericApplicationId = Number.parseInt(applicationId, 10);
+    if (Number.isNaN(numericApplicationId)) {
+      return false;
+    }
+
+    const [application] = await this.server.db
+      .select()
+      .from(applicationsV2Table)
+      .where(eq(applicationsV2Table.id, numericApplicationId));
+
+    if (!application) {
+      return false;
+    }
+
+    const [program] = await this.server.db
+      .select()
+      .from(programsV2Table)
+      .where(eq(programsV2Table.id, application.programId));
+
+    if (!program) {
+      return false;
+    }
+
+    return program.sponsorId === user.id;
+  }
+
   async getUserForSubscription(decodedToken: DecodedToken) {
     const userId = decodedToken.payload.id;
     const [user] = await this.server.db
@@ -201,6 +235,27 @@ async function requestHandler(decodedToken: DecodedToken, db: Context['db']) {
   return auth;
 }
 
+const requestDevHandler = (): RequestAuth => {
+  return {
+    userV2: {
+      id: 999,
+      skills: null,
+      role: 'user',
+      loginType: 'wallet',
+      email: 'developer@ludium.com',
+      walletAddress: '0xdev0000000000000000000000000000000000000',
+      firstName: 'Developer',
+      lastName: 'User',
+      organizationName: 'Ludium',
+      bio: 'I am a developer user',
+      links: ['https://github.com/developer', 'https://twitter.com/developer'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      profileImage: '',
+    },
+  };
+};
+
 const authPlugin = (
   server: FastifyInstance,
   _: FastifyPluginOptions,
@@ -209,6 +264,12 @@ const authPlugin = (
   const authHandler = new AuthHandler(server);
   server.decorate('auth', authHandler);
   server.addHook('onRequest', async (request) => {
+    if (process.env.NODE_ENV === 'local') {
+      request.auth = requestDevHandler();
+      console.log('👉 get local auth for development');
+      return;
+    }
+
     try {
       const decodedToken = await request.jwtVerify<DecodedToken>();
       server.log.debug(`[AuthPlugin] Decoded token: ${JSON.stringify(decodedToken)}`);

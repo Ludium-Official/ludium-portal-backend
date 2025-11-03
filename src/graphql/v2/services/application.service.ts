@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { ApplicationV2, NewApplicationV2 } from '@/db/schemas/v2/applications';
 import { applicationsV2Table } from '@/db/schemas/v2/applications';
 import { programsV2Table } from '@/db/schemas/v2/programs';
@@ -345,13 +346,13 @@ export class ApplicationV2Service {
   async review(
     id: string,
     input: typeof ReviewApplicationV2Input.$inferInput,
-    userId: number,
   ): Promise<ApplicationV2> {
     const startTime = Date.now();
     this.server.log.info(`🚀 Starting ApplicationV2Service.review for id: ${id}`);
 
     try {
-      // First, get the application to check if it exists
+      // Get the application to check if it exists
+      // Note: Authorization is handled by auth scope (isApplicationProgramCreatorV2)
       const [application] = await this.db
         .select()
         .from(applicationsV2Table)
@@ -359,21 +360,6 @@ export class ApplicationV2Service {
 
       if (!application) {
         throw new Error('Application not found');
-      }
-
-      // Then, get the program to check creator
-      const [program] = await this.db
-        .select()
-        .from(programsV2Table)
-        .where(eq(programsV2Table.id, application.programId));
-
-      if (!program) {
-        throw new Error('Program not found');
-      }
-
-      // Only program creator can review applications
-      if (program.sponsorId !== userId) {
-        throw new Error('Unauthorized to review this application');
       }
 
       type ReviewApplicationV2InputType = typeof ReviewApplicationV2Input.$inferInput;
@@ -408,12 +394,13 @@ export class ApplicationV2Service {
     }
   }
 
-  async pick(id: string, input: { picked: boolean }, userId: number): Promise<ApplicationV2> {
+  async pick(id: string, input: { picked: boolean }): Promise<ApplicationV2> {
     const startTime = Date.now();
     this.server.log.info(`🚀 Starting ApplicationV2Service.pick for id: ${id}`);
 
     try {
-      // First, get the application to check if it exists
+      // Get the application to check if it exists
+      // Note: Authorization is handled by auth scope (isApplicationProgramCreatorV2)
       const [application] = await this.db
         .select()
         .from(applicationsV2Table)
@@ -421,21 +408,6 @@ export class ApplicationV2Service {
 
       if (!application) {
         throw new Error('Application not found');
-      }
-
-      // Then, get the program to check creator
-      const [program] = await this.db
-        .select()
-        .from(programsV2Table)
-        .where(eq(programsV2Table.id, application.programId));
-
-      if (!program) {
-        throw new Error('Program not found');
-      }
-
-      // Only program creator can pick applications
-      if (program.sponsorId !== userId) {
-        throw new Error('Unauthorized to pick this application');
       }
 
       const updateData = { picked: input.picked };
@@ -493,6 +465,51 @@ export class ApplicationV2Service {
       const duration = Date.now() - startTime;
       this.server.log.error(
         `❌ ApplicationV2Service.delete failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  async updateChatroomMessageId(id: string): Promise<ApplicationV2> {
+    const startTime = Date.now();
+    this.server.log.info(`🚀 Starting ApplicationV2Service.updateChatroomMessageId for id: ${id}`);
+
+    try {
+      // Get the application to check if it exists
+      // Note: Authorization is handled by auth scope (isApplicationProgramCreatorV2)
+      const [application] = await this.db
+        .select()
+        .from(applicationsV2Table)
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)));
+
+      if (!application) {
+        throw new Error('Application not found');
+      }
+
+      // Generate a random UUID for the chatroom message ID
+      const chatroomMessageId = randomUUID();
+
+      const [updatedApplication] = await this.db
+        .update(applicationsV2Table)
+        .set({
+          chatroomMessageId,
+          updatedAt: new Date(),
+        })
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)))
+        .returning();
+
+      const duration = Date.now() - startTime;
+      this.server.log.info(
+        `✅ ApplicationV2Service.updateChatroomMessageId completed in ${duration}ms with chatroomMessageId: ${chatroomMessageId}`,
+      );
+
+      return updatedApplication;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ ApplicationV2Service.updateChatroomMessageId failed after ${duration}ms: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );

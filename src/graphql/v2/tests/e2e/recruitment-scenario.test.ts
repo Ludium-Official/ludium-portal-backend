@@ -253,7 +253,7 @@ describe('E2E Contract Scenario Test', () => {
               networkId,
               price: '5000',
               token_id: tokenId,
-              status: 'open',
+              // status is not allowed - programs are always created as 'draft'
             },
             onchain: {
               smartContractId,
