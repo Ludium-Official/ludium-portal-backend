@@ -78,6 +78,13 @@
       "when": 1761809749062,
       "tag": "0010_red_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1762146679517,
+      "tag": "0011_salty_deathstrike",
+      "breakpoints": true
     }
   ]
 }

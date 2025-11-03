@@ -2,6 +2,7 @@ import {
   type User as DbUser,
   type UserV2 as DbUserV2,
   applicationsTable,
+  applicationsV2Table,
   milestonesTable,
   programUserRolesTable,
   programsV2Table,
@@ -138,6 +139,39 @@ export class AuthHandler {
       .select()
       .from(programsV2Table)
       .where(eq(programsV2Table.id, numericProgramId));
+
+    if (!program) {
+      return false;
+    }
+
+    return program.sponsorId === user.id;
+  }
+
+  async isApplicationProgramSponsor(
+    request: FastifyRequest,
+    applicationId: string,
+  ): Promise<boolean> {
+    const user = this.getUserV2(request);
+    if (!user) return false;
+
+    const numericApplicationId = Number.parseInt(applicationId, 10);
+    if (Number.isNaN(numericApplicationId)) {
+      return false;
+    }
+
+    const [application] = await this.server.db
+      .select()
+      .from(applicationsV2Table)
+      .where(eq(applicationsV2Table.id, numericApplicationId));
+
+    if (!application) {
+      return false;
+    }
+
+    const [program] = await this.server.db
+      .select()
+      .from(programsV2Table)
+      .where(eq(programsV2Table.id, application.programId));
 
     if (!program) {
       return false;
