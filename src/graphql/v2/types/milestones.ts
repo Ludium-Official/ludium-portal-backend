@@ -19,6 +19,23 @@ export const MilestoneStatusV2Enum = builder.enumType("MilestoneStatusV2", {
   values: milestoneStatusV2Values,
 });
 
+function mapStatusToV2(
+  status: string
+): (typeof milestoneStatusV2Values)[number] {
+  const statusMap: Record<string, (typeof milestoneStatusV2Values)[number]> = {
+    draft: "draft",
+    progress: "in_progress",
+    finished: "in_progress",
+    reviewed: "under_review",
+    completed: "completed",
+    under_review: "under_review",
+    in_progress: "in_progress",
+  };
+
+  // Return mapped value or default to 'draft' if unknown
+  return statusMap[status] ?? "draft";
+}
+
 /**
  * Milestone V2 GraphQL type
  * Represents a milestone entity with all its properties
@@ -46,7 +63,7 @@ export const MilestoneV2Type = builder
       }),
       status: t.field({
         type: MilestoneStatusV2Enum,
-        resolve: (milestone) => milestone.status,
+        resolve: (milestone) => mapStatusToV2(milestone.status),
         description:
           "Milestone status: draft, under_review, in_progress, or completed",
       }),
