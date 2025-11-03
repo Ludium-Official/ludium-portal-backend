@@ -1,3 +1,5 @@
+import { onchainProgramInfoTable } from '@/db/schemas/v2/onchain-program-info';
+import { programsV2Table } from '@/db/schemas/v2/programs';
 import type { PaginationInput } from '@/graphql/types/common';
 import type {
   CreateProgramV2Input,
@@ -5,6 +7,7 @@ import type {
   UpdateProgramV2Input,
 } from '@/graphql/v2/inputs/programs';
 import type { Context, Root } from '@/types';
+import { eq } from 'drizzle-orm';
 import { ProgramV2Service } from '../services';
 import { OnchainProgramInfoV2Service } from '../services/onchain-program-info.service';
 
@@ -42,12 +45,106 @@ export async function updateProgramV2Resolver(
   args: { id: string; input: typeof UpdateProgramV2Input.$inferInput },
   ctx: Context,
 ) {
+  if (!ctx.userV2) {
+    throw new Error('User not authenticated');
+  }
+
   const numericId = Number.parseInt(args.id, 10);
   if (Number.isNaN(numericId)) {
     throw new Error('Invalid program ID');
   }
 
   const programService = new ProgramV2Service(ctx.db);
+
+  // Get current program to check status and sponsor
+  const [currentProgram] = await ctx.db
+    .select()
+    .from(programsV2Table)
+    .where(eq(programsV2Table.id, numericId));
+
+  if (!currentProgram) {
+    throw new Error('Program not found');
+  }
+
+  const isCreator = currentProgram.sponsorId === ctx.userV2.id;
+  const isAdmin = ctx.userV2.role === 'admin';
+
+  // Only creator or admin can update programs (unless it's a status change to open/declined which requires admin)
+  // For general field updates, only creator can update
+  if (!args.input.status || args.input.status === currentProgram.status) {
+    // Not a status change - only creator can update
+    if (!isCreator) {
+      throw new Error('Only the program creator can update this program');
+    }
+  }
+
+  // If status is being changed, validate state transitions
+  if (args.input.status && args.input.status !== currentProgram.status) {
+    const newStatus = args.input.status;
+    const currentStatus = currentProgram.status;
+
+    // State transition: draft → under_review
+    if (currentStatus === 'draft' && newStatus === 'under_review') {
+      // Only creator can submit for review
+      if (!isCreator) {
+        throw new Error('Only the program creator can submit for review');
+      }
+
+      // Verify that onchain program info exists
+      const [onchainInfo] = await ctx.db
+        .select()
+        .from(onchainProgramInfoTable)
+        .where(eq(onchainProgramInfoTable.programId, numericId))
+        .limit(1);
+
+      if (!onchainInfo) {
+        throw new Error(
+          'Cannot submit program for review: onchain_program_id is required. Please create onchain program info first.',
+        );
+      }
+
+      // TODO: Add backend onchain validation logic here
+      // This should verify that the onchain_program_id is valid and matches expected format
+      // Example validation:
+      // - Verify onchain_program_id is a positive integer
+      // - Verify the onchain contract exists and is active
+      // - Verify the program matches the onchain program metadata
+      // if (!isValidOnchainProgramId(onchainInfo.onchainProgramId)) {
+      //   throw new Error('Invalid onchain_program_id');
+      // }
+    }
+    // State transition: under_review → open/declined
+    else if (
+      currentStatus === 'under_review' &&
+      (newStatus === 'open' || newStatus === 'declined')
+    ) {
+      // Only admin can approve or reject programs
+      if (!isAdmin) {
+        throw new Error('Only admin can approve or reject programs under review');
+      }
+    }
+    // Other state transitions (validate they are allowed)
+    else if (
+      !(
+        // Allow staying in the same status (no-op)
+        (
+          newStatus === currentStatus ||
+          // Allow draft → under_review (already handled above)
+          (currentStatus === 'draft' && newStatus === 'under_review') ||
+          // Allow under_review → open/declined (already handled above)
+          (currentStatus === 'under_review' &&
+            (newStatus === 'open' || newStatus === 'declined')) ||
+          // Allow open → closed (by creator or admin, no special restriction for now)
+          (currentStatus === 'open' && newStatus === 'closed')
+        )
+      )
+    ) {
+      throw new Error(
+        `Invalid state transition: cannot change from '${currentStatus}' to '${newStatus}'`,
+      );
+    }
+  }
+
   return programService.update(args.id, args.input);
 }
 

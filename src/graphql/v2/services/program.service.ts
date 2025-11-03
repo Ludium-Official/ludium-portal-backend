@@ -5,7 +5,7 @@ import { tokensTable } from '@/db/schemas/v2/tokens';
 import { usersV2Table } from '@/db/schemas/v2/users';
 import type { CreateProgramV2Input, UpdateProgramV2Input } from '@/graphql/v2/inputs/programs';
 import type { Context } from '@/types';
-import { count, desc, eq, getTableColumns, sql } from 'drizzle-orm';
+import { and, count, desc, eq, getTableColumns, sql } from 'drizzle-orm';
 
 export class ProgramV2Service {
   constructor(private db: Context['db']) {}
@@ -16,6 +16,12 @@ export class ProgramV2Service {
   }): Promise<{ data: (ProgramV2 & { applicationCount: number })[]; count: number }> {
     const limit = pagination?.limit || 10;
     const offset = pagination?.offset || 0;
+
+    // Only show programs that are public and open
+    const whereCondition = and(
+      eq(programsV2Table.visibility, 'public'),
+      eq(programsV2Table.status, 'open'),
+    );
 
     const data = await this.db
       .select({
@@ -36,11 +42,15 @@ export class ProgramV2Service {
       .leftJoin(networksTable, eq(programsV2Table.networkId, networksTable.id))
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
       .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
+      .where(whereCondition)
       .limit(limit)
       .offset(offset)
       .orderBy(desc(programsV2Table.createdAt));
 
-    const [totalCount] = await this.db.select({ count: count() }).from(programsV2Table);
+    const [totalCount] = await this.db
+      .select({ count: count() })
+      .from(programsV2Table)
+      .where(whereCondition);
 
     // Extract program data (joined data is not needed in return type)
     const programs = data.map((row) => {
@@ -100,12 +110,24 @@ export class ProgramV2Service {
       deadline: new Date(input.deadline),
       invitedMembers: input.invitedMembers ?? [],
       sponsorId,
+      // Programs must always be created as 'draft'
+      status: 'draft' as const,
     };
     const [newProgram] = await this.db.insert(programsV2Table).values(values).returning();
     return newProgram;
   }
 
   async update(id: string, input: typeof UpdateProgramV2Input.$inferInput): Promise<ProgramV2> {
+    // First, get the current program to check its status
+    const [currentProgram] = await this.db
+      .select()
+      .from(programsV2Table)
+      .where(eq(programsV2Table.id, Number.parseInt(id, 10)));
+
+    if (!currentProgram) {
+      throw new Error('Program not found');
+    }
+
     const values: Record<string, unknown> = {
       updatedAt: new Date(),
     };

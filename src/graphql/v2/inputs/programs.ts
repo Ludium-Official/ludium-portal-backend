@@ -9,7 +9,7 @@ export const CreateProgramV2Input = builder.inputType('CreateProgramV2Input', {
     skills: t.stringList({ required: true }),
     deadline: t.field({ type: 'DateTime', required: true }),
     invitedMembers: t.stringList(),
-    status: t.field({ type: ProgramV2StatusEnum, required: true }),
+    // status is not allowed - programs are always created as 'draft'
     visibility: t.field({ type: ProgramVisibilityEnum, required: true }),
     networkId: t.int({ required: true }),
     price: t.string({ required: true }),
