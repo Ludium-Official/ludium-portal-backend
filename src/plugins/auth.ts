@@ -201,6 +201,27 @@ async function requestHandler(decodedToken: DecodedToken, db: Context['db']) {
   return auth;
 }
 
+const requestDevHandler = (): RequestAuth => {
+  return {
+    userV2: {
+      id: 999,
+      skills: null,
+      role: 'user',
+      loginType: 'wallet',
+      email: 'developer@ludium.com',
+      walletAddress: '0xdev0000000000000000000000000000000000000',
+      firstName: 'Developer',
+      lastName: 'User',
+      organizationName: 'Ludium',
+      bio: 'I am a developer user',
+      links: ['https://github.com/developer', 'https://twitter.com/developer'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      profileImage: '',
+    },
+  };
+};
+
 const authPlugin = (
   server: FastifyInstance,
   _: FastifyPluginOptions,
@@ -209,6 +230,12 @@ const authPlugin = (
   const authHandler = new AuthHandler(server);
   server.decorate('auth', authHandler);
   server.addHook('onRequest', async (request) => {
+    if (process.env.NODE_ENV === 'local') {
+      request.auth = requestDevHandler();
+      console.log('👉 get local auth for development');
+      return;
+    }
+
     try {
       const decodedToken = await request.jwtVerify<DecodedToken>();
       server.log.debug(`[AuthPlugin] Decoded token: ${JSON.stringify(decodedToken)}`);
