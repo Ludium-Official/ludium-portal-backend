@@ -389,13 +389,13 @@ describe('Milestones V2 Table', () => {
     expect(milestone.status).toBe('draft');
   });
 
-  it('should allow status to be set to progress/finished/reviewed/completed', async () => {
+  it('should allow status to be set to draft/under_review/in_progress/completed', async () => {
     const milestoneDeadline = new Date('2025-12-31');
 
-    const statuses: Array<'progress' | 'finished' | 'reviewed' | 'completed'> = [
-      'progress',
-      'finished',
-      'reviewed',
+    const statuses: Array<'draft' | 'under_review' | 'in_progress' | 'completed'> = [
+      'draft',
+      'under_review',
+      'in_progress',
       'completed',
     ];
 
