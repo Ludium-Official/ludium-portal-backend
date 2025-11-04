@@ -5,13 +5,11 @@ import { usersV2Table } from './users';
 
 // V2 status enum per renewed spec
 
-// TODO: Add annotation for English description
 export const milestoneStatusV2Values = [
-  'draft', // 초깃값, 스폰서가 마일스톤을 작성 중일 때
-  'progress', // 마일스톤 작성 완료 후 빌더가 개발을 시작할 때, 온체인에 create contract 과 함께 업데이트
-  'finished', // 빌더가 개발을 완료했을 때, 스폰서에게 리뷰 요청
-  'reviewed', // 스폰서가 빌더의 작업을 리뷰를 마쳤을 때, 릴레이어가 해당 상태에서만 paid 업데이트 가능
-  'completed', // 최종적으로 마일스톤을 완료 후, 릴레이어가 payout 까지 마쳤을 때 tx까지 같이 업데이트
+  'draft', // Initial status before milestone is published, visible only to sponsor, not visible to builder
+  'under_review', // Status after milestone is published, content for contract creation
+  'in_progress', // Status after contract is created
+  'completed', // Status when builder completes and submits the milestone
 ] as const;
 export const milestoneStatusV2Enum = pgEnum('milestone_status_v2', milestoneStatusV2Values);
 

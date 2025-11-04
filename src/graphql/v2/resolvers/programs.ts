@@ -178,6 +178,25 @@ export async function getProgramsBysponsorIdV2Resolver(
   });
 }
 
+export async function getProgramsByBuilderV2Resolver(
+  _root: Root,
+  args: {
+    builderId: string;
+    pagination?: typeof PaginationInput.$inferInput | null;
+  },
+  ctx: Context,
+) {
+  const programService = new ProgramV2Service(ctx.db);
+  const numericBuilderId = Number.parseInt(args.builderId, 10);
+  if (Number.isNaN(numericBuilderId)) {
+    throw new Error('Invalid builder ID');
+  }
+  return programService.getByBuilderId(numericBuilderId, {
+    limit: args.pagination?.limit ?? undefined,
+    offset: args.pagination?.offset ?? undefined,
+  });
+}
+
 export async function createProgramWithOnchainV2Resolver(
   _root: Root,
   args: {

@@ -1,3 +1,5 @@
+import type { ApplicationV2 as DBApplicationV2 } from '@/db/schemas';
+import { applicationsV2Table } from '@/db/schemas';
 import { networksTable } from '@/db/schemas/v2/networks';
 import type { OnchainProgramInfo as DBOnchainProgramInfo } from '@/db/schemas/v2/onchain-program-info';
 import type { ProgramV2 as DBProgramV2 } from '@/db/schemas/v2/programs';
@@ -6,26 +8,33 @@ import { tokensTable } from '@/db/schemas/v2/tokens';
 import { usersV2Table } from '@/db/schemas/v2/users';
 import builder from '@/graphql/builder';
 import type { Context } from '@/types';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { OnchainProgramInfoV2Type } from '../types/onchain-program-info';
+import { ApplicationV2Type } from './applications';
 import { NetworkV2Ref } from './networks';
 import { TokenV2Ref } from './tokens';
 import { UserV2Ref } from './users';
 
+/* -------------------------------------------------------------------------- */
+/*                                    Types                                   */
+/* -------------------------------------------------------------------------- */
 export const ProgramVisibilityEnum = builder.enumType('ProgramVisibilityV2', {
   values: programVisibilityV2Values,
 });
 
-/* -------------------------------------------------------------------------- */
-/*                                    Types                                   */
-/* -------------------------------------------------------------------------- */
 export const ProgramV2StatusEnum = builder.enumType('ProgramStatusV2', {
   values: programStatusV2Values,
 });
 
-export const ProgramV2Ref = builder.objectRef<DBProgramV2>('ProgramV2');
+// export const ProgramV2Ref = builder.objectRef<DBProgramV2>("ProgramV2");
+export const ProgramV2Ref = builder.objectRef<
+  DBProgramV2 & {
+    applicationCount?: number;
+    myApplication?: DBApplicationV2;
+  }
+>('ProgramV2');
 
-export const ProgramV2Type = ProgramV2Ref.implement({
+export const ProgramV2Type: ReturnType<typeof ProgramV2Ref.implement> = ProgramV2Ref.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     title: t.exposeString('title'),
@@ -113,11 +122,65 @@ export const ProgramV2Type = ProgramV2Ref.implement({
         return (program as DBProgramV2 & { applicationCount?: number }).applicationCount ?? 0;
       },
     }),
+    hasApplied: t.field({
+      type: 'Boolean',
+      description: 'Whether the currently authenticated builder has applied to this program',
+      resolve: async (program, _args, ctx: Context) => {
+        if (!ctx.userV2) return false;
+
+        // Check if the current user has applied to this program
+        const [application] = await ctx.db
+          .select()
+          .from(applicationsV2Table)
+          .where(
+            and(
+              eq(applicationsV2Table.programId, program.id),
+              eq(applicationsV2Table.applicantId, ctx.userV2.id),
+            ),
+          )
+          .limit(1);
+
+        return !!application;
+      },
+    }),
+    myApplication: t.field({
+      type: ApplicationV2Type,
+      nullable: true,
+      description:
+        "The current builder's application to this program (only available in getProgramsByBuilderV2)",
+      resolve: async (program, _args, ctx: Context): Promise<DBApplicationV2 | null> => {
+        const programWithApp = program as DBProgramV2 & {
+          myApplication?: DBApplicationV2;
+        };
+
+        if (programWithApp.myApplication) {
+          return programWithApp.myApplication;
+        }
+
+        if (!ctx.userV2) return null;
+
+        const [application] = await ctx.db
+          .select()
+          .from(applicationsV2Table)
+          .where(
+            and(
+              eq(applicationsV2Table.programId, program.id),
+              eq(applicationsV2Table.applicantId, ctx.userV2.id),
+            ),
+          )
+          .limit(1);
+
+        return application || null;
+      },
+    }),
   }),
 });
 
 export const PaginatedProgramV2Type = builder
-  .objectRef<{ data: DBProgramV2[]; count: number }>('PaginatedProgramsV2')
+  .objectRef<{
+    data: (DBProgramV2 & { applicationCount?: number })[];
+    count: number;
+  }>('PaginatedProgramsV2')
   .implement({
     fields: (t) => ({
       data: t.field({

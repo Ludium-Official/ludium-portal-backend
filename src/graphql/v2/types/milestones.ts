@@ -1,4 +1,5 @@
 import type { MilestoneV2 as DBMilestoneV2 } from '@/db/schemas/v2/milestones';
+import { milestoneStatusV2Values } from '@/db/schemas/v2/milestones';
 import { programsV2Table } from '@/db/schemas/v2/programs';
 import { usersV2Table } from '@/db/schemas/v2/users';
 import builder from '@/graphql/builder';
@@ -10,6 +11,13 @@ import { UserV2Type } from './users';
 /* -------------------------------------------------------------------------- */
 /*                                  Types                                     */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * Milestone Status V2 GraphQL enum type
+ */
+export const MilestoneStatusV2Enum = builder.enumType('MilestoneStatusV2', {
+  values: milestoneStatusV2Values,
+});
 
 /**
  * Milestone V2 GraphQL type
@@ -33,6 +41,11 @@ export const MilestoneV2Type = builder.objectRef<DBMilestoneV2>('MilestoneV2').i
       type: 'DateTime',
       resolve: (milestone) => milestone.deadline,
       description: 'Milestone deadline',
+    }),
+    status: t.field({
+      type: MilestoneStatusV2Enum,
+      resolve: (milestone) => milestone.status,
+      description: 'Milestone status: draft, under_review, in_progress, or completed',
     }),
     createdAt: t.field({
       type: 'DateTime',

@@ -12,7 +12,7 @@ import { type NewMilestoneV2, milestonesV2Table } from '../db/schemas/v2/milesto
 import { programsV2Table } from '../db/schemas/v2/programs';
 import { usersV2Table } from '../db/schemas/v2/users';
 
-type MilestoneStatusV2 = 'draft' | 'progress' | 'finished' | 'reviewed' | 'completed';
+type MilestoneStatusV2 = 'draft' | 'under_review' | 'in_progress' | 'completed';
 
 /**
  * V1 status를 V2 status로 매핑
@@ -20,8 +20,8 @@ type MilestoneStatusV2 = 'draft' | 'progress' | 'finished' | 'reviewed' | 'compl
 function mapStatus(v1Status: string): MilestoneStatusV2 {
   const statusMap: Record<string, MilestoneStatusV2> = {
     draft: 'draft',
-    pending: 'progress',
-    submitted: 'progress',
+    pending: 'under_review',
+    submitted: 'in_progress',
     completed: 'completed',
     rejected: 'draft', // rejected는 draft로 리셋
   };
@@ -239,7 +239,9 @@ async function migrateMilestones() {
     for (const v1Milestone of v1Milestones) {
       if (testApplicationIds.has(v1Milestone.applicationId)) {
         console.log(
-          `✅ Test application was skipped: (${testApplicationIds.get(v1Milestone.applicationId)}), Skipping milestone ${v1Milestone.id} (${v1Milestone.title})`,
+          `✅ Test application was skipped: (${testApplicationIds.get(
+            v1Milestone.applicationId,
+          )}), Skipping milestone ${v1Milestone.id} (${v1Milestone.title})`,
         );
         skippedCount++;
         continue;
@@ -247,7 +249,9 @@ async function migrateMilestones() {
 
       if (fundingApplicationIds.has(v1Milestone.applicationId)) {
         console.log(
-          `✅ Funding application was skipped: (${fundingApplicationIds.get(v1Milestone.applicationId)}), Skipping milestone ${v1Milestone.id} (${v1Milestone.title})`,
+          `✅ Funding application was skipped: (${fundingApplicationIds.get(
+            v1Milestone.applicationId,
+          )}), Skipping milestone ${v1Milestone.id} (${v1Milestone.title})`,
         );
         skippedCount++;
         continue;
