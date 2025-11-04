@@ -107,11 +107,8 @@ export class ProgramV2Service {
   ): Promise<ProgramV2> {
     const values = {
       ...input,
-      deadline: new Date(input.deadline),
       invitedMembers: input.invitedMembers ?? [],
       sponsorId,
-      // Programs must always be created as 'draft'
-      status: 'draft' as const,
     };
     const [newProgram] = await this.db.insert(programsV2Table).values(values).returning();
     return newProgram;

@@ -258,10 +258,10 @@ describe('E2E Contract Scenario Test', () => {
               skills: ['Solidity', 'Ethereum', 'Smart Contracts'],
               deadline: deadline.toISOString(),
               visibility: 'public',
+              status: 'draft', // Required field
               networkId,
               price: '5000',
               token_id: tokenId,
-              // status is not allowed - programs are always created as 'draft'
             },
             onchain: {
               smartContractId,
@@ -433,6 +433,7 @@ describe('E2E Contract Scenario Test', () => {
             description: 'Design and implement the smart contract architecture',
             payout: '1000',
             deadline: deadline1.toISOString(),
+            status: 'draft', // Required field
           },
         },
       },
@@ -463,6 +464,7 @@ describe('E2E Contract Scenario Test', () => {
             description: 'Integrate smart contract with frontend application',
             payout: '2000',
             deadline: deadline2.toISOString(),
+            status: 'draft', // Required field
           },
         },
       },
@@ -493,6 +495,7 @@ describe('E2E Contract Scenario Test', () => {
             description: 'Test the complete system and deploy to mainnet',
             payout: '2000',
             deadline: deadline3.toISOString(),
+            status: 'draft', // Required field
           },
         },
       },

@@ -131,6 +131,7 @@ describe('Milestones V2 GraphQL API - Integration Tests', () => {
             description: 'Test milestone description',
             payout: '100',
             deadline: deadline.toISOString(),
+            status: 'draft', // Required field
           },
         },
       },
@@ -290,6 +291,7 @@ describe('Milestones V2 GraphQL API - Integration Tests', () => {
             description: 'Description',
             payout: '100',
             deadline: deadline.toISOString(),
+            status: 'draft', // Required field
           },
         },
       },

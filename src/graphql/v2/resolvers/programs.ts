@@ -36,6 +36,15 @@ export async function createProgramV2Resolver(
   if (!ctx.userV2) {
     throw new Error('User not authenticated');
   }
+
+  // Validate that only 'draft', 'open', or 'under_review' statuses are allowed for creation
+  const allowedStatuses: readonly string[] = ['draft', 'open', 'under_review'];
+  if (args.input.status && !allowedStatuses.includes(args.input.status)) {
+    throw new Error(
+      `Invalid status for program creation: '${args.input.status}'. Only 'draft', 'open', or 'under_review' are allowed.`,
+    );
+  }
+
   const programService = new ProgramV2Service(ctx.db);
   return programService.create(args.input, ctx.userV2.id);
 }

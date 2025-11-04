@@ -25,6 +25,15 @@ export async function createMilestoneV2Resolver(
   args: { input: typeof CreateMilestoneV2Input.$inferInput },
   ctx: Context,
 ) {
+  // Validate that only 'draft' or 'under_review' statuses are allowed for creation
+  // Milestones should start as 'draft' (initial state) or 'under_review' (if published immediately)
+  const allowedStatuses: readonly string[] = ['draft', 'under_review'];
+  if (args.input.status && !allowedStatuses.includes(args.input.status)) {
+    throw new Error(
+      `Invalid status for milestone creation: '${args.input.status}'. Only 'draft' or 'under_review' are allowed.`,
+    );
+  }
+
   const milestoneService = new MilestoneV2Service(ctx.db, ctx.server);
   return milestoneService.create(args.input);
 }

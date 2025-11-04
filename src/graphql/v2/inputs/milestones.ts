@@ -1,4 +1,5 @@
 import builder from '@/graphql/builder';
+import { MilestoneStatusV2Enum } from '../types/milestones';
 
 // ============================================================================
 // Mutation Inputs
@@ -33,6 +34,14 @@ export const CreateMilestoneV2Input = builder.inputType('CreateMilestoneV2Input'
       type: 'DateTime',
       required: true,
       description: 'Milestone deadline',
+    }),
+    files: t.stringList({
+      description: 'Milestone files (URLs)',
+    }),
+    status: t.field({
+      type: MilestoneStatusV2Enum,
+      required: true,
+      description: 'Milestone status',
     }),
   }),
 });

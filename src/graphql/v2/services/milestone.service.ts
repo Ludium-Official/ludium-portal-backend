@@ -130,7 +130,13 @@ export class MilestoneV2Service {
         description: input.description,
         payout: input.payout,
         deadline: new Date(input.deadline),
+        status: input.status ?? 'draft', // Default to 'draft' if not provided
       };
+
+      // Add files if provided
+      if (input.files && input.files.length > 0) {
+        milestoneData.files = input.files;
+      }
 
       const [newMilestone] = await this.db
         .insert(milestonesV2Table)

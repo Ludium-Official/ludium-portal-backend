@@ -122,10 +122,10 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
           skills: ['GraphQL', 'TypeScript', 'Node.js'],
           deadline: deadline.toISOString(),
           visibility: 'public',
+          status: 'draft', // Required field
           networkId: testNetworkId,
           price: '1500',
           token_id: testTokenId,
-          // status is not allowed - programs are always created as 'draft'
         },
       };
 
@@ -182,10 +182,10 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
           skills: ['test'],
           deadline: new Date().toISOString(),
           visibility: 'public',
+          status: 'draft', // Required field - must be provided even for unauthorized test
           networkId: testNetworkId,
           price: '100',
           token_id: testTokenId,
-          // status is not allowed - programs are always created as 'draft'
         },
       };
 
@@ -226,10 +226,10 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
           skills: ['React', 'Vue'],
           deadline: deadline.toISOString(),
           visibility: 'private',
+          status: 'draft', // Required field
           networkId: testNetworkId,
           price: '500',
           token_id: testTokenId,
-          // status is not allowed - programs are always created as 'draft'
           invitedMembers: ['user1@example.com', 'user2@example.com'],
         },
       };
