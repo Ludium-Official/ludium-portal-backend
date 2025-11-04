@@ -1,0 +1,1 @@
+ALTER TABLE "applications_v2" ADD CONSTRAINT "applications_v2_chatroom_message_id_unique" UNIQUE("chatroom_message_id");
