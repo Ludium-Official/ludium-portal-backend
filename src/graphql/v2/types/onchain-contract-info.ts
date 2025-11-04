@@ -14,8 +14,10 @@ export const OnchainContractInfoV2Type = OnchainContractInfoV2Ref.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     programId: t.exposeInt('programId'),
+    sponsorId: t.exposeInt('sponsorId'),
     applicantId: t.exposeInt('applicantId'),
-    contentHash: t.exposeString('contentHash'),
+    smartContractId: t.exposeInt('smartContractId'),
+    onchainContractId: t.exposeInt('onchainContractId'),
     createdAt: t.field({ type: 'DateTime', resolve: (p) => p.createdAt }),
     status: t.field({ type: OnchainContractStatusV2Enum, resolve: (p) => p.status }),
     tx: t.exposeString('tx'),

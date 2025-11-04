@@ -6,6 +6,7 @@ import { MilestoneV2Type, PaginatedMilestonesV2Type } from '../types/milestones'
 builder.queryFields((t) => ({
   milestoneV2: t.field({
     type: MilestoneV2Type,
+    authScopes: { userV2: true },
     args: {
       id: t.arg.id({
         required: true,
@@ -15,11 +16,9 @@ builder.queryFields((t) => ({
     resolve: getMilestoneV2Resolver,
     description: 'Get a single milestone by ID',
   }),
-}));
-
-builder.queryFields((t) => ({
   milestonesV2: t.field({
     type: PaginatedMilestonesV2Type,
+    authScopes: { userV2: true },
     args: {
       query: t.arg({
         type: MilestonesV2QueryInput,

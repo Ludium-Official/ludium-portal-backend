@@ -82,8 +82,10 @@ export class OnchainContractInfoV2Service {
   ): Promise<OnchainContractInfo> {
     const createData = {
       programId: input.programId,
+      sponsorId: input.sponsorId,
       applicantId: input.applicantId,
-      contentHash: input.contentHash,
+      smartContractId: input.smartContractId,
+      onchainContractId: input.onchainContractId,
       tx: input.tx,
       ...(input.status !== null && input.status !== undefined ? { status: input.status } : {}),
     };
@@ -96,15 +98,11 @@ export class OnchainContractInfoV2Service {
     input: typeof UpdateOnchainContractInfoV2Input.$inferInput,
   ): Promise<OnchainContractInfo> {
     const updateData: Partial<{
-      status: 'completed' | 'active' | 'canceled' | 'updated' | 'paused';
-      contentHash: string;
+      status: 'completed' | 'active' | 'cancelled' | 'updated' | 'paused';
       tx: string;
     }> = {};
     if (input.status !== null && input.status !== undefined) {
       updateData.status = input.status;
-    }
-    if (input.contentHash !== null && input.contentHash !== undefined) {
-      updateData.contentHash = input.contentHash;
     }
     if (input.tx !== null && input.tx !== undefined) {
       updateData.tx = input.tx;

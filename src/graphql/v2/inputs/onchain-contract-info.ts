@@ -6,8 +6,10 @@ export const CreateOnchainContractInfoV2Input = builder.inputType(
   {
     fields: (t) => ({
       programId: t.int({ required: true }),
+      sponsorId: t.int({ required: true }),
       applicantId: t.int({ required: true }),
-      contentHash: t.string({ required: true }),
+      smartContractId: t.int({ required: true }),
+      onchainContractId: t.int({ required: true }),
       tx: t.string({ required: true }),
       status: t.field({ type: OnchainContractStatusV2Enum }),
     }),
@@ -18,7 +20,6 @@ export const UpdateOnchainContractInfoV2Input = builder.inputType(
   'UpdateOnchainContractInfoV2Input',
   {
     fields: (t) => ({
-      contentHash: t.string(),
       tx: t.string(),
       status: t.field({ type: OnchainContractStatusV2Enum }),
     }),

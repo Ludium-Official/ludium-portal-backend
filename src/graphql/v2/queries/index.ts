@@ -7,3 +7,4 @@ export * from './tokens';
 export * from './onchain-contract-info';
 export * from './smart-contracts';
 export * from './onchain-program-info';
+export * from './contracts';

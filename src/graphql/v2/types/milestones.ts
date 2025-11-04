@@ -28,6 +28,12 @@ export const MilestoneV2Type = builder.objectRef<DBMilestoneV2>('MilestoneV2').i
     id: t.exposeID('id', {
       description: 'Milestone unique identifier',
     }),
+    programId: t.exposeInt('programId', {
+      description: 'ID of the program this milestone belongs to',
+    }),
+    applicantId: t.exposeInt('applicantId', {
+      description: 'ID of the applicant (user) who owns this milestone',
+    }),
     title: t.exposeString('title', {
       description: 'Milestone title',
     }),
