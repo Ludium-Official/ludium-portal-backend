@@ -303,8 +303,26 @@ async function restoreToDevDB(config: DBConfig, dumpFile: string): Promise<void>
   }
 
   console.log('Creating Dev DB...');
-  await execAsync(createCommand, { env });
-  console.log('✅ Dev DB created successfully');
+  try {
+    const { stderr } = await execAsync(createCommand, { env });
+    if (stderr && !stderr.includes('already exists')) {
+      console.warn('Create DB stderr:', stderr);
+    }
+    console.log('✅ Dev DB created successfully');
+  } catch (error) {
+    // DB가 이미 존재할 수도 있으므로 에러 확인 후 처리
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const stderrMessage =
+      error instanceof Error && 'stderr' in error
+        ? String((error as { stderr?: string }).stderr)
+        : '';
+    if (errorMessage.includes('already exists') || stderrMessage.includes('already exists')) {
+      console.log('⚠️  Dev DB already exists, skipping creation');
+    } else {
+      // 다른 에러는 재던지기
+      throw error;
+    }
+  }
 
   // 2. 덤프 파일 복원
   // --no-owner: 소유자 정보 무시 (프로덕션 DB의 소유자 정보를 복원하지 않음)
