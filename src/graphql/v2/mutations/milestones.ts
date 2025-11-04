@@ -10,6 +10,7 @@ import { MilestoneV2Type } from '../types/milestones';
 builder.mutationFields((t) => ({
   createMilestoneV2: t.field({
     type: MilestoneV2Type,
+    authScopes: { userV2: true },
     args: {
       input: t.arg({
         type: CreateMilestoneV2Input,
@@ -25,6 +26,7 @@ builder.mutationFields((t) => ({
 builder.mutationFields((t) => ({
   updateMilestoneV2: t.field({
     type: MilestoneV2Type,
+    authScopes: { userV2: true },
     args: {
       id: t.arg.id({
         required: true,
@@ -44,6 +46,7 @@ builder.mutationFields((t) => ({
 builder.mutationFields((t) => ({
   deleteMilestoneV2: t.field({
     type: MilestoneV2Type,
+    authScopes: { userV2: true },
     args: {
       id: t.arg.id({
         required: true,

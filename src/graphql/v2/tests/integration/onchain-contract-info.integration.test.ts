@@ -2,6 +2,7 @@ import { type NewTokenType, type NewUserV2, tokensTable, usersV2Table } from '@/
 import { networksTable } from '@/db/schemas/v2/networks';
 import { onchainContractInfoTable } from '@/db/schemas/v2/onchain-contract-info';
 import { type NewProgramV2, programsV2Table } from '@/db/schemas/v2/programs';
+import { type NewSmartContract, smartContractsTable } from '@/db/schemas/v2/smart-contracts';
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
@@ -11,7 +12,9 @@ describe('Onchain Contract Info V2 GraphQL API - Integration Tests', () => {
   let server: FastifyInstance;
   let authToken: string;
   let programId: number;
+  let sponsorId: number;
   let applicantId: number;
+  let smartContractId: number;
 
   beforeAll(async () => {
     server = await createTestServer();
@@ -28,6 +31,7 @@ describe('Onchain Contract Info V2 GraphQL API - Integration Tests', () => {
       lastName: 'Nsor',
     };
     const [insertedSponsor] = await db.insert(usersV2Table).values(sponsor).returning();
+    sponsorId = insertedSponsor.id;
 
     // Seed applicant
     const applicant: NewUserV2 = {
@@ -72,6 +76,18 @@ describe('Onchain Contract Info V2 GraphQL API - Integration Tests', () => {
     const [insertedProgram] = await db.insert(programsV2Table).values(program).returning();
     programId = insertedProgram.id;
 
+    // Seed smart contract
+    const testSmartContract: NewSmartContract = {
+      chainInfoId: net.id,
+      address: '0x0000000000000000000000000000000000000123',
+      name: 'TestContract',
+    };
+    const [insertedSmartContract] = await db
+      .insert(smartContractsTable)
+      .values(testSmartContract)
+      .returning();
+    smartContractId = insertedSmartContract.id;
+
     // Login
     const loginMutation = `
       mutation LoginV2($walletAddress: String!, $loginType: LoginTypeEnum!, $email: String) {
@@ -96,6 +112,7 @@ describe('Onchain Contract Info V2 GraphQL API - Integration Tests', () => {
   afterEach(async () => {
     await db.execute(sql`TRUNCATE TABLE onchain_contract_info RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE programs_v2 RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE smart_contracts RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE networks RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE tokens RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
@@ -104,7 +121,7 @@ describe('Onchain Contract Info V2 GraphQL API - Integration Tests', () => {
   it('should create, list, filter, update and delete onchain contract info', async () => {
     const createMutation = `
       mutation CreateOCI($input: CreateOnchainContractInfoV2Input!) {
-        createOnchainContractInfoV2(input: $input) { id programId applicantId contentHash status tx }
+        createOnchainContractInfoV2(input: $input) { id programId sponsorId applicantId smartContractId onchainContractId status tx }
       }
     `;
     const createRes = await server.inject({
@@ -116,8 +133,10 @@ describe('Onchain Contract Info V2 GraphQL API - Integration Tests', () => {
         variables: {
           input: {
             programId,
+            sponsorId,
             applicantId,
-            contentHash: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            smartContractId,
+            onchainContractId: 1,
             tx: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
           },
         },
@@ -125,6 +144,10 @@ describe('Onchain Contract Info V2 GraphQL API - Integration Tests', () => {
     });
     const created = JSON.parse(createRes.body).data.createOnchainContractInfoV2;
     expect(created.programId).toBe(programId);
+    expect(created.sponsorId).toBe(sponsorId);
+    expect(created.applicantId).toBe(applicantId);
+    expect(created.smartContractId).toBe(smartContractId);
+    expect(created.onchainContractId).toBe(1);
 
     const listQuery = `
       query OCI($pagination: PaginationInput) {

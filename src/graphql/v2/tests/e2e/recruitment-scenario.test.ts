@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { type NewTokenType, tokensTable, usersV2Table } from '@/db/schemas';
 import type { NewUserV2 } from '@/db/schemas';
+import { contractsTable } from '@/db/schemas/v2/contracts';
 import { networksTable } from '@/db/schemas/v2/networks';
 import { onchainContractInfoTable } from '@/db/schemas/v2/onchain-contract-info';
 import { smartContractsTable } from '@/db/schemas/v2/smart-contracts';
@@ -28,6 +29,7 @@ describe('E2E Contract Scenario Test', () => {
   let sponsor: NewUserV2;
   let builder1: NewUserV2;
   let builder2: NewUserV2;
+  let sponsorId: number;
   let builder1Id: number;
   let sponsorAuthToken: string;
   let builder1AuthToken: string;
@@ -49,6 +51,9 @@ describe('E2E Contract Scenario Test', () => {
   let milestone1Id: string;
   let milestone2Id: string;
   let milestone3Id: string;
+
+  // Contract
+  let contractId: number;
 
   beforeAll(async () => {
     server = await createTestServer();
@@ -83,10 +88,11 @@ describe('E2E Contract Scenario Test', () => {
       lastName: 'Two',
     };
 
-    await db.insert(usersV2Table).values(sponsor).returning();
+    const [insertedSponsor] = await db.insert(usersV2Table).values(sponsor).returning();
     const [insertedBuilder1] = await db.insert(usersV2Table).values(builder1).returning();
     await db.insert(usersV2Table).values(builder2).returning();
 
+    sponsorId = insertedSponsor.id;
     builder1Id = insertedBuilder1.id;
 
     // 2. Login to get auth tokens
@@ -174,6 +180,7 @@ describe('E2E Contract Scenario Test', () => {
 
   afterEach(async () => {
     // Clean up all tables
+    await db.execute(sql`TRUNCATE TABLE contracts RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE onchain_contract_info RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE milestones_v2 RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE applications_v2 RESTART IDENTITY CASCADE`);
@@ -186,6 +193,7 @@ describe('E2E Contract Scenario Test', () => {
   });
 
   afterAll(async () => {
+    await db.execute(sql`TRUNCATE TABLE contracts RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE onchain_contract_info RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE milestones_v2 RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE applications_v2 RESTART IDENTITY CASCADE`);
@@ -542,7 +550,7 @@ describe('E2E Contract Scenario Test', () => {
     expect(milestones).toHaveLength(3);
     console.log('✅ Retrieved 3 milestones');
 
-    // Generate content hash from milestones
+    // Sort milestones by ID for consistent ordering
     interface Milestone {
       id: string;
       title: string;
@@ -551,16 +559,108 @@ describe('E2E Contract Scenario Test', () => {
       deadline: string;
     }
 
-    const milestoneData = JSON.stringify(
-      milestones.sort((a: Milestone, b: Milestone) => Number(a.id) - Number(b.id)),
+    const sortedMilestones = milestones.sort(
+      (a: Milestone, b: Milestone) => Number(a.id) - Number(b.id),
     );
-    const contentHash = `0x${createHash('sha256').update(milestoneData).digest('hex')}`;
-    console.log('✅ Content hash generated:', contentHash);
+
+    // Create contract snapshot contents from milestones
+    const contractSnapshotContents = {
+      title: 'Contract Agreement',
+      milestone_contents: sortedMilestones.map((m: Milestone) => m.title),
+      terms: 'All milestones must be completed according to the specifications',
+      deadline: sortedMilestones[sortedMilestones.length - 1].deadline,
+      payamount: sortedMilestones
+        .reduce((sum: number, m: Milestone) => sum + Number.parseFloat(m.payout), 0)
+        .toString(),
+      addendum: 'Additional terms may be added upon mutual agreement',
+    };
+
+    // Generate hash from contract snapshot contents
+    const snapshotData = JSON.stringify(contractSnapshotContents);
+    const contractSnapshotHash = `0x${createHash('sha256').update(snapshotData).digest('hex')}`;
+    console.log('✅ Contract snapshot contents created');
+    console.log('✅ Contract snapshot hash generated:', contractSnapshotHash);
 
     // ==========================================
-    // Step 6: Builder checks the contract (query milestones)
+    // Step 6: Sponsor creates contract with snapshot contents and hash
     // ==========================================
-    console.log('📝 Step 6: Builder checks the contract');
+    console.log('📝 Step 6: Sponsor creates contract with snapshot contents and hash');
+
+    const createContractMutation = `
+      mutation CreateContractV2($input: CreateContractV2Input!) {
+        createContractV2(input: $input) {
+          id
+          programId
+          sponsorId
+          applicantId
+          smartContractId
+          onchainContractId
+          contract_snapshot_cotents
+          contract_snapshot_hash
+          builder_signature
+          createdAt
+        }
+      }
+    `;
+
+    // Mock builder signature (frontend에서 처리)
+    const mockBuilderSignature = `0x${'b'.repeat(128)}`; // Mock signature
+
+    const createContractResponse = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      headers: {
+        authorization: `Bearer ${sponsorAuthToken}`,
+      },
+      payload: {
+        query: createContractMutation,
+        variables: {
+          input: {
+            programId,
+            sponsorId,
+            applicantId: builder1Id,
+            smartContractId,
+            onchainContractId: 1,
+            contract_snapshot_cotents: contractSnapshotContents,
+            contract_snapshot_hash: contractSnapshotHash,
+            builder_signature: mockBuilderSignature,
+          },
+        },
+      },
+    });
+
+    if (createContractResponse.statusCode !== 200) {
+      console.error(
+        'Create Contract Error:',
+        JSON.stringify(JSON.parse(createContractResponse.body), null, 2),
+      );
+    }
+    expect(createContractResponse.statusCode).toBe(200);
+    const createContractResult = JSON.parse(createContractResponse.body);
+    if (createContractResult.errors) {
+      console.error('GraphQL errors:', JSON.stringify(createContractResult.errors, null, 2));
+    }
+    expect(createContractResult.errors).toBeUndefined();
+    expect(createContractResult.data).toBeDefined();
+    const createdContract = createContractResult.data.createContractV2;
+    contractId = Number.parseInt(createdContract.id, 10);
+
+    expect(createdContract.programId).toBe(programId);
+    expect(createdContract.sponsorId).toBe(sponsorId);
+    expect(createdContract.applicantId).toBe(builder1Id);
+    expect(createdContract.smartContractId).toBe(smartContractId);
+    expect(createdContract.onchainContractId).toBe(1);
+    expect(createdContract.contract_snapshot_cotents).toEqual(contractSnapshotContents);
+    expect(createdContract.contract_snapshot_hash).toBe(contractSnapshotHash);
+    expect(createdContract.builder_signature).toBe(mockBuilderSignature);
+    expect(createdContract.contract_snapshot_hash).toHaveLength(66); // 0x + 64 hex chars
+
+    console.log('✅ Contract created with snapshot contents and hash:', contractId);
+
+    // ==========================================
+    // Step 7: Builder checks the contract (query milestones)
+    // ==========================================
+    console.log('📝 Step 7: Builder checks the contract');
 
     const builderMilestonesResponse = await server.inject({
       method: 'POST',
@@ -584,18 +684,20 @@ describe('E2E Contract Scenario Test', () => {
     console.log('✅ Builder verified 3 milestones');
 
     // ==========================================
-    // Step 7: Sponsor creates onchain contract info (for milestones contract)
+    // Step 8: Sponsor creates onchain contract info (for milestones contract)
     // Note: This is different from onchain program info created in Step 1
     // ==========================================
-    console.log('📝 Step 7: Sponsor creates onchain contract info (for milestones contract)');
+    console.log('📝 Step 8: Sponsor creates onchain contract info (for milestones contract)');
 
     const createOnchainContractInfoMutation = `
       mutation CreateOnchainContractInfoV2($input: CreateOnchainContractInfoV2Input!) {
         createOnchainContractInfoV2(input: $input) {
           id
           programId
+          sponsorId
           applicantId
-          contentHash
+          smartContractId
+          onchainContractId
           status
           tx
         }
@@ -615,8 +717,10 @@ describe('E2E Contract Scenario Test', () => {
         variables: {
           input: {
             programId: Number.parseInt(programId.toString(), 10),
+            sponsorId,
             applicantId: Number.parseInt(builder1Id.toString(), 10),
-            contentHash,
+            smartContractId,
+            onchainContractId: 1,
             tx: mockContractTxHash,
             status: 'active',
           },
@@ -633,13 +737,38 @@ describe('E2E Contract Scenario Test', () => {
     expect(onchainContractResponse.statusCode).toBe(200);
     const onchainContractResult = JSON.parse(onchainContractResponse.body);
     const onchainContractId = onchainContractResult.data.createOnchainContractInfoV2.id;
-    expect(onchainContractResult.data.createOnchainContractInfoV2.contentHash).toBe(contentHash);
+    expect(onchainContractResult.data.createOnchainContractInfoV2.programId).toBe(programId);
+    expect(onchainContractResult.data.createOnchainContractInfoV2.sponsorId).toBe(sponsorId);
+    expect(onchainContractResult.data.createOnchainContractInfoV2.applicantId).toBe(
+      Number.parseInt(builder1Id.toString(), 10),
+    );
+    expect(onchainContractResult.data.createOnchainContractInfoV2.smartContractId).toBe(
+      smartContractId,
+    );
+    expect(onchainContractResult.data.createOnchainContractInfoV2.onchainContractId).toBe(1);
     console.log('✅ Onchain contract info created:', onchainContractId);
 
     // ==========================================
     // Final verification
     // ==========================================
     console.log('📝 Final verification');
+
+    // Verify contract in database
+    const [contract] = await db
+      .select()
+      .from(contractsTable)
+      .where(eq(contractsTable.id, contractId));
+
+    expect(contract).toBeDefined();
+    expect(contract.programId).toBe(programId);
+    expect(contract.sponsorId).toBe(sponsorId);
+    expect(contract.applicantId).toBe(builder1Id);
+    expect(contract.smartContractId).toBe(smartContractId);
+    expect(contract.onchainContractId).toBe(1);
+    expect(contract.contract_snapshot_cotents).toEqual(contractSnapshotContents);
+    expect(contract.contract_snapshot_hash).toBe(contractSnapshotHash);
+    expect(contract.builder_signature).toBe(mockBuilderSignature);
+    console.log('✅ Contract verified in database');
 
     // Verify onchain contract info in database
     const [onchainContractInfo] = await db
@@ -649,9 +778,12 @@ describe('E2E Contract Scenario Test', () => {
 
     expect(onchainContractInfo).toBeDefined();
     expect(onchainContractInfo.programId).toBe(programId);
+    expect(onchainContractInfo.sponsorId).toBe(sponsorId);
     expect(onchainContractInfo.applicantId).toBe(builder1Id);
-    expect(onchainContractInfo.contentHash).toBe(contentHash);
+    expect(onchainContractInfo.smartContractId).toBe(smartContractId);
+    expect(onchainContractInfo.onchainContractId).toBe(1);
     expect(onchainContractInfo.status).toBe('active');
+    console.log('✅ Onchain contract info verified in database');
 
     console.log('✅ E2E Contract Scenario completed successfully!');
   });
