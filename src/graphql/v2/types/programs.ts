@@ -202,9 +202,6 @@ export const CreateProgramWithOnchainV2Payload = builder
   .implement({
     fields: (t) => ({
       program: t.field({ type: ProgramV2Type, resolve: (p) => p.program }),
-      onchain: t.field({
-        type: OnchainProgramInfoV2Type,
-        resolve: (p) => p.onchain,
-      }),
+      onchain: t.field({ type: OnchainProgramInfoV2Type, resolve: (p) => p.onchain }),
     }),
   });
