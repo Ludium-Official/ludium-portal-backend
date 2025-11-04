@@ -1,28 +1,14 @@
-import { type ProgramV2, programsV2Table } from "@/db/schemas";
-import {
-  applicationsV2Table,
-  ApplicationV2,
-} from "@/db/schemas/v2/applications";
-import { networksTable } from "@/db/schemas/v2/networks";
-import { tokensTable } from "@/db/schemas/v2/tokens";
-import { usersV2Table } from "@/db/schemas/v2/users";
-import type {
-  CreateProgramV2Input,
-  UpdateProgramV2Input,
-} from "@/graphql/v2/inputs/programs";
-import type { Context } from "@/types";
-import {
-  and,
-  count,
-  desc,
-  eq,
-  getTableColumns,
-  inArray,
-  sql,
-} from "drizzle-orm";
+import { type ProgramV2, programsV2Table } from '@/db/schemas';
+import { type ApplicationV2, applicationsV2Table } from '@/db/schemas/v2/applications';
+import { networksTable } from '@/db/schemas/v2/networks';
+import { tokensTable } from '@/db/schemas/v2/tokens';
+import { usersV2Table } from '@/db/schemas/v2/users';
+import type { CreateProgramV2Input, UpdateProgramV2Input } from '@/graphql/v2/inputs/programs';
+import type { Context } from '@/types';
+import { and, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm';
 
 export class ProgramV2Service {
-  constructor(private db: Context["db"]) {}
+  constructor(private db: Context['db']) {}
 
   async getMany(pagination?: { limit?: number; offset?: number }): Promise<{
     data: (ProgramV2 & { applicationCount: number })[];
@@ -47,7 +33,7 @@ export class ProgramV2Service {
           (SELECT COUNT(*)::int 
            FROM ${applicationsV2Table} 
            WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
-        `.as("application_count"),
+        `.as('application_count'),
       })
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
@@ -92,7 +78,7 @@ export class ProgramV2Service {
           (SELECT COUNT(*)::int 
            FROM ${applicationsV2Table} 
            WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
-        `.as("application_count"),
+        `.as('application_count'),
       })
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
@@ -104,7 +90,7 @@ export class ProgramV2Service {
       .where(eq(programsV2Table.id, Number.parseInt(id, 10)));
 
     if (!result) {
-      throw new Error("Program not found");
+      throw new Error('Program not found');
     }
 
     // Extract program data (joined data is not needed in return type)
@@ -117,7 +103,7 @@ export class ProgramV2Service {
 
   async create(
     input: typeof CreateProgramV2Input.$inferInput,
-    sponsorId: number
+    sponsorId: number,
   ): Promise<ProgramV2> {
     const values = {
       ...input,
@@ -127,10 +113,7 @@ export class ProgramV2Service {
       // Programs must always be created as 'draft'
       status: 'draft' as const,
     };
-    const [newProgram] = await this.db
-      .insert(programsV2Table)
-      .values(values)
-      .returning();
+    const [newProgram] = await this.db.insert(programsV2Table).values(values).returning();
     return newProgram;
   }
 
@@ -151,9 +134,8 @@ export class ProgramV2Service {
 
     for (const [key, value] of Object.entries(input)) {
       if (value !== undefined && value !== null) {
-        if (key === "deadline") {
-          values[key] =
-            value instanceof Date ? value : new Date(value as string);
+        if (key === 'deadline') {
+          values[key] = value instanceof Date ? value : new Date(value as string);
         } else {
           values[key] = value;
         }
@@ -167,7 +149,7 @@ export class ProgramV2Service {
       .returning();
 
     if (!updatedProgram) {
-      throw new Error("Program not found");
+      throw new Error('Program not found');
     }
     return updatedProgram;
   }
@@ -179,14 +161,14 @@ export class ProgramV2Service {
       .returning();
 
     if (!deletedProgram) {
-      throw new Error("Program not found");
+      throw new Error('Program not found');
     }
     return deletedProgram;
   }
 
   async getBySponsorId(
     sponsorId: number,
-    pagination?: { limit?: number; offset?: number }
+    pagination?: { limit?: number; offset?: number },
   ): Promise<{
     data: (ProgramV2 & { applicationCount: number })[];
     count: number;
@@ -204,7 +186,7 @@ export class ProgramV2Service {
           (SELECT COUNT(*)::int 
            FROM ${applicationsV2Table} 
            WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
-        `.as("application_count"),
+        `.as('application_count'),
       })
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
@@ -237,10 +219,10 @@ export class ProgramV2Service {
       count: totalCount.count,
     };
   }
-
+  // TODO: we need to check this logic is good or not
   async getByBuilderId(
     builderId: number,
-    pagination?: { limit?: number; offset?: number }
+    pagination?: { limit?: number; offset?: number },
   ): Promise<{
     data: (ProgramV2 & {
       applicationCount: number;
@@ -280,7 +262,7 @@ export class ProgramV2Service {
           (SELECT COUNT(*)::int 
            FROM ${applicationsV2Table} 
            WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
-        `.as("application_count"),
+        `.as('application_count'),
       })
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
@@ -298,13 +280,11 @@ export class ProgramV2Service {
       .where(
         and(
           inArray(applicationsV2Table.programId, programIds),
-          eq(applicationsV2Table.applicantId, builderId)
-        )
+          eq(applicationsV2Table.applicantId, builderId),
+        ),
       );
 
-    const applicationMap = new Map(
-      applications.map((app) => [app.programId, app])
-    );
+    const applicationMap = new Map(applications.map((app) => [app.programId, app]));
 
     const [totalCount] = await this.db
       .select({

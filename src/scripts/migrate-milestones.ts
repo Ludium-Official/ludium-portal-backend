@@ -1,47 +1,42 @@
-import "dotenv/config";
-import { sql } from "drizzle-orm";
-import { drizzle as drizzleDb1 } from "drizzle-orm/postgres-js";
-import { drizzle as drizzleDb2 } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { applicationsTable } from "../db/schemas/applications";
-import { milestonesTable } from "../db/schemas/milestones";
-import { programsTable } from "../db/schemas/programs";
-import { usersTable } from "../db/schemas/users";
-import { applicationsV2Table } from "../db/schemas/v2/applications";
-import {
-  type NewMilestoneV2,
-  milestonesV2Table,
-} from "../db/schemas/v2/milestones";
-import { programsV2Table } from "../db/schemas/v2/programs";
-import { usersV2Table } from "../db/schemas/v2/users";
+import 'dotenv/config';
+import { sql } from 'drizzle-orm';
+import { drizzle as drizzleDb1 } from 'drizzle-orm/postgres-js';
+import { drizzle as drizzleDb2 } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import { applicationsTable } from '../db/schemas/applications';
+import { milestonesTable } from '../db/schemas/milestones';
+import { programsTable } from '../db/schemas/programs';
+import { usersTable } from '../db/schemas/users';
+import { applicationsV2Table } from '../db/schemas/v2/applications';
+import { type NewMilestoneV2, milestonesV2Table } from '../db/schemas/v2/milestones';
+import { programsV2Table } from '../db/schemas/v2/programs';
+import { usersV2Table } from '../db/schemas/v2/users';
 
-type MilestoneStatusV2 = "draft" | "under_review" | "in_progress" | "completed";
+type MilestoneStatusV2 = 'draft' | 'under_review' | 'in_progress' | 'completed';
 
 /**
  * V1 status를 V2 status로 매핑
  */
 function mapStatus(v1Status: string): MilestoneStatusV2 {
   const statusMap: Record<string, MilestoneStatusV2> = {
-    draft: "draft",
-    pending: "under_review",
-    submitted: "in_progress",
-    completed: "completed",
-    rejected: "draft", // rejected는 draft로 리셋
+    draft: 'draft',
+    pending: 'under_review',
+    submitted: 'in_progress',
+    completed: 'completed',
+    rejected: 'draft', // rejected는 draft로 리셋
   };
 
-  return statusMap[v1Status] || "draft";
+  return statusMap[v1Status] || 'draft';
 }
 
 async function migrateMilestones() {
-  console.log("Starting milestone migration...");
+  console.log('Starting milestone migration...');
 
   const db1Url = process.env.PROD_DB_URL;
   const db2Url = process.env.DEV_DB_URL;
 
   if (!db1Url || !db2Url) {
-    console.error(
-      "Error: Please define PROD_DB_URL and DEV_DB_URL in your .env file."
-    );
+    console.error('Error: Please define PROD_DB_URL and DEV_DB_URL in your .env file.');
     process.exit(1);
   }
 
@@ -53,7 +48,7 @@ async function migrateMilestones() {
 
   try {
     // V1 milestones 조회
-    console.log("Fetching milestones from V1 database...");
+    console.log('Fetching milestones from V1 database...');
     const v1Milestones = await db1
       .select({
         id: milestonesTable.id,
@@ -73,12 +68,12 @@ async function migrateMilestones() {
     console.log(`Found ${v1Milestones.length} milestones to migrate.`);
 
     if (v1Milestones.length === 0) {
-      console.log("No milestones to migrate.");
+      console.log('No milestones to migrate.');
       return;
     }
 
     // V1 applications 조회 (application -> applicant_id 매핑용)
-    console.log("Fetching V1 applications...");
+    console.log('Fetching V1 applications...');
     const v1Applications = await db1
       .select({
         id: applicationsTable.id,
@@ -89,7 +84,7 @@ async function migrateMilestones() {
       .from(applicationsTable);
 
     // V2 데이터 조회
-    console.log("Fetching V2 reference data...");
+    console.log('Fetching V2 reference data...');
     const v2Applications = await db2.select().from(applicationsV2Table);
     const v2Programs = await db2.select().from(programsV2Table);
     const v2Users = await db2.select().from(usersV2Table);
@@ -127,12 +122,12 @@ async function migrateMilestones() {
     for (const v1App of v1Applications) {
       // 테스트 데이터로 보이는 어플리케이션은 제외
       const testProgramIds = [
-        "d6ebc523-f7e8-4f11-b576-db9276df9a93",
-        "03cd7445-41f3-4e2b-b9cb-95457a3f600b",
-        "313c8840-2ca5-4045-90c1-1c236cd66258",
+        'd6ebc523-f7e8-4f11-b576-db9276df9a93',
+        '03cd7445-41f3-4e2b-b9cb-95457a3f600b',
+        '313c8840-2ca5-4045-90c1-1c236cd66258',
       ];
       if (testProgramIds.includes(v1App.programId)) {
-        console.log("Test application was skipped: ", v1App.id, v1App.name);
+        console.log('Test application was skipped: ', v1App.id, v1App.name);
         testApplicationIds.set(v1App.id, v1App.name);
         continue;
       }
@@ -140,47 +135,45 @@ async function migrateMilestones() {
       // V1 program name 찾기
       const v1Program = v1Programs.find((p) => p.id === v1App.programId);
 
-      if (v1Program?.type === "funding") {
-        console.log("Funding program was skipped: ", v1App.id, v1App.name);
+      if (v1Program?.type === 'funding') {
+        console.log('Funding program was skipped: ', v1App.id, v1App.name);
         fundingApplicationIds.set(v1App.id, v1App.name);
         continue;
       }
 
       // TEST START
-      if (v1App.id === "8edf758e-c468-4085-8bda-145de6769e8b") {
-        console.log("1. Something wrong...");
+      if (v1App.id === '8edf758e-c468-4085-8bda-145de6769e8b') {
+        console.log('1. Something wrong...');
       }
 
       if (!v1Program) {
-        console.log("1. Not found: ", v1App.id, v1App.name);
+        console.log('1. Not found: ', v1App.id, v1App.name);
         continue;
       }
 
       // V2 program id 찾기
       const v2Program = v2Programs.find((p) => p.title === v1Program.name);
       if (!v2Program) {
-        console.log("2. Not found: ", v1Program.name);
+        console.log('2. Not found: ', v1Program.name);
         continue;
       }
 
       // TEST START
-      if (v1App.id === "8edf758e-c468-4085-8bda-145de6769e8b") {
-        console.log("Something wrong...");
+      if (v1App.id === '8edf758e-c468-4085-8bda-145de6769e8b') {
+        console.log('Something wrong...');
       }
 
       // V1 applicant wallet address 찾기
       const v1Applicant = v1Users.find((u) => u.id === v1App.applicantId);
       if (!v1Applicant?.walletAddress) {
-        console.log("3. Not found: ", v1App.applicantId);
+        console.log('3. Not found: ', v1App.applicantId);
         continue;
       }
 
       // V2 user id 찾기
-      const v2User = v2Users.find(
-        (u) => u.walletAddress === v1Applicant.walletAddress
-      );
+      const v2User = v2Users.find((u) => u.walletAddress === v1Applicant.walletAddress);
       if (!v2User) {
-        console.log("4. Not found: ", v1Applicant.walletAddress);
+        console.log('4. Not found: ', v1Applicant.walletAddress);
         continue;
       }
 
@@ -189,13 +182,7 @@ async function migrateMilestones() {
       if (v2App) {
         v1ApplicationIdToV2ApplicationId.set(v1App.id, v2App.id);
       } else {
-        console.log(
-          "5. Not found: ",
-          v1App.id,
-          v1App.name,
-          v2Program.title,
-          v2User.id
-        );
+        console.log('5. Not found: ', v1App.id, v1App.name, v2Program.title, v2User.id);
       }
     }
 
@@ -231,20 +218,18 @@ async function migrateMilestones() {
     }
 
     console.log(
-      `Found ${v2Applications.length} V2 applications, ${v2Programs.length} V2 programs, ${v2Users.length} V2 users.`
+      `Found ${v2Applications.length} V2 applications, ${v2Programs.length} V2 programs, ${v2Users.length} V2 users.`,
     );
     console.log(
-      `Mapped ${v1ApplicationIdToV2ApplicationId.size} V1 applications to V2 applications.`
+      `Mapped ${v1ApplicationIdToV2ApplicationId.size} V1 applications to V2 applications.`,
     );
 
     // 기존 데이터 삭제 옵션
-    const clearExistingData = process.env.CLEAR_EXISTING_MILESTONES === "true";
+    const clearExistingData = process.env.CLEAR_EXISTING_MILESTONES === 'true';
     if (clearExistingData) {
-      console.log("Clearing existing milestones_v2 data...");
-      await db2.execute(
-        sql`TRUNCATE TABLE ${milestonesV2Table} RESTART IDENTITY CASCADE`
-      );
-      console.log("✅ Existing data cleared.");
+      console.log('Clearing existing milestones_v2 data...');
+      await db2.execute(sql`TRUNCATE TABLE ${milestonesV2Table} RESTART IDENTITY CASCADE`);
+      console.log('✅ Existing data cleared.');
     }
 
     let migratedCount = 0;
@@ -255,8 +240,8 @@ async function migrateMilestones() {
       if (testApplicationIds.has(v1Milestone.applicationId)) {
         console.log(
           `✅ Test application was skipped: (${testApplicationIds.get(
-            v1Milestone.applicationId
-          )}), Skipping milestone ${v1Milestone.id} (${v1Milestone.title})`
+            v1Milestone.applicationId,
+          )}), Skipping milestone ${v1Milestone.id} (${v1Milestone.title})`,
         );
         skippedCount++;
         continue;
@@ -265,8 +250,8 @@ async function migrateMilestones() {
       if (fundingApplicationIds.has(v1Milestone.applicationId)) {
         console.log(
           `✅ Funding application was skipped: (${fundingApplicationIds.get(
-            v1Milestone.applicationId
-          )}), Skipping milestone ${v1Milestone.id} (${v1Milestone.title})`
+            v1Milestone.applicationId,
+          )}), Skipping milestone ${v1Milestone.id} (${v1Milestone.title})`,
         );
         skippedCount++;
         continue;
@@ -274,12 +259,10 @@ async function migrateMilestones() {
 
       try {
         // V2 application id 찾기
-        const v2ApplicationId = v1ApplicationIdToV2ApplicationId.get(
-          v1Milestone.applicationId
-        );
+        const v2ApplicationId = v1ApplicationIdToV2ApplicationId.get(v1Milestone.applicationId);
         if (!v2ApplicationId) {
           console.warn(
-            `⚠️  V2 application not found for V1 application ${v1Milestone.applicationId}: ${v1Milestone.id} (${v1Milestone.title}) Skipping milestone`
+            `⚠️  V2 application not found for V1 application ${v1Milestone.applicationId}: ${v1Milestone.id} (${v1Milestone.title}) Skipping milestone`,
           );
           skippedCount++;
           continue;
@@ -289,19 +272,17 @@ async function migrateMilestones() {
         const v2ProgramId = v2ApplicationIdToProgramId.get(v2ApplicationId);
         if (!v2ProgramId) {
           console.warn(
-            `⚠️  V2 program not found for V2 application ${v2ApplicationId}. Skipping milestone ${v1Milestone.id}.`
+            `⚠️  V2 program not found for V2 application ${v2ApplicationId}. Skipping milestone ${v1Milestone.id}.`,
           );
           skippedCount++;
           continue;
         }
 
         // sponsor_id 찾기: V1 application의 applicantId -> V2 user id
-        const v1ApplicantId = v1ApplicationIdToApplicantId.get(
-          v1Milestone.applicationId
-        );
+        const v1ApplicantId = v1ApplicationIdToApplicantId.get(v1Milestone.applicationId);
         if (!v1ApplicantId) {
           console.warn(
-            `⚠️  V1 applicant not found for application ${v1Milestone.applicationId}. Skipping milestone ${v1Milestone.id}.`
+            `⚠️  V1 applicant not found for application ${v1Milestone.applicationId}. Skipping milestone ${v1Milestone.id}.`,
           );
           skippedCount++;
           continue;
@@ -310,7 +291,7 @@ async function migrateMilestones() {
         const walletAddress = v1UserIdToWalletAddress.get(v1ApplicantId);
         if (!walletAddress) {
           console.warn(
-            `⚠️  Wallet address not found for V1 applicant ${v1ApplicantId}. Skipping milestone ${v1Milestone.id}.`
+            `⚠️  Wallet address not found for V1 applicant ${v1ApplicantId}. Skipping milestone ${v1Milestone.id}.`,
           );
           skippedCount++;
           continue;
@@ -319,7 +300,7 @@ async function migrateMilestones() {
         const v2SponsorId = walletAddressToV2UserId.get(walletAddress);
         if (!v2SponsorId) {
           console.warn(
-            `⚠️  V2 user not found for wallet address ${walletAddress}. Skipping milestone ${v1Milestone.id}.`
+            `⚠️  V2 user not found for wallet address ${walletAddress}. Skipping milestone ${v1Milestone.id}.`,
           );
           skippedCount++;
           continue;
@@ -328,8 +309,8 @@ async function migrateMilestones() {
         // description 생성: description + summary 통합
         const descriptionParts = [v1Milestone.description, v1Milestone.summary]
           .filter(Boolean)
-          .join("\n\n");
-        const description = descriptionParts || "";
+          .join('\n\n');
+        const description = descriptionParts || '';
 
         // files 배열 생성 (file이 있으면 배열로)
         const files = v1Milestone.file ? [v1Milestone.file] : [];
@@ -342,7 +323,7 @@ async function migrateMilestones() {
           payout: v1Milestone.price,
           deadline: v1Milestone.deadline,
           files,
-          status: mapStatus(v1Milestone.status || "draft"),
+          status: mapStatus(v1Milestone.status || 'draft'),
           createdAt: v1Milestone.createdAt,
           updatedAt: v1Milestone.updatedAt,
         };
@@ -356,28 +337,28 @@ async function migrateMilestones() {
         failedCount++;
         console.error(
           `❌ Failed to migrate milestone: ${v1Milestone.id} (${v1Milestone.title})`,
-          error
+          error,
         );
       }
     }
 
-    console.log("----------------------------------------");
+    console.log('----------------------------------------');
     console.log(
-      `Migration complete. Migrated ${migratedCount} out of ${v1Milestones.length} milestones.`
+      `Migration complete. Migrated ${migratedCount} out of ${v1Milestones.length} milestones.`,
     );
     console.log(`Milestones skipped: ${skippedCount}`);
     if (failedCount > 0) {
       console.log(`Failed to migrate: ${failedCount}`);
     }
-    console.log("----------------------------------------");
+    console.log('----------------------------------------');
   } catch (error) {
-    console.error("An error occurred during migration:", error);
+    console.error('An error occurred during migration:', error);
     throw error;
   } finally {
-    console.log("Closing database connections...");
+    console.log('Closing database connections...');
     await client1.end();
     await client2.end();
-    console.log("Connections closed.");
+    console.log('Connections closed.');
   }
 }
 
