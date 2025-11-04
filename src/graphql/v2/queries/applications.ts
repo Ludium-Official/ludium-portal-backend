@@ -49,7 +49,8 @@ builder.queryFields((t) => ({
       }),
     },
     resolve: getApplicationsByProgramV2Resolver,
-    description: 'Get all applications for a specific program (only by program creator)',
+    description:
+      'Get applications for a specific program. Sponsors see all applications, builders see only their own.',
   }),
   myApplicationsV2: t.field({
     type: PaginatedApplicationsV2Type,

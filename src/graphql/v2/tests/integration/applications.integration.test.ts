@@ -825,11 +825,16 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       expect(data[0].programId).toBe(testProgramId.toString());
     });
 
-    it('should not be fetched by a regular user (non-creator)', async () => {
+    it('should be fetched by builder (only their own applications)', async () => {
       const query = `
         query AppsByProgram($query: ApplicationsByProgramV2QueryInput!) {
           applicationsByProgramV2(query: $query) {
-            data { id }
+            data {
+              id
+              programId
+              applicantId
+            }
+            count
           }
         }
       `;
@@ -848,8 +853,15 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
 
       expect(response.statusCode).toBe(200);
       const result = JSON.parse(response.body);
-      expect(result.errors).toBeDefined();
-      expect(result.errors[0].message).toMatch(/unauthorized/i);
+      expect(result.errors).toBeUndefined();
+      expect(result.data).toBeDefined();
+      // Builder can see only their own applications for this program
+      const { data, count } = result.data.applicationsByProgramV2;
+      expect(count).toBeGreaterThanOrEqual(0); // At least 0 (their own applications if any)
+      // All returned applications should belong to the applicant
+      for (const app of data) {
+        expect(Number.parseInt(app.applicantId.toString(), 10)).toBe(applicantId);
+      }
     });
   });
   // #endregion

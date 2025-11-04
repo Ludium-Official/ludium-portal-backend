@@ -142,7 +142,7 @@ export class ApplicationV2Service {
     );
 
     try {
-      // Verify that the user is the creator of the program
+      // Get program to check if user is sponsor
       const [program] = await this.db
         .select()
         .from(programsV2Table)
@@ -152,12 +152,24 @@ export class ApplicationV2Service {
         throw new Error('Program not found');
       }
 
-      if (program.sponsorId !== userId) {
-        throw new Error('Unauthorized to view applications for this program');
-      }
+      // Check if user is sponsor of this program
+      const isSponsor = program.sponsorId === userId;
 
-      // Get all applications for this program
-      const whereClause = eq(applicationsV2Table.programId, programId);
+      // Build where clause based on user role
+      const whereClause = isSponsor
+        ? // Sponsor: can see all applications for this program
+          eq(applicationsV2Table.programId, programId)
+        : // Builder: can only see their own applications for this program
+          and(
+            eq(applicationsV2Table.programId, programId),
+            eq(applicationsV2Table.applicantId, userId),
+          );
+
+      if (isSponsor) {
+        this.server.log.info(`User ${userId} is sponsor of program ${programId}`);
+      } else {
+        this.server.log.info(`User ${userId} is builder, showing only their applications`);
+      }
 
       const [totalResult] = await this.db
         .select({ count: count() })
