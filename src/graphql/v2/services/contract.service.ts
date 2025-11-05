@@ -97,7 +97,9 @@ export class ContractV2Service {
       sponsorId: input.sponsorId,
       applicantId: input.applicantId,
       smartContractId: input.smartContractId,
-      onchainContractId: input.onchainContractId,
+      ...(input.onchainContractId !== null && input.onchainContractId !== undefined
+        ? { onchainContractId: input.onchainContractId }
+        : {}),
       ...(input.contract_snapshot_cotents !== null && input.contract_snapshot_cotents !== undefined
         ? { contract_snapshot_cotents: input.contract_snapshot_cotents }
         : {}),
@@ -114,10 +116,14 @@ export class ContractV2Service {
 
   async update(id: string, input: typeof UpdateContractV2Input.$inferInput): Promise<Contracts> {
     const updateData: Partial<{
+      onchainContractId: number;
       contract_snapshot_cotents: unknown;
       contract_snapshot_hash: string;
       builder_signature: string;
     }> = {};
+    if (input.onchainContractId !== null && input.onchainContractId !== undefined) {
+      updateData.onchainContractId = input.onchainContractId;
+    }
     if (input.contract_snapshot_cotents !== null && input.contract_snapshot_cotents !== undefined) {
       updateData.contract_snapshot_cotents = input.contract_snapshot_cotents;
     }

@@ -1,0 +1,1 @@
+ALTER TABLE "contracts" ALTER COLUMN "onchain_contract_id" DROP NOT NULL;
