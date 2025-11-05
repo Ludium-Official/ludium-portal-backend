@@ -18,7 +18,7 @@ export const contractsTable = pgTable('contracts', {
   smartContractId: integer('smart_contract_id')
     .notNull()
     .references(() => smartContractsTable.id, { onDelete: 'cascade' }),
-  onchainContractId: integer('onchain_contract_id').notNull(),
+  onchainContractId: integer('onchain_contract_id'), // nullable - set after contract execution
   contract_snapshot_cotents: jsonb('contract_snapshot_cotents'), // snapshot of the contract in JSON format
   contract_snapshot_hash: varchar('contract_snapshot_hash', { length: 66 }), // SHA-256 hex hash: 0x + 64 hex chars
   builder_signature: text('builder_signature'), // signature of the builder
