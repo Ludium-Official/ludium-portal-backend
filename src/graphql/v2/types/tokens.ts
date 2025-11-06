@@ -9,6 +9,7 @@ export const TokenV2Type = TokenV2Ref.implement({
     chainInfoId: t.exposeInt('chainInfoId'),
     tokenName: t.exposeString('tokenName'),
     tokenAddress: t.exposeString('tokenAddress'),
+    decimals: t.exposeInt('decimals'),
   }),
 });
 

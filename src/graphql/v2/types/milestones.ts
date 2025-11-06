@@ -48,10 +48,18 @@ export const MilestoneV2Type = builder.objectRef<DBMilestoneV2>('MilestoneV2').i
       resolve: (milestone) => milestone.deadline,
       description: 'Milestone deadline',
     }),
+    files: t.exposeStringList('files', {
+      nullable: true,
+      description: 'Files associated with this milestone',
+    }),
     status: t.field({
       type: MilestoneStatusV2Enum,
       resolve: (milestone) => milestone.status,
       description: 'Milestone status: draft, under_review, in_progress, or completed',
+    }),
+    payout_tx: t.exposeString('payout_tx', {
+      nullable: true,
+      description: 'Transaction hash for the milestone payout',
     }),
     createdAt: t.field({
       type: 'DateTime',

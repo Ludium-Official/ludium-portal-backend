@@ -42,6 +42,9 @@ export const ApplicationV2Type = builder.objectRef<DBApplicationV2>('Application
       resolve: (application) => application.status,
       description: 'Application status',
     }),
+    title: t.exposeString('title', {
+      description: 'Title of the application',
+    }),
     content: t.exposeString('content', {
       description: 'Content of the application submitted by the applicant',
     }),
