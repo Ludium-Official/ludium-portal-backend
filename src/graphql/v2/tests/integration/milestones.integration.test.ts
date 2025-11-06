@@ -212,7 +212,31 @@ describe('Milestones V2 GraphQL API - Integration Tests', () => {
     expect(milestone.id).toBe(created.id);
     expect(milestone.title).toBe('Test Milestone');
 
-    // Update milestone
+    // Get created milestone with createdAt and updatedAt for comparison
+    const getBeforeUpdate = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      headers: { authorization: `Bearer ${authToken}` },
+      payload: {
+        query: `
+          query Milestone($id: ID!) {
+            milestoneV2(id: $id) {
+              id
+              createdAt
+              updatedAt
+            }
+          }
+        `,
+        variables: { id: created.id },
+      },
+    });
+    const beforeUpdate = JSON.parse(getBeforeUpdate.body).data.milestoneV2;
+    const originalUpdatedAt = new Date(beforeUpdate.updatedAt);
+
+    // Wait a bit to ensure updatedAt changes
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Update milestone with all fields
     const updateMutation = `
       mutation UpdateMilestone($id: ID!, $input: UpdateMilestoneV2Input!) {
         updateMilestoneV2(id: $id, input: $input) {
@@ -220,9 +244,15 @@ describe('Milestones V2 GraphQL API - Integration Tests', () => {
           title
           description
           payout
+          deadline
+          files
+          status
+          payout_tx
+          updatedAt
         }
       }
     `;
+    const newDeadline = new Date('2026-01-31');
     const updateRes = await server.inject({
       method: 'POST',
       url: '/graphql',
@@ -235,14 +265,35 @@ describe('Milestones V2 GraphQL API - Integration Tests', () => {
             title: 'Updated Milestone',
             description: 'Updated description',
             payout: '200',
+            deadline: newDeadline.toISOString(),
+            files: ['https://example.com/file1.pdf', 'https://example.com/file2.pdf'],
+            status: 'under_review',
+            payout_tx: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
           },
         },
       },
     });
     expect(updateRes.statusCode).toBe(200);
-    const updated = JSON.parse(updateRes.body).data.updateMilestoneV2;
+    const updateResult = JSON.parse(updateRes.body);
+    if (updateResult.errors) {
+      console.error('GraphQL errors:', JSON.stringify(updateResult.errors, null, 2));
+    }
+    expect(updateResult.errors).toBeUndefined();
+    const updated = updateResult.data.updateMilestoneV2;
     expect(updated.title).toBe('Updated Milestone');
+    expect(updated.description).toBe('Updated description');
     expect(updated.payout).toBe('200');
+    expect(updated.files).toEqual([
+      'https://example.com/file1.pdf',
+      'https://example.com/file2.pdf',
+    ]);
+    expect(updated.status).toBe('under_review');
+    expect(updated.payout_tx).toBe(
+      '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+    );
+    // Verify updatedAt was updated
+    const newUpdatedAt = new Date(updated.updatedAt);
+    expect(newUpdatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime());
 
     // Delete milestone
     const deleteMutation = `
@@ -336,5 +387,86 @@ describe('Milestones V2 GraphQL API - Integration Tests', () => {
     const listResult = JSON.parse(listRes.body).data.milestonesV2;
     expect(listResult.count).toBe(1);
     expect(listResult.data[0].id).toBe(created.id);
+  });
+
+  it('should update milestone with partial fields (files, status, payout_tx)', async () => {
+    const deadline = new Date('2025-12-31');
+    // Create milestone
+    const createMutation = `
+      mutation CreateMilestone($input: CreateMilestoneV2Input!) {
+        createMilestoneV2(input: $input) {
+          id
+          title
+          files
+          status
+          payout_tx
+        }
+      }
+    `;
+    const createRes = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      headers: { authorization: `Bearer ${authToken}` },
+      payload: {
+        query: createMutation,
+        variables: {
+          input: {
+            programId: programId.toString(),
+            applicantId: applicantId.toString(),
+            title: 'Test Milestone',
+            description: 'Test description',
+            payout: '100',
+            deadline: deadline.toISOString(),
+            status: 'draft',
+          },
+        },
+      },
+    });
+    expect(createRes.statusCode).toBe(200);
+    const created = JSON.parse(createRes.body).data.createMilestoneV2;
+    expect(created.files).toBeNull();
+    expect(created.status).toBe('draft');
+    expect(created.payout_tx).toBeNull();
+
+    // Update only files, status, and payout_tx
+    const updateMutation = `
+      mutation UpdateMilestone($id: ID!, $input: UpdateMilestoneV2Input!) {
+        updateMilestoneV2(id: $id, input: $input) {
+          id
+          title
+          files
+          status
+          payout_tx
+          updatedAt
+        }
+      }
+    `;
+    const updateRes = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      headers: { authorization: `Bearer ${authToken}` },
+      payload: {
+        query: updateMutation,
+        variables: {
+          id: created.id,
+          input: {
+            files: ['https://example.com/test.pdf'],
+            status: 'in_progress',
+            payout_tx: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+          },
+        },
+      },
+    });
+    expect(updateRes.statusCode).toBe(200);
+    const updateResult = JSON.parse(updateRes.body);
+    expect(updateResult.errors).toBeUndefined();
+    const updated = updateResult.data.updateMilestoneV2;
+    expect(updated.title).toBe('Test Milestone'); // Should remain unchanged
+    expect(updated.files).toEqual(['https://example.com/test.pdf']);
+    expect(updated.status).toBe('in_progress');
+    expect(updated.payout_tx).toBe(
+      '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+    );
+    expect(updated.updatedAt).toBeDefined();
   });
 });

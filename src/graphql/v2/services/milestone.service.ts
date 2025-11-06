@@ -179,6 +179,12 @@ export class MilestoneV2Service {
       if (input.deadline !== undefined && input.deadline !== null) {
         updateData.deadline = new Date(input.deadline);
       }
+      if (input.files !== undefined) updateData.files = input.files;
+      if (input.status !== undefined) updateData.status = input.status;
+      if (input.payout_tx !== undefined) updateData.payout_tx = input.payout_tx;
+
+      // Always update updatedAt timestamp
+      updateData.updatedAt = new Date();
 
       const [updatedMilestone] = await this.db
         .update(milestonesV2Table)

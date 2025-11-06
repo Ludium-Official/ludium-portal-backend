@@ -64,6 +64,16 @@ export const UpdateMilestoneV2Input = builder.inputType('UpdateMilestoneV2Input'
       type: 'DateTime',
       description: 'Milestone deadline',
     }),
+    files: t.stringList({
+      description: 'Milestone files (URLs)',
+    }),
+    status: t.field({
+      type: MilestoneStatusV2Enum,
+      description: 'Milestone status',
+    }),
+    payout_tx: t.string({
+      description: 'Transaction hash for the milestone payout',
+    }),
   }),
 });
 
