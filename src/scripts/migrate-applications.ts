@@ -10,11 +10,7 @@ import { type NewApplicationV2, applicationsV2Table } from '../db/schemas/v2/app
 import { programsV2Table } from '../db/schemas/v2/programs';
 import { usersV2Table } from '../db/schemas/v2/users';
 
-type ApplicationStatusV2 =
-  | 'submitted'
-  | 'pending_signature'
-  | 'in_progress'
-  | 'completed';
+type ApplicationStatusV2 = 'submitted' | 'pending_signature' | 'in_progress' | 'completed';
 
 /**
  * V1 status를 V2 status로 매핑
