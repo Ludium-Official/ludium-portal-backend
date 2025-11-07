@@ -7,6 +7,7 @@ export const ContractV2Type = ContractV2Ref.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     programId: t.exposeInt('programId'),
+    applicationId: t.exposeInt('applicationId'),
     sponsorId: t.exposeInt('sponsorId'),
     applicantId: t.exposeInt('applicantId'),
     smartContractId: t.exposeInt('smartContractId'),

@@ -596,6 +596,7 @@ describe('E2E Contract Scenario Test', () => {
           programId
           sponsorId
           applicantId
+          applicationId
           smartContractId
           onchainContractId
           contract_snapshot_cotents
@@ -622,6 +623,7 @@ describe('E2E Contract Scenario Test', () => {
             programId,
             sponsorId,
             applicantId: builder1Id,
+            applicationId: Number.parseInt(application1Id, 10),
             smartContractId,
             onchainContractId: 1,
             contract_snapshot_cotents: contractSnapshotContents,
@@ -651,6 +653,7 @@ describe('E2E Contract Scenario Test', () => {
     expect(createdContract.programId).toBe(programId);
     expect(createdContract.sponsorId).toBe(sponsorId);
     expect(createdContract.applicantId).toBe(builder1Id);
+    expect(createdContract.applicationId).toBe(Number.parseInt(application1Id, 10));
     expect(createdContract.smartContractId).toBe(smartContractId);
     expect(createdContract.onchainContractId).toBe(1);
     expect(createdContract.contract_snapshot_cotents).toEqual(contractSnapshotContents);

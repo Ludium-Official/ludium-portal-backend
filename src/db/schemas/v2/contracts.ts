@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { integer, jsonb, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { applicationsV2Table } from './applications';
 import { programsV2Table } from './programs';
 import { smartContractsTable } from './smart-contracts';
 import { usersV2Table } from './users';
@@ -9,6 +10,9 @@ export const contractsTable = pgTable('contracts', {
   programId: integer('program_id')
     .notNull()
     .references(() => programsV2Table.id, { onDelete: 'cascade' }),
+  applicationId: integer('application_id').references(() => applicationsV2Table.id, {
+    onDelete: 'cascade',
+  }),
   sponsorId: integer('sponsor_id')
     .notNull()
     .references(() => usersV2Table.id, { onDelete: 'cascade' }),
@@ -30,6 +34,10 @@ export const contractsRelations = relations(contractsTable, ({ one }) => ({
   program: one(programsV2Table, {
     fields: [contractsTable.programId],
     references: [programsV2Table.id],
+  }),
+  application: one(applicationsV2Table, {
+    fields: [contractsTable.applicationId],
+    references: [applicationsV2Table.id],
   }),
   applicant: one(usersV2Table, {
     fields: [contractsTable.applicantId],

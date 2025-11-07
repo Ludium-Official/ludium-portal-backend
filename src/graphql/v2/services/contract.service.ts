@@ -91,9 +91,30 @@ export class ContractV2Service {
     return { data, count: totalCount.count };
   }
 
+  async getByApplicationId(
+    applicationId: number,
+    pagination?: { limit?: number; offset?: number },
+  ): Promise<{ data: Contracts[]; count: number }> {
+    const limit = pagination?.limit || 10;
+    const offset = pagination?.offset || 0;
+    const data = await this.db
+      .select()
+      .from(contractsTable)
+      .where(eq(contractsTable.applicationId, applicationId))
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(contractsTable.id));
+    const [totalCount] = await this.db
+      .select({ count: count() })
+      .from(contractsTable)
+      .where(eq(contractsTable.applicationId, applicationId));
+    return { data, count: totalCount.count };
+  }
+
   async create(input: typeof CreateContractV2Input.$inferInput): Promise<Contracts> {
     const createData = {
       programId: input.programId,
+      applicationId: input.applicationId,
       sponsorId: input.sponsorId,
       applicantId: input.applicantId,
       smartContractId: input.smartContractId,

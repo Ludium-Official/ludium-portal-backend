@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { type NewTokenType, type NewUserV2, tokensTable, usersV2Table } from '@/db/schemas';
+import { type NewApplicationV2, applicationsV2Table } from '@/db/schemas/v2/applications';
 import { contractsTable } from '@/db/schemas/v2/contracts';
 import { networksTable } from '@/db/schemas/v2/networks';
 import { type NewProgramV2, programsV2Table } from '@/db/schemas/v2/programs';
@@ -16,6 +17,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
   let sponsorId: number;
   let applicantId: number;
   let smartContractId: number;
+  let applicationId: number;
 
   beforeAll(async () => {
     server = await createTestServer();
@@ -77,6 +79,21 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
     const [insertedProgram] = await db.insert(programsV2Table).values(program).returning();
     programId = insertedProgram.id;
 
+    // Seed application linking program and applicant
+    const application: NewApplicationV2 = {
+      programId,
+      applicantId,
+      status: 'applied',
+      title: 'Builder application',
+      content: 'Ready to contribute to the program',
+      picked: false,
+    };
+    const [insertedApplication] = await db
+      .insert(applicationsV2Table)
+      .values(application)
+      .returning();
+    applicationId = insertedApplication.id;
+
     // Seed smart contract
     const testSmartContract: NewSmartContract = {
       chainInfoId: net.id,
@@ -113,6 +130,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
   afterEach(async () => {
     await db.execute(sql`TRUNCATE TABLE contracts RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE programs_v2 RESTART IDENTITY CASCADE`);
+    await db.execute(sql`TRUNCATE TABLE applications_v2 RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE smart_contracts RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE networks RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE tokens RESTART IDENTITY CASCADE`);
@@ -145,6 +163,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
           programId
           sponsorId
           applicantId
+          applicationId
           smartContractId
           onchainContractId
           contract_snapshot_cotents
@@ -165,6 +184,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
             programId,
             sponsorId,
             applicantId,
+            applicationId,
             smartContractId,
             onchainContractId: 1,
             contract_snapshot_cotents: contractSnapshotContents,
@@ -179,6 +199,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
     expect(created.programId).toBe(programId);
     expect(created.sponsorId).toBe(sponsorId);
     expect(created.applicantId).toBe(applicantId);
+    expect(created.applicationId).toBe(applicationId);
     expect(created.smartContractId).toBe(smartContractId);
     expect(created.onchainContractId).toBe(1);
     expect(created.contract_snapshot_hash).toBe(snapshotHash);
@@ -195,6 +216,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
             programId
             sponsorId
             applicantId
+            applicationId
             smartContractId
             onchainContractId
           }
@@ -218,6 +240,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
           programId
           sponsorId
           applicantId
+          applicationId
           smartContractId
           onchainContractId
           contract_snapshot_hash
@@ -234,6 +257,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
     const contract = JSON.parse(getByIdRes.body).data.contractV2;
     expect(contract.id).toBe(created.id);
     expect(contract.programId).toBe(programId);
+    expect(contract.applicationId).toBe(applicationId);
 
     // Filter by program
     const byProgramQuery = `
@@ -243,6 +267,9 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
           data {
             id
             programId
+            sponsorId
+            applicantId
+            applicationId
           }
         }
       }
@@ -269,6 +296,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
           data {
             id
             applicantId
+            applicationId
           }
         }
       }
@@ -295,6 +323,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
           data {
             id
             sponsorId
+            applicationId
           }
         }
       }
@@ -312,6 +341,32 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
     const bySponsor = JSON.parse(bySponsorRes.body).data.contractsBySponsorV2;
     expect(bySponsor.count).toBe(1);
     expect(bySponsor.data[0].sponsorId).toBe(sponsorId);
+
+    // Filter by application
+    const byApplicationQuery = `
+      query ContractsByApplication($applicationId: Int!, $pagination: PaginationInput) {
+        contractsByApplicationV2(applicationId: $applicationId, pagination: $pagination) {
+          count
+          data {
+            id
+            applicationId
+          }
+        }
+      }
+    `;
+    const byApplicationRes = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      headers: { authorization: `Bearer ${authToken}` },
+      payload: {
+        query: byApplicationQuery,
+        variables: { applicationId, pagination: { limit: 10, offset: 0 } },
+      },
+    });
+    expect(byApplicationRes.statusCode).toBe(200);
+    const byApplication = JSON.parse(byApplicationRes.body).data.contractsByApplicationV2;
+    expect(byApplication.count).toBe(1);
+    expect(byApplication.data[0].applicationId).toBe(applicationId);
 
     // Update contract
     const updatedSnapshotContents = {
@@ -383,6 +438,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
           programId
           sponsorId
           applicantId
+          applicationId
           smartContractId
           onchainContractId
           contract_snapshot_cotents
@@ -402,6 +458,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
             programId,
             sponsorId,
             applicantId,
+            applicationId,
             smartContractId,
             onchainContractId: 2,
           },
@@ -411,6 +468,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
     expect(createRes.statusCode).toBe(200);
     const created = JSON.parse(createRes.body).data.createContractV2;
     expect(created.programId).toBe(programId);
+    expect(created.applicationId).toBe(applicationId);
     expect(created.onchainContractId).toBe(2);
     expect(created.contract_snapshot_cotents).toBeNull();
     expect(created.contract_snapshot_hash).toBeNull();

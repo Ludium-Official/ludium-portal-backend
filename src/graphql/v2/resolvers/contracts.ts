@@ -106,6 +106,28 @@ export async function getContractsBySponsorV2Resolver(
   }
 }
 
+export async function getContractsByApplicationV2Resolver(
+  _root: Root,
+  args: { applicationId: number; pagination?: typeof PaginationInput.$inferInput | null },
+  ctx: Context,
+) {
+  try {
+    const service = new ContractV2Service(ctx.db);
+    const pagination = args.pagination
+      ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
+      : undefined;
+    return await service.getByApplicationId(args.applicationId, pagination);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    ctx.server.log.error({
+      msg: 'Database operation failed',
+      error: message,
+      operation: 'getContractsByApplicationV2',
+    });
+    throw new Error('Failed to fetch contracts by application');
+  }
+}
+
 export async function createContractV2Resolver(
   _root: Root,
   args: { input: typeof CreateContractV2Input.$inferInput },

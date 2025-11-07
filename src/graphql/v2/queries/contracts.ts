@@ -3,6 +3,7 @@ import { PaginationInput } from '@/graphql/types/common';
 import {
   getContractV2Resolver,
   getContractsByApplicantV2Resolver,
+  getContractsByApplicationV2Resolver,
   getContractsByProgramV2Resolver,
   getContractsBySponsorV2Resolver,
   getContractsV2Resolver,
@@ -48,5 +49,14 @@ builder.queryFields((t) => ({
       pagination: t.arg({ type: PaginationInput, required: false }),
     },
     resolve: getContractsBySponsorV2Resolver,
+  }),
+  contractsByApplicationV2: t.field({
+    type: PaginatedContractV2Type,
+    authScopes: { userV2: true },
+    args: {
+      applicationId: t.arg.int({ required: true }),
+      pagination: t.arg({ type: PaginationInput, required: false }),
+    },
+    resolve: getContractsByApplicationV2Resolver,
   }),
 }));
