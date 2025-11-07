@@ -63,14 +63,14 @@ describe('Applications V2 Table', () => {
   });
 
   afterEach(async () => {
-    // Clean up only applications table
-    await db.execute(sql`TRUNCATE TABLE applications_v2 RESTART IDENTITY`);
+    // Clean up only applications table (including dependent FK records)
+    await db.execute(sql`TRUNCATE TABLE applications_v2 RESTART IDENTITY CASCADE`);
   });
 
   afterAll(async () => {
-    // Clean up programs and users at the end
+    // Clean up programs, users, and networks
+    await db.execute(sql`TRUNCATE TABLE applications_v2 RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE programs_v2 RESTART IDENTITY CASCADE`);
-    await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE networks RESTART IDENTITY CASCADE`);
     await db.execute(sql`TRUNCATE TABLE users_v2 RESTART IDENTITY CASCADE`);
   });

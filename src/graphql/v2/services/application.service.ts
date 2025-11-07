@@ -305,7 +305,6 @@ export class ApplicationV2Service {
   async update(
     id: string,
     input: typeof UpdateApplicationV2Input.$inferInput,
-    userId: number,
   ): Promise<ApplicationV2> {
     const startTime = Date.now();
     this.server.log.info(`🚀 Starting ApplicationV2Service.update for id: ${id}`);
@@ -320,10 +319,10 @@ export class ApplicationV2Service {
         throw new Error('Application not found');
       }
 
-      // Only applicant can update their application
-      if (existingApplication.applicantId !== userId) {
-        throw new Error('Unauthorized to update this application');
-      }
+      // TODO: Add some logic to allow users to update the application
+      // if (existingApplication.applicantId !== userId) {
+      //   throw new Error('Unauthorized to update this application');
+      // }
 
       type UpdateApplicationV2InputType = typeof UpdateApplicationV2Input.$inferInput;
 

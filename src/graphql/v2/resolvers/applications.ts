@@ -70,7 +70,7 @@ export async function updateApplicationV2Resolver(
     throw new Error('Unauthorized');
   }
   const applicationService = new ApplicationV2Service(ctx.db, ctx.server);
-  return applicationService.update(args.id, args.input, ctx.userV2.id);
+  return applicationService.update(args.id, args.input);
 }
 
 export async function reviewApplicationV2Resolver(
