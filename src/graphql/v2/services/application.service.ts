@@ -278,7 +278,7 @@ export class ApplicationV2Service {
       const applicationData: NewApplicationV2 = {
         programId: Number.parseInt(input.programId, 10),
         applicantId,
-        status: input.status ?? 'applied',
+        status: input.status ?? 'submitted',
         content: input.content ?? '',
       };
 
@@ -328,10 +328,13 @@ export class ApplicationV2Service {
       type UpdateApplicationV2InputType = typeof UpdateApplicationV2Input.$inferInput;
 
       const typedInput: UpdateApplicationV2InputType = input;
-      const updateData: Partial<Pick<ApplicationV2, 'content'>> = {};
+      const updateData: Partial<Pick<ApplicationV2, 'content' | 'status'>> = {};
 
       if (typedInput.content !== undefined) {
         updateData.content = typedInput.content ?? '';
+      }
+      if (typedInput.status !== undefined) {
+        updateData.status = typedInput.status as ApplicationV2['status'];
       }
 
       const [updatedApplication] = await this.db

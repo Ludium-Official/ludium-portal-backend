@@ -83,7 +83,7 @@ describe('Contracts V2 GraphQL API - Integration Tests', () => {
     const application: NewApplicationV2 = {
       programId,
       applicantId,
-      status: 'applied',
+      status: 'submitted',
       title: 'Builder application',
       content: 'Ready to contribute to the program',
       picked: false,

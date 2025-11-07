@@ -15,9 +15,10 @@ import { createTestServer } from '../helper';
 
 // Application status values from DB schema (Single Source of Truth)
 const ApplicationStatus = {
-  APPLIED: applicationStatusV2Values[0], // 'applied'
-  HIRED: applicationStatusV2Values[1], // 'hired'
-  REJECTED: applicationStatusV2Values[2], // 'rejected'
+  SUBMITTED: applicationStatusV2Values[0], // 'submitted'
+  PENDING_SIGNATURE: applicationStatusV2Values[1], // 'pending_signature'
+  IN_PROGRESS: applicationStatusV2Values[2], // 'in_progress'
+  COMPLETED: applicationStatusV2Values[3], // 'completed'
 } as const;
 
 describe('Applications V2 GraphQL API - Integration Tests', () => {
@@ -196,7 +197,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       const application = result.data.createApplicationV2;
 
       expect(application.id).toBeDefined();
-      expect(application.status).toBe(ApplicationStatus.APPLIED);
+      expect(application.status).toBe(ApplicationStatus.SUBMITTED);
       expect(application.content).toBe(variables.input.content);
     });
 
@@ -236,7 +237,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
           programId: testProgramId,
           applicantId: applicantId,
           content: 'Initial content',
-          status: ApplicationStatus.APPLIED,
+          status: ApplicationStatus.SUBMITTED,
         })
         .returning();
       testApplicationId = app.id;
@@ -256,6 +257,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
         id: testApplicationId.toString(),
         input: {
           content: 'Updated application content.',
+          status: ApplicationStatus.IN_PROGRESS,
         },
       };
 
@@ -269,6 +271,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       expect(response.statusCode).toBe(200);
       const result = JSON.parse(response.body);
       expect(result.data.updateApplicationV2.content).toBe(variables.input.content);
+      expect(result.data.updateApplicationV2.status).toBe(variables.input.status);
     });
 
     it('should not be updated by a different user', async () => {
@@ -306,7 +309,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
           programId: testProgramId,
           applicantId: applicantId,
           content: 'Please review me.',
-          status: ApplicationStatus.APPLIED,
+          status: ApplicationStatus.SUBMITTED,
         })
         .returning();
       testApplicationId = app.id;
@@ -325,8 +328,8 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       const variables = {
         id: testApplicationId.toString(),
         input: {
-          status: ApplicationStatus.HIRED,
-          rejectedReason: 'Welcome aboard!',
+          status: ApplicationStatus.PENDING_SIGNATURE,
+          rejectedReason: 'Contract signature requested',
         },
       };
 
@@ -340,7 +343,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       expect(response.statusCode).toBe(200);
       const result = JSON.parse(response.body);
       const application = result.data.reviewApplicationV2;
-      expect(application.status).toBe(ApplicationStatus.HIRED);
+      expect(application.status).toBe(ApplicationStatus.PENDING_SIGNATURE);
       expect(application.rejectedReason).toBe(variables.input.rejectedReason);
     });
 
@@ -352,7 +355,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       `;
       const variables = {
         id: testApplicationId.toString(),
-        input: { status: ApplicationStatus.HIRED },
+        input: { status: ApplicationStatus.PENDING_SIGNATURE },
       };
 
       const response = await server.inject({
@@ -379,7 +382,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
           programId: testProgramId,
           applicantId: applicantId,
           content: 'Please pick me.',
-          status: ApplicationStatus.APPLIED,
+          status: ApplicationStatus.SUBMITTED,
         })
         .returning();
       testApplicationId = app.id;
@@ -448,7 +451,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
           programId: testProgramId,
           applicantId: applicantId,
           content: 'To be deleted',
-          status: ApplicationStatus.APPLIED,
+          status: ApplicationStatus.SUBMITTED,
         })
         .returning();
       testApplicationId = app.id;
@@ -515,7 +518,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
           programId: testProgramId,
           applicantId: applicantId,
           content: 'Application for chatroom',
-          status: ApplicationStatus.APPLIED,
+          status: ApplicationStatus.SUBMITTED,
         })
         .returning();
       testApplicationId = app.id;
@@ -684,7 +687,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
           programId: testProgramId,
           applicantId: applicantId,
           content: 'Query me',
-          status: ApplicationStatus.APPLIED,
+          status: ApplicationStatus.SUBMITTED,
         })
         .returning();
       testApplicationId = app.id;
@@ -725,13 +728,13 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
           programId: testProgramId,
           applicantId: applicantId,
           content: 'My first app',
-          status: ApplicationStatus.APPLIED,
+          status: ApplicationStatus.SUBMITTED,
         },
         {
           programId: testProgramId,
           applicantId: applicantId,
           content: 'My second app',
-          status: ApplicationStatus.HIRED,
+          status: ApplicationStatus.IN_PROGRESS,
         },
       ]);
       // Create an application for another user to ensure filtering works
@@ -739,7 +742,7 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
         programId: testProgramId,
         applicantId: programsponsorId, // Different applicant
         content: 'Not my app',
-        status: ApplicationStatus.APPLIED,
+        status: ApplicationStatus.SUBMITTED,
       });
     });
 
@@ -781,13 +784,13 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
           programId: testProgramId,
           applicantId: applicantId,
           content: 'Applicant app',
-          status: ApplicationStatus.APPLIED,
+          status: ApplicationStatus.SUBMITTED,
         },
         {
           programId: testProgramId,
           applicantId: programsponsorId, // Creator also applies
           content: 'Creator app',
-          status: ApplicationStatus.HIRED,
+          status: ApplicationStatus.IN_PROGRESS,
         },
       ]);
     });

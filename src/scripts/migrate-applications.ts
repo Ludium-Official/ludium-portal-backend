@@ -10,29 +10,26 @@ import { type NewApplicationV2, applicationsV2Table } from '../db/schemas/v2/app
 import { programsV2Table } from '../db/schemas/v2/programs';
 import { usersV2Table } from '../db/schemas/v2/users';
 
-type ApplicationStatusV2 = 'applied' | 'hired' | 'rejected';
+type ApplicationStatusV2 =
+  | 'submitted'
+  | 'pending_signature'
+  | 'in_progress'
+  | 'completed';
 
 /**
  * V1 status를 V2 status로 매핑
  */
 function mapStatus(v1Status: string): ApplicationStatusV2 {
   const statusMap: Record<string, ApplicationStatusV2> = {
-    pending: 'applied',
-    submitted: 'applied',
-    rejected: 'rejected',
-    accepted: 'hired',
-    completed: 'hired',
+    pending: 'submitted',
+    submitted: 'submitted',
+    rejected: 'submitted', // legacy rejected applications stay submitted with rejectionReason context
+    accepted: 'pending_signature',
+    completed: 'completed',
+    in_progress: 'in_progress',
   };
 
-  // 디비 데이터
-  //   status   |
-  // ---------+
-  // accepted | -> hired
-  // rejected | -> rejected
-  // pending  | -> applied
-  // completed| -> hired
-
-  return statusMap[v1Status] || 'applied';
+  return statusMap[v1Status] || 'submitted';
 }
 
 async function migrateApplications() {

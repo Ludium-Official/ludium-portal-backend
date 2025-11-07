@@ -16,6 +16,8 @@ import { UserV2Type } from './users';
 
 export const ApplicationStatusV2Enum = builder.enumType('ApplicationStatusV2', {
   values: applicationStatusV2Values,
+  description:
+    'Lifecycle status for V2 applications: submitted → pending_signature → in_progress → completed',
 });
 
 /* -------------------------------------------------------------------------- */
@@ -40,7 +42,8 @@ export const ApplicationV2Type = builder.objectRef<DBApplicationV2>('Application
     status: t.field({
       type: ApplicationStatusV2Enum,
       resolve: (application) => application.status,
-      description: 'Application status',
+      description:
+        'Application lifecycle status (submitted, pending_signature, in_progress, completed)',
     }),
     title: t.exposeString('title', {
       description: 'Title of the application',
@@ -49,7 +52,8 @@ export const ApplicationV2Type = builder.objectRef<DBApplicationV2>('Application
       description: 'Content of the application submitted by the applicant',
     }),
     rejectedReason: t.exposeString('rejectedReason', {
-      description: 'Reason for rejection if the application was rejected',
+      description:
+        'Legacy rejection note or optional review comment (populated when sponsors leave a note)',
     }),
     picked: t.exposeBoolean('picked', {
       description: 'Whether this application has been picked',

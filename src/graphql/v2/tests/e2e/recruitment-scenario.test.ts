@@ -384,7 +384,7 @@ describe('E2E Contract Scenario Test', () => {
         variables: {
           id: application1Id,
           input: {
-            status: 'hired',
+            status: 'pending_signature',
             rejectedReason: 'Welcome aboard! You have been selected for this program.',
           },
         },
@@ -393,7 +393,7 @@ describe('E2E Contract Scenario Test', () => {
 
     expect(reviewResponse.statusCode).toBe(200);
     const reviewResult = JSON.parse(reviewResponse.body);
-    expect(reviewResult.data.reviewApplicationV2.status).toBe('hired');
+    expect(reviewResult.data.reviewApplicationV2.status).toBe('pending_signature');
     console.log('✅ Builder1 hired');
 
     // ==========================================

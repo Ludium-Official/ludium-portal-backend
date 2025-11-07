@@ -22,7 +22,7 @@ describe('Contracts V2 Table', () => {
     const application: NewApplicationV2 = {
       programId,
       applicantId,
-      status: 'applied',
+      status: 'submitted',
       title: 'Test application for contracts',
       content: 'This is a test application linked to a contract.',
       picked: false,

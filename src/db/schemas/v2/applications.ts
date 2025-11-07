@@ -12,8 +12,17 @@ import {
 import { programsV2Table } from './programs';
 import { usersV2Table } from './users';
 
-// V2 status enum per renewed spec
-export const applicationStatusV2Values = ['applied', 'hired', 'rejected'] as const;
+// V2 application lifecycle statuses
+// submitted: builder submitted the application
+// pending_signature: sponsor requested a contract signature
+// in_progress: contract has been created and is active
+// completed: all milestones have been completed and the contract is closed
+export const applicationStatusV2Values = [
+  'submitted',
+  'pending_signature',
+  'in_progress',
+  'completed',
+] as const;
 export const applicationStatusV2Enum = pgEnum('application_status_v2', applicationStatusV2Values);
 
 export const applicationsV2Table = pgTable('applications_v2', {
@@ -25,7 +34,7 @@ export const applicationsV2Table = pgTable('applications_v2', {
   applicantId: integer('applicant_id')
     .notNull()
     .references(() => usersV2Table.id, { onDelete: 'cascade' }),
-  status: applicationStatusV2Enum('status').default('applied').notNull(),
+  status: applicationStatusV2Enum('status').default('submitted').notNull(),
   title: text('title').default(''),
   content: text('content').default(''),
   rejectedReason: text('rejected_reason').default(''),

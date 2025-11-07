@@ -19,7 +19,7 @@ export const CreateApplicationV2Input = builder.inputType('CreateApplicationV2In
     }),
     status: t.field({
       type: ApplicationStatusV2Enum,
-      description: 'Application status (defaults to applied)',
+      description: 'Application status (defaults to submitted)',
     }),
   }),
 });
@@ -33,6 +33,10 @@ export const UpdateApplicationV2Input = builder.inputType('UpdateApplicationV2In
     content: t.string({
       description: 'Updated application content',
     }),
+    status: t.field({
+      type: ApplicationStatusV2Enum,
+      description: 'Updated application status (builder-driven lifecycle updates)',
+    }),
   }),
 });
 
@@ -45,10 +49,10 @@ export const ReviewApplicationV2Input = builder.inputType('ReviewApplicationV2In
     status: t.field({
       type: ApplicationStatusV2Enum,
       required: true,
-      description: 'Review decision: accepted or rejected',
+      description: 'Review decision status update (e.g., pending_signature, in_progress)',
     }),
     rejectedReason: t.string({
-      description: 'Reason for rejection (required when status is rejected)',
+      description: 'Optional note when adjusting status (legacy compatibility)',
     }),
   }),
 });
