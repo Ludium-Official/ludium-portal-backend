@@ -69,6 +69,9 @@ async function migrateTokens() {
       { currency: 'CTC', network: 'creditcoin', decimals: 18 },
       { currency: 'EDU', network: 'educhain', decimals: 18 },
       { currency: 'ETH', network: 'arbitrum', decimals: 18 },
+      { currency: 'EDU', network: 'educhain-testnet', decimals: 18 },
+      { currency: 'ETH', network: 'base-sepolia', decimals: 18 },
+      { currency: 'ETH', network: 'arbitrum-sepolia', decimals: 18 },
       // USDT, USDC
       { currency: 'USDT', network: 'base', decimals: 6 },
       { currency: 'USDC', network: 'base', decimals: 6 },

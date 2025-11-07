@@ -167,7 +167,7 @@
     "chainId": 84532,
     "contracts": {
       "LdRecruitment": {
-        "address": "0x0000000000000000000000000000000000000000"
+        "address": "0xC5d30B54fd524Aca2711200D4aDEE7a0A0F19046"
       }
     }
   },
@@ -175,7 +175,7 @@
     "chainId": 421614,
     "contracts": {
       "LdRecruitment": {
-        "address": "0x0000000000000000000000000000000000000000"
+        "address": "0xFd85B86EFAbe87023FEEBbAD6999250718E578ed"
       }
     }
   },
@@ -183,7 +183,7 @@
     "chainId": 656476,
     "contracts": {
       "LdRecruitment": {
-        "address": "0x0000000000000000000000000000000000000000"
+        "address": "0x115b100BC2F2d1F74a017f9275cE463B47Ab87a3"
       }
     }
   }
