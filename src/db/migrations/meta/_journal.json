@@ -127,6 +127,13 @@
       "when": 1762339803667,
       "tag": "0017_lovely_wolfpack",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1762480804042,
+      "tag": "0018_rich_prima",
+      "breakpoints": true
     }
   ]
 }
