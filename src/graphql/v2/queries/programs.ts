@@ -11,7 +11,6 @@ import { PaginatedProgramV2Type, ProgramV2Type } from '../types/programs';
 builder.queryFields((t) => ({
   programsV2: t.field({
     type: PaginatedProgramV2Type,
-    authScopes: { userV2: true },
     description: 'Get all programs with pagination. Default limit is 10, default offset is 0.',
     args: {
       pagination: t.arg({
