@@ -34,12 +34,13 @@ export class FileManager {
     this.maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
   }
 
-  private uploadFileToStorage = (file: UploadFile): Promise<string> => {
+  private uploadFileToStorage = (file: UploadFile, directory?: string): Promise<string> => {
     return new Promise((resolve, reject) => {
       const hash = createHash('md5');
-      const fullPath = `${hash
+      const fileName = `${hash
         .update(file.filename + Date.now())
         .digest('hex')}${extname(file.filename)}`;
+      const fullPath = directory ? `${directory}/${fileName}` : fileName;
 
       if (!allowedFileExtensions.includes(extname(file.filename))) {
         reject(new Error('File extension not allowed'));
@@ -124,11 +125,15 @@ export class FileManager {
   uploadFile = async (params: {
     file: Promise<UploadFile>;
     userId: string;
+    directory?: string
   }): Promise<string> => {
     const filePromise = await params.file;
-    const filePath = await this.uploadFileToStorage(filePromise);
+    const filePath = await this.uploadFileToStorage(filePromise, params.directory);
 
     const { filename, mimetype } = filePromise;
+
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.userId);
+
     const [createdFile] = await this.server.db
       .insert(filesTable)
       .values({
@@ -136,7 +141,7 @@ export class FileManager {
         mimeType: mimetype,
         path: filePath,
         originalName: filename,
-        uploadedById: params.userId,
+        uploadedById: isUUID ? params.userId : null,
       })
       .returning();
 
