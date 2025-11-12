@@ -122,6 +122,13 @@ export async function updateProgramV2Resolver(
       //   throw new Error('Invalid onchain_program_id');
       // }
     }
+    // State transition: draft -> open (for demo) // TODO: should delete later
+    else if (
+      currentStatus === 'draft' && newStatus === 'open') {
+        if (!isCreator) {
+          throw new Error('Only the program creator can open this program');
+        }
+      }
     // State transition: under_review → open/declined
     else if (
       currentStatus === 'under_review' &&
@@ -138,6 +145,8 @@ export async function updateProgramV2Resolver(
         // Allow staying in the same status (no-op)
         (
           newStatus === currentStatus ||
+          // Allow draft -> open (for demo) // TODO: should delete later
+          (currentStatus === 'draft' && newStatus === 'open') ||
           // Allow draft → under_review (already handled above)
           (currentStatus === 'draft' && newStatus === 'under_review') ||
           // Allow under_review → open/declined (already handled above)
