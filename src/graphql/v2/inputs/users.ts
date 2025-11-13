@@ -121,7 +121,8 @@ export const UpdateProfileV2Input = builder.inputType('UpdateProfileV2Input', {
     organizationName: t.string({
       description: 'User organization name',
     }),
-    profileImage: t.string({
+    profileImage: t.field({
+      type: 'Upload',
       description: 'User profile image URL',
     }),
     bio: t.string({

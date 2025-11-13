@@ -1,3 +1,4 @@
+import { filesTable } from '@/db/schemas';
 import { usersV2Table } from '@/db/schemas/v2/users';
 import type { NewUserV2, UserV2 } from '@/db/schemas/v2/users';
 import type {
@@ -375,29 +376,67 @@ export class UserV2Service {
     input: typeof UpdateProfileV2Input.$inferInput,
     userId: number,
   ): Promise<UserV2> {
-    const [existingUser] = await this.db
-      .select()
-      .from(usersV2Table)
-      .where(eq(usersV2Table.id, userId));
-    if (!existingUser) {
-      throw new Error('User not found');
-    }
-    const updateData: Partial<Omit<NewUserV2, 'id'>> = {};
-    if (input.email !== undefined) updateData.email = input.email ?? null;
-    if (input.firstName !== undefined) updateData.firstName = input.firstName ?? null;
-    if (input.lastName !== undefined) updateData.lastName = input.lastName ?? null;
-    if (input.organizationName !== undefined)
-      updateData.organizationName = input.organizationName ?? null;
-    if (input.profileImage !== undefined) updateData.profileImage = input.profileImage ?? null;
-    if (input.bio !== undefined) updateData.bio = input.bio ?? null;
-    if (input.skills !== undefined) updateData.skills = input.skills ?? null;
-    if (input.links !== undefined) updateData.links = input.links ?? null;
+    try {
+      const [existingUser] = await this.db
+        .select()
+        .from(usersV2Table)
+        .where(eq(usersV2Table.id, userId));
+      if (!existingUser) {
+        throw new Error('User not found');
+      }
 
-    const [updatedUser] = await this.db
-      .update(usersV2Table)
-      .set(updateData)
-      .where(eq(usersV2Table.id, userId))
-      .returning();
-    return updatedUser;
+      const updateData: Partial<Omit<NewUserV2, 'id'>> = {};
+
+      if (input.profileImage) {
+        // Delete existing profile image if exists
+        if(existingUser.profileImage) {
+          const urlPattern = /https:\/\/storage\.googleapis\.com\/[^/]+\/(.+)/;
+          const match = existingUser.profileImage.match(urlPattern);
+          if (match) {
+            const filePath = match[1];
+            const [existingFile] = await this.db
+              .select()
+              .from(filesTable)
+              .where(eq(filesTable.path, filePath))
+              .limit(1);
+            
+            if (existingFile) {
+              await this.server.fileManager.deleteFile(existingFile.id);
+            }
+          }
+        }
+
+        // Upload new profile image
+        const fileUrl = await this.server.fileManager.uploadFile({
+          file: input.profileImage,
+          userId: String(userId),
+          directory: 'users'
+        });
+        updateData.profileImage = fileUrl;
+      }
+
+      if (input.email !== undefined) updateData.email = input.email ?? null;
+      if (input.firstName !== undefined) updateData.firstName = input.firstName ?? null;
+      if (input.lastName !== undefined) updateData.lastName = input.lastName ?? null;
+      if (input.organizationName !== undefined)
+        updateData.organizationName = input.organizationName ?? null;
+      if (input.bio !== undefined) updateData.bio = input.bio ?? null;
+      if (input.skills !== undefined) updateData.skills = input.skills ?? null;
+      if (input.links !== undefined) updateData.links = input.links ?? null;
+
+      const [updatedUser] = await this.db
+        .update(usersV2Table)
+        .set(updateData)
+        .where(eq(usersV2Table.id, userId))
+        .returning();
+      return updatedUser;
+
+    } catch (error) {
+      this.server.log.error({
+        msg: '❌ UserV2Service.updateProfile failed',
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 }
