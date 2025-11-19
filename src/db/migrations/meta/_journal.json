@@ -141,6 +141,20 @@
       "when": 1762486812621,
       "tag": "0019_bent_king_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1763531954313,
+      "tag": "0020_majestic_scarlet_witch",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1763533043105,
+      "tag": "0021_rare_sunspot",
+      "breakpoints": true
     }
   ]
 }

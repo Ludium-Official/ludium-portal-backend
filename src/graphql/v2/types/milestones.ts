@@ -1,10 +1,12 @@
 import type { MilestoneV2 as DBMilestoneV2 } from '@/db/schemas/v2/milestones';
 import { milestoneStatusV2Values } from '@/db/schemas/v2/milestones';
+import { onchainContractInfoTable } from '@/db/schemas/v2/onchain-contract-info';
 import { programsV2Table } from '@/db/schemas/v2/programs';
 import { usersV2Table } from '@/db/schemas/v2/users';
 import builder from '@/graphql/builder';
 import type { Context } from '@/types';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
+import { OnchainContractInfoV2Type } from './onchain-contract-info';
 import { ProgramV2Type } from './programs';
 import { UserV2Type } from './users';
 
@@ -98,6 +100,26 @@ export const MilestoneV2Type = builder.objectRef<DBMilestoneV2>('MilestoneV2').i
           throw new Error('Applicant not found');
         }
         return applicant;
+      },
+    }),
+    onchainMetadata: t.field({
+      type: OnchainContractInfoV2Type,
+      nullable: true,
+      description:
+        'The onchain contract metadata associated with this milestone (matched by programId and applicantId)',
+      resolve: async (milestone, _args, ctx: Context) => {
+        const [onchainContract] = await ctx.db
+          .select()
+          .from(onchainContractInfoTable)
+          .where(
+            and(
+              eq(onchainContractInfoTable.programId, milestone.programId),
+              eq(onchainContractInfoTable.applicantId, milestone.applicantId),
+            ),
+          )
+          .limit(1);
+
+        return onchainContract || null;
       },
     }),
   }),

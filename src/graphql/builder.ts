@@ -38,6 +38,7 @@ const builder = new SchemaBuilder<{
     userV2: boolean;
     admin: boolean;
     superadmin: boolean;
+    relayer: boolean;
     programSponsor: {
       programId: string;
     };
@@ -87,6 +88,7 @@ const builder = new SchemaBuilder<{
       userV2: Boolean(context.userV2),
       admin: context.server.auth.isAdmin(context.request),
       superadmin: context.server.auth.isSuperAdmin(context.request),
+      relayer: context.server.auth.isRelayer(context.request),
       programSponsor: async ({ programId }) => {
         return await context.server.auth.isProgramSponsor(context.request, programId);
       },
