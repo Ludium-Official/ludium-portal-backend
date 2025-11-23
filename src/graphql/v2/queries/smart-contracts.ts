@@ -12,7 +12,6 @@ import {
 builder.queryFields((t) => ({
   smartContractsV2: t.field({
     type: PaginatedSmartContractsV2Type,
-    authScopes: { userV2: true },
     args: {
       pagination: t.arg({ type: PaginationInput }),
       chainInfoId: t.arg.int(),
@@ -21,7 +20,6 @@ builder.queryFields((t) => ({
   }),
   smartContractV2: t.field({
     type: SmartContractV2Type,
-    authScopes: { userV2: true },
     args: { id: t.arg.id({ required: true }) },
     resolve: getSmartContractV2Resolver,
   }),
