@@ -1,8 +1,8 @@
+import { networksTable } from '@/db/schemas/v2/networks';
 import {
   type OnchainContractInfo as DBOnchain,
   onchainContractStatusValues,
 } from '@/db/schemas/v2/onchain-contract-info';
-import { networksTable } from '@/db/schemas/v2/networks';
 import { smartContractsTable } from '@/db/schemas/v2/smart-contracts';
 import builder from '@/graphql/builder';
 import type { Context } from '@/types';
