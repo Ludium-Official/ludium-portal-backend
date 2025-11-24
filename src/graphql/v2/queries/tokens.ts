@@ -10,19 +10,16 @@ import { PaginatedTokensV2Type, TokenV2Type } from '@/graphql/v2/types/tokens';
 builder.queryFields((t) => ({
   tokensV2: t.field({
     type: PaginatedTokensV2Type,
-    authScopes: { userV2: true },
     args: { pagination: t.arg({ type: PaginationInput, required: false }) },
     resolve: getTokensV2Resolver,
   }),
   tokenV2: t.field({
     type: TokenV2Type,
-    authScopes: { userV2: true },
     args: { id: t.arg.id({ required: true }) },
     resolve: getTokenV2Resolver,
   }),
   tokensByNetworkV2: t.field({
     type: PaginatedTokensV2Type,
-    authScopes: { userV2: true },
     args: {
       networkId: t.arg.int({ required: true }),
       pagination: t.arg({ type: PaginationInput, required: false }),

@@ -24,7 +24,6 @@ builder.queryFields((t) => ({
   }),
   programV2: t.field({
     type: ProgramV2Type,
-    authScopes: { userV2: true },
     description: 'Get a single program by ID.',
     args: {
       id: t.arg.id({
