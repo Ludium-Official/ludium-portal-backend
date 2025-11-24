@@ -5,6 +5,7 @@ import type {
   CreateProgramV2Input,
   CreateProgramWithOnchainV2Input,
   ProgramsV2QueryInput,
+  UpdateProgramByRelayerV2Input,
   UpdateProgramV2Input,
 } from '@/graphql/v2/inputs/programs';
 import type { Context, Root } from '@/types';
@@ -243,6 +244,46 @@ export async function createProgramWithOnchainV2Resolver(
 
     return { program: createdProgram, onchain };
   });
+}
+
+export async function updateProgramByRelayerV2Resolver(
+  _root: Root,
+  args: {
+    id: string;
+    input: typeof UpdateProgramByRelayerV2Input.$inferInput;
+  },
+  ctx: Context,
+) {
+  // Relayer scope is already checked by authScopes
+  const numericId = Number.parseInt(args.id, 10);
+  if (Number.isNaN(numericId)) {
+    throw new Error('Invalid program ID');
+  }
+
+  const programService = new ProgramV2Service(ctx.db);
+
+  // Get current program to check status
+  const [currentProgram] = await ctx.db
+    .select()
+    .from(programsV2Table)
+    .where(eq(programsV2Table.id, numericId));
+
+  if (!currentProgram) {
+    throw new Error('Program not found');
+  }
+
+  // Relayer can only change status from 'open' to 'closed'
+  if (currentProgram.status !== 'open') {
+    throw new Error(
+      `Relayer can only close programs with status 'open'. Current status: '${currentProgram.status}'`,
+    );
+  }
+
+  if (args.input.status !== 'closed') {
+    throw new Error("Relayer can only change program status to 'closed'");
+  }
+
+  return programService.update(args.id, { status: 'closed' });
 }
 
 export async function getInProgressProgramsV2Resolver(

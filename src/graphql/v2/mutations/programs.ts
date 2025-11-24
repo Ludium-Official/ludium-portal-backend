@@ -2,11 +2,13 @@ import builder from '@/graphql/builder';
 import {
   CreateProgramV2Input,
   CreateProgramWithOnchainV2Input,
+  UpdateProgramByRelayerV2Input,
   UpdateProgramV2Input,
 } from '../inputs/programs';
 import {
   createProgramV2Resolver,
   deleteProgramV2Resolver,
+  updateProgramByRelayerV2Resolver,
   updateProgramV2Resolver,
 } from '../resolvers/programs';
 import { createProgramWithOnchainV2Resolver } from '../resolvers/programs';
@@ -62,5 +64,25 @@ builder.mutationField('deleteProgramV2', (t) =>
       id: t.arg.id({ required: true }),
     },
     resolve: deleteProgramV2Resolver,
+  }),
+);
+
+builder.mutationField('updateProgramByRelayerV2', (t) =>
+  t.field({
+    type: ProgramV2Ref,
+    authScopes: { relayer: true },
+    args: {
+      id: t.arg.id({
+        required: true,
+        description: 'Program ID',
+      }),
+      input: t.arg({
+        type: UpdateProgramByRelayerV2Input,
+        required: true,
+        description: 'Program update data for relayer (status change from open to closed)',
+      }),
+    },
+    resolve: updateProgramByRelayerV2Resolver,
+    description: 'Update program status from open to closed by relayer service',
   }),
 );

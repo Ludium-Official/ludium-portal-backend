@@ -32,6 +32,20 @@ export const UpdateProgramV2Input = builder.inputType('UpdateProgramV2Input', {
   }),
 });
 
+/**
+ * Input type for updating program by relayer
+ * Relayer can only update status from 'open' to 'closed'
+ */
+export const UpdateProgramByRelayerV2Input = builder.inputType('UpdateProgramByRelayerV2Input', {
+  fields: (t) => ({
+    status: t.field({
+      type: ProgramV2StatusEnum,
+      required: true,
+      description: 'Program status (relayer can only change from open to closed)',
+    }),
+  }),
+});
+
 export const CreateProgramWithOnchainV2Input = builder.inputType(
   'CreateProgramWithOnchainV2Input',
   {
