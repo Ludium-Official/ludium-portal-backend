@@ -2,6 +2,7 @@ import type { ApplicationV2 as DBApplicationV2 } from '@/db/schemas';
 import { applicationsV2Table } from '@/db/schemas';
 import { networksTable } from '@/db/schemas/v2/networks';
 import type { OnchainProgramInfo as DBOnchainProgramInfo } from '@/db/schemas/v2/onchain-program-info';
+import { onchainProgramInfoTable } from '@/db/schemas/v2/onchain-program-info';
 import type { ProgramV2 as DBProgramV2 } from '@/db/schemas/v2/programs';
 import { programStatusV2Values, programVisibilityV2Values } from '@/db/schemas/v2/programs';
 import { tokensTable } from '@/db/schemas/v2/tokens';
@@ -112,6 +113,20 @@ export const ProgramV2Type: ReturnType<typeof ProgramV2Ref.implement> = ProgramV
         }
 
         return token;
+      },
+    }),
+    onchain: t.field({
+      type: OnchainProgramInfoV2Type,
+      nullable: true,
+      description: 'The onchain program information associated with this program',
+      resolve: async (program, _args, ctx: Context) => {
+        const [onchain] = await ctx.db
+          .select()
+          .from(onchainProgramInfoTable)
+          .where(eq(onchainProgramInfoTable.programId, program.id))
+          .limit(1);
+
+        return onchain || null;
       },
     }),
     applicationCount: t.field({

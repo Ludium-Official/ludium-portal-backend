@@ -77,6 +77,26 @@ export const UpdateMilestoneV2Input = builder.inputType('UpdateMilestoneV2Input'
   }),
 });
 
+/**
+ * Input type for updating milestone by relayer
+ * Relayer can update payout_tx and status (to completed)
+ */
+export const UpdateMilestoneByRelayerV2Input = builder.inputType(
+  'UpdateMilestoneByRelayerV2Input',
+  {
+    fields: (t) => ({
+      payout_tx: t.string({
+        required: true,
+        description: 'Transaction hash for the milestone payout',
+      }),
+      status: t.field({
+        type: MilestoneStatusV2Enum,
+        description: 'Milestone status (typically set to completed when payout_tx is set)',
+      }),
+    }),
+  },
+);
+
 // ============================================================================
 // Query Inputs
 // ============================================================================
