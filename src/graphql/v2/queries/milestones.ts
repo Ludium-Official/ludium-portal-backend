@@ -1,5 +1,9 @@
 import builder from '@/graphql/builder';
-import { getMilestoneV2Resolver, getMilestonesV2Resolver } from '@/graphql/v2/resolvers/milestones';
+import {
+  getMilestoneV2Resolver,
+  getMilestonesInProgressV2Resolver,
+  getMilestonesV2Resolver,
+} from '@/graphql/v2/resolvers/milestones';
 import { MilestonesV2QueryInput } from '../inputs/milestones';
 import { MilestoneV2Type, PaginatedMilestonesV2Type } from '../types/milestones';
 
@@ -27,5 +31,17 @@ builder.queryFields((t) => ({
     },
     resolve: getMilestonesV2Resolver,
     description: 'Get paginated list of milestones with filtering options',
+  }),
+  milestonesInProgressV2: t.field({
+    type: PaginatedMilestonesV2Type,
+    authScopes: { userV2: true },
+    args: {
+      query: t.arg({
+        type: MilestonesV2QueryInput,
+        description: 'Query options including pagination and filtering',
+      }),
+    },
+    resolve: getMilestonesInProgressV2Resolver,
+    description: 'Get paginated list of milestones with status in_progress',
   }),
 }));

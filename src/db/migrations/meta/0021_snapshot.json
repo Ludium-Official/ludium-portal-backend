@@ -1,6 +1,6 @@
 {
-  "id": "e794d730-a7db-4fb0-ba0e-7dcfe86e3385",
-  "prevId": "9931040c-6426-4fab-9206-82fe905d9d24",
+  "id": "aed854ed-c778-4e35-85cc-0a1cca6d779c",
+  "prevId": "e794d730-a7db-4fb0-ba0e-7dcfe86e3385",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -118,8 +118,12 @@
           "name": "applications_program_id_programs_id_fk",
           "tableFrom": "applications",
           "tableTo": "programs",
-          "columnsFrom": ["program_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -127,8 +131,12 @@
           "name": "applications_applicant_id_users_id_fk",
           "tableFrom": "applications",
           "tableTo": "users",
-          "columnsFrom": ["applicant_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "applicant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -162,8 +170,12 @@
           "name": "applications_to_links_application_id_applications_id_fk",
           "tableFrom": "applications_to_links",
           "tableTo": "applications",
-          "columnsFrom": ["application_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -171,8 +183,12 @@
           "name": "applications_to_links_link_id_links_id_fk",
           "tableFrom": "applications_to_links",
           "tableTo": "links",
-          "columnsFrom": ["link_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "link_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -247,8 +263,12 @@
           "name": "carousel_items_created_by_users_id_fk",
           "tableFrom": "carousel_items",
           "tableTo": "users",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -258,12 +278,19 @@
         "carousel_items_display_order_is_active_unique": {
           "name": "carousel_items_display_order_is_active_unique",
           "nullsNotDistinct": false,
-          "columns": ["display_order", "is_active"]
+          "columns": [
+            "display_order",
+            "is_active"
+          ]
         },
         "carousel_items_item_type_item_id_is_active_unique": {
           "name": "carousel_items_item_type_item_id_is_active_unique",
           "nullsNotDistinct": false,
-          "columns": ["item_type", "item_id", "is_active"]
+          "columns": [
+            "item_type",
+            "item_id",
+            "is_active"
+          ]
         }
       },
       "policies": {},
@@ -333,8 +360,12 @@
           "name": "comments_author_id_users_id_fk",
           "tableFrom": "comments",
           "tableTo": "users",
-          "columnsFrom": ["author_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "author_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -415,8 +446,12 @@
           "name": "fees_program_id_programs_id_fk",
           "tableFrom": "fees",
           "tableTo": "programs",
-          "columnsFrom": ["program_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -424,8 +459,12 @@
           "name": "fees_claimed_by_users_id_fk",
           "tableFrom": "fees",
           "tableTo": "users",
-          "columnsFrom": ["claimed_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "claimed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -498,8 +537,12 @@
           "name": "files_uploaded_by_id_users_id_fk",
           "tableFrom": "files",
           "tableTo": "users",
-          "columnsFrom": ["uploaded_by_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "uploaded_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -630,12 +673,16 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         },
         "users_wallet_address_unique": {
           "name": "users_wallet_address_unique",
           "nullsNotDistinct": false,
-          "columns": ["wallet_address"]
+          "columns": [
+            "wallet_address"
+          ]
         }
       },
       "policies": {},
@@ -673,8 +720,12 @@
           "name": "users_to_keywords_user_id_users_id_fk",
           "tableFrom": "users_to_keywords",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -682,8 +733,12 @@
           "name": "users_to_keywords_keyword_id_keywords_id_fk",
           "tableFrom": "users_to_keywords",
           "tableTo": "keywords",
-          "columnsFrom": ["keyword_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "keyword_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -691,7 +746,11 @@
       "compositePrimaryKeys": {
         "users_to_keywords_user_id_keyword_id_type_pk": {
           "name": "users_to_keywords_user_id_keyword_id_type_pk",
-          "columns": ["user_id", "keyword_id", "type"]
+          "columns": [
+            "user_id",
+            "keyword_id",
+            "type"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -722,8 +781,12 @@
           "name": "users_to_links_user_id_users_id_fk",
           "tableFrom": "users_to_links",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -731,8 +794,12 @@
           "name": "users_to_links_link_id_links_id_fk",
           "tableFrom": "users_to_links",
           "tableTo": "links",
-          "columnsFrom": ["link_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "link_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -740,7 +807,10 @@
       "compositePrimaryKeys": {
         "users_to_links_user_id_link_id_pk": {
           "name": "users_to_links_user_id_link_id_pk",
-          "columns": ["user_id", "link_id"]
+          "columns": [
+            "user_id",
+            "link_id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -799,8 +869,12 @@
           "name": "program_user_roles_program_id_programs_id_fk",
           "tableFrom": "program_user_roles",
           "tableTo": "programs",
-          "columnsFrom": ["program_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -808,8 +882,12 @@
           "name": "program_user_roles_user_id_users_id_fk",
           "tableFrom": "program_user_roles",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1039,8 +1117,12 @@
           "name": "programs_creator_id_users_id_fk",
           "tableFrom": "programs",
           "tableTo": "users",
-          "columnsFrom": ["creator_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "creator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1074,8 +1156,12 @@
           "name": "programs_to_keywords_program_id_programs_id_fk",
           "tableFrom": "programs_to_keywords",
           "tableTo": "programs",
-          "columnsFrom": ["program_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1083,8 +1169,12 @@
           "name": "programs_to_keywords_keyword_id_keywords_id_fk",
           "tableFrom": "programs_to_keywords",
           "tableTo": "keywords",
-          "columnsFrom": ["keyword_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "keyword_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1092,7 +1182,10 @@
       "compositePrimaryKeys": {
         "programs_to_keywords_program_id_keyword_id_pk": {
           "name": "programs_to_keywords_program_id_keyword_id_pk",
-          "columns": ["program_id", "keyword_id"]
+          "columns": [
+            "program_id",
+            "keyword_id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -1123,8 +1216,12 @@
           "name": "programs_to_links_program_id_programs_id_fk",
           "tableFrom": "programs_to_links",
           "tableTo": "programs",
-          "columnsFrom": ["program_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1132,8 +1229,12 @@
           "name": "programs_to_links_link_id_links_id_fk",
           "tableFrom": "programs_to_links",
           "tableTo": "links",
-          "columnsFrom": ["link_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "link_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1141,7 +1242,10 @@
       "compositePrimaryKeys": {
         "programs_to_links_program_id_link_id_pk": {
           "name": "programs_to_links_program_id_link_id_pk",
-          "columns": ["program_id", "link_id"]
+          "columns": [
+            "program_id",
+            "link_id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -1206,8 +1310,12 @@
           "name": "user_tier_assignments_program_id_programs_id_fk",
           "tableFrom": "user_tier_assignments",
           "tableTo": "programs",
-          "columnsFrom": ["program_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1215,8 +1323,12 @@
           "name": "user_tier_assignments_user_id_users_id_fk",
           "tableFrom": "user_tier_assignments",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1289,8 +1401,12 @@
           "name": "investment_terms_application_id_applications_id_fk",
           "tableFrom": "investment_terms",
           "tableTo": "applications",
-          "columnsFrom": ["application_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1340,7 +1456,9 @@
         "keywords_name_unique": {
           "name": "keywords_name_unique",
           "nullsNotDistinct": false,
-          "columns": ["name"]
+          "columns": [
+            "name"
+          ]
         }
       },
       "policies": {},
@@ -1480,8 +1598,12 @@
           "name": "milestones_application_id_applications_id_fk",
           "tableFrom": "milestones",
           "tableTo": "applications",
-          "columnsFrom": ["application_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1515,8 +1637,12 @@
           "name": "milestones_to_links_milestone_id_milestones_id_fk",
           "tableFrom": "milestones_to_links",
           "tableTo": "milestones",
-          "columnsFrom": ["milestone_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "milestone_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1524,8 +1650,12 @@
           "name": "milestones_to_links_link_id_links_id_fk",
           "tableFrom": "milestones_to_links",
           "tableTo": "links",
-          "columnsFrom": ["link_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "link_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1533,7 +1663,10 @@
       "compositePrimaryKeys": {
         "milestones_to_links_milestone_id_link_id_pk": {
           "name": "milestones_to_links_milestone_id_link_id_pk",
-          "columns": ["milestone_id", "link_id"]
+          "columns": [
+            "milestone_id",
+            "link_id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -1657,8 +1790,12 @@
           "name": "posts_author_id_users_id_fk",
           "tableFrom": "posts",
           "tableTo": "users",
-          "columnsFrom": ["author_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "author_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1692,8 +1829,12 @@
           "name": "posts_to_keywords_post_id_posts_id_fk",
           "tableFrom": "posts_to_keywords",
           "tableTo": "posts",
-          "columnsFrom": ["post_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "post_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1701,8 +1842,12 @@
           "name": "posts_to_keywords_keyword_id_keywords_id_fk",
           "tableFrom": "posts_to_keywords",
           "tableTo": "keywords",
-          "columnsFrom": ["keyword_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "keyword_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1710,7 +1855,10 @@
       "compositePrimaryKeys": {
         "posts_to_keywords_post_id_keyword_id_pk": {
           "name": "posts_to_keywords_post_id_keyword_id_pk",
-          "columns": ["post_id", "keyword_id"]
+          "columns": [
+            "post_id",
+            "keyword_id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -1754,8 +1902,12 @@
           "name": "post_views_post_id_posts_id_fk",
           "tableFrom": "post_views",
           "tableTo": "posts",
-          "columnsFrom": ["post_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "post_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1763,8 +1915,12 @@
           "name": "post_views_user_id_users_id_fk",
           "tableFrom": "post_views",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1772,7 +1928,11 @@
       "compositePrimaryKeys": {
         "post_views_pkey": {
           "name": "post_views_pkey",
-          "columns": ["post_id", "user_id", "ip_address"]
+          "columns": [
+            "post_id",
+            "user_id",
+            "ip_address"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -1862,8 +2022,12 @@
           "name": "notifications_recipient_id_users_id_fk",
           "tableFrom": "notifications",
           "tableTo": "users",
-          "columnsFrom": ["recipient_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "recipient_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1963,8 +2127,12 @@
           "name": "investments_application_id_applications_id_fk",
           "tableFrom": "investments",
           "tableTo": "applications",
-          "columnsFrom": ["application_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1972,8 +2140,12 @@
           "name": "investments_user_id_users_id_fk",
           "tableFrom": "investments",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1981,8 +2153,12 @@
           "name": "investments_investment_term_id_investment_terms_id_fk",
           "tableFrom": "investments",
           "tableTo": "investment_terms",
-          "columnsFrom": ["investment_term_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "investment_term_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2075,8 +2251,12 @@
           "name": "milestone_payouts_milestone_id_milestones_id_fk",
           "tableFrom": "milestone_payouts",
           "tableTo": "milestones",
-          "columnsFrom": ["milestone_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "milestone_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2084,8 +2264,12 @@
           "name": "milestone_payouts_investment_id_investments_id_fk",
           "tableFrom": "milestone_payouts",
           "tableTo": "investments",
-          "columnsFrom": ["investment_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "investment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2181,8 +2365,12 @@
           "name": "applications_v2_program_id_programs_v2_id_fk",
           "tableFrom": "applications_v2",
           "tableTo": "programs_v2",
-          "columnsFrom": ["program_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2190,8 +2378,12 @@
           "name": "applications_v2_applicant_id_users_v2_id_fk",
           "tableFrom": "applications_v2",
           "tableTo": "users_v2",
-          "columnsFrom": ["applicant_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "applicant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2201,7 +2393,9 @@
         "applications_v2_chatroom_message_id_unique": {
           "name": "applications_v2_chatroom_message_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["chatroom_message_id"]
+          "columns": [
+            "chatroom_message_id"
+          ]
         }
       },
       "policies": {},
@@ -2295,8 +2489,12 @@
           "name": "milestones_v2_program_id_programs_v2_id_fk",
           "tableFrom": "milestones_v2",
           "tableTo": "programs_v2",
-          "columnsFrom": ["program_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2304,8 +2502,12 @@
           "name": "milestones_v2_sponsor_id_users_v2_id_fk",
           "tableFrom": "milestones_v2",
           "tableTo": "users_v2",
-          "columnsFrom": ["sponsor_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2416,8 +2618,12 @@
           "name": "programs_v2_network_id_networks_id_fk",
           "tableFrom": "programs_v2",
           "tableTo": "networks",
-          "columnsFrom": ["network_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "network_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2425,8 +2631,12 @@
           "name": "programs_v2_token_id_tokens_id_fk",
           "tableFrom": "programs_v2",
           "tableTo": "tokens",
-          "columnsFrom": ["token_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2434,8 +2644,12 @@
           "name": "programs_v2_sponsor_id_users_v2_id_fk",
           "tableFrom": "programs_v2",
           "tableTo": "users_v2",
-          "columnsFrom": ["sponsor_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2458,7 +2672,7 @@
         },
         "role": {
           "name": "role",
-          "type": "user_roles",
+          "type": "user_roles_v2",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
@@ -2544,10 +2758,12 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "email_wallet_unique": {
-          "name": "email_wallet_unique",
+        "unique_wallet_address": {
+          "name": "unique_wallet_address",
           "nullsNotDistinct": false,
-          "columns": ["email", "wallet_address"]
+          "columns": [
+            "wallet_address"
+          ]
         }
       },
       "policies": {},
@@ -2597,7 +2813,9 @@
         "networks_chain_id_unique": {
           "name": "networks_chain_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["chain_id"]
+          "columns": [
+            "chain_id"
+          ]
         }
       },
       "policies": {},
@@ -2645,8 +2863,12 @@
           "name": "tokens_chain_info_id_networks_id_fk",
           "tableFrom": "tokens",
           "tableTo": "networks",
-          "columnsFrom": ["chain_info_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "chain_info_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2725,8 +2947,12 @@
           "name": "onchain_contract_info_program_id_programs_v2_id_fk",
           "tableFrom": "onchain_contract_info",
           "tableTo": "programs_v2",
-          "columnsFrom": ["program_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2734,8 +2960,12 @@
           "name": "onchain_contract_info_sponsor_id_users_v2_id_fk",
           "tableFrom": "onchain_contract_info",
           "tableTo": "users_v2",
-          "columnsFrom": ["sponsor_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2743,8 +2973,12 @@
           "name": "onchain_contract_info_applicant_id_users_v2_id_fk",
           "tableFrom": "onchain_contract_info",
           "tableTo": "users_v2",
-          "columnsFrom": ["applicant_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "applicant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2752,8 +2986,12 @@
           "name": "onchain_contract_info_smart_contract_id_smart_contracts_id_fk",
           "tableFrom": "onchain_contract_info",
           "tableTo": "smart_contracts",
-          "columnsFrom": ["smart_contract_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "smart_contract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2826,8 +3064,12 @@
           "name": "onchain_program_info_program_id_programs_v2_id_fk",
           "tableFrom": "onchain_program_info",
           "tableTo": "programs_v2",
-          "columnsFrom": ["program_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2835,8 +3077,12 @@
           "name": "onchain_program_info_network_id_networks_id_fk",
           "tableFrom": "onchain_program_info",
           "tableTo": "networks",
-          "columnsFrom": ["network_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "network_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2844,8 +3090,12 @@
           "name": "onchain_program_info_smart_contract_id_smart_contracts_id_fk",
           "tableFrom": "onchain_program_info",
           "tableTo": "smart_contracts",
-          "columnsFrom": ["smart_contract_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "smart_contract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2891,8 +3141,12 @@
           "name": "smart_contracts_chain_info_id_networks_id_fk",
           "tableFrom": "smart_contracts",
           "tableTo": "networks",
-          "columnsFrom": ["chain_info_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "chain_info_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2981,8 +3235,12 @@
           "name": "contracts_program_id_programs_v2_id_fk",
           "tableFrom": "contracts",
           "tableTo": "programs_v2",
-          "columnsFrom": ["program_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2990,8 +3248,12 @@
           "name": "contracts_application_id_applications_v2_id_fk",
           "tableFrom": "contracts",
           "tableTo": "applications_v2",
-          "columnsFrom": ["application_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2999,8 +3261,12 @@
           "name": "contracts_sponsor_id_users_v2_id_fk",
           "tableFrom": "contracts",
           "tableTo": "users_v2",
-          "columnsFrom": ["sponsor_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3008,8 +3274,12 @@
           "name": "contracts_applicant_id_users_v2_id_fk",
           "tableFrom": "contracts",
           "tableTo": "users_v2",
-          "columnsFrom": ["applicant_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "applicant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3017,8 +3287,12 @@
           "name": "contracts_smart_contract_id_smart_contracts_id_fk",
           "tableFrom": "contracts",
           "tableTo": "smart_contracts",
-          "columnsFrom": ["smart_contract_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "smart_contract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3034,47 +3308,84 @@
     "public.application_status": {
       "name": "application_status",
       "schema": "public",
-      "values": ["pending", "accepted", "rejected", "completed", "submitted"]
+      "values": [
+        "pending",
+        "accepted",
+        "rejected",
+        "completed",
+        "submitted"
+      ]
     },
     "public.carousel_item_type": {
       "name": "carousel_item_type",
       "schema": "public",
-      "values": ["program", "post"]
+      "values": [
+        "program",
+        "post"
+      ]
     },
     "public.commentable_type": {
       "name": "commentable_type",
       "schema": "public",
-      "values": ["post", "program", "milestone", "application"]
+      "values": [
+        "post",
+        "program",
+        "milestone",
+        "application"
+      ]
     },
     "public.fee_status": {
       "name": "fee_status",
       "schema": "public",
-      "values": ["pending", "claimed", "failed"]
+      "values": [
+        "pending",
+        "claimed",
+        "failed"
+      ]
     },
     "public.keyword_type": {
       "name": "keyword_type",
       "schema": "public",
-      "values": ["role", "skill"]
+      "values": [
+        "role",
+        "skill"
+      ]
     },
     "public.user_roles": {
       "name": "user_roles",
       "schema": "public",
-      "values": ["user", "admin", "superadmin"]
+      "values": [
+        "user",
+        "admin",
+        "superadmin"
+      ]
     },
     "public.funding_condition": {
       "name": "funding_condition",
       "schema": "public",
-      "values": ["open", "tier"]
+      "values": [
+        "open",
+        "tier"
+      ]
     },
     "public.investment_tier": {
       "name": "investment_tier",
       "schema": "public",
-      "values": ["bronze", "silver", "gold", "platinum"]
+      "values": [
+        "bronze",
+        "silver",
+        "gold",
+        "platinum"
+      ]
     },
     "public.program_role_type": {
       "name": "program_role_type",
       "schema": "public",
-      "values": ["sponsor", "validator", "builder"]
+      "values": [
+        "sponsor",
+        "validator",
+        "builder"
+      ]
     },
     "public.program_status": {
       "name": "program_status",
@@ -3092,22 +3403,39 @@
     "public.program_type": {
       "name": "program_type",
       "schema": "public",
-      "values": ["regular", "funding"]
+      "values": [
+        "regular",
+        "funding"
+      ]
     },
     "public.program_visibility": {
       "name": "program_visibility",
       "schema": "public",
-      "values": ["private", "restricted", "public"]
+      "values": [
+        "private",
+        "restricted",
+        "public"
+      ]
     },
     "public.milestone_status": {
       "name": "milestone_status",
       "schema": "public",
-      "values": ["draft", "pending", "completed", "rejected", "submitted"]
+      "values": [
+        "draft",
+        "pending",
+        "completed",
+        "rejected",
+        "submitted"
+      ]
     },
     "public.post_visibility": {
       "name": "post_visibility",
       "schema": "public",
-      "values": ["private", "restricted", "public"]
+      "values": [
+        "private",
+        "restricted",
+        "public"
+      ]
     },
     "public.notification_action": {
       "name": "notification_action",
@@ -3125,52 +3453,113 @@
     "public.notification_type": {
       "name": "notification_type",
       "schema": "public",
-      "values": ["program", "application", "milestone", "comment", "system"]
+      "values": [
+        "program",
+        "application",
+        "milestone",
+        "comment",
+        "system"
+      ]
     },
     "public.investment_status": {
       "name": "investment_status",
       "schema": "public",
-      "values": ["pending", "confirmed", "failed", "refunded"]
+      "values": [
+        "pending",
+        "confirmed",
+        "failed",
+        "refunded"
+      ]
     },
     "public.payout_status": {
       "name": "payout_status",
       "schema": "public",
-      "values": ["pending", "processing", "completed", "failed"]
+      "values": [
+        "pending",
+        "processing",
+        "completed",
+        "failed"
+      ]
     },
     "public.application_status_v2": {
       "name": "application_status_v2",
       "schema": "public",
-      "values": ["submitted", "pending_signature", "in_progress", "completed"]
+      "values": [
+        "submitted",
+        "pending_signature",
+        "in_progress",
+        "completed"
+      ]
     },
     "public.milestone_status_v2": {
       "name": "milestone_status_v2",
       "schema": "public",
-      "values": ["draft", "under_review", "in_progress", "completed", "update"]
+      "values": [
+        "draft",
+        "under_review",
+        "in_progress",
+        "completed",
+        "update"
+      ]
     },
     "public.program_status_v2": {
       "name": "program_status_v2",
       "schema": "public",
-      "values": ["draft", "under_review", "open", "declined", "closed"]
+      "values": [
+        "draft",
+        "under_review",
+        "open",
+        "declined",
+        "closed"
+      ]
     },
     "public.program_visibility_v2": {
       "name": "program_visibility_v2",
       "schema": "public",
-      "values": ["private", "restricted", "public"]
+      "values": [
+        "private",
+        "restricted",
+        "public"
+      ]
     },
     "public.login_type": {
       "name": "login_type",
       "schema": "public",
-      "values": ["google", "wallet", "farcaster"]
+      "values": [
+        "google",
+        "wallet",
+        "farcaster"
+      ]
+    },
+    "public.user_roles_v2": {
+      "name": "user_roles_v2",
+      "schema": "public",
+      "values": [
+        "user",
+        "admin",
+        "relayer"
+      ]
     },
     "public.onchain_contract_status": {
       "name": "onchain_contract_status",
       "schema": "public",
-      "values": ["active", "paused", "completed", "updated", "cancelled"]
+      "values": [
+        "active",
+        "paused",
+        "completed",
+        "updated",
+        "cancelled"
+      ]
     },
     "public.onchain_program_status": {
       "name": "onchain_program_status",
       "schema": "public",
-      "values": ["active", "paused", "completed", "cancelled"]
+      "values": [
+        "active",
+        "paused",
+        "completed",
+        "cancelled"
+      ]
     }
   },
   "schemas": {},

@@ -48,7 +48,8 @@ const registerPlugins = (server: FastifyInstance) => {
           userV2: request.auth?.userV2,
         };
       },
-      graphiql: true,
+      // GraphiQL은 production 환경에서 비활성화
+      graphiql: server.config.NODE_ENV !== 'production',
       subscription: {
         context: (_, request) => {
           return {

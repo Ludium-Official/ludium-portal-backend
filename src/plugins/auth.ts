@@ -47,6 +47,12 @@ export class AuthHandler {
     return Boolean(request.auth?.user?.role === 'superadmin');
   }
 
+  isRelayer(request: FastifyRequest) {
+    // Check if userV2 exists and has role 'relayer'
+    // Note: role enum may need to be extended to include 'relayer'
+    return Boolean(request.auth?.userV2?.role === 'relayer');
+  }
+
   getUser(request: FastifyRequest) {
     if (!request.auth?.user) {
       return null;
@@ -213,7 +219,6 @@ async function requestHandler(decodedToken: DecodedToken, db: Context['db']) {
       .where(eq(usersV2Table.id, numericId));
     if (userV2) {
       auth.userV2 = userV2;
-      console.log('👉 auth (v2 user found)', auth);
     }
   } else {
     // 숫자가 아니면 UUID로 간주 (V1 User)
@@ -264,9 +269,43 @@ const authPlugin = (
   const authHandler = new AuthHandler(server);
   server.decorate('auth', authHandler);
   server.addHook('onRequest', async (request) => {
+    // Skip auth for GraphiQL GET requests (UI page) - only in non-production
+    if (
+      request.method === 'GET' &&
+      request.url === '/graphiql' &&
+      process.env.NODE_ENV !== 'production'
+    ) {
+      return;
+    }
+
+    // Block GraphiQL access in production
+    if (
+      request.method === 'GET' &&
+      request.url === '/graphiql' &&
+      process.env.NODE_ENV === 'production'
+    ) {
+      request.log.warn('[AuthPlugin] GraphiQL access blocked in production');
+      // Let the request continue - Mercurius will handle 404 since graphiql is disabled
+      return;
+    }
+
     if (process.env.NODE_ENV === 'local') {
+      try {
+        const decodedToken = await request.jwtVerify<DecodedToken>();
+        server.log.info(`[AuthPlugin] Decoded token: ${JSON.stringify(decodedToken)}`);
+        const auth = await requestHandler(decodedToken, server.db);
+        server.log.info(`[AuthPlugin] auth: ${JSON.stringify(auth)}`);
+        if (auth?.userV2) {
+          request.auth = auth;
+          server.log.info('[AuthPlugin] userV2 found, setting request.auth');
+          return;
+        }
+      } catch {
+        // JWT token not provided or invalid - use dev handler
+        server.log.debug('[AuthPlugin] No valid token, using dev handler');
+      }
       request.auth = requestDevHandler();
-      console.log('👉 get local auth for development');
+      server.log.info('[AuthPlugin] get local auth for development');
       return;
     }
 
@@ -276,8 +315,9 @@ const authPlugin = (
       const auth = await requestHandler(decodedToken, server.db);
       server.log.debug(`[AuthPlugin] auth: ${JSON.stringify(auth)}`);
       request.auth = auth;
-    } catch (error) {
-      server.log.error('No token provided', error);
+    } catch {
+      // JWT token not provided or invalid - continue without auth
+      server.log.debug('[AuthPlugin] No token provided, continuing without auth');
     }
   });
   done();

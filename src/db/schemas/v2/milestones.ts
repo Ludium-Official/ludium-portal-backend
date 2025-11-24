@@ -10,7 +10,7 @@ export const milestoneStatusV2Values = [
   'under_review', // Status after milestone is published, content for contract creation
   'in_progress', // Status after contract is created
   'completed', // Status when builder completes and submits the milestone
-  'update' // Status for milestone update
+  'update', // Status for milestone update
 ] as const;
 export const milestoneStatusV2Enum = pgEnum('milestone_status_v2', milestoneStatusV2Values);
 

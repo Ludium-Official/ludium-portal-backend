@@ -125,14 +125,16 @@ export class FileManager {
   uploadFile = async (params: {
     file: Promise<UploadFile>;
     userId: string;
-    directory?: string
+    directory?: string;
   }): Promise<string> => {
     const filePromise = await params.file;
     const filePath = await this.uploadFileToStorage(filePromise, params.directory);
 
     const { filename, mimetype } = filePromise;
 
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.userId);
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      params.userId,
+    );
 
     const [createdFile] = await this.server.db
       .insert(filesTable)

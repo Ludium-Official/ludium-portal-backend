@@ -389,7 +389,7 @@ export class UserV2Service {
 
       if (input.profileImage) {
         // Delete existing profile image if exists
-        if(existingUser.profileImage) {
+        if (existingUser.profileImage) {
           const urlPattern = /https:\/\/storage\.googleapis\.com\/[^/]+\/(.+)/;
           const match = existingUser.profileImage.match(urlPattern);
           if (match) {
@@ -399,7 +399,7 @@ export class UserV2Service {
               .from(filesTable)
               .where(eq(filesTable.path, filePath))
               .limit(1);
-            
+
             if (existingFile) {
               await this.server.fileManager.deleteFile(existingFile.id);
             }
@@ -410,7 +410,7 @@ export class UserV2Service {
         const fileUrl = await this.server.fileManager.uploadFile({
           file: input.profileImage,
           userId: String(userId),
-          directory: 'users'
+          directory: 'users',
         });
         updateData.profileImage = fileUrl;
       }
@@ -430,7 +430,6 @@ export class UserV2Service {
         .where(eq(usersV2Table.id, userId))
         .returning();
       return updatedUser;
-
     } catch (error) {
       this.server.log.error({
         msg: '❌ UserV2Service.updateProfile failed',

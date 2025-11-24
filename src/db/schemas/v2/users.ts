@@ -3,8 +3,8 @@ import { pgEnum, pgTable, serial, text, timestamp, unique, varchar } from 'drizz
 export const loginTypesV2 = ['google', 'wallet', 'farcaster'] as const;
 export const loginTypesV2Enum = pgEnum('login_type', loginTypesV2);
 
-export const userV2Roles = ['user', 'admin'] as const;
-export const userV2RolesEnum = pgEnum('user_roles', userV2Roles);
+export const userV2Roles = ['user', 'admin', 'relayer'] as const;
+export const userV2RolesEnum = pgEnum('user_roles_v2', userV2Roles);
 
 export const usersV2Table = pgTable(
   'users_v2',
@@ -36,7 +36,7 @@ export const usersV2Table = pgTable(
       .notNull()
       .$onUpdateFn(() => new Date()),
   },
-  (c) => [unique('email_wallet_unique').on(c.email, c.walletAddress)],
+  (c) => [unique('unique_wallet_address').on(c.walletAddress)],
 );
 
 // Relations are defined in programsV2.ts to avoid circular dependencies

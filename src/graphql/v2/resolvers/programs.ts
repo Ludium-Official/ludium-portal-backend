@@ -123,12 +123,11 @@ export async function updateProgramV2Resolver(
       // }
     }
     // State transition: draft -> open (for demo) // TODO: should delete later
-    else if (
-      currentStatus === 'draft' && newStatus === 'open') {
-        if (!isCreator) {
-          throw new Error('Only the program creator can open this program');
-        }
+    else if (currentStatus === 'draft' && newStatus === 'open') {
+      if (!isCreator) {
+        throw new Error('Only the program creator can open this program');
       }
+    }
     // State transition: under_review → open/declined
     else if (
       currentStatus === 'under_review' &&

@@ -2,7 +2,11 @@ import {
   type OnchainProgramInfo as DBOnchainProgram,
   onchainProgramStatusValues,
 } from '@/db/schemas/v2/onchain-program-info';
+import { smartContractsTable } from '@/db/schemas/v2/smart-contracts';
 import builder from '@/graphql/builder';
+import type { Context } from '@/types';
+import { eq } from 'drizzle-orm';
+import { SmartContractV2Ref } from './smart-contracts';
 
 export const OnchainProgramStatusV2Enum = builder.enumType('OnchainProgramStatusV2', {
   values: onchainProgramStatusValues,
@@ -20,6 +24,22 @@ export const OnchainProgramInfoV2Type = OnchainProgramInfoV2Ref.implement({
     status: t.field({ type: OnchainProgramStatusV2Enum, resolve: (p) => p.status }),
     createdAt: t.field({ type: 'DateTime', resolve: (p) => p.createdAt }),
     tx: t.exposeString('tx'),
+    smartContract: t.field({
+      type: SmartContractV2Ref,
+      description: 'The smart contract associated with this onchain program info',
+      resolve: async (onchain, _args, ctx: Context) => {
+        const [smartContract] = await ctx.db
+          .select()
+          .from(smartContractsTable)
+          .where(eq(smartContractsTable.id, onchain.smartContractId));
+
+        if (!smartContract) {
+          throw new Error(`Smart contract with id ${onchain.smartContractId} not found`);
+        }
+
+        return smartContract;
+      },
+    }),
   }),
 });
 

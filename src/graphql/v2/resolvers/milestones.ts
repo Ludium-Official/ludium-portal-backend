@@ -2,6 +2,7 @@ import type { Context, Root } from '@/types';
 import type {
   CreateMilestoneV2Input,
   MilestonesV2QueryInput,
+  UpdateMilestoneByRelayerV2Input,
   UpdateMilestoneV2Input,
 } from '../inputs/milestones';
 import { MilestoneV2Service } from '../services';
@@ -18,6 +19,15 @@ export async function getMilestonesV2Resolver(
 ) {
   const milestoneService = new MilestoneV2Service(ctx.db, ctx.server);
   return milestoneService.getMany(args.query);
+}
+
+export async function getMilestonesInProgressV2Resolver(
+  _root: Root,
+  args: { query?: typeof MilestonesV2QueryInput.$inferInput | null },
+  ctx: Context,
+) {
+  const milestoneService = new MilestoneV2Service(ctx.db, ctx.server);
+  return milestoneService.getInProgress(args.query);
 }
 
 export async function createMilestoneV2Resolver(
@@ -50,4 +60,32 @@ export async function updateMilestoneV2Resolver(
 export async function deleteMilestoneV2Resolver(_root: Root, args: { id: string }, ctx: Context) {
   const milestoneService = new MilestoneV2Service(ctx.db, ctx.server);
   return milestoneService.delete(args.id);
+}
+
+export async function updateMilestoneByRelayerV2Resolver(
+  _root: Root,
+  args: {
+    id: string;
+    input: typeof UpdateMilestoneByRelayerV2Input.$inferInput;
+  },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('User not authenticated');
+  }
+
+  // Relayer scope is already checked by authScopes, but we can add additional validation here if needed
+  const milestoneService = new MilestoneV2Service(ctx.db, ctx.server);
+
+  // Prepare update data - relayer can only update payout_tx and status
+  const updateData: typeof UpdateMilestoneV2Input.$inferInput = {
+    payout_tx: args.input.payout_tx,
+  };
+
+  // If status is provided, include it in the update
+  if (args.input.status) {
+    updateData.status = args.input.status;
+  }
+
+  return milestoneService.update(args.id, updateData);
 }

@@ -118,6 +118,71 @@ export class MilestoneV2Service {
     }
   }
 
+  async getInProgress(
+    query?: typeof MilestonesV2QueryInput.$inferInput | null,
+  ): Promise<PaginatedMilestonesV2Result> {
+    const startTime = Date.now();
+    const page = query?.page ?? 1;
+    const limit = query?.limit ?? 10;
+
+    this.server.log.info(
+      `🚀 Starting MilestoneV2Service.getInProgress with params: ${JSON.stringify(query)}`,
+    );
+
+    try {
+      const whereConditions = [eq(milestonesV2Table.status, 'in_progress')];
+
+      if (query?.programId) {
+        whereConditions.push(eq(milestonesV2Table.programId, Number.parseInt(query.programId, 10)));
+      }
+      if (query?.applicantId) {
+        whereConditions.push(
+          eq(milestonesV2Table.applicantId, Number.parseInt(query.applicantId, 10)),
+        );
+      }
+
+      const whereClause = and(...whereConditions);
+
+      const [totalResult] = await this.db
+        .select({ count: count() })
+        .from(milestonesV2Table)
+        .where(whereClause);
+      const totalCount = totalResult.count;
+      const totalPages = Math.ceil(totalCount / limit);
+      const offset = (page - 1) * limit;
+
+      const data = await this.db
+        .select()
+        .from(milestonesV2Table)
+        .where(whereClause)
+        .orderBy(desc(milestonesV2Table.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      const duration = Date.now() - startTime;
+      this.server.log.info(
+        `✅ MilestoneV2Service.getInProgress completed in ${duration}ms - found ${data.length} milestones`,
+      );
+
+      return {
+        data,
+        count: totalCount,
+        totalPages,
+        currentPage: page,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ MilestoneV2Service.getInProgress failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
   async create(input: typeof CreateMilestoneV2Input.$inferInput): Promise<MilestoneV2> {
     const startTime = Date.now();
     this.server.log.info('🚀 Starting MilestoneV2Service.create');
