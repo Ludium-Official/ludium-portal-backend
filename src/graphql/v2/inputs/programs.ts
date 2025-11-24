@@ -41,3 +41,23 @@ export const CreateProgramWithOnchainV2Input = builder.inputType(
     }),
   },
 );
+
+// ============================================================================
+// Query Inputs
+// ============================================================================
+
+/**
+ * Pagination and filtering input for programs queries
+ */
+export const ProgramsV2QueryInput = builder.inputType('ProgramsV2QueryInput', {
+  fields: (t) => ({
+    page: t.int({
+      description: 'Page number (1-based)',
+      defaultValue: 1,
+    }),
+    limit: t.int({
+      description: 'Number of items per page',
+      defaultValue: 10,
+    }),
+  }),
+});

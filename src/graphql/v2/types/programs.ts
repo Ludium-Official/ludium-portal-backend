@@ -195,16 +195,46 @@ export const PaginatedProgramV2Type = builder
   .objectRef<{
     data: (DBProgramV2 & { applicationCount?: number })[];
     count: number;
+    totalPages?: number;
+    currentPage?: number;
+    hasNextPage?: boolean;
+    hasPreviousPage?: boolean;
   }>('PaginatedProgramsV2')
   .implement({
     fields: (t) => ({
       data: t.field({
         type: [ProgramV2Type],
         resolve: (parent) => parent.data,
+        description: 'List of programs for the current page',
       }),
       count: t.field({
         type: 'Int',
         resolve: (parent) => parent.count,
+        description: 'Total number of programs matching the query',
+      }),
+      totalPages: t.field({
+        type: 'Int',
+        nullable: true,
+        resolve: (parent) => parent.totalPages,
+        description: 'Total number of pages',
+      }),
+      currentPage: t.field({
+        type: 'Int',
+        nullable: true,
+        resolve: (parent) => parent.currentPage,
+        description: 'Current page number',
+      }),
+      hasNextPage: t.field({
+        type: 'Boolean',
+        nullable: true,
+        resolve: (parent) => parent.hasNextPage,
+        description: 'Whether there is a next page',
+      }),
+      hasPreviousPage: t.field({
+        type: 'Boolean',
+        nullable: true,
+        resolve: (parent) => parent.hasPreviousPage,
+        description: 'Whether there is a previous page',
       }),
     }),
   });

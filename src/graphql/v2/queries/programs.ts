@@ -1,11 +1,13 @@
 import builder from '@/graphql/builder';
 import { PaginationInput } from '@/graphql/types/common';
 import {
+  getInProgressProgramsV2Resolver,
   getProgramV2Resolver,
   getProgramsByBuilderV2Resolver,
   getProgramsBysponsorIdV2Resolver,
   getProgramsV2Resolver,
 } from '@/graphql/v2/resolvers/programs';
+import { ProgramsV2QueryInput } from '../inputs/programs';
 import { PaginatedProgramV2Type, ProgramV2Type } from '../types/programs';
 
 builder.queryFields((t) => ({
@@ -70,5 +72,18 @@ builder.queryFields((t) => ({
       }),
     },
     resolve: getProgramsByBuilderV2Resolver,
+  }),
+  programsInProgressV2: t.field({
+    type: PaginatedProgramV2Type,
+    description:
+      'Get all programs that are currently in progress (status: open) with pagination. Default page is 1, default limit is 10.',
+    args: {
+      query: t.arg({
+        type: ProgramsV2QueryInput,
+        required: false,
+        description: 'Query options including pagination (page and limit)',
+      }),
+    },
+    resolve: getInProgressProgramsV2Resolver,
   }),
 }));

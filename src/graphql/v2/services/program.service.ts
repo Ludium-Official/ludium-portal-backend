@@ -17,18 +17,12 @@ export class ProgramV2Service {
     const limit = pagination?.limit || 10;
     const offset = pagination?.offset || 0;
 
-    // Only show programs that are public and open
-    const whereCondition = and(
-      eq(programsV2Table.visibility, 'public'),
-      eq(programsV2Table.status, 'open'),
-    );
+    // Only show programs that are open
+    const whereCondition = eq(programsV2Table.status, 'open');
 
     const data = await this.db
       .select({
         ...getTableColumns(programsV2Table),
-        sponsor: getTableColumns(usersV2Table),
-        network: getTableColumns(networksTable),
-        token: getTableColumns(tokensTable),
         applicationCount: sql<number>`
           (SELECT COUNT(*)::int 
            FROM ${applicationsV2Table} 
@@ -36,12 +30,6 @@ export class ProgramV2Service {
         `.as('application_count'),
       })
       .from(programsV2Table)
-      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
-      .leftJoin(usersV2Table, eq(programsV2Table.sponsorId, usersV2Table.id))
-      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
-      .leftJoin(networksTable, eq(programsV2Table.networkId, networksTable.id))
-      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
-      .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
       .where(whereCondition)
       .limit(limit)
       .offset(offset)
@@ -52,9 +40,8 @@ export class ProgramV2Service {
       .from(programsV2Table)
       .where(whereCondition);
 
-    // Extract program data (joined data is not needed in return type)
     const programs = data.map((row) => {
-      const { sponsor, network, token, applicationCount, ...program } = row;
+      const { applicationCount, ...program } = row;
       return {
         ...(program as ProgramV2),
         applicationCount: applicationCount ?? 0,
@@ -310,6 +297,71 @@ export class ProgramV2Service {
     return {
       data: sortedPrograms,
       count: totalCount.count,
+    };
+  }
+
+  async getInProgress(query?: { page?: number; limit?: number } | null): Promise<{
+    data: (ProgramV2 & { applicationCount: number })[];
+    count: number;
+    totalPages: number;
+    currentPage: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  }> {
+    const page = query?.page ?? 1;
+    const limit = query?.limit ?? 10;
+    const offset = (page - 1) * limit;
+
+    // Only show programs that are open (in progress)
+    const whereCondition = eq(programsV2Table.status, 'open');
+
+    const data = await this.db
+      .select({
+        ...getTableColumns(programsV2Table),
+        sponsor: getTableColumns(usersV2Table),
+        network: getTableColumns(networksTable),
+        token: getTableColumns(tokensTable),
+        applicationCount: sql<number>`
+          (SELECT COUNT(*)::int 
+           FROM ${applicationsV2Table} 
+           WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
+        `.as('application_count'),
+      })
+      .from(programsV2Table)
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(usersV2Table, eq(programsV2Table.sponsorId, usersV2Table.id))
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(networksTable, eq(programsV2Table.networkId, networksTable.id))
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
+      .where(whereCondition)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(programsV2Table.createdAt));
+
+    const [totalCount] = await this.db
+      .select({ count: count() })
+      .from(programsV2Table)
+      .where(whereCondition);
+
+    const totalPages = Math.ceil(totalCount.count / limit);
+
+    // Extract program data (joined data is not needed in return type)
+    const programs = data.map((row) => {
+      const { sponsor, network, token, applicationCount, ...program } = row;
+      return {
+        ...(program as ProgramV2),
+        applicationCount: applicationCount ?? 0,
+      };
+    });
+
+    return {
+      data: programs,
+      count: totalCount.count,
+      totalPages,
+      currentPage: page,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
     };
   }
 }

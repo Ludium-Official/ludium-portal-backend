@@ -4,6 +4,7 @@ import type { PaginationInput } from '@/graphql/types/common';
 import type {
   CreateProgramV2Input,
   CreateProgramWithOnchainV2Input,
+  ProgramsV2QueryInput,
   UpdateProgramV2Input,
 } from '@/graphql/v2/inputs/programs';
 import type { Context, Root } from '@/types';
@@ -242,4 +243,20 @@ export async function createProgramWithOnchainV2Resolver(
 
     return { program: createdProgram, onchain };
   });
+}
+
+export async function getInProgressProgramsV2Resolver(
+  _root: Root,
+  args: { query?: typeof ProgramsV2QueryInput.$inferInput | null },
+  ctx: Context,
+) {
+  const programService = new ProgramV2Service(ctx.db);
+  return programService.getInProgress(
+    args.query
+      ? {
+          page: args.query.page ?? undefined,
+          limit: args.query.limit ?? undefined,
+        }
+      : undefined,
+  );
 }
