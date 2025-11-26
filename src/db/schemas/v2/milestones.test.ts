@@ -1,5 +1,6 @@
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
+import { type NewApplicationV2, applicationsV2Table } from './applications';
 import { type NewMilestoneV2, milestonesV2Table } from './milestones';
 import { type NewNetworkType, networksTable } from './networks';
 import { type NewProgramV2, programsV2Table } from './programs';
@@ -11,6 +12,7 @@ describe('Milestones V2 Table', () => {
   let testProgramId: number;
   let testNetworkId: number;
   let testTokenId: number;
+  let testApplicationId: number;
 
   beforeAll(async () => {
     // Create a test user
@@ -60,6 +62,18 @@ describe('Milestones V2 Table', () => {
     };
     const [insertedProgram] = await db.insert(programsV2Table).values(testProgram).returning();
     testProgramId = insertedProgram.id;
+
+    // Create a test application
+    const testApplication: NewApplicationV2 = {
+      programId: testProgramId,
+      applicantId: testUserId,
+      status: 'in_progress',
+    };
+    const [insertedApplication] = await db
+      .insert(applicationsV2Table)
+      .values(testApplication)
+      .returning();
+    testApplicationId = insertedApplication.id;
   });
 
   afterEach(async () => {
@@ -79,7 +93,8 @@ describe('Milestones V2 Table', () => {
     const milestoneDeadline = new Date('2025-12-31');
     const newMilestone: NewMilestoneV2 = {
       programId: testProgramId,
-      applicantId: testUserId,
+      applicationId: testApplicationId,
+      sponsorId: testUserId,
       title: 'First Milestone',
       description: 'Complete the basic setup',
       payout: '100',
@@ -91,7 +106,7 @@ describe('Milestones V2 Table', () => {
 
     expect(milestone).toBeDefined();
     expect(milestone.programId).toBe(newMilestone.programId);
-    expect(milestone.applicantId).toBe(newMilestone.applicantId);
+    expect(milestone.applicationId).toBe(newMilestone.applicationId);
     expect(milestone.title).toBe(newMilestone.title);
     expect(milestone.description).toBe(newMilestone.description);
     expect(milestone.payout).toBe(newMilestone.payout);
@@ -115,7 +130,8 @@ describe('Milestones V2 Table', () => {
     const milestoneDeadline = new Date('2025-12-31');
     const newMilestone: NewMilestoneV2 = {
       programId: testProgramId,
-      applicantId: testUserId,
+      applicationId: testApplicationId,
+      sponsorId: testUserId,
       title: 'This is a very long milestone title that tests the varchar length limit',
       description:
         'This is a very long description that tests the text field. It can contain multiple sentences and paragraphs to describe the milestone in detail.',
@@ -134,7 +150,8 @@ describe('Milestones V2 Table', () => {
     const milestoneDeadline = new Date('2025-12-31');
     const newMilestone: NewMilestoneV2 = {
       programId: testProgramId,
-      applicantId: testUserId,
+      applicationId: testApplicationId,
+      sponsorId: testUserId,
       title: 'High Value Milestone',
       description: 'A milestone with a very high payout',
       payout: '1000000',
@@ -151,7 +168,8 @@ describe('Milestones V2 Table', () => {
     const pastDeadline = new Date('2020-01-01');
     const newMilestone: NewMilestoneV2 = {
       programId: testProgramId,
-      applicantId: testUserId,
+      applicationId: testApplicationId,
+      sponsorId: testUserId,
       title: 'Past Milestone',
       description: 'A milestone with a past deadline',
       payout: '50',
@@ -168,7 +186,8 @@ describe('Milestones V2 Table', () => {
     const milestoneDeadline = new Date('2025-12-31');
     const newMilestone: NewMilestoneV2 = {
       programId: 999999, // Non-existent program ID
-      applicantId: testUserId,
+      applicationId: testApplicationId,
+      sponsorId: testUserId,
       title: 'Invalid Milestone',
       description: 'This should fail',
       payout: '100',
@@ -178,11 +197,12 @@ describe('Milestones V2 Table', () => {
     await expect(db.insert(milestonesV2Table).values(newMilestone)).rejects.toThrow();
   });
 
-  it('should enforce foreign key constraint for applicantId', async () => {
+  it('should enforce foreign key constraint for applicationId', async () => {
     const milestoneDeadline = new Date('2025-12-31');
     const newMilestone: NewMilestoneV2 = {
       programId: testProgramId,
-      applicantId: 999999, // Non-existent user ID
+      applicationId: 999999, // Non-existent application ID
+      sponsorId: testUserId,
       title: 'Invalid Milestone',
       description: 'This should fail',
       payout: '100',
@@ -197,7 +217,8 @@ describe('Milestones V2 Table', () => {
     const milestoneDeadline = new Date('2025-12-31');
     const newMilestone: NewMilestoneV2 = {
       programId: testProgramId,
-      applicantId: testUserId,
+      applicationId: testApplicationId,
+      sponsorId: testUserId,
       title: 'Milestone to be deleted',
       description: 'This milestone will be deleted',
       payout: '200',
@@ -231,9 +252,21 @@ describe('Milestones V2 Table', () => {
     };
     const [recreatedProgram] = await db.insert(programsV2Table).values(testProgram).returning();
     testProgramId = recreatedProgram.id;
+
+    // Recreate application as well since it was cascade deleted
+    const testApplication: NewApplicationV2 = {
+      programId: testProgramId,
+      applicantId: testUserId,
+      status: 'in_progress',
+    };
+    const [insertedApplication] = await db
+      .insert(applicationsV2Table)
+      .values(testApplication)
+      .returning();
+    testApplicationId = insertedApplication.id;
   });
 
-  it('should cascade delete milestones when applicant is deleted', async () => {
+  it('should cascade delete milestones when application is deleted', async () => {
     // Create another user and program
     const anotherUser: NewUserV2 = {
       walletAddress: '0xAnotherMilestoneUser123456789012345678901234567',
@@ -264,11 +297,24 @@ describe('Milestones V2 Table', () => {
       .returning();
     const anotherProgramId = anotherProgramInserted.id;
 
+    // Create an application
+    const anotherApplication: NewApplicationV2 = {
+      programId: anotherProgramId,
+      applicantId: anotherUserId,
+      status: 'in_progress',
+    };
+    const [anotherApplicationInserted] = await db
+      .insert(applicationsV2Table)
+      .values(anotherApplication)
+      .returning();
+    const anotherApplicationId = anotherApplicationInserted.id;
+
     // Create a milestone
     const milestoneDeadline = new Date('2025-12-31');
     const newMilestone: NewMilestoneV2 = {
       programId: anotherProgramId,
-      applicantId: anotherUserId,
+      applicationId: anotherApplicationId,
+      sponsorId: anotherUserId,
       title: 'Milestone to be deleted',
       description: 'This milestone will be deleted',
       payout: '300',
@@ -276,24 +322,27 @@ describe('Milestones V2 Table', () => {
     };
     await db.insert(milestonesV2Table).values(newMilestone);
 
-    // Delete the applicant user
-    await db.delete(usersV2Table).where(sql`${usersV2Table.id} = ${anotherUserId}`);
+    // Delete the application
+    await db
+      .delete(applicationsV2Table)
+      .where(sql`${applicationsV2Table.id} = ${anotherApplicationId}`);
 
     // Verify the milestone was also deleted
     const milestones = await db
       .select()
       .from(milestonesV2Table)
-      .where(sql`${milestonesV2Table.applicantId} = ${anotherUserId}`);
+      .where(sql`${milestonesV2Table.applicationId} = ${anotherApplicationId}`);
     expect(milestones).toHaveLength(0);
   });
 
-  it('should allow multiple milestones for the same program and applicant', async () => {
+  it('should allow multiple milestones for the same program and application', async () => {
     const milestone1Deadline = new Date('2025-06-30');
     const milestone2Deadline = new Date('2025-12-31');
 
     const milestone1: NewMilestoneV2 = {
       programId: testProgramId,
-      applicantId: testUserId,
+      applicationId: testApplicationId,
+      sponsorId: testUserId,
       title: 'First Milestone',
       description: 'Initial milestone',
       payout: '100',
@@ -301,7 +350,8 @@ describe('Milestones V2 Table', () => {
     };
     const milestone2: NewMilestoneV2 = {
       programId: testProgramId,
-      applicantId: testUserId,
+      applicationId: testApplicationId,
+      sponsorId: testUserId,
       title: 'Second Milestone',
       description: 'Follow-up milestone',
       payout: '200',
@@ -316,8 +366,8 @@ describe('Milestones V2 Table', () => {
     expect(milestone1Inserted.id).not.toBe(milestone2Inserted.id);
     expect(milestone1Inserted.programId).toBe(testProgramId);
     expect(milestone2Inserted.programId).toBe(testProgramId);
-    expect(milestone1Inserted.applicantId).toBe(testUserId);
-    expect(milestone2Inserted.applicantId).toBe(testUserId);
+    expect(milestone1Inserted.applicationId).toBe(testApplicationId);
+    expect(milestone2Inserted.applicationId).toBe(testApplicationId);
     expect(milestone1Inserted.title).toBe('First Milestone');
     expect(milestone2Inserted.title).toBe('Second Milestone');
   });
@@ -343,12 +393,25 @@ describe('Milestones V2 Table', () => {
       .returning();
     const secondProgramId = secondProgramInserted.id;
 
+    // Create application for second program
+    const secondApplication: NewApplicationV2 = {
+      programId: secondProgramId,
+      applicantId: testUserId,
+      status: 'in_progress',
+    };
+    const [secondApplicationInserted] = await db
+      .insert(applicationsV2Table)
+      .values(secondApplication)
+      .returning();
+    const secondApplicationId = secondApplicationInserted.id;
+
     const milestone1Deadline = new Date('2025-06-30');
     const milestone2Deadline = new Date('2025-12-31');
 
     const milestone1: NewMilestoneV2 = {
       programId: testProgramId,
-      applicantId: testUserId,
+      applicationId: testApplicationId,
+      sponsorId: testUserId,
       title: 'Milestone in Program 1',
       description: 'First milestone',
       payout: '150',
@@ -356,7 +419,8 @@ describe('Milestones V2 Table', () => {
     };
     const milestone2: NewMilestoneV2 = {
       programId: secondProgramId,
-      applicantId: testUserId,
+      applicationId: secondApplicationId,
+      sponsorId: testUserId,
       title: 'Milestone in Program 2',
       description: 'Second milestone',
       payout: '250',
@@ -378,7 +442,8 @@ describe('Milestones V2 Table', () => {
     const milestoneDeadline = new Date('2025-12-31');
     const newMilestone: NewMilestoneV2 = {
       programId: testProgramId,
-      applicantId: testUserId,
+      applicationId: testApplicationId,
+      sponsorId: testUserId,
       title: 'Status Default Milestone',
       description: 'Should default to draft',
       payout: '100',
@@ -402,7 +467,8 @@ describe('Milestones V2 Table', () => {
     for (const status of statuses) {
       const milestoneInput: NewMilestoneV2 = {
         programId: testProgramId,
-        applicantId: testUserId,
+        applicationId: testApplicationId,
+        sponsorId: testUserId,
         title: `Milestone with status ${status}`,
         description: 'Testing status enum',
         payout: '10',
