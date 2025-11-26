@@ -10,15 +10,26 @@ import { and, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm
 export class ProgramV2Service {
   constructor(private db: Context['db']) {}
 
-  async getMany(pagination?: { limit?: number; offset?: number }): Promise<{
+  async getMany(query?: {
+    limit?: number;
+    page?: number;
+    offset?: number;
+    status?: ProgramV2['status'];
+  }): Promise<{
     data: (ProgramV2 & { applicationCount: number })[];
     count: number;
   }> {
-    const limit = pagination?.limit || 10;
-    const offset = pagination?.offset || 0;
+    const limit = query?.limit || 10;
+    let offset = query?.offset;
 
-    // Only show programs that are open
-    const whereCondition = eq(programsV2Table.status, 'open');
+    if (offset === undefined) {
+      const page = query?.page || 1;
+      offset = (page - 1) * limit;
+    }
+
+    // Filter by status if provided, otherwise default to 'open'
+    const statusFilter = query?.status || 'open';
+    const whereCondition = eq(programsV2Table.status, statusFilter);
 
     const data = await this.db
       .select({
@@ -148,6 +159,29 @@ export class ProgramV2Service {
       throw new Error('Program not found');
     }
     return deletedProgram;
+  }
+
+  async complete(id: string): Promise<ProgramV2> {
+    // First check if program exists and user is the sponsor
+    const [program] = await this.db
+      .select()
+      .from(programsV2Table)
+      .where(eq(programsV2Table.id, Number.parseInt(id, 10)));
+
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    const [completedProgram] = await this.db
+      .update(programsV2Table)
+      .set({
+        status: 'closed',
+        updatedAt: new Date(),
+      })
+      .where(eq(programsV2Table.id, Number.parseInt(id, 10)))
+      .returning();
+
+    return completedProgram;
   }
 
   async getBySponsorId(

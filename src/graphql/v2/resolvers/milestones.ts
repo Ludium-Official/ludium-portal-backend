@@ -5,7 +5,7 @@ import type {
   UpdateMilestoneByRelayerV2Input,
   UpdateMilestoneV2Input,
 } from '../inputs/milestones';
-import { MilestoneV2Service } from '../services';
+import { ApplicationV2Service, MilestoneV2Service } from '../services';
 
 export async function getMilestoneV2Resolver(_root: Root, args: { id: string }, ctx: Context) {
   const milestoneService = new MilestoneV2Service(ctx.db, ctx.server);
@@ -88,4 +88,35 @@ export async function updateMilestoneByRelayerV2Resolver(
   }
 
   return milestoneService.update(args.id, updateData);
+}
+
+export async function checkApplicationMilestonesCompletedV2Resolver(
+  _root: Root,
+  args: { applicationId: string },
+  ctx: Context,
+) {
+  const milestoneService = new MilestoneV2Service(ctx.db, ctx.server);
+  return milestoneService.checkAllCompletedByApplication(Number.parseInt(args.applicationId, 10));
+}
+
+export async function completeApplicationV2Resolver(
+  _root: Root,
+  args: { id: string },
+  ctx: Context,
+) {
+  const milestoneService = new MilestoneV2Service(ctx.db, ctx.server);
+  const applicationService = new ApplicationV2Service(ctx.db, ctx.server);
+
+  // Check if all milestones are completed
+  const applicationId = Number.parseInt(args.id, 10);
+  const milestoneStatus = await milestoneService.checkAllCompletedByApplication(applicationId);
+
+  if (!milestoneStatus.allCompleted) {
+    throw new Error(
+      `Cannot complete application: ${milestoneStatus.completedCount} out of ${milestoneStatus.totalCount} milestones are completed`,
+    );
+  }
+
+  // All milestones are completed, update application status
+  return applicationService.complete(args.id);
 }

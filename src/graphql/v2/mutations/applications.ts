@@ -1,5 +1,6 @@
 import builder from '@/graphql/builder';
 import {
+  completeApplicationV2Resolver,
   createApplicationV2Resolver,
   deleteApplicationV2Resolver,
   pickApplicationV2Resolver,
@@ -125,5 +126,18 @@ builder.mutationFields((t) => ({
     resolve: updateApplicationChatroomV2Resolver,
     description:
       'Update chatroom message ID for an application (only by program sponsor). Generates a random UUID.',
+  }),
+  completeApplicationV2: t.field({
+    type: ApplicationV2Type,
+    authScopes: { relayer: true },
+    args: {
+      id: t.arg.id({
+        required: true,
+        description: 'Application ID',
+      }),
+    },
+    resolve: completeApplicationV2Resolver,
+    description:
+      'Complete an application after verifying all milestones are completed (only by applicant)',
   }),
 }));

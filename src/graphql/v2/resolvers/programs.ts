@@ -10,7 +10,7 @@ import type {
 } from '@/graphql/v2/inputs/programs';
 import type { Context, Root } from '@/types';
 import { eq } from 'drizzle-orm';
-import { ProgramV2Service } from '../services';
+import { ApplicationV2Service, ProgramV2Service } from '../services';
 import { OnchainProgramInfoV2Service } from '../services/onchain-program-info.service';
 
 export async function getProgramsV2Resolver(
@@ -22,6 +22,20 @@ export async function getProgramsV2Resolver(
   return programService.getMany({
     limit: args.pagination?.limit ?? undefined,
     offset: args.pagination?.offset ?? undefined,
+    status: 'open', // Default to open for backward compatibility
+  });
+}
+
+export async function getProgramsWithFilterV2Resolver(
+  _root: Root,
+  args: { query?: typeof ProgramsV2QueryInput.$inferInput | null },
+  ctx: Context,
+) {
+  const programService = new ProgramV2Service(ctx.db);
+  return programService.getMany({
+    limit: args.query?.limit ?? undefined,
+    page: args.query?.page ?? undefined,
+    status: args.query?.status ?? undefined,
   });
 }
 
@@ -300,4 +314,21 @@ export async function getInProgressProgramsV2Resolver(
         }
       : undefined,
   );
+}
+export async function completeProgramV2Resolver(_root: Root, args: { id: string }, ctx: Context) {
+  const programService = new ProgramV2Service(ctx.db);
+  const applicationService = new ApplicationV2Service(ctx.db, ctx.server);
+
+  // Check if all applications are completed
+  const programId = Number.parseInt(args.id, 10);
+  const appStatus = await applicationService.checkAllCompletedByProgram(programId);
+
+  if (!appStatus.allCompleted) {
+    throw new Error(
+      `Cannot complete program: ${appStatus.completedCount} out of ${appStatus.totalCount} applications are completed`,
+    );
+  }
+
+  // All applications are completed, update program status
+  return programService.complete(args.id);
 }

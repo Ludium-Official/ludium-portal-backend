@@ -241,18 +241,25 @@ async function requestHandler(decodedToken: DecodedToken, db: Context['db']) {
 }
 
 const requestDevHandler = (): RequestAuth => {
+  // DEV_USER_ROLE 환경 변수로 role 설정 가능 (기본값: 'user')
+  // 사용법: .env에 DEV_USER_ROLE=relayer 추가
+  const devRole = (process.env.DEV_USER_ROLE as 'user' | 'admin' | 'relayer') || 'user';
+
   return {
     userV2: {
       id: 999,
       skills: null,
-      role: 'user',
+      role: devRole,
       loginType: 'wallet',
-      email: 'developer@ludium.com',
-      walletAddress: '0xdev0000000000000000000000000000000000000',
-      firstName: 'Developer',
+      email: devRole === 'relayer' ? 'relayer@ludium.com' : 'developer@ludium.com',
+      walletAddress:
+        devRole === 'relayer'
+          ? '0xrelayer000000000000000000000000000000000'
+          : '0xdev0000000000000000000000000000000000000',
+      firstName: devRole === 'relayer' ? 'Relayer' : 'Developer',
       lastName: 'User',
       organizationName: 'Ludium',
-      bio: 'I am a developer user',
+      bio: `I am a ${devRole} user`,
       links: ['https://github.com/developer', 'https://twitter.com/developer'],
       createdAt: new Date(),
       updatedAt: new Date(),

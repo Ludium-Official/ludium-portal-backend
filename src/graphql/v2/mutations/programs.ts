@@ -10,6 +10,7 @@ import {
   deleteProgramV2Resolver,
   updateProgramByRelayerV2Resolver,
   updateProgramV2Resolver,
+  completeProgramV2Resolver,
 } from '../resolvers/programs';
 import { createProgramWithOnchainV2Resolver } from '../resolvers/programs';
 import { CreateProgramWithOnchainV2Payload, ProgramV2Ref } from '../types/programs';
@@ -84,5 +85,18 @@ builder.mutationField('updateProgramByRelayerV2', (t) =>
     },
     resolve: updateProgramByRelayerV2Resolver,
     description: 'Update program status from open to closed by relayer service',
+  }),
+);
+
+builder.mutationField('completeProgramV2', (t) =>
+  t.field({
+    type: ProgramV2Ref,
+    authScopes: { relayer: true },
+    description:
+      'Complete a program by changing its status to closed. Requires all applications to be completed.',
+    args: {
+      id: t.arg.id({ required: true, description: 'Program ID' }),
+    },
+    resolve: completeProgramV2Resolver,
   }),
 );

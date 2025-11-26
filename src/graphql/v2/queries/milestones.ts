@@ -1,10 +1,12 @@
 import builder from '@/graphql/builder';
 import {
+  checkApplicationMilestonesCompletedV2Resolver,
   getMilestoneV2Resolver,
   getMilestonesInProgressV2Resolver,
   getMilestonesV2Resolver,
 } from '@/graphql/v2/resolvers/milestones';
 import { MilestonesV2QueryInput } from '../inputs/milestones';
+import { ApplicationMilestoneStatusType } from '../types/applicationMilestoneStatus';
 import { MilestoneV2Type, PaginatedMilestonesV2Type } from '../types/milestones';
 
 builder.queryFields((t) => ({
@@ -43,5 +45,18 @@ builder.queryFields((t) => ({
     },
     resolve: getMilestonesInProgressV2Resolver,
     description: 'Get paginated list of milestones with status in_progress',
+  }),
+  checkApplicationMilestonesCompletedV2: t.field({
+    type: ApplicationMilestoneStatusType,
+    authScopes: { relayer: true },
+    args: {
+      applicationId: t.arg.id({
+        required: true,
+        description: 'Application ID to check milestone completion status',
+      }),
+    },
+    resolve: checkApplicationMilestonesCompletedV2Resolver,
+    description:
+      'Check if all milestones for a specific application are completed. Returns completion statistics.',
   }),
 }));

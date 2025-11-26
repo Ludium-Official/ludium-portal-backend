@@ -301,4 +301,46 @@ export class MilestoneV2Service {
       throw error;
     }
   }
+
+  async checkAllCompletedByApplication(applicationId: number): Promise<{
+    allCompleted: boolean;
+    completedCount: number;
+    totalCount: number;
+  }> {
+    const startTime = Date.now();
+    this.server.log.info(
+      `🚀 Starting MilestoneV2Service.checkAllCompletedByApplication for applicationId: ${applicationId}`,
+    );
+
+    try {
+      // Get all milestones for this application
+      const milestones = await this.db
+        .select()
+        .from(milestonesV2Table)
+        .where(eq(milestonesV2Table.applicationId, applicationId));
+
+      const totalCount = milestones.length;
+      const completedCount = milestones.filter((m) => m.status === 'completed').length;
+      const allCompleted = totalCount > 0 && completedCount === totalCount;
+
+      const duration = Date.now() - startTime;
+      this.server.log.info(
+        `✅ MilestoneV2Service.checkAllCompletedByApplication completed in ${duration}ms - ${completedCount}/${totalCount} completed`,
+      );
+
+      return {
+        allCompleted,
+        completedCount,
+        totalCount,
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ MilestoneV2Service.checkAllCompletedByApplication failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
 }

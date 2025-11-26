@@ -121,3 +121,5 @@ export async function updateApplicationChatroomV2Resolver(
   const applicationService = new ApplicationV2Service(ctx.db, ctx.server);
   return applicationService.updateChatroomMessageId(args.id);
 }
+
+export { completeApplicationV2Resolver } from './milestones';

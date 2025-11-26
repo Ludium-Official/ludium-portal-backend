@@ -73,5 +73,10 @@ export const ProgramsV2QueryInput = builder.inputType('ProgramsV2QueryInput', {
       description: 'Number of items per page',
       defaultValue: 10,
     }),
+    status: t.field({
+      type: ProgramV2StatusEnum,
+      description: 'Filter by program status',
+      required: false,
+    }),
   }),
 });

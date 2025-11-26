@@ -530,4 +530,76 @@ export class ApplicationV2Service {
       throw error;
     }
   }
+
+  async complete(id: string): Promise<ApplicationV2> {
+    const startTime = Date.now();
+    this.server.log.info(`🚀 Starting ApplicationV2Service.complete for id: ${id}`);
+
+    try {
+      // Get the application to check if it exists and verify authorization
+      const [application] = await this.db
+        .select()
+        .from(applicationsV2Table)
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)));
+
+      if (!application) {
+        throw new Error('Application not found');
+      }
+
+      // Update status to completed
+      const [completedApplication] = await this.db
+        .update(applicationsV2Table)
+        .set({
+          status: 'completed',
+          updatedAt: new Date(),
+        })
+        .where(eq(applicationsV2Table.id, Number.parseInt(id, 10)))
+        .returning();
+
+      const duration = Date.now() - startTime;
+      this.server.log.info(`✅ ApplicationV2Service.complete completed in ${duration}ms`);
+
+      return completedApplication;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.server.log.error(
+        `❌ ApplicationV2Service.complete failed after ${duration}ms: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
+    }
+  }
+
+  async checkAllCompletedByProgram(programId: number): Promise<{
+    allCompleted: boolean;
+    completedCount: number;
+    totalCount: number;
+  }> {
+    const startTime = Date.now();
+    this.server.log.info(
+      `🚀 Starting ApplicationV2Service.checkAllCompletedByProgram for programId: ${programId}`,
+    );
+
+    // Get all applications for this program
+    const applications = await this.db
+      .select()
+      .from(applicationsV2Table)
+      .where(eq(applicationsV2Table.programId, programId));
+
+    const totalCount = applications.length;
+    const completedCount = applications.filter((app) => app.status === 'completed').length;
+    const allCompleted = totalCount > 0 && completedCount === totalCount;
+
+    const duration = Date.now() - startTime;
+    this.server.log.info(
+      `✅ ApplicationV2Service.checkAllCompletedByProgram completed in ${duration}ms - ${completedCount}/${totalCount} completed`,
+    );
+
+    return {
+      allCompleted,
+      completedCount,
+      totalCount,
+    };
+  }
 }

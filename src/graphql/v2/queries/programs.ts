@@ -6,6 +6,7 @@ import {
   getProgramsByBuilderV2Resolver,
   getProgramsBysponsorIdV2Resolver,
   getProgramsV2Resolver,
+  getProgramsWithFilterV2Resolver,
 } from '@/graphql/v2/resolvers/programs';
 import { ProgramsV2QueryInput } from '../inputs/programs';
 import { PaginatedProgramV2Type, ProgramV2Type } from '../types/programs';
@@ -23,6 +24,19 @@ builder.queryFields((t) => ({
       }),
     },
     resolve: getProgramsV2Resolver,
+  }),
+  programsWithFilterV2: t.field({
+    type: PaginatedProgramV2Type,
+    description: 'Get all programs with filtering options (status, pagination).',
+    args: {
+      query: t.arg({
+        type: ProgramsV2QueryInput,
+        required: false,
+        description:
+          'Query options: limit (default: 10), page (default: 1), and status filter. Supports sorting and filtering.',
+      }),
+    },
+    resolve: getProgramsWithFilterV2Resolver,
   }),
   programV2: t.field({
     type: ProgramV2Type,
