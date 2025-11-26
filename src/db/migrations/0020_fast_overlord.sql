@@ -1,1 +1,0 @@
-ALTER TYPE "public"."milestone_status_v2" ADD VALUE 'update';

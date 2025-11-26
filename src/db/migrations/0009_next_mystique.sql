@@ -1,2 +1,0 @@
-ALTER TABLE "onchain_program_info" ADD COLUMN "network_id" integer NOT NULL;--> statement-breakpoint
-ALTER TABLE "onchain_program_info" ADD CONSTRAINT "onchain_program_info_network_id_networks_id_fk" FOREIGN KEY ("network_id") REFERENCES "public"."networks"("id") ON DELETE cascade ON UPDATE no action;

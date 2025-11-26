@@ -1,1 +1,0 @@
-ALTER TABLE "milestones_v2" ADD COLUMN "payout_tx" varchar(66);

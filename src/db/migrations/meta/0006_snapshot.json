@@ -1,5 +1,5 @@
 {
-  "id": "2d283c51-7241-45bf-95fc-cc2079512ef3",
+  "id": "8780d176-cfa6-4d0c-ba4a-857358af7566",
   "prevId": "f9c26044-56c8-4934-a907-11f11ae6c171",
   "version": "7",
   "dialect": "postgresql",
@@ -2308,7 +2308,14 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'applied'"
+          "default": "'submitted'"
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "''"
         },
         "content": {
           "name": "content",
@@ -2330,6 +2337,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "chatroom_message_id": {
+          "name": "chatroom_message_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -2376,7 +2389,15 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "applications_v2_chatroom_message_id_unique": {
+          "name": "applications_v2_chatroom_message_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "chatroom_message_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -2393,6 +2414,12 @@
         },
         "program_id": {
           "name": "program_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "application_id": {
+          "name": "application_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -2441,6 +2468,12 @@
           "notNull": true,
           "default": "'draft'"
         },
+        "payout_tx": {
+          "name": "payout_tx",
+          "type": "varchar(66)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -2464,6 +2497,19 @@
           "tableTo": "programs_v2",
           "columnsFrom": [
             "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "milestones_v2_application_id_applications_v2_id_fk": {
+          "name": "milestones_v2_application_id_applications_v2_id_fk",
+          "tableFrom": "milestones_v2",
+          "tableTo": "applications_v2",
+          "columnsFrom": [
+            "application_id"
           ],
           "columnsTo": [
             "id"
@@ -2645,7 +2691,7 @@
         },
         "role": {
           "name": "role",
-          "type": "user_roles",
+          "type": "user_roles_v2",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
@@ -2731,11 +2777,10 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "email_wallet_unique": {
-          "name": "email_wallet_unique",
+        "unique_wallet_address": {
+          "name": "unique_wallet_address",
           "nullsNotDistinct": false,
           "columns": [
-            "email",
             "wallet_address"
           ]
         }
@@ -2823,6 +2868,12 @@
           "type": "varchar(42)",
           "primaryKey": false,
           "notNull": true
+        },
+        "decimals": {
+          "name": "decimals",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {},
@@ -2863,24 +2914,29 @@
           "primaryKey": false,
           "notNull": true
         },
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
         "applicant_id": {
           "name": "applicant_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "content_hash": {
-          "name": "content_hash",
-          "type": "varchar(66)",
+        "smart_contract_id": {
+          "name": "smart_contract_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
+        "onchain_contract_id": {
+          "name": "onchain_contract_id",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
+          "notNull": true
         },
         "status": {
           "name": "status",
@@ -2895,6 +2951,13 @@
           "type": "varchar(66)",
           "primaryKey": false,
           "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -2912,12 +2975,38 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
+        "onchain_contract_info_sponsor_id_users_v2_id_fk": {
+          "name": "onchain_contract_info_sponsor_id_users_v2_id_fk",
+          "tableFrom": "onchain_contract_info",
+          "tableTo": "users_v2",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "onchain_contract_info_applicant_id_users_v2_id_fk": {
           "name": "onchain_contract_info_applicant_id_users_v2_id_fk",
           "tableFrom": "onchain_contract_info",
           "tableTo": "users_v2",
           "columnsFrom": [
             "applicant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "onchain_contract_info_smart_contract_id_smart_contracts_id_fk": {
+          "name": "onchain_contract_info_smart_contract_id_smart_contracts_id_fk",
+          "tableFrom": "onchain_contract_info",
+          "tableTo": "smart_contracts",
+          "columnsFrom": [
+            "smart_contract_id"
           ],
           "columnsTo": [
             "id"
@@ -2944,6 +3033,12 @@
         },
         "program_id": {
           "name": "program_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "network_id": {
+          "name": "network_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -2990,6 +3085,19 @@
           "tableTo": "programs_v2",
           "columnsFrom": [
             "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "onchain_program_info_network_id_networks_id_fk": {
+          "name": "onchain_program_info_network_id_networks_id_fk",
+          "tableFrom": "onchain_program_info",
+          "tableTo": "networks",
+          "columnsFrom": [
+            "network_id"
           ],
           "columnsTo": [
             "id"
@@ -3054,6 +3162,152 @@
           "tableTo": "networks",
           "columnsFrom": [
             "chain_info_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.contracts": {
+      "name": "contracts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "application_id": {
+          "name": "application_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "applicant_id": {
+          "name": "applicant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "smart_contract_id": {
+          "name": "smart_contract_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "onchain_contract_id": {
+          "name": "onchain_contract_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contract_snapshot_cotents": {
+          "name": "contract_snapshot_cotents",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contract_snapshot_hash": {
+          "name": "contract_snapshot_hash",
+          "type": "varchar(66)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "builder_signature": {
+          "name": "builder_signature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "contracts_program_id_programs_v2_id_fk": {
+          "name": "contracts_program_id_programs_v2_id_fk",
+          "tableFrom": "contracts",
+          "tableTo": "programs_v2",
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "contracts_application_id_applications_v2_id_fk": {
+          "name": "contracts_application_id_applications_v2_id_fk",
+          "tableFrom": "contracts",
+          "tableTo": "applications_v2",
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "contracts_sponsor_id_users_v2_id_fk": {
+          "name": "contracts_sponsor_id_users_v2_id_fk",
+          "tableFrom": "contracts",
+          "tableTo": "users_v2",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "contracts_applicant_id_users_v2_id_fk": {
+          "name": "contracts_applicant_id_users_v2_id_fk",
+          "tableFrom": "contracts",
+          "tableTo": "users_v2",
+          "columnsFrom": [
+            "applicant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "contracts_smart_contract_id_smart_contracts_id_fk": {
+          "name": "contracts_smart_contract_id_smart_contracts_id_fk",
+          "tableFrom": "contracts",
+          "tableTo": "smart_contracts",
+          "columnsFrom": [
+            "smart_contract_id"
           ],
           "columnsTo": [
             "id"
@@ -3250,9 +3504,10 @@
       "name": "application_status_v2",
       "schema": "public",
       "values": [
-        "applied",
-        "hired",
-        "rejected"
+        "submitted",
+        "pending_signature",
+        "in_progress",
+        "completed"
       ]
     },
     "public.milestone_status_v2": {
@@ -3260,20 +3515,21 @@
       "schema": "public",
       "values": [
         "draft",
-        "progress",
-        "finished",
-        "reviewed",
-        "completed"
+        "under_review",
+        "in_progress",
+        "completed",
+        "update"
       ]
     },
     "public.program_status_v2": {
       "name": "program_status_v2",
       "schema": "public",
       "values": [
+        "draft",
         "under_review",
         "open",
-        "closed",
-        "draft"
+        "declined",
+        "closed"
       ]
     },
     "public.program_visibility_v2": {
@@ -3294,15 +3550,24 @@
         "farcaster"
       ]
     },
+    "public.user_roles_v2": {
+      "name": "user_roles_v2",
+      "schema": "public",
+      "values": [
+        "user",
+        "admin",
+        "relayer"
+      ]
+    },
     "public.onchain_contract_status": {
       "name": "onchain_contract_status",
       "schema": "public",
       "values": [
         "active",
-        "canceled",
-        "updated",
         "paused",
-        "completed"
+        "completed",
+        "updated",
+        "cancelled"
       ]
     },
     "public.onchain_program_status": {
