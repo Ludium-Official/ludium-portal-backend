@@ -250,3 +250,17 @@ export const CreateProgramWithOnchainV2Payload = builder
       onchain: t.field({ type: OnchainProgramInfoV2Type, resolve: (p) => p.onchain }),
     }),
   });
+
+export const CheckCompleteProgramResponse = builder
+  .objectRef<{
+    allCompleted: boolean;
+    completedCount: number;
+    totalCount: number;
+  }>('CheckCompleteProgramResponse')
+  .implement({
+    fields: (t) => ({
+      allCompleted: t.exposeBoolean('allCompleted'),
+      completedCount: t.exposeInt('completedCount'),
+      totalCount: t.exposeInt('totalCount'),
+    }),
+  });

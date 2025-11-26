@@ -1,6 +1,7 @@
 import builder from '@/graphql/builder';
 import { PaginationInput } from '@/graphql/types/common';
 import {
+  checkCompleteProgramResolver,
   getInProgressProgramsV2Resolver,
   getProgramV2Resolver,
   getProgramsByBuilderV2Resolver,
@@ -9,7 +10,11 @@ import {
   getProgramsWithFilterV2Resolver,
 } from '@/graphql/v2/resolvers/programs';
 import { ProgramsV2QueryInput } from '../inputs/programs';
-import { PaginatedProgramV2Type, ProgramV2Type } from '../types/programs';
+import {
+  CheckCompleteProgramResponse,
+  PaginatedProgramV2Type,
+  ProgramV2Type,
+} from '../types/programs';
 
 builder.queryFields((t) => ({
   programsV2: t.field({
@@ -99,5 +104,17 @@ builder.queryFields((t) => ({
       }),
     },
     resolve: getInProgressProgramsV2Resolver,
+  }),
+  checkCompleteProgram: t.field({
+    type: CheckCompleteProgramResponse,
+    description: 'Check if a program can be completed (i.e., all applications are completed).',
+    authScopes: { relayer: true },
+    args: {
+      programId: t.arg.id({
+        required: true,
+        description: 'The ID of the program to check.',
+      }),
+    },
+    resolve: checkCompleteProgramResolver,
   }),
 }));

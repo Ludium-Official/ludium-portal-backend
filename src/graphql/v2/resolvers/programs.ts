@@ -332,3 +332,12 @@ export async function completeProgramV2Resolver(_root: Root, args: { id: string 
   // All applications are completed, update program status
   return programService.complete(args.id);
 }
+
+export async function checkCompleteProgramResolver(
+  _root: Root,
+  args: { programId: string },
+  ctx: Context,
+) {
+  const applicationService = new ApplicationV2Service(ctx.db, ctx.server);
+  return applicationService.checkAllCompletedByProgram(Number.parseInt(args.programId, 10));
+}
