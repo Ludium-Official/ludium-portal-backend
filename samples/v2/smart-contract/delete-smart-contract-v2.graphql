@@ -1,8 +1,0 @@
-mutation DeleteSmartContractV2($id: ID!) {
-  deleteSmartContractV2(id: $id) {
-    address
-    chainInfoId
-    name
-    network
-  }
-}

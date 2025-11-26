@@ -1,4 +1,0 @@
-query OnchainContractInfosByApplicantV2($applicantId: Int!, $pagination: PaginationInput) {
-  onchainContractInfosByApplicantV2(applicantId: $applicantId, pagination: $pagination) {
-  }
-}

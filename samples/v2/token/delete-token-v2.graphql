@@ -1,7 +1,0 @@
-mutation DeleteTokenV2($id: ID!) {
-  deleteTokenV2(id: $id) {
-    chainInfoId
-    tokenAddress
-    tokenName
-  }
-}

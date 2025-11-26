@@ -1,7 +1,0 @@
-mutation UpdateTokenV2($id: ID!, $input: UpdateTokenV2Input!) {
-  updateTokenV2(id: $id, input: $input) {
-    chainInfoId
-    tokenAddress
-    tokenName
-  }
-}

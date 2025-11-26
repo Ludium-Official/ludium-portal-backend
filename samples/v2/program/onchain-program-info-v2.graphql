@@ -1,4 +1,0 @@
-query OnchainProgramInfoV2($id: ID!) {
-  onchainProgramInfoV2(id: $id) {
-  }
-}

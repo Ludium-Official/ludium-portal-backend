@@ -1,4 +1,0 @@
-query ProgramV2($id: ID!) {
-  programV2(id: $id) {
-  }
-}

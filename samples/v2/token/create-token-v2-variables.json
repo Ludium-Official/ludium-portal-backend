@@ -1,8 +1,0 @@
-{
-  "input": {
-    "chainInfoId": 1,
-    "decimals": 1,
-    "tokenAddress": "Example tokenAddress",
-    "tokenName": "Example tokenName"
-  }
-}

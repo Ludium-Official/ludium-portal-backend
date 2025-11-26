@@ -1,8 +1,0 @@
-mutation DeleteNetworkV2($id: ID!) {
-  deleteNetworkV2(id: $id) {
-    chainId
-    chainName
-    exploreUrl
-    mainnet
-  }
-}

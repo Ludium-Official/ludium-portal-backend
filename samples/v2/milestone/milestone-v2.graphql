@@ -1,6 +1,0 @@
-# Get a single milestone by ID
-
-query MilestoneV2($id: ID!) {
-  milestoneV2(id: $id) {
-  }
-}

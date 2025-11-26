@@ -1,4 +1,0 @@
-query OnchainContractInfoV2($id: ID!) {
-  onchainContractInfoV2(id: $id) {
-  }
-}

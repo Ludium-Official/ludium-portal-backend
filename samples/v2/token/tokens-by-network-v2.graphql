@@ -1,4 +1,0 @@
-query TokensByNetworkV2($networkId: Int!, $pagination: PaginationInput) {
-  tokensByNetworkV2(networkId: $networkId, pagination: $pagination) {
-  }
-}

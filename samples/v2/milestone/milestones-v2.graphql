@@ -1,6 +1,0 @@
-# Get paginated list of milestones with filtering options
-
-query MilestonesV2($query: MilestonesV2QueryInput) {
-  milestonesV2(query: $query) {
-  }
-}

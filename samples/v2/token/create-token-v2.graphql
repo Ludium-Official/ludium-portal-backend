@@ -1,7 +1,0 @@
-mutation CreateTokenV2($input: CreateTokenV2Input!) {
-  createTokenV2(input: $input) {
-    chainInfoId
-    tokenAddress
-    tokenName
-  }
-}

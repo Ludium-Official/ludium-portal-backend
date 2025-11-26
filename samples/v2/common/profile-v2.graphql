@@ -1,6 +1,0 @@
-# Get current authenticated user profile
-
-query ProfileV2 {
-  profileV2() {
-  }
-}

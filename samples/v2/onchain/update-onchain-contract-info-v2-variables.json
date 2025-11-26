@@ -1,8 +1,0 @@
-{
-  "id": "1",
-  "input": {
-    "contentHash": "Example contentHash",
-    "status": "active",
-    "tx": "0x0000000000000000000000000000000000000000000000000000000000000000"
-  }
-}

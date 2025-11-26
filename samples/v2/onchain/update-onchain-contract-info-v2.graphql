@@ -1,9 +1,0 @@
-mutation UpdateOnchainContractInfoV2($id: ID!, $input: UpdateOnchainContractInfoV2Input!) {
-  updateOnchainContractInfoV2(id: $id, input: $input) {
-    applicantId
-    contentHash
-    programId
-    status
-    tx
-  }
-}

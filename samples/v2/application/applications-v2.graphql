@@ -1,6 +1,0 @@
-# Get paginated list of applications with filtering options
-
-query ApplicationsV2($query: ApplicationsV2QueryInput) {
-  applicationsV2(query: $query) {
-  }
-}

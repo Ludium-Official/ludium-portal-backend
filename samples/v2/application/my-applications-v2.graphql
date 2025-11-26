@@ -1,6 +1,0 @@
-# Get all applications submitted by the current user
-
-query MyApplicationsV2($query: MyApplicationsV2QueryInput) {
-  myApplicationsV2(query: $query) {
-  }
-}

@@ -1,8 +1,0 @@
-mutation CreateNetworkV2($input: CreateNetworkV2Input!) {
-  createNetworkV2(input: $input) {
-    chainId
-    chainName
-    exploreUrl
-    mainnet
-  }
-}

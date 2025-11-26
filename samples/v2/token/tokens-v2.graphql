@@ -1,4 +1,0 @@
-query TokensV2($pagination: PaginationInput) {
-  tokensV2(pagination: $pagination) {
-  }
-}

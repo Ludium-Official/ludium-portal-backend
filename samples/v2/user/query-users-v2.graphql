@@ -1,6 +1,0 @@
-# Query users with dynamic field=value filters (AND condition, no pagination)
-
-query QueryUsersV2($filter: [UserV2QueryFilterInput!]) {
-  queryUsersV2(filter: $filter) {
-  }
-}

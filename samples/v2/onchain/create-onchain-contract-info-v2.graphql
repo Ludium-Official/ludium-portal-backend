@@ -1,9 +1,0 @@
-mutation CreateOnchainContractInfoV2($input: CreateOnchainContractInfoV2Input!) {
-  createOnchainContractInfoV2(input: $input) {
-    applicantId
-    contentHash
-    programId
-    status
-    tx
-  }
-}
