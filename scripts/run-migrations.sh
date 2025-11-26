@@ -3,7 +3,12 @@
 set -euo pipefail
 
 # echo "[1/3] Preparing database..."
-npm run migrate:db
+# npm run migrate:db
+if [ "${DB_NAME}" -eq "ludium" ]; then
+    echo "set db name to ludium"
+    exit 1;
+fi
+
 npm run db:gen
 npm run db:migrate
 

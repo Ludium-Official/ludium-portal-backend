@@ -26,6 +26,7 @@
     "generate:samples": "tsx ./src/scripts/generate-graphql-samples.ts",
     "prepare": "husky",
     "migrate:db": "tsx ./src/scripts/migrate-db.ts",
+    "migrate:data": "bash scripts/run-migrations.sh",
     "migrate:users": "tsx ./src/scripts/migrate-users.ts",
     "migrate:networks": "tsx ./src/scripts/migrate-networks.ts",
     "migrate:tokens": "tsx ./src/scripts/migrate-tokens.ts",
@@ -34,7 +35,6 @@
     "migrate:opinfo": "tsx ./src/scripts/migrate-onchain-program-info.ts",
     "migrate:applications": "tsx ./src/scripts/migrate-applications.ts",
     "migrate:milestones": "tsx ./src/scripts/migrate-milestones.ts",
-    "migrate:all": "bash scripts/run-migrations.sh",
     "check:migrations": "tsx ./src/scripts/check-migrations.ts",
     "apply:migration-17": "tsx ./src/scripts/apply-migration-17.ts"
   },

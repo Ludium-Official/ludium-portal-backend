@@ -33,8 +33,11 @@ export const MilestoneV2Type = builder.objectRef<DBMilestoneV2>('MilestoneV2').i
     programId: t.exposeInt('programId', {
       description: 'ID of the program this milestone belongs to',
     }),
-    applicantId: t.exposeInt('applicantId', {
-      description: 'ID of the applicant (user) who owns this milestone',
+    applicationId: t.exposeInt('applicationId', {
+      description: 'ID of the application this milestone belongs to',
+    }),
+    sponsorId: t.exposeInt('sponsorId', {
+      description: 'ID of the sponsor (user) who created this milestone',
     }),
     title: t.exposeString('title', {
       description: 'Milestone title',
@@ -95,11 +98,25 @@ export const MilestoneV2Type = builder.objectRef<DBMilestoneV2>('MilestoneV2').i
         const [applicant] = await ctx.db
           .select()
           .from(usersV2Table)
-          .where(eq(usersV2Table.id, milestone.applicantId));
+          .where(eq(usersV2Table.id, milestone.applicationId));
         if (!applicant) {
           throw new Error('Applicant not found');
         }
         return applicant;
+      },
+    }),
+    sponsor: t.field({
+      type: UserV2Type,
+      description: 'Sponsor user who created this milestone',
+      resolve: async (milestone, _args, ctx: Context) => {
+        const [sponsor] = await ctx.db
+          .select()
+          .from(usersV2Table)
+          .where(eq(usersV2Table.id, milestone.sponsorId));
+        if (!sponsor) {
+          throw new Error('Sponsor not found');
+        }
+        return sponsor;
       },
     }),
     onchainMetadata: t.field({
@@ -114,7 +131,7 @@ export const MilestoneV2Type = builder.objectRef<DBMilestoneV2>('MilestoneV2').i
           .where(
             and(
               eq(onchainContractInfoTable.programId, milestone.programId),
-              eq(onchainContractInfoTable.applicantId, milestone.applicantId),
+              eq(onchainContractInfoTable.applicantId, milestone.applicationId),
             ),
           )
           .limit(1);

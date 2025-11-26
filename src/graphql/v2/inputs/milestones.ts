@@ -14,9 +14,13 @@ export const CreateMilestoneV2Input = builder.inputType('CreateMilestoneV2Input'
       required: true,
       description: 'ID of the program',
     }),
-    applicantId: t.id({
+    applicationId: t.id({
       required: true,
-      description: 'ID of the applicant (user)',
+      description: 'ID of the application',
+    }),
+    sponsorId: t.id({
+      required: true,
+      description: 'ID of the sponsor (user)',
     }),
     title: t.string({
       required: true,
@@ -117,8 +121,8 @@ export const MilestonesV2QueryInput = builder.inputType('MilestonesV2QueryInput'
     programId: t.id({
       description: 'Filter by program ID',
     }),
-    applicantId: t.id({
-      description: 'Filter by applicant ID',
+    applicationId: t.id({
+      description: 'Filter by application ID',
     }),
   }),
 });

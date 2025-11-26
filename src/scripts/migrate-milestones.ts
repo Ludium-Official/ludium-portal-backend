@@ -95,6 +95,7 @@ async function migrateMilestones() {
         id: programsTable.id,
         name: programsTable.name,
         type: programsTable.type,
+        sponsorId: programsTable.sponsorId,
       })
       .from(programsTable);
 
@@ -107,11 +108,6 @@ async function migrateMilestones() {
       .from(usersTable);
 
     // 매핑 테이블 생성
-    // V1 application id -> V1 applicant id (빌더)
-    const v1ApplicationIdToApplicantId = new Map<string, string>();
-    for (const application of v1Applications) {
-      v1ApplicationIdToApplicantId.set(application.id, application.applicantId);
-    }
 
     // V1 application id -> V2 application id
     // V2 applications는 이미 마이그레이션되어 있다고 가정
@@ -205,6 +201,16 @@ async function migrateMilestones() {
       v1ProgramIdToName.set(program.id, program.name);
     }
 
+    const v1ApplicationIdTov1ProgramSponsorId = new Map<string, string>();
+    for (const application of v1Applications) {
+      const v1Program = v1Programs.find((p) => p.id === application.programId);
+      if (!v1Program) {
+        console.log('6. Not found: ', application.id, application.name);
+        continue;
+      }
+      v1ApplicationIdTov1ProgramSponsorId.set(application.id, v1Program.sponsorId);
+    }
+
     // program name -> V2 program id
     const programNameToV2Id = new Map<string, number>();
     for (const program of v2Programs) {
@@ -279,19 +285,20 @@ async function migrateMilestones() {
         }
 
         // sponsor_id 찾기: V1 application의 applicantId -> V2 user id
-        const v1ApplicantId = v1ApplicationIdToApplicantId.get(v1Milestone.applicationId);
-        if (!v1ApplicantId) {
+        // const v1SponsorId = v1Programs.find()
+        const v1SponsorId = v1ApplicationIdTov1ProgramSponsorId.get(v1Milestone.applicationId);
+        if (!v1SponsorId) {
           console.warn(
-            `⚠️  V1 applicant not found for application ${v1Milestone.applicationId}. Skipping milestone ${v1Milestone.id}.`,
+            `⚠️  V1 sponsor not found for application ${v1Milestone.applicationId}. Skipping milestone ${v1Milestone.id}.`,
           );
           skippedCount++;
           continue;
         }
 
-        const walletAddress = v1UserIdToWalletAddress.get(v1ApplicantId);
+        const walletAddress = v1UserIdToWalletAddress.get(v1SponsorId);
         if (!walletAddress) {
           console.warn(
-            `⚠️  Wallet address not found for V1 applicant ${v1ApplicantId}. Skipping milestone ${v1Milestone.id}.`,
+            `⚠️  Wallet address not found for V1 sponsor ${v1SponsorId}. Skipping milestone ${v1Milestone.id}.`,
           );
           skippedCount++;
           continue;
@@ -317,7 +324,8 @@ async function migrateMilestones() {
 
         const newMilestone: NewMilestoneV2 = {
           programId: v2ProgramId,
-          applicantId: v2SponsorId,
+          applicationId: v2ApplicationId,
+          sponsorId: v2SponsorId,
           title: v1Milestone.title,
           description,
           payout: v1Milestone.price,

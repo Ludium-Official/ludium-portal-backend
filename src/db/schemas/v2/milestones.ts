@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { integer, pgEnum, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { applicationsV2Table } from './applications';
 import { programsV2Table } from './programs';
 import { usersV2Table } from './users';
 
@@ -20,7 +21,10 @@ export const milestonesV2Table = pgTable('milestones_v2', {
     .notNull()
     .references(() => programsV2Table.id, { onDelete: 'cascade' }),
   // user_id
-  applicantId: integer('sponsor_id')
+  applicationId: integer('application_id')
+    .notNull()
+    .references(() => applicationsV2Table.id, { onDelete: 'cascade' }),
+  sponsorId: integer('sponsor_id')
     .notNull()
     .references(() => usersV2Table.id, { onDelete: 'cascade' }),
   title: varchar('title', { length: 256 }).notNull(),
@@ -48,8 +52,8 @@ export const milestonesV2Relations = relations(milestonesV2Table, ({ one }) => (
     fields: [milestonesV2Table.programId],
     references: [programsV2Table.id],
   }),
-  applicant: one(usersV2Table, {
-    fields: [milestonesV2Table.applicantId],
+  sponsor: one(usersV2Table, {
+    fields: [milestonesV2Table.sponsorId],
     references: [usersV2Table.id],
   }),
 }));

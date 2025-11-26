@@ -70,9 +70,9 @@ export class MilestoneV2Service {
       if (query?.programId) {
         whereConditions.push(eq(milestonesV2Table.programId, Number.parseInt(query.programId, 10)));
       }
-      if (query?.applicantId) {
+      if (query?.applicationId) {
         whereConditions.push(
-          eq(milestonesV2Table.applicantId, Number.parseInt(query.applicantId, 10)),
+          eq(milestonesV2Table.applicationId, Number.parseInt(query.applicationId, 10)),
         );
       }
 
@@ -135,9 +135,9 @@ export class MilestoneV2Service {
       if (query?.programId) {
         whereConditions.push(eq(milestonesV2Table.programId, Number.parseInt(query.programId, 10)));
       }
-      if (query?.applicantId) {
+      if (query?.applicationId) {
         whereConditions.push(
-          eq(milestonesV2Table.applicantId, Number.parseInt(query.applicantId, 10)),
+          eq(milestonesV2Table.applicationId, Number.parseInt(query.applicationId, 10)),
         );
       }
 
@@ -190,7 +190,8 @@ export class MilestoneV2Service {
     try {
       const milestoneData: NewMilestoneV2 = {
         programId: Number.parseInt(input.programId, 10),
-        applicantId: Number.parseInt(input.applicantId, 10),
+        applicationId: Number.parseInt(input.applicationId, 10),
+        sponsorId: Number.parseInt(input.sponsorId, 10),
         title: input.title,
         description: input.description,
         payout: input.payout,

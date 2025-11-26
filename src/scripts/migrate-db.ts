@@ -297,8 +297,9 @@ async function restoreToDevDB(config: DBConfig, dumpFile: string): Promise<void>
   try {
     await execAsync(dropCommand, { env });
     console.log('✅ Dev DB dropped successfully');
-  } catch (_error) {
+  } catch (error) {
     // DB가 존재하지 않을 수도 있으므로 에러는 무시
+    console.log(error);
     console.log('⚠️  Drop command completed (DB may not have existed)');
   }
 
