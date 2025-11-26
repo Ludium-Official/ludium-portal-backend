@@ -6,11 +6,11 @@ import {
   UpdateProgramV2Input,
 } from '../inputs/programs';
 import {
+  completeProgramV2Resolver,
   createProgramV2Resolver,
   deleteProgramV2Resolver,
   updateProgramByRelayerV2Resolver,
   updateProgramV2Resolver,
-  completeProgramV2Resolver,
 } from '../resolvers/programs';
 import { createProgramWithOnchainV2Resolver } from '../resolvers/programs';
 import { CreateProgramWithOnchainV2Payload, ProgramV2Ref } from '../types/programs';
