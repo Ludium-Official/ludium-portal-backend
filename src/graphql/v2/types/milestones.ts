@@ -1,3 +1,4 @@
+import { applicationsV2Table } from '@/db/schemas/v2/applications';
 import type { MilestoneV2 as DBMilestoneV2 } from '@/db/schemas/v2/milestones';
 import { milestoneStatusV2Values } from '@/db/schemas/v2/milestones';
 import { onchainContractInfoTable } from '@/db/schemas/v2/onchain-contract-info';
@@ -125,13 +126,23 @@ export const MilestoneV2Type = builder.objectRef<DBMilestoneV2>('MilestoneV2').i
       description:
         'The onchain contract metadata associated with this milestone (matched by programId and applicantId)',
       resolve: async (milestone, _args, ctx: Context) => {
+        // First fetch the application to get the applicantId
+        const [application] = await ctx.db
+          .select()
+          .from(applicationsV2Table)
+          .where(eq(applicationsV2Table.id, milestone.applicationId));
+
+        if (!application) {
+          return null;
+        }
+
         const [onchainContract] = await ctx.db
           .select()
           .from(onchainContractInfoTable)
           .where(
             and(
               eq(onchainContractInfoTable.programId, milestone.programId),
-              eq(onchainContractInfoTable.applicantId, milestone.applicationId),
+              eq(onchainContractInfoTable.applicantId, application.applicantId),
             ),
           )
           .limit(1);

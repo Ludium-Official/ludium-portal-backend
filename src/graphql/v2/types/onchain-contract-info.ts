@@ -3,12 +3,15 @@ import {
   type OnchainContractInfo as DBOnchain,
   onchainContractStatusValues,
 } from '@/db/schemas/v2/onchain-contract-info';
+import { programsV2Table } from '@/db/schemas/v2/programs';
 import { smartContractsTable } from '@/db/schemas/v2/smart-contracts';
+import { tokensTable } from '@/db/schemas/v2/tokens';
 import builder from '@/graphql/builder';
 import type { Context } from '@/types';
 import { eq } from 'drizzle-orm';
 import { NetworkV2Ref } from './networks';
 import { SmartContractV2Ref } from './smart-contracts';
+import { TokenV2Type } from './tokens';
 
 export const OnchainContractStatusV2Enum = builder.enumType('OnchainContractStatusV2', {
   values: onchainContractStatusValues,
@@ -27,6 +30,26 @@ export const OnchainContractInfoV2Type = OnchainContractInfoV2Ref.implement({
     createdAt: t.field({ type: 'DateTime', resolve: (p) => p.createdAt }),
     status: t.field({ type: OnchainContractStatusV2Enum, resolve: (p) => p.status }),
     tx: t.exposeString('tx'),
+    token: t.field({
+      type: TokenV2Type,
+      nullable: true,
+      description: 'The token associated with the program of this contract info',
+      resolve: async (contractInfo, _args, ctx: Context) => {
+        const [program] = await ctx.db
+          .select()
+          .from(programsV2Table)
+          .where(eq(programsV2Table.id, contractInfo.programId))
+          .limit(1);
+
+        const [result] = await ctx.db
+          .select()
+          .from(tokensTable)
+          .where(eq(tokensTable.id, program.token_id))
+          .limit(1);
+
+        return result || null;
+      },
+    }),
     smartContract: t.field({
       type: SmartContractV2Ref,
       description: 'The smart contract associated with this onchain contract info',
