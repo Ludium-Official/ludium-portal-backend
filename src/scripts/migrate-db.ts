@@ -319,9 +319,7 @@ async function restoreToDevDB(config: DBConfig, dumpFile: string): Promise<void>
         : '';
     if (errorMessage.includes('already exists') || stderrMessage.includes('already exists')) {
       console.log('⚠️  Dev DB already exists, skipping creation');
-    } else {
-      // 다른 에러는 재던지기
-      throw error;
+      return;
     }
   }
 
