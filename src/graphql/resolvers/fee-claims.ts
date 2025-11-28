@@ -29,7 +29,7 @@ export async function claimProgramFeesResolver(
     }
 
     // Check if user is the program host
-    if (program.creatorId !== user.id) {
+    if (program.sponsorId !== user.id) {
       throw new Error('Only the program host can claim fees');
     }
 
@@ -103,6 +103,7 @@ export async function claimProgramFeesResolver(
       recipientId: user.id,
       entityId: args.programId,
       metadata: {
+        category: 'reclaim',
         amount: totalFees,
         txHash: args.txHash,
       },
@@ -135,7 +136,7 @@ export async function getClaimableFeesResolver(
   }
 
   // Check if user is the program host
-  if (program.creatorId !== user.id) {
+  if (program.sponsorId !== user.id) {
     return {
       amount: '0',
       canClaim: false,

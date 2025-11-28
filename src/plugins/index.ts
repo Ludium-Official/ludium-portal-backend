@@ -44,10 +44,12 @@ const registerPlugins = (server: FastifyInstance) => {
           reply,
           server,
           db: server.db,
-          user: request.user,
+          user: request.auth?.user,
+          userV2: request.auth?.userV2,
         };
       },
-      graphiql: false,
+      // GraphiQL은 production 환경에서 비활성화
+      graphiql: server.config.NODE_ENV !== 'production',
       subscription: {
         context: (_, request) => {
           return {

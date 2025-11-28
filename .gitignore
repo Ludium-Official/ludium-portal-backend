@@ -1,6 +1,7 @@
 ### Git ###
 
 ### Build ###
+build/**
 build
 
 # Created by git for backups. To disable backups in Git:
@@ -143,9 +144,6 @@ jspm_packages/
 *.iws
 *.ipr
 
-# Cursor
-.cursor
-
 # yarn
 .yarn/cache
 .yarn/unplugged
@@ -209,8 +207,6 @@ src/scripts/data/*
 bun.lockb
 pnpm-lock.yaml
 .cl*
-*.md
-!README.md
 
 # GCloud
 .gcloud
@@ -219,3 +215,10 @@ pnpm-lock.yaml
 # Database dumps
 ludiumdev
 ludiumprod
+
+# personal
+TODO
+.cursor/docs/
+
+# migration backup
+ludium-portal-backend-v1-backup

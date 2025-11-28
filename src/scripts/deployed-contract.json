@@ -1,0 +1,190 @@
+{
+  "arbitrum": {
+    "network": "arbitrum",
+    "chainId": 42161,
+    "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+    "timestamp": "2025-09-15T06:20:14.935Z",
+    "contracts": {
+      "LdRecruitment": {
+        "address": "0x9770Ee14B1f92F79d2E7fdA6460B2637eE6E87D7"
+      },
+      "LdTimeLock": {
+        "address": "0x256500233360be3c3CcadBC017085C30c6e0aE09",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdInvestmentCore": {
+        "address": "0x3295f6b83B7dd9F920F2F987D363bd08eec7a1E0",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdMilestoneManager": {
+        "address": "0x10a86d2825166cD212e007f559135D41844c3246",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdTierManager": {
+        "address": "0x8E9DAB0084e635eF93537eFC9b5eB1Dc79D31081",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdTermsManager": {
+        "address": "0x3E600DBB360D8E721106c508E50eF612D35d01e8",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdFunding": {
+        "address": "0x746b6771DD69448Ec06f94150010D0F8184d9E01",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      }
+    }
+  },
+  "educhainMainnet": {
+    "network": "educhainMainnet",
+    "chainId": 41923,
+    "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+    "timestamp": "2025-09-15T06:27:39.990Z",
+    "contracts": {
+      "LdRecruitment": {
+        "address": "0x1Bd3E5FbBf07A8291C78830F41d8a4ae52f75631"
+      },
+      "LdTimeLock": {
+        "address": "0x554FB16481bE6C5826aB6A6E4B910BfBf7E12D65",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdInvestmentCore": {
+        "address": "0x55B2338634E450d95C5138c4aE847BD897B69Aa2",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdMilestoneManager": {
+        "address": "0x7B37bef70887577e8fd798823648764Fc4765777",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdTierManager": {
+        "address": "0x0f81D6c3Dfcb408c9736351501c0e1fC6113B9bd",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdTermsManager": {
+        "address": "0xed51d9F5D33BC9EA087b24b9145ffaD915dCa371",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdFunding": {
+        "address": "0x20223D0aCb028b56A187803955e6F46D98AB80d8",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      }
+    }
+  },
+  "base": {
+    "network": "base",
+    "chainId": 8453,
+    "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+    "timestamp": "2025-09-15T06:30:42.216Z",
+    "contracts": {
+      "LdRecruitment": {
+        "address": "0x9770Ee14B1f92F79d2E7fdA6460B2637eE6E87D7"
+      },
+      "LdTimeLock": {
+        "address": "0x3E600DBB360D8E721106c508E50eF612D35d01e8",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdInvestmentCore": {
+        "address": "0x746b6771DD69448Ec06f94150010D0F8184d9E01",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdMilestoneManager": {
+        "address": "0xE50f9d36c5f94e7bAb7aE2521E24664Ccd94F9d9",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdTierManager": {
+        "address": "0xE5E8D87EF0d70F138E2F16268Cb242c88653d979",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdTermsManager": {
+        "address": "0x5A1C3c4a409dd23A1dEe7247Eae7D7e04b897abf",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdFunding": {
+        "address": "0x396fcd97e628d6b1132c6DB69641d3F23548405F",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      }
+    }
+  },
+  "creditcoinMainnet": {
+    "network": "creditcoinMainnet",
+    "chainId": 102030,
+    "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+    "timestamp": "2025-09-15T06:36:11.723Z",
+    "contracts": {
+      "LdRecruitment": {
+        "address": "0x0000000000000000000000000000000000000000"
+      },
+      "LdTimeLock": {
+        "address": "0x3295f6b83B7dd9F920F2F987D363bd08eec7a1E0",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdInvestmentCore": {
+        "address": "0x10a86d2825166cD212e007f559135D41844c3246",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdMilestoneManager": {
+        "address": "0x8E9DAB0084e635eF93537eFC9b5eB1Dc79D31081",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdTierManager": {
+        "address": "0x3E600DBB360D8E721106c508E50eF612D35d01e8",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdTermsManager": {
+        "address": "0x746b6771DD69448Ec06f94150010D0F8184d9E01",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      },
+      "LdFunding": {
+        "address": "0xE50f9d36c5f94e7bAb7aE2521E24664Ccd94F9d9",
+        "deployer": "0x737E2a5f62D7341bb08E580e379BfC2cA3cbe6b7",
+        "verified": false
+      }
+    }
+  },
+  "base-sepolia": {
+    "chainId": 84532,
+    "contracts": {
+      "LdRecruitment": {
+        "address": "0xC5d30B54fd524Aca2711200D4aDEE7a0A0F19046"
+      }
+    }
+  },
+  "arbitrum-sepolia": {
+    "chainId": 421614,
+    "contracts": {
+      "LdRecruitment": {
+        "address": "0xFd85B86EFAbe87023FEEBbAD6999250718E578ed"
+      }
+    }
+  },
+  "educhain-testnet": {
+    "chainId": 656476,
+    "contracts": {
+      "LdRecruitment": {
+        "address": "0x115b100BC2F2d1F74a017f9275cE463B47Ab87a3"
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import type { NewProgram } from '@/db/schemas';
 
-export const programs: Omit<NewProgram, 'creatorId' | 'validatorId'>[] = [
+export const programs: Omit<NewProgram, 'sponsorId' | 'validatorId'>[] = [
   {
     name: 'Web3 Development Grant',
     summary: 'Grant for Web3 project developers',

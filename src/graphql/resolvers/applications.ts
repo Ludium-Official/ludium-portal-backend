@@ -135,7 +135,7 @@ export async function getApplicationResolver(_root: Root, args: { id: string }, 
   const [program] = await ctx.db
     .select({
       visibility: programsTable.visibility,
-      creatorId: programsTable.creatorId,
+      sponsorId: programsTable.sponsorId,
     })
     .from(programsTable)
     .where(eq(programsTable.id, application.programId));
@@ -159,7 +159,7 @@ export async function getApplicationResolver(_root: Root, args: { id: string }, 
     // 1. User is the applicant
     // 2. User is the program creator
     // 3. User has a role in the program (validator, builder)
-    if (application.applicantId === user.id || program.creatorId === user.id) {
+    if (application.applicantId === user.id || program.sponsorId === user.id) {
       return application;
     }
 
@@ -193,7 +193,7 @@ export async function getApplicationsByProgramIdResolver(
   const [program] = await ctx.db
     .select({
       visibility: programsTable.visibility,
-      creatorId: programsTable.creatorId,
+      sponsorId: programsTable.sponsorId,
     })
     .from(programsTable)
     .where(eq(programsTable.id, args.programId));
@@ -211,7 +211,7 @@ export async function getApplicationsByProgramIdResolver(
       // Admin can access all applications, continue to return them
     } else {
       // Check if user is the creator or has a role in the program
-      if (program.creatorId !== user.id) {
+      if (program.sponsorId !== user.id) {
         const userRole = await ctx.db
           .select()
           .from(programUserRolesTable)
@@ -246,7 +246,7 @@ export function createApplicationResolver(
   return ctx.db.transaction(async (t) => {
     const [program] = await t
       .select({
-        creatorId: programsTable.creatorId,
+        sponsorId: programsTable.sponsorId,
         id: programsTable.id,
         price: programsTable.price,
         visibility: programsTable.visibility,
@@ -320,7 +320,7 @@ export function createApplicationResolver(
       }
     }
 
-    if (program.creatorId === user.id) {
+    if (program.sponsorId === user.id) {
       throw new Error('You are already a sponsor of this program');
     }
 
@@ -497,6 +497,10 @@ export function createApplicationResolver(
           action: 'created',
           recipientId: validatorId,
           entityId: application.id,
+          metadata: {
+            category: 'progress',
+            programId: program.id,
+          },
         });
       }
       await ctx.server.pubsub.publish('notificationsCount');
@@ -660,7 +664,7 @@ export function acceptApplicationResolver(
       action: 'accepted',
       recipientId: application.applicantId,
       entityId: application.id,
-      metadata: { programId: application.programId },
+      metadata: { programId: application.programId, category: 'progress' },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 
@@ -812,7 +816,7 @@ export function rejectApplicationResolver(
       action: 'rejected',
       recipientId: application.applicantId,
       entityId: application.id,
-      metadata: { programId: application.programId },
+      metadata: { programId: application.programId, category: 'progress' },
     });
     await ctx.server.pubsub.publish('notificationsCount');
 

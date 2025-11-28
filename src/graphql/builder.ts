@@ -35,8 +35,10 @@ const builder = new SchemaBuilder<{
   Context: Context;
   AuthScopes: {
     user: boolean;
+    userV2: boolean;
     admin: boolean;
     superadmin: boolean;
+    relayer: boolean;
     programSponsor: {
       programId: string;
     };
@@ -51,6 +53,12 @@ const builder = new SchemaBuilder<{
     };
     programParticipant: {
       programId: string;
+    };
+    isProgramCreatorV2: {
+      programId: string;
+    };
+    isApplicationProgramSponsor: {
+      applicationId: string;
     };
   };
   Scalars: {
@@ -77,8 +85,10 @@ const builder = new SchemaBuilder<{
     authorizeOnSubscribe: true,
     authScopes: async (context) => ({
       user: context.server.auth.isUser(context.request),
+      userV2: Boolean(context.userV2),
       admin: context.server.auth.isAdmin(context.request),
       superadmin: context.server.auth.isSuperAdmin(context.request),
+      relayer: context.server.auth.isRelayer(context.request),
       programSponsor: async ({ programId }) => {
         return await context.server.auth.isProgramSponsor(context.request, programId);
       },
@@ -94,6 +104,15 @@ const builder = new SchemaBuilder<{
       programParticipant: async ({ programId }) => {
         const roles = await context.server.auth.getProgramRoles(context.request, programId);
         return roles.length > 0;
+      },
+      isProgramCreatorV2: async ({ programId }) => {
+        return await context.server.auth.isProgramCreatorV2(context.request, programId);
+      },
+      isApplicationProgramSponsor: async ({ applicationId }) => {
+        return await context.server.auth.isApplicationProgramSponsor(
+          context.request,
+          applicationId,
+        );
       },
     }),
   },

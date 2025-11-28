@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+
+# Cursor AI Rules for Summary
+
+1. You always have to update summary.md in the .cursor/docs/summary.md after finishing your tasks.
+2. When you don't know previous context, Always read the summary.md for good quality at first before doing something.

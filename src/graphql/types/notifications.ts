@@ -10,6 +10,7 @@ import {
   markAllNotificationsAsReadResolver,
   markNotificationAsReadResolver,
 } from '@/graphql/resolvers/notifications';
+import { PaginationInput } from './common';
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -44,17 +45,39 @@ export const NotificationType = builder.objectRef<DBNotiication>('Notification')
       type: 'Date',
       resolve: (notification) => (notification.readAt ? new Date(notification.readAt) : null),
     }),
+    createdAt: t.field({
+      type: 'Date',
+      resolve: (notification) => new Date(notification.createdAt),
+    }),
   }),
 });
+
+export const NotificationResultType = builder
+  .objectRef<{
+    data: DBNotiication[];
+    count: number;
+  }>('NotificationResult')
+  .implement({
+    fields: (t) => ({
+      data: t.field({
+        type: [NotificationType],
+        resolve: (result) => result.data,
+      }),
+      count: t.exposeInt('count'),
+    }),
+  });
 
 /* -------------------------------------------------------------------------- */
 /*                            Queries and mutations                           */
 /* -------------------------------------------------------------------------- */
 builder.queryFields((t) => ({
   notifications: t.field({
-    type: [NotificationType],
+    type: NotificationResultType,
     smartSubscription: true,
     subscribe: (subscriptions) => subscriptions.register('notifications'),
+    args: {
+      pagination: t.arg({ type: PaginationInput, required: false }),
+    },
     resolve: getNotificationsResolver,
   }),
   countNotifications: t.field({

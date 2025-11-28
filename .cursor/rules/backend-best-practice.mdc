@@ -1,0 +1,836 @@
+---
+globs: src/**
+alwaysApply: true
+description: Ludium Backend development guidelines, best practices, and V2 architecture protection rules
+---
+
+# Ludium Backend Development Guidelines & Best Practices
+
+## 🎯 Project Context
+
+This is the official backend API for the **Ludium Portal**, a global platform for Web3 builders. The project provides a robust, scalable, and secure GraphQL API to support our frontend application and open-source contributors.
+
+**Key Context:**
+
+- Monolithic API architecture (not microservices)
+- Primary interface: GraphQL API at `/graphql` endpoint
+- REST endpoints only for specific cases (webhooks, health checks)
+- Transitioning to open-source model - clarity and documentation are paramount
+
+## 🏗️ Technology Stack
+
+### Core Technologies:
+
+- **Language:** TypeScript with strict typing
+- **Framework:** Fastify (high-performance Node.js framework)
+- **Database:** PostgreSQL with Drizzle ORM
+- **GraphQL:** Mercurius (Fastify plugin) + Pothos (code-first schema builder)
+- **Authentication:** JWT-based with Argon2 password hashing
+- **Containerization:** Docker and Docker Compose
+
+### Data Flow:
+
+1. GraphQL requests → `/graphql` endpoint
+2. Fastify server processes through plugins (auth, file uploads)
+3. GraphQL resolvers handle business logic
+4. Drizzle ORM interacts with PostgreSQL
+
+## 📁 Project-Specific Directory Structure
+
+### Database Changes:
+
+- **`src/db/schemas/`** - Drizzle ORM schema definitions
+- **`src/db/migrations/`** - Auto-generated SQL migrations (DO NOT EDIT)
+
+### API Changes:
+
+- **`src/graphql/types/`** - Pothos schema definitions (GraphQL types, queries, mutations)
+- **`src/graphql/resolvers/`** - Business logic implementation
+- **`src/graphql/schema.graphql`** - Auto-generated (DO NOT EDIT)
+
+### Other Important Directories:
+
+- **`src/plugins/`** - Core Fastify plugins (auth, database connection)
+- **`src/utils/`** - Utility functions for complex business logic
+
+## 🚨 Project-Specific Constraints
+
+### NEVER Access These Files:
+
+- `.env*` files
+- `.gcp.json`
+- `docker-compose.yml`
+- `*.sql` files in migrations
+- `src/graphql/schema.graphql`
+
+### Dependencies:
+
+- Do NOT add third-party libraries without explicit instruction
+- Keep dependency tree lean and secure
+
+## 🔧 Project-Specific Coding Standards
+
+### Naming Conventions:
+
+- **Imports:** ALWAYS use absolute path aliases (`@/db/schemas`) - NEVER relative paths
+- **Comments:** Explain "why" (business logic) not just "what"
+- **Files:** `kebab-case`
+- **Interfaces, Types, Classes:** `PascalCase`
+- **Constants:** `UPPER_SNAKE_CASE`
+- **Enums:** `PascalCase` for enum, `UPPER_SNAKE_CASE` for members
+- **Variables, Functions:** `camelCase`
+
+### Database (Drizzle ORM):
+
+- **Schema Files:** Each table gets its own file in `src/db/schemas/`
+- **Table Naming:** `camelCase` + `Table` (e.g., `usersTable`, `programsTable`)
+- **Migrations:** NEVER modify schema directly - update schema files, then run `npm run db:gen`
+
+### GraphQL:
+
+- **Schema Builder:** Use Pothos for code-first, type-safe approach
+- **Domain Structure:** Separate API definitions (`types`) from business logic (`resolvers`)
+- **Documentation:** When updating v2 schema, update GRAPHQL_EXAMPLES.md
+
+### Code Quality:
+
+- All code MUST pass Biome checks (`npm run check`)
+- Do NOT manually edit auto-generated files
+- Use absolute imports exclusively (`@/` prefix)
+- **Formatting:** Use Biome (`npm run check` before committing)
+
+## 📋 Development Workflow
+
+### Database Changes:
+
+1. **Update Schema:** Modify appropriate file in `src/db/schemas/`
+2. **Generate Migration:** Run `npm run db:gen`
+3. **Review:** Check generated `.sql` file in `src/db/migrations/`
+4. **Test:** Test database operations
+
+### GraphQL Changes:
+
+1. **Define types** in `src/graphql/v2/types/`
+2. **Define inputs** in `src/graphql/v2/inputs/`
+3. **Implement resolvers** in `src/graphql/v2/resolvers/`
+4. **Add mutations/queries** in `src/graphql/v2/{mutations,queries}/`
+5. **Implement services** in `src/graphql/v2/services/`
+6. **Add tests** in `src/graphql/v2/tests/`
+7. **Update GRAPHQL_EXAMPLES.md** if needed
+8. Add proper error handling
+9. Include JSDoc documentation
+10. Test with GraphQL playground
+
+## 🎨 Project-Specific Patterns
+
+### Error Handling (Ludium Style):
+
+```typescript
+try {
+  const result = await ctx.db.select()...;
+  ctx.server.log.info({ msg: "Operation completed", result });
+} catch (error) {
+  ctx.server.log.error({
+    msg: "Database operation failed",
+    error: error.message,
+    operation: "operation_name"
+  });
+  throw new Error("User-friendly error message");
+}
+```
+
+### Logging:
+
+- Use Fastify logger (`ctx.server.log`) instead of `console.log`
+- Include structured logging with metadata
+- Use appropriate log levels (info, warn, error, debug)
+
+### GraphQL Resolvers:
+
+- Keep resolvers focused on API concerns
+- Extract business logic to service layer (`src/graphql/v2/services/`)
+- Include proper TypeScript types
+- Handle errors gracefully
+
+### Performance:
+
+- Use transactions for multi-step database operations
+- Consider timeout scenarios for long-running queries
+- Include query execution time logging
+- Monitor database connection pool status
+- Track response times and error rates
+
+---
+
+# Backend Development Best Practices
+
+As a senior backend developer, I've compiled comprehensive best practices for Fastify, GraphQL, and TypeScript to help you build robust, scalable, and maintainable backend applications.
+
+## Fastify Best Practices
+
+### 1. Plugin-based Architecture
+
+- **Modularity**: Organize your application into small, focused plugins. Each plugin should encapsulate a specific feature or a set of related functionalities (e.g., authentication, database connection, user module).
+- **Encapsulation**: Use `fastify.register()` to encapsulate plugins. This creates a new scope for routes, decorators, and hooks, preventing naming collisions and promoting reusability.
+- **Decorators**: Extend Fastify's core functionalities (e.g., `request`, `reply`, `fastify` instance) with custom decorators for shared utilities, authentication, or business logic.
+
+```typescript
+// src/plugins/auth.ts
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import fp from 'fastify-plugin';
+
+declare module 'fastify' {
+  interface FastifyRequest {
+    user?: { id: string; role: string };
+  }
+}
+
+async function authPlugin(
+  fastify: FastifyInstance,
+  options: FastifyPluginOptions
+) {
+  fastify.decorateRequest('user', null);
+
+  fastify.addHook('preHandler', async (request, reply) => {
+    // Implement authentication logic here
+    // e.g., verify JWT, set request.user
+  });
+}
+
+export default fp(authPlugin);
+```
+
+### 2. Configuration Management
+
+- **Environment Variables**: Utilize environment variables for sensitive data (API keys, database credentials) and environment-specific settings. Use a library like `dotenv` or Fastify's built-in `fastify-env` for loading.
+- **Schema Validation**: Validate environment variables and configuration objects using JSON Schema or a similar mechanism to ensure correctness and prevent runtime errors.
+
+### 3. Error Handling
+
+- **Centralized Error Handling**: Implement a global error handler to catch unhandled exceptions and send consistent error responses.
+- **Custom Errors**: Define custom error classes for specific application errors (e.g., `NotFoundError`, `UnauthorizedError`) to provide more meaningful error messages and status codes.
+- **Logging**: Log errors with sufficient context (stack trace, request details) for debugging and monitoring.
+
+### 4. Input Validation
+
+- **JSON Schema**: Use JSON Schema to validate incoming request payloads (body, querystring, params). Fastify integrates seamlessly with JSON Schema for this purpose.
+- **Strict Validation**: Enable strict validation to reject requests with unknown properties.
+
+```typescript
+// Example schema for a POST request body
+const userSchema = {
+  body: {
+    type: 'object',
+    required: ['username', 'password'],
+    properties: {
+      username: { type: 'string' },
+      password: { type: 'string', minLength: 8 },
+    },
+  },
+};
+
+fastify.post('/users', { schema: userSchema }, async (request, reply) => {
+  // ...
+});
+```
+
+### 5. Asynchronous Operations
+
+- **`async/await`**: Prefer `async/await` for handling asynchronous operations to improve readability and maintainability.
+- **Promises**: Ensure that all asynchronous code returns Promises or is awaited correctly to prevent unhandled promise rejections.
+
+### 6. Testing
+
+- **Unit Tests**: Write unit tests for individual functions, utilities, and small modules.
+- **Integration Tests**: Test the interaction between different parts of your application (e.g., routes, database interactions). Use `fastify.inject()` for simulating HTTP requests without actually starting a server.
+
+```typescript
+// Example integration test
+import { build } from '../src/app'; // Your Fastify app instance
+
+describe('User Routes', () => {
+  let app;
+
+  beforeAll(async () => {
+    app = await build();
+    await app.ready();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  test('should create a new user', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/users',
+      payload: {
+        username: 'testuser',
+        password: 'password123',
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(JSON.parse(response.payload)).toEqual(
+      expect.objectContaining({
+        username: 'testuser',
+      })
+    );
+  });
+});
+```
+
+### 7. Logging
+
+- **Pino**: Fastify uses Pino for logging. Configure Pino for appropriate log levels, transports, and message formats based on your environment.
+- **Contextual Logging**: Include relevant context (request ID, user ID) in your logs to facilitate debugging and tracing.
+
+### 8. Security
+
+- **CORS**: Configure CORS policies to restrict access to your API from unauthorized domains.
+- **Helmet**: Use `fastify-helmet` to set various HTTP headers for enhanced security (e.g., X-XSS-Protection, X-Frame-Options).
+- **Rate Limiting**: Implement rate limiting (`fastify-rate-limit`) to protect against brute-force attacks and abuse.
+- **Authentication & Authorization**: Properly implement authentication (who is the user?) and authorization (what can the user do?).
+
+### 9. Code Structure
+
+- **`src/` directory**: Organize your source code into a `src/` directory.
+- **Modular Folders**: Create clear, descriptive folders for different concerns:
+  - `plugins/`: Fastify plugins
+  - `routes/`: Route definitions
+  - `services/`: Business logic
+  - `schemas/`: JSON schemas
+  - `utils/`: Utility functions
+  - `config/`: Configuration files
+
+## GraphQL Best Practices
+
+### 1. Schema-First Development
+
+- **Define Schema First**: Always start by defining your GraphQL schema using Schema Definition Language (SDL). This provides a clear contract between the frontend and backend.
+- **Clear Type Definitions**: Ensure your types (Objects, Queries, Mutations, Subscriptions, Enums, Interfaces, Unions, Input Objects) are clearly defined, self-documenting, and reflect your domain model accurately.
+- **Description Field**: Use the `description` field for types and fields to provide documentation directly within your schema, which is accessible via introspection.
+
+```graphql
+"""
+A user in the system.
+"""
+type User {
+  id: ID!
+  """
+  The user's unique username.
+  """
+  username: String!
+  email: String!
+  createdAt: String!
+}
+
+type Query {
+  """
+  Fetches a single user by their ID.
+  """
+  user(id: ID!): User
+  """
+  Fetches a list of all users.
+  """
+  users: [User!]!
+}
+```
+
+### 2. Granular and Focused Resolvers
+
+- **Single Responsibility**: Each resolver should be responsible for fetching data for a single field. Avoid putting complex business logic directly into resolvers.
+- **Service Layer**: Delegate business logic and data fetching to a separate service or data access layer. Resolvers should primarily orchestrate calls to these services.
+- **N+1 Problem**: Address the N+1 problem using tools like `dataloader` to batch and cache requests to backend data stores.
+
+### 3. Mutations for Data Modification
+
+- **Explicit Mutations**: Use mutations explicitly for any operation that changes data (create, update, delete). Queries should always be side-effect-free.
+- **Payload Pattern**: Design mutations to return a standard payload object that includes:
+  - The changed object.
+  - A success flag.
+  - A list of errors (if any).
+
+```graphql
+type CreateUserPayload {
+  success: Boolean!
+  user: User
+  errors: [Error!]
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): CreateUserPayload!
+}
+
+input CreateUserInput {
+  username: String!
+  email: String!
+  password: String!
+}
+```
+
+### 4. Input Types for Arguments
+
+- **Input Objects**: Always use `input` types for mutation arguments, especially when there are multiple arguments. This improves readability, reusability, and validation.
+- **Avoid Scalar Bloat**: Don't pass too many individual scalar arguments to a mutation. Group them into a logical input object.
+
+### 5. Error Handling
+
+- **Structured Errors**: Instead of relying solely on HTTP status codes, use custom error types within your GraphQL schema to provide clients with structured, actionable error information.
+- **Global Error Handling**: Implement global error handlers in your GraphQL server to catch unexpected errors and transform them into a consistent error format.
+
+```graphql
+interface Error {
+  message: String!
+  code: String
+  path: [String!]
+}
+
+type ValidationError implements Error {
+  message: String!
+  code: String!
+  path: [String!]!
+  field: String!
+}
+```
+
+### 6. Authentication and Authorization
+
+- **Context Object**: Pass authentication and authorization information (e.g., current user, roles) through the GraphQL context object to resolvers.
+- **Directive-based Authorization**: Consider using custom schema directives for declarative authorization logic directly in your schema.
+
+### 7. Versioning
+
+- **Avoid URL Versioning**: Unlike REST, avoid versioning your GraphQL API via URLs (e.g., `/graphql/v1`).
+- **Evolutionary Design**: Evolve your schema by adding new fields and types. Mark deprecated fields using the `@deprecated` directive with a reason.
+- **New Types for Breaking Changes**: For breaking changes, introduce new types or fields and gradually migrate clients.
+
+### 8. Performance and Caching
+
+- **Batching**: Use `dataloader` or similar mechanisms to batch database calls that occur within the same tick of the event loop.
+- **Caching**: Implement caching strategies at various levels: database, service layer, and client-side (e.g., Apollo Client's normalized cache).
+- **Complexity Analysis**: Use GraphQL query complexity analysis to prevent overly complex or expensive queries that could degrade performance or lead to DoS attacks.
+
+### 9. Subscriptions for Real-time Data
+
+- **WebSockets**: Implement subscriptions over WebSockets for real-time data updates.
+- **Event-driven Architecture**: Integrate subscriptions with an event-driven architecture, publishing events when data changes to trigger subscription updates.
+
+### 10. File Structure
+
+- **Modular Organization**: Organize your GraphQL schema and resolvers in a modular way. For example, group related types, queries, and mutations into separate files or directories (e.g., `user/`, `program/`).
+- **Schema and Resolvers Separation**: Keep your schema definitions (`.graphql` or SDL strings) separate from your resolver implementations.
+
+```
+src/graphql/
+├── schema.graphql
+├── resolvers/
+│   ├── userResolver.ts
+│   └── programResolver.ts
+├── types/
+│   ├── userType.ts
+│   └── programType.ts
+└── directives/
+    └── authDirective.ts
+```
+
+## TypeScript Best Practices
+
+### 1. Strict Type Checking
+
+- **Enable Strict Mode**: Always enable `strict: true` in your `tsconfig.json`. This turns on a broad range of type checking rules that significantly improve type safety.
+- **`noImplicitAny`**: Avoid `any` type whenever possible. Explicitly define types or let TypeScript infer them. Use `unknown` if you truly don't know the type, and then narrow it down.
+- **`strictNullChecks`**: Enable `strictNullChecks` to prevent common `null` and `undefined` related errors. This forces you to explicitly handle `null` and `undefined` values.
+
+### 2. Clear Type Definitions
+
+- **Interfaces vs. Types**:
+  - Use `interface` for defining object shapes, especially when you need declaration merging or want to extend existing interfaces.
+  - Use `type` for aliases, unions, intersections, and mapping types.
+- **Consistent Naming**: Use `I` prefix for interfaces (e.g., `IUser`) or keep it clean without a prefix (e.g., `User`). Consistency is key.
+- **Domain-Driven Types**: Create types that accurately reflect your domain model. Avoid overly generic types that hide meaning.
+
+```typescript
+// Good: Clear and explicit
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  createdAt: Date;
+}
+
+type UserRole = 'ADMIN' | 'EDITOR' | 'VIEWER';
+
+// Bad: Too generic or implicit
+// interface GenericUser {
+//   data: any;
+// }
+```
+
+### 3. Modularity and Organization
+
+- **Separate Type Files**: Define types in dedicated files (e.g., `src/types/`, `src/db/schemas/`).
+- **Export Types**: Export types explicitly to make them reusable across your application.
+- **Barrel Files**: Use barrel files (`index.ts`) in directories to simplify imports.
+
+```typescript
+// src/types/index.ts
+export * from './user';
+export * from './program';
+```
+
+### 4. Function Overloads and Generics
+
+- **Function Overloads**: Use function overloads to define multiple call signatures for a function, providing precise type checking based on arguments.
+- **Generics**: Leverage generics for writing flexible and reusable code that works with different types while maintaining type safety.
+
+```typescript
+// Generic example
+function identity<T>(arg: T): T {
+  return arg;
+}
+
+const num = identity(123); // num is type number
+const str = identity('hello'); // str is type string
+```
+
+### 5. Type Assertions and Type Guards
+
+- **Minimize Type Assertions (`as`)**: Use type assertions (`<Type>value` or `value as Type`) sparingly and only when you are absolutely certain about the type. They bypass TypeScript's type checking.
+- **Type Guards**: Prefer type guards (e.g., `typeof`, `instanceof`, custom type predicates) for safely narrowing down types within conditional blocks.
+
+```typescript
+interface Cat {
+  meow(): void;
+}
+interface Dog {
+  bark(): void;
+}
+
+function isCat(pet: Cat | Dog): pet is Cat {
+  return (pet as Cat).meow !== undefined;
+}
+
+function makeSound(pet: Cat | Dog) {
+  if (isCat(pet)) {
+    pet.meow();
+  } else {
+    pet.bark();
+  }
+}
+```
+
+### 6. Discriminated Unions
+
+- **Pattern Matching**: Use discriminated unions with a common literal property (the "discriminant") to easily narrow down types in `switch` statements or `if/else` blocks.
+
+```typescript
+interface SuccessResult {
+  status: 'success';
+  data: any;
+}
+
+interface ErrorResult {
+  status: 'error';
+  message: string;
+}
+
+type APIResult = SuccessResult | ErrorResult;
+
+function handleResult(result: APIResult) {
+  if (result.status === 'success') {
+    console.log(result.data); // result is SuccessResult
+  } else {
+    console.log(result.message); // result is ErrorResult
+  }
+}
+```
+
+### 7. Configuration for `tsconfig.json`
+
+- **`target`**: Set an appropriate ECMAScript target (e.g., `ES2022`, `ESNext`) based on your Node.js version.
+- **`module`**: Use `CommonJS` for Node.js backend projects or `ESNext` if using ESM.
+- **`outDir`**: Specify an output directory for compiled JavaScript files (e.g., `./dist`).
+- **`rootDir`**: Set the root directory of your source files (e.g., `./src`).
+- **`esModuleInterop`**: Enable for better interoperability with CommonJS modules.
+- **`forceConsistentCasingInFileNames`**: Ensure consistent casing for file imports.
+- **`resolveJsonModule`**: Allow importing JSON modules.
+
+### 8. Linting and Formatting
+
+- **ESLint and Prettier**: Integrate ESLint with TypeScript plugins (e.g., `@typescript-eslint/eslint-plugin`) and Prettier for consistent code style and to catch potential issues early.
+- **Biome**: Consider using Biome as an integrated formatter and linter.
+
+### 9. Third-Party Libraries
+
+- **Type Declarations**: Always prefer libraries that come with their own TypeScript declaration files (`.d.ts`).
+- **`@types/` Packages**: For libraries without built-in types, install community-maintained type declarations from the `@types/` scope (e.g., `npm install --save-dev @types/express`).
+- **Custom Declarations**: If no types are available, create minimal custom declaration files to satisfy the type checker for the parts of the library you use.
+
+### 10. `unknown` vs `any`
+
+- **Prefer `unknown`**: Use `unknown` when you truly don't know the type of a value. It's safer than `any` because it forces you to perform type narrowing before you can operate on the value.
+- **Avoid `any`**: Only use `any` as a last resort, when dealing with highly dynamic data or legacy JavaScript code where strict typing is impractical.
+
+## V2 Architecture Protection & Guidelines
+
+### 1. V2 Architecture Structure (MANDATORY)
+
+The V2 architecture follows a strict modular pattern that MUST be maintained:
+
+```
+src/graphql/v2/
+├── types/           # GraphQL type definitions (API contracts)
+├── resolvers/       # Business logic implementation
+├── mutations/       # Mutation definitions (data modification)
+├── queries/         # Query definitions (data retrieval)
+├── inputs/          # Input type definitions (validation)
+└── tests/           # Comprehensive test suite
+```
+
+### 2. V2 Architecture Rules (NON-NEGOTIABLE)
+
+#### File Organization Rules:
+
+- **NEVER** mix V1 and V2 code in the same files
+- **ALWAYS** create new files in the appropriate V2 subdirectory
+- **NEVER** modify `src/graphql/builder.ts` for V2-specific code
+- **ALWAYS** maintain the separation between types, resolvers, mutations, queries, inputs, and services
+
+#### Separation of Concerns (CRITICAL - MUST FOLLOW):
+
+Each part has a **specific and non-overlapping** role in the GraphQL API:
+
+1. **`mutations/`** - API Endpoint Definitions Only
+   - Define the GraphQL mutation schema using `builder.mutationField()`
+   - Set `authScopes` for authorization
+   - Define arguments using `t.arg()`
+   - **ONLY** reference resolver functions - NO business logic or DB access
+   - **NEVER** directly access `ctx.db` or implement business logic in mutations
+
+2. **`queries/`** - API Endpoint Definitions Only
+   - Define the GraphQL query schema using `builder.queryFields()`
+   - Set `authScopes` for authorization
+   - Define arguments using `t.arg()`
+   - **ONLY** reference resolver functions - NO business logic or DB access
+   - **NEVER** directly access `ctx.db` or implement business logic in queries
+
+3. **`resolvers/`** - Business Logic Orchestration
+   - Implement resolver functions that handle request validation and orchestration
+   - Extract data from context (e.g., `ctx.userV2`, `ctx.db`)
+   - Call service layer methods to perform actual operations
+   - Handle errors and transform responses
+   - **NEVER** directly access `ctx.db` for complex operations
+   - **ALWAYS** delegate to service layer for database operations
+
+4. **`services/`** - Database Operations & Complex Business Logic
+   - Handle all database queries (SELECT, INSERT, UPDATE, DELETE)
+   - Implement complex business logic and data transformations
+   - Perform validation and error handling specific to database operations
+   - **ALWAYS** use `this.db` for database access
+   - Return typed results
+
+5. **`inputs/`** - Input Type Definitions
+   - Define GraphQL input types using `builder.inputType()`
+   - Define validation rules and constraints
+   - **ONLY** type definitions - NO logic
+
+6. **`types/`** - Output Type Definitions
+   - Define GraphQL output types using `builder.objectRef()`
+   - Define field resolvers for computed/related fields
+   - **ONLY** type definitions and field-level logic - NO business logic
+
+**CRITICAL RULE**: Mutations and Queries files should NEVER contain:
+- Direct database access (`ctx.db.insert()`, `ctx.db.select()`, etc.)
+- Complex business logic
+- Data transformations
+- Anything other than API endpoint definitions
+
+**Example of CORRECT structure**:
+
+```typescript
+// ✅ CORRECT: mutations/programs.ts - API definition only
+import { createProgramV2Resolver } from '../resolvers/programs';
+
+builder.mutationField('createProgramV2', (t) =>
+  t.field({
+    type: ProgramV2Ref,
+    authScopes: { userV2: true },
+    args: { input: t.arg({ type: CreateProgramV2Input, required: true }) },
+    resolve: createProgramV2Resolver,  // Only reference to resolver
+  })
+);
+
+// ✅ CORRECT: resolvers/programs.ts - Orchestration
+export async function createProgramV2Resolver(
+  _root: Root,
+  args: { input: typeof CreateProgramV2Input.$inferInput },
+  ctx: Context,
+) {
+  if (!ctx.userV2) throw new Error('User not authenticated');
+  const service = new ProgramV2Service(ctx.db);
+  return await service.create(args.input, ctx.userV2.id);  // Delegate to service
+}
+
+// ✅ CORRECT: services/program.service.ts - Database operations
+async create(input: CreateProgramV2Input, sponsorId: number): Promise<ProgramV2> {
+  const values = { ...input, sponsorId };
+  const [program] = await this.db.insert(programsV2Table).values(values).returning();
+  return program;
+}
+
+// ❌ WRONG: mutations/programs.ts - DO NOT DO THIS
+builder.mutationField('createProgramV2', (t) =>
+  t.field({
+    resolve: async (_, { input }, ctx) => {
+      // ❌ NEVER directly access ctx.db in mutations
+      const [program] = await ctx.db.insert(...).values(...).returning();
+      return program;
+    }
+  })
+);
+```
+
+#### Naming Conventions:
+
+- **Types**: `{Entity}V2Type` (e.g., `UserV2Type`, `ProgramV2Type`)
+- **Inputs**: `{Action}{Entity}V2Input` (e.g., `CreateUserV2Input`, `UpdateProgramV2Input`)
+- **Resolvers**: `{action}{Entity}V2Resolver` (e.g., `getUserV2Resolver`, `createProgramV2Resolver`)
+- **Services**: `{Entity}V2Service` (e.g., `UserV2Service`, `ProgramV2Service`)
+- **Files**: `{entity}.ts` in appropriate subdirectory
+
+#### Code Quality Standards:
+
+- **MUST** have comprehensive test coverage (minimum 90%)
+- **MUST** use TypeScript strict mode
+- **MUST** implement proper error handling
+- **MUST** include JSDoc documentation
+- **MUST** follow the unified query pattern for list operations
+- **MUST** strictly follow the separation of concerns as defined above
+
+### 3. V2 Architecture Improvements (RECOMMENDED)
+
+#### Enhanced Structure (Suggested):
+
+```
+src/graphql/v2/
+├── types/           # GraphQL type definitions
+├── resolvers/       # Business logic implementation
+├── mutations/       # Mutation definitions
+├── queries/         # Query definitions
+├── inputs/          # Input type definitions
+├── services/        # Business logic services (NEW)
+├── validators/      # Input validation logic (NEW)
+├── transformers/    # Data transformation utilities (NEW)
+├── tests/           # Comprehensive test suite
+└── shared/          # Shared V2 utilities (NEW)
+    ├── types.ts     # Common V2 types
+    ├── constants.ts # V2 constants
+    └── utils.ts     # V2 utility functions
+```
+
+#### Service Layer Pattern:
+
+```typescript
+// src/graphql/v2/services/userService.ts
+export class UserV2Service {
+  async createUser(input: CreateUserV2Input): Promise<UserV2> {
+    // Business logic here
+  }
+
+  async getUserById(id: string): Promise<UserV2 | null> {
+    // Business logic here
+  }
+}
+
+// src/graphql/v2/resolvers/users.ts
+export const createUserV2Resolver = async (args, ctx) => {
+  const userService = new UserV2Service(ctx.db);
+  return await userService.createUser(args.input);
+};
+```
+
+#### Validation Layer:
+
+```typescript
+// src/graphql/v2/validators/userValidator.ts
+export class UserV2Validator {
+  static validateCreateInput(input: CreateUserV2Input): ValidationResult {
+    // Validation logic here
+  }
+}
+```
+
+### 4. V2 Migration Strategy
+
+#### When to Use V2:
+
+- **NEW** features must use V2 architecture
+- **MAJOR** refactoring of existing features should migrate to V2
+- **CRITICAL** features should prioritize V2 implementation
+
+#### V1 to V2 Migration Rules:
+
+- **NEVER** modify V1 code to add V2 features
+- **ALWAYS** create parallel V2 implementation
+- **ALWAYS** maintain V1 functionality during migration
+- **ALWAYS** deprecate V1 features before removal
+
+### 5. V2 Testing Requirements
+
+#### Test Structure:
+
+```
+src/graphql/v2/tests/
+├── {entity}.test.ts     # Main test file
+├── fixtures/            # Test data fixtures
+├── mocks/              # Mock implementations
+└── utils/              # Test utilities
+```
+
+#### Test Coverage Requirements:
+
+- **Unit Tests**: 100% for resolvers and services
+- **Integration Tests**: All GraphQL operations
+- **Edge Cases**: Null values, empty arrays, invalid inputs
+- **Error Scenarios**: All error conditions
+
+## General Architecture Principles
+
+### 1. Separation of Concerns
+
+- Keep business logic separate from infrastructure concerns (database, HTTP, etc.)
+- Use dependency injection to make your code more testable and modular
+- Implement clear boundaries between different layers of your application
+
+### 2. Error Handling Strategy
+
+- Implement consistent error handling across all layers
+- Use custom error types for different error scenarios
+- Log errors with appropriate context for debugging
+- Return meaningful error messages to clients
+
+### 3. Testing Strategy
+
+- Write unit tests for business logic
+- Write integration tests for API endpoints
+- Use test doubles (mocks, stubs) for external dependencies
+- Aim for high test coverage on critical paths
+
+### 4. Performance Considerations
+
+- Implement caching strategies where appropriate
+- Use database indexing effectively
+- Monitor and profile your application regularly
+- Implement rate limiting and request throttling
+
+### 5. Security Best Practices
+
+- Validate all inputs
+- Implement proper authentication and authorization
+- Use HTTPS in production
+- Keep dependencies updated
+- Implement proper logging and monitoring
+
+Remember: These best practices are guidelines that should be adapted to your specific project requirements and team preferences. The key is consistency and continuous improvement.

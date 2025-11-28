@@ -9,6 +9,7 @@ import type { EnvConfig } from '@/types';
 import type { JWT } from '@fastify/jwt';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import Fastify, { type preHandlerHookHandler } from 'fastify';
+import 'dotenv/config';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -28,8 +29,12 @@ declare module 'fastify' {
 }
 
 async function buildServer() {
+  // 서버 생성 시 로거 레벨 설정 (이 시점에는 process.env를 직접 사용)
+  const logLevel = process.env.LOG_LEVEL || 'info';
+
   const server = Fastify({
     logger: {
+      level: logLevel,
       redact: ['req.headers.authorization'],
       serializers: {
         req(req) {
@@ -48,7 +53,6 @@ async function buildServer() {
 
   loadEnv(server);
   await server.after();
-
   server.addHook('preHandler', (request, _reply, next) => {
     request.jwt = server.jwt;
     next();
