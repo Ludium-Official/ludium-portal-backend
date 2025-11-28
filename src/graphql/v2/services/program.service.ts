@@ -31,6 +31,9 @@ export class ProgramV2Service {
     const statusFilter = query?.status || 'open';
     const whereCondition = eq(programsV2Table.status, statusFilter);
 
+    const visibilityFilter = 'public';
+    const visibilityCondition = eq(programsV2Table.visibility, visibilityFilter);
+
     const data = await this.db
       .select({
         ...getTableColumns(programsV2Table),
@@ -39,7 +42,7 @@ export class ProgramV2Service {
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
       .leftJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
-      .where(whereCondition)
+      .where(and(whereCondition, visibilityCondition))
       .groupBy(programsV2Table.id)
       .limit(limit)
       .offset(offset)
