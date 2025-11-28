@@ -34,14 +34,13 @@ export class ProgramV2Service {
     const data = await this.db
       .select({
         ...getTableColumns(programsV2Table),
-        applicationCount: sql<number>`
-          (SELECT COUNT(*)::int 
-           FROM ${applicationsV2Table} 
-           WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
-        `.as('application_count'),
+        applicationCount: count(applicationsV2Table.id).as('application_count'),
       })
       .from(programsV2Table)
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
       .where(whereCondition)
+      .groupBy(programsV2Table.id)
       .limit(limit)
       .offset(offset)
       .orderBy(desc(programsV2Table.createdAt));
@@ -55,7 +54,7 @@ export class ProgramV2Service {
       const { applicationCount, ...program } = row;
       return {
         ...(program as ProgramV2),
-        applicationCount: applicationCount ?? 0,
+        applicationCount: Number(applicationCount) || 0,
       };
     });
 
@@ -72,11 +71,7 @@ export class ProgramV2Service {
         sponsor: getTableColumns(usersV2Table),
         network: getTableColumns(networksTable),
         token: getTableColumns(tokensTable),
-        applicationCount: sql<number>`
-          (SELECT COUNT(*)::int 
-           FROM ${applicationsV2Table} 
-           WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
-        `.as('application_count'),
+        applicationCount: count(applicationsV2Table.id).as('application_count'),
       })
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
@@ -85,7 +80,10 @@ export class ProgramV2Service {
       .leftJoin(networksTable, eq(programsV2Table.networkId, networksTable.id))
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
       .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
-      .where(eq(programsV2Table.id, Number.parseInt(id, 10)));
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
+      .where(eq(programsV2Table.id, Number.parseInt(id, 10)))
+      .groupBy(programsV2Table.id, usersV2Table.id, networksTable.id, tokensTable.id);
 
     if (!result) {
       throw new Error('Program not found');
@@ -95,7 +93,7 @@ export class ProgramV2Service {
     const { sponsor, network, token, applicationCount, ...program } = result;
     return {
       ...(program as ProgramV2),
-      applicationCount: applicationCount ?? 0,
+      applicationCount: Number(applicationCount) || 0,
     };
   }
 
@@ -200,11 +198,7 @@ export class ProgramV2Service {
         sponsor: getTableColumns(usersV2Table),
         network: getTableColumns(networksTable),
         token: getTableColumns(tokensTable),
-        applicationCount: sql<number>`
-          (SELECT COUNT(*)::int 
-           FROM ${applicationsV2Table} 
-           WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
-        `.as('application_count'),
+        applicationCount: count(applicationsV2Table.id).as('application_count'),
       })
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
@@ -213,7 +207,10 @@ export class ProgramV2Service {
       .leftJoin(networksTable, eq(programsV2Table.networkId, networksTable.id))
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
       .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
       .where(eq(programsV2Table.sponsorId, sponsorId))
+      .groupBy(programsV2Table.id, usersV2Table.id, networksTable.id, tokensTable.id)
       .limit(limit)
       .offset(offset)
       .orderBy(desc(programsV2Table.createdAt));
@@ -228,7 +225,7 @@ export class ProgramV2Service {
       const { sponsor, network, token, applicationCount, ...program } = row;
       return {
         ...(program as ProgramV2),
-        applicationCount: applicationCount ?? 0,
+        applicationCount: Number(applicationCount) || 0,
       };
     });
 
@@ -276,11 +273,7 @@ export class ProgramV2Service {
         sponsor: getTableColumns(usersV2Table),
         network: getTableColumns(networksTable),
         token: getTableColumns(tokensTable),
-        applicationCount: sql<number>`
-          (SELECT COUNT(*)::int 
-           FROM ${applicationsV2Table} 
-           WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
-        `.as('application_count'),
+        applicationCount: count(applicationsV2Table.id).as('application_count'),
       })
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
@@ -289,7 +282,10 @@ export class ProgramV2Service {
       .leftJoin(networksTable, eq(programsV2Table.networkId, networksTable.id))
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
       .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
-      .where(inArray(programsV2Table.id, programIds));
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
+      .where(inArray(programsV2Table.id, programIds))
+      .groupBy(programsV2Table.id, usersV2Table.id, networksTable.id, tokensTable.id);
 
     // 각 프로그램에 대한 builder의 application 조회
     const applications = await this.db
@@ -318,7 +314,7 @@ export class ProgramV2Service {
 
       return {
         ...(program as ProgramV2),
-        applicationCount: applicationCount ?? 0,
+        applicationCount: Number(applicationCount) || 0,
         myApplication: application || undefined,
       };
     });
@@ -355,11 +351,7 @@ export class ProgramV2Service {
         sponsor: getTableColumns(usersV2Table),
         network: getTableColumns(networksTable),
         token: getTableColumns(tokensTable),
-        applicationCount: sql<number>`
-          (SELECT COUNT(*)::int 
-           FROM ${applicationsV2Table} 
-           WHERE ${applicationsV2Table.programId} = ${programsV2Table.id})
-        `.as('application_count'),
+        applicationCount: count(applicationsV2Table.id).as('application_count'),
       })
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
@@ -368,7 +360,10 @@ export class ProgramV2Service {
       .leftJoin(networksTable, eq(programsV2Table.networkId, networksTable.id))
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
       .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
       .where(whereCondition)
+      .groupBy(programsV2Table.id, usersV2Table.id, networksTable.id, tokensTable.id)
       .limit(limit)
       .offset(offset)
       .orderBy(desc(programsV2Table.createdAt));
@@ -385,7 +380,7 @@ export class ProgramV2Service {
       const { sponsor, network, token, applicationCount, ...program } = row;
       return {
         ...(program as ProgramV2),
-        applicationCount: applicationCount ?? 0,
+        applicationCount: Number(applicationCount) || 0,
       };
     });
 
