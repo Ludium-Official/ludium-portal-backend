@@ -15,17 +15,17 @@ type ApplicationStatusV2 = 'submitted' | 'pending_signature' | 'in_progress' | '
 /**
  * V1 status를 V2 status로 매핑
  */
-function mapStatus(v1Status: string): ApplicationStatusV2 {
-  const statusMap: Record<string, ApplicationStatusV2> = {
-    pending: 'submitted',
-    submitted: 'submitted',
-    rejected: 'submitted', // legacy rejected applications stay submitted with rejectionReason context
-    accepted: 'pending_signature',
-    completed: 'completed',
-    in_progress: 'in_progress',
-  };
+function mapStatus(_v1Status: string): ApplicationStatusV2 {
+  // const statusMap: Record<string, ApplicationStatusV2> = {
+  //   pending: 'submitted',
+  //   submitted: 'submitted',
+  //   rejected: 'submitted', // legacy rejected applications stay submitted with rejectionReason context
+  //   accepted: 'pending_signature',
+  //   completed: 'completed',
+  //   in_progress: 'in_progress',
+  // };
 
-  return statusMap[v1Status] || 'submitted';
+  return 'completed';
 }
 
 async function migrateApplications() {
