@@ -17,16 +17,16 @@ type MilestoneStatusV2 = 'draft' | 'under_review' | 'in_progress' | 'completed';
 /**
  * V1 status를 V2 status로 매핑
  */
-function mapStatus(v1Status: string): MilestoneStatusV2 {
-  const statusMap: Record<string, MilestoneStatusV2> = {
-    draft: 'draft',
-    pending: 'under_review',
-    submitted: 'in_progress',
-    completed: 'completed',
-    rejected: 'draft', // rejected는 draft로 리셋
-  };
+function mapStatus(_v1Status: string): MilestoneStatusV2 {
+  // const statusMap: Record<string, MilestoneStatusV2> = {
+  //   draft: 'draft',
+  //   pending: 'under_review',
+  //   submitted: 'in_progress',
+  //   completed: 'completed',
+  //   rejected: 'draft', // rejected는 draft로 리셋
+  // };
 
-  return statusMap[v1Status] || 'draft';
+  return 'completed';
 }
 
 async function migrateMilestones() {

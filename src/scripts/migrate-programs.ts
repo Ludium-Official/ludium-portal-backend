@@ -18,15 +18,15 @@ type ProgramVisibilityV2 = 'private' | 'restricted' | 'public';
 /**
  * V1 status를 V2 status로 매핑
  */
-function mapStatus(v1Status: string): ProgramStatusV2 {
-  const statusMap: Record<string, ProgramStatusV2> = {
-    pending: 'draft',
-    payment_required: 'draft',
-    published: 'open',
-    completed: 'closed',
-  };
+function mapStatus(_v1Status: string): ProgramStatusV2 {
+  // const statusMap: Record<string, ProgramStatusV2> = {
+  //   pending: 'draft',
+  //   payment_required: 'draft',
+  //   published: 'open',
+  //   completed: 'closed',
+  // };
 
-  return statusMap[v1Status] || 'draft';
+  return 'closed';
 }
 
 /**
