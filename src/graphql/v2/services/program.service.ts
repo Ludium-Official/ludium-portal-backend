@@ -31,6 +31,9 @@ export class ProgramV2Service {
     const statusFilter = query?.status || 'open';
     const whereCondition = eq(programsV2Table.status, statusFilter);
 
+    const visibilityFilter = 'public';
+    const visibilityCondition = eq(programsV2Table.visibility, visibilityFilter);
+
     const data = await this.db
       .select({
         ...getTableColumns(programsV2Table),
@@ -41,7 +44,7 @@ export class ProgramV2Service {
         `.as('application_count'),
       })
       .from(programsV2Table)
-      .where(whereCondition)
+      .where(and(whereCondition, visibilityCondition))
       .limit(limit)
       .offset(offset)
       .orderBy(desc(programsV2Table.createdAt));
