@@ -5,7 +5,7 @@ import { tokensTable } from '@/db/schemas/v2/tokens';
 import { usersV2Table } from '@/db/schemas/v2/users';
 import type { CreateProgramV2Input, UpdateProgramV2Input } from '@/graphql/v2/inputs/programs';
 import type { Context } from '@/types';
-import { and, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm';
+import { and, count, desc, eq, getTableColumns, inArray, ne, sql } from 'drizzle-orm';
 
 export class ProgramV2Service {
   constructor(private db: Context['db']) {}
@@ -42,7 +42,7 @@ export class ProgramV2Service {
       .from(programsV2Table)
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
       .leftJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
-      .where(and(whereCondition, visibilityCondition))
+      .where(and(whereCondition, visibilityCondition, ne(programsV2Table.status, 'deleted')))
       .groupBy(programsV2Table.id)
       .limit(limit)
       .offset(offset)
@@ -85,7 +85,7 @@ export class ProgramV2Service {
       .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
       .leftJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
-      .where(eq(programsV2Table.id, Number.parseInt(id, 10)))
+      .where(and(eq(programsV2Table.id, id), ne(programsV2Table.status, 'deleted')))
       .groupBy(programsV2Table.id, usersV2Table.id, networksTable.id, tokensTable.id);
 
     if (!result) {
@@ -118,7 +118,7 @@ export class ProgramV2Service {
     const [currentProgram] = await this.db
       .select()
       .from(programsV2Table)
-      .where(eq(programsV2Table.id, Number.parseInt(id, 10)));
+      .where(eq(programsV2Table.id, id));
 
     if (!currentProgram) {
       throw new Error('Program not found');
@@ -141,7 +141,7 @@ export class ProgramV2Service {
     const [updatedProgram] = await this.db
       .update(programsV2Table)
       .set(values)
-      .where(eq(programsV2Table.id, Number.parseInt(id, 10)))
+      .where(eq(programsV2Table.id, id))
       .returning();
 
     if (!updatedProgram) {
@@ -151,9 +151,27 @@ export class ProgramV2Service {
   }
 
   async delete(id: string): Promise<ProgramV2> {
+    const [currentProgram] = await this.db
+      .select()
+      .from(programsV2Table)
+      .where(eq(programsV2Table.id, id));
+
+      if(!currentProgram) {
+        throw new Error('Program not found');
+      }
+
+      if (currentProgram.status === 'deleted') {
+        throw new Error('Program is already deleted');
+      }
+
     const [deletedProgram] = await this.db
-      .delete(programsV2Table)
-      .where(eq(programsV2Table.id, Number.parseInt(id, 10)))
+      .update(programsV2Table)
+      .set({
+        status: 'deleted',
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(programsV2Table.id, id))
       .returning();
 
     if (!deletedProgram) {
@@ -167,7 +185,7 @@ export class ProgramV2Service {
     const [program] = await this.db
       .select()
       .from(programsV2Table)
-      .where(eq(programsV2Table.id, Number.parseInt(id, 10)));
+      .where(eq(programsV2Table.id, id));
 
     if (!program) {
       throw new Error('Program not found');
@@ -179,7 +197,7 @@ export class ProgramV2Service {
         status: 'closed',
         updatedAt: new Date(),
       })
-      .where(eq(programsV2Table.id, Number.parseInt(id, 10)))
+      .where(eq(programsV2Table.id, id))
       .returning();
 
     return completedProgram;
@@ -212,7 +230,7 @@ export class ProgramV2Service {
       .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
       .leftJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
-      .where(eq(programsV2Table.sponsorId, sponsorId))
+      .where(and(eq(programsV2Table.sponsorId, sponsorId), ne(programsV2Table.status, 'deleted')))
       .groupBy(programsV2Table.id, usersV2Table.id, networksTable.id, tokensTable.id)
       .limit(limit)
       .offset(offset)
@@ -237,7 +255,7 @@ export class ProgramV2Service {
       count: totalCount.count,
     };
   }
-  // TODO: we need to check this logic is good or not
+
   async getByBuilderId(
     builderId: number,
     pagination?: { limit?: number; offset?: number },
@@ -287,7 +305,7 @@ export class ProgramV2Service {
       .leftJoin(tokensTable, eq(programsV2Table.token_id, tokensTable.id))
       // @ts-expect-error - Drizzle type compatibility issue with leftJoin
       .leftJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
-      .where(inArray(programsV2Table.id, programIds))
+      .where(and(inArray(programsV2Table.id, programIds), ne(programsV2Table.status, 'deleted')))
       .groupBy(programsV2Table.id, usersV2Table.id, networksTable.id, tokensTable.id);
 
     // 각 프로그램에 대한 builder의 application 조회

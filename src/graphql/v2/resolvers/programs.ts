@@ -184,11 +184,6 @@ export async function updateProgramV2Resolver(
 }
 
 export async function deleteProgramV2Resolver(_root: Root, args: { id: string }, ctx: Context) {
-  const numericId = Number.parseInt(args.id, 10);
-  if (Number.isNaN(numericId)) {
-    throw new Error('Invalid program ID');
-  }
-
   const programService = new ProgramV2Service(ctx.db);
   await programService.delete(args.id);
   return args.id;
