@@ -57,6 +57,13 @@
       "when": 1765163756437,
       "tag": "0007_mysterious_texas_twister",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1765215543112,
+      "tag": "0008_magical_the_executioner",
+      "breakpoints": true
     }
   ]
 }

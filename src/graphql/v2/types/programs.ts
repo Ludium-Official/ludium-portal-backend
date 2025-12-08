@@ -195,11 +195,16 @@ export const ProgramV2Type: ReturnType<typeof ProgramV2Ref.implement> = ProgramV
         const [application] = await ctx.db
           .select()
           .from(applicationsV2Table)
-          .where(and(eq(applicationsV2Table.programId, program.id), eq(applicationsV2Table.status, 'in_progress')))
+          .where(
+            and(
+              eq(applicationsV2Table.programId, program.id),
+              eq(applicationsV2Table.status, 'in_progress'),
+            ),
+          )
           .limit(1);
         return !!application;
-      }
-    })
+      },
+    }),
   }),
 });
 

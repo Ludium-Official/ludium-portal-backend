@@ -156,13 +156,13 @@ export class ProgramV2Service {
       .from(programsV2Table)
       .where(eq(programsV2Table.id, id));
 
-      if(!currentProgram) {
-        throw new Error('Program not found');
-      }
+    if (!currentProgram) {
+      throw new Error('Program not found');
+    }
 
-      if (currentProgram.status === 'deleted') {
-        throw new Error('Program is already deleted');
-      }
+    if (currentProgram.status === 'deleted') {
+      throw new Error('Program is already deleted');
+    }
 
     const [deletedProgram] = await this.db
       .update(programsV2Table)
@@ -241,7 +241,7 @@ export class ProgramV2Service {
       .from(programsV2Table)
       .where(and(eq(programsV2Table.sponsorId, sponsorId), ne(programsV2Table.status, 'deleted')));
 
-      // Extract program data (joined data is not needed in return type)
+    // Extract program data (joined data is not needed in return type)
     const programs = data.map((row) => {
       const { sponsor, network, token, applicationCount, ...program } = row;
       return {

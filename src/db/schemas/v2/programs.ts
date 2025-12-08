@@ -52,7 +52,7 @@ export const programsV2Table = pgTable('programs_v2', {
     .defaultNow()
     .notNull()
     .$onUpdateFn(() => new Date()),
-  deletedAt: timestamp('deleted_at', {mode: 'date'}),
+  deletedAt: timestamp('deleted_at', { mode: 'date' }),
 });
 
 // Relations
