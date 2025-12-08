@@ -239,9 +239,9 @@ export class ProgramV2Service {
     const [totalCount] = await this.db
       .select({ count: count() })
       .from(programsV2Table)
-      .where(eq(programsV2Table.sponsorId, sponsorId));
+      .where(and(eq(programsV2Table.sponsorId, sponsorId), ne(programsV2Table.status, 'deleted')));
 
-    // Extract program data (joined data is not needed in return type)
+      // Extract program data (joined data is not needed in return type)
     const programs = data.map((row) => {
       const { sponsor, network, token, applicationCount, ...program } = row;
       return {
