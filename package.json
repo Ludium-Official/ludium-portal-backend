@@ -19,6 +19,7 @@
     "db:seed": "tsx -r dotenv-expand/config ./src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
     "db:dump-restore": "tsx ./src/scripts/dump-restore.ts",
+    "db:sync-hashes": "tsx ./src/scripts/sync-migration-hashes.ts",
     "test:db": "vitest run ./src/db",
     "test:integration": "vitest run ./src/graphql/v2/tests/integration",
     "test:e2e": "vitest run ./src/graphql/v2/tests/e2e",
