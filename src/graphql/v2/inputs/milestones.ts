@@ -11,32 +11,32 @@ import { MilestoneStatusV2Enum } from '../types/milestones';
 export const CreateMilestoneV2Input = builder.inputType('CreateMilestoneV2Input', {
   fields: (t) => ({
     programId: t.id({
-      required: true,
+      required: false,
       description: 'ID of the program',
     }),
     applicationId: t.id({
-      required: true,
+      required: false,
       description: 'ID of the application',
     }),
     sponsorId: t.id({
-      required: true,
+      required: false,
       description: 'ID of the sponsor (user)',
     }),
     title: t.string({
-      required: true,
+      required: false,
       description: 'Milestone title',
     }),
     description: t.string({
-      required: true,
+      required: false,
       description: 'Milestone description',
     }),
     payout: t.string({
-      required: true,
+      required: false,
       description: 'Milestone payout amount',
     }),
     deadline: t.field({
       type: 'DateTime',
-      required: true,
+      required: false,
       description: 'Milestone deadline',
     }),
     files: t.stringList({
@@ -44,7 +44,7 @@ export const CreateMilestoneV2Input = builder.inputType('CreateMilestoneV2Input'
     }),
     status: t.field({
       type: MilestoneStatusV2Enum,
-      required: true,
+      required: false,
       description: 'Milestone status',
     }),
   }),
