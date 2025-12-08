@@ -1,7 +1,7 @@
 // @src/db/schemas/v2/onchain-program-info.ts
 
 import { relations } from 'drizzle-orm';
-import { integer, pgEnum, pgTable, serial, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { integer, pgEnum, pgTable, serial, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { networksTable } from './networks';
 import { programsV2Table } from './programs';
 import { smartContractsTable } from './smart-contracts';
@@ -15,7 +15,7 @@ export const onchainProgramStatusEnum = pgEnum(
 
 export const onchainProgramInfoTable = pgTable('onchain_program_info', {
   id: serial('id').primaryKey(),
-  programId: integer('program_id')
+  programId: uuid('program_id')
     .notNull()
     .references(() => programsV2Table.id, { onDelete: 'cascade' }),
   networkId: integer('network_id')

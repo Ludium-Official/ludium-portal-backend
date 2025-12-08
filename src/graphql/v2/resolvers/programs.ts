@@ -74,18 +74,13 @@ export async function updateProgramV2Resolver(
     throw new Error('User not authenticated');
   }
 
-  const numericId = Number.parseInt(args.id, 10);
-  if (Number.isNaN(numericId)) {
-    throw new Error('Invalid program ID');
-  }
-
   const programService = new ProgramV2Service(ctx.db);
 
   // Get current program to check status and sponsor
   const [currentProgram] = await ctx.db
     .select()
     .from(programsV2Table)
-    .where(eq(programsV2Table.id, numericId));
+    .where(eq(programsV2Table.id, args.id));
 
   if (!currentProgram) {
     throw new Error('Program not found');
@@ -119,7 +114,7 @@ export async function updateProgramV2Resolver(
       const [onchainInfo] = await ctx.db
         .select()
         .from(onchainProgramInfoTable)
-        .where(eq(onchainProgramInfoTable.programId, numericId))
+        .where(eq(onchainProgramInfoTable.programId, args.id))
         .limit(1);
 
       if (!onchainInfo) {
@@ -168,7 +163,9 @@ export async function updateProgramV2Resolver(
           (currentStatus === 'under_review' &&
             (newStatus === 'open' || newStatus === 'declined')) ||
           // Allow open → closed (by creator or admin, no special restriction for now)
-          (currentStatus === 'open' && newStatus === 'closed')
+          (currentStatus === 'open' && newStatus === 'closed') ||
+          // Allow closed -> open (by creator or admin)
+          (currentStatus === 'closed' && newStatus === 'open')
         )
       )
     ) {
@@ -182,11 +179,6 @@ export async function updateProgramV2Resolver(
 }
 
 export async function deleteProgramV2Resolver(_root: Root, args: { id: string }, ctx: Context) {
-  const numericId = Number.parseInt(args.id, 10);
-  if (Number.isNaN(numericId)) {
-    throw new Error('Invalid program ID');
-  }
-
   const programService = new ProgramV2Service(ctx.db);
   await programService.delete(args.id);
   return args.id;
@@ -269,18 +261,13 @@ export async function updateProgramByRelayerV2Resolver(
   ctx: Context,
 ) {
   // Relayer scope is already checked by authScopes
-  const numericId = Number.parseInt(args.id, 10);
-  if (Number.isNaN(numericId)) {
-    throw new Error('Invalid program ID');
-  }
-
   const programService = new ProgramV2Service(ctx.db);
 
   // Get current program to check status
   const [currentProgram] = await ctx.db
     .select()
     .from(programsV2Table)
-    .where(eq(programsV2Table.id, numericId));
+    .where(eq(programsV2Table.id, args.id));
 
   if (!currentProgram) {
     throw new Error('Program not found');
@@ -320,8 +307,7 @@ export async function completeProgramV2Resolver(_root: Root, args: { id: string 
   const applicationService = new ApplicationV2Service(ctx.db, ctx.server);
 
   // Check if all applications are completed
-  const programId = Number.parseInt(args.id, 10);
-  const appStatus = await applicationService.checkAllCompletedByProgram(programId);
+  const appStatus = await applicationService.checkAllCompletedByProgram(args.id);
 
   if (!appStatus.allCompleted) {
     throw new Error(
@@ -339,5 +325,5 @@ export async function checkCompleteProgramResolver(
   ctx: Context,
 ) {
   const applicationService = new ApplicationV2Service(ctx.db, ctx.server);
-  return applicationService.checkAllCompletedByProgram(Number.parseInt(args.programId, 10));
+  return applicationService.checkAllCompletedByProgram(args.programId);
 }

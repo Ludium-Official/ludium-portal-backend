@@ -16,7 +16,7 @@ describe('OnchainProgramInfoTable', () => {
   let networkId: number;
   let tokenId: number;
   let sponsorId: number;
-  let programId: number;
+  let programId: string;
   let contractId: number;
 
   beforeEach(async () => {

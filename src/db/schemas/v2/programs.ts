@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { integer, pgEnum, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { integer, pgEnum, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { networksTable } from './networks';
 import { tokensTable } from './tokens';
 import { usersV2Table } from './users';
@@ -11,6 +11,7 @@ export const programStatusV2Values = [
   'open', // 3.1 루디움이 스폰서가 작성한 프로그램 오픈 application 받기 시작
   'declined', // 3.2 루디움이 스폰서가 작성한 프로그램 거절 -> closed? or under review?
   'closed', // 4. 모집이 종료되었을 때, 프로그램 종료됨
+  'deleted', // 5. 프로그램 삭제
 ] as const;
 export const programStatusV2Enum = pgEnum('program_status_v2', programStatusV2Values);
 
@@ -22,7 +23,7 @@ export type ProgramVisibilityV2Enum = (typeof programVisibilityV2Values)[number]
 // We model it as varchar for now to avoid coupling to previous enum semantics.
 
 export const programsV2Table = pgTable('programs_v2', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   title: varchar('title', { length: 256 }).notNull(),
   description: text('description').notNull(),
   skills: text('skills').array().notNull(),
@@ -51,6 +52,7 @@ export const programsV2Table = pgTable('programs_v2', {
     .defaultNow()
     .notNull()
     .$onUpdateFn(() => new Date()),
+  deletedAt: timestamp('deleted_at', { mode: 'date' }),
 });
 
 // Relations

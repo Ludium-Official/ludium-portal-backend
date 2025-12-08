@@ -42,7 +42,7 @@ export async function getContractV2Resolver(_root: Root, args: { id: string }, c
 
 export async function getContractsByProgramV2Resolver(
   _root: Root,
-  args: { programId: number; pagination?: typeof PaginationInput.$inferInput | null },
+  args: { programId: string; pagination?: typeof PaginationInput.$inferInput | null },
   ctx: Context,
 ) {
   try {

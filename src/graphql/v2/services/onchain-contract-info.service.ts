@@ -38,7 +38,7 @@ export class OnchainContractInfoV2Service {
   }
 
   async getByProgramId(
-    programId: number,
+    programId: string,
     pagination?: { limit?: number; offset?: number },
   ): Promise<{ data: OnchainContractInfo[]; count: number }> {
     const limit = pagination?.limit || 10;

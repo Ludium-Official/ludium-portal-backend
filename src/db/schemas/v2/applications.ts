@@ -27,7 +27,7 @@ export const applicationStatusV2Enum = pgEnum('application_status_v2', applicati
 
 export const applicationsV2Table = pgTable('applications_v2', {
   id: serial('id').primaryKey(),
-  programId: integer('program_id')
+  programId: uuid('program_id')
     .notNull()
     .references(() => programsV2Table.id, { onDelete: 'cascade' }),
   // user_id
