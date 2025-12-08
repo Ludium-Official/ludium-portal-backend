@@ -168,7 +168,9 @@ export async function updateProgramV2Resolver(
           (currentStatus === 'under_review' &&
             (newStatus === 'open' || newStatus === 'declined')) ||
           // Allow open → closed (by creator or admin, no special restriction for now)
-          (currentStatus === 'open' && newStatus === 'closed')
+          (currentStatus === 'open' && newStatus === 'closed') ||
+          // Allow closed -> open (by creator or admin)
+          (currentStatus === 'closed' && newStatus === 'open')
         )
       )
     ) {
