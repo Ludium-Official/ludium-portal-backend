@@ -27,7 +27,7 @@ builder.queryFields((t) => ({
     type: PaginatedContractV2Type,
     authScopes: { userV2: true },
     args: {
-      programId: t.arg.int({ required: true }),
+      programId: t.arg.string({ required: true }),
       pagination: t.arg({ type: PaginationInput, required: false }),
     },
     resolve: getContractsByProgramV2Resolver,

@@ -32,7 +32,7 @@ export class ContractV2Service {
   }
 
   async getByProgramId(
-    programId: number,
+    programId: string,
     pagination?: { limit?: number; offset?: number },
   ): Promise<{ data: Contracts[]; count: number }> {
     const limit = pagination?.limit || 10;

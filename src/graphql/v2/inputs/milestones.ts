@@ -11,15 +11,15 @@ import { MilestoneStatusV2Enum } from '../types/milestones';
 export const CreateMilestoneV2Input = builder.inputType('CreateMilestoneV2Input', {
   fields: (t) => ({
     programId: t.id({
-      required: false,
+      required: true,
       description: 'ID of the program',
     }),
     applicationId: t.id({
-      required: false,
+      required: true,
       description: 'ID of the application',
     }),
     sponsorId: t.id({
-      required: false,
+      required: true,
       description: 'ID of the sponsor (user)',
     }),
     title: t.string({

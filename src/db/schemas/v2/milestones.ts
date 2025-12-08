@@ -36,16 +36,16 @@ export const milestonesV2Table = pgTable('milestones_v2', {
   sponsorId: integer('sponsor_id')
     .notNull()
     .references(() => usersV2Table.id, { onDelete: 'cascade' }),
-  title: varchar('title', { length: 256 }).notNull(),
-  description: text('description').notNull(),
+  title: varchar('title', { length: 256 }),
+  description: text('description'),
   // TODO: change length 256-18=238
-  payout: varchar('price', { length: 238 }).notNull(),
+  payout: varchar('price', { length: 238 }),
   deadline: timestamp('deadline', {
     mode: 'date',
     withTimezone: true,
-  }).notNull(),
+  }),
   files: text('files').array(),
-  status: milestoneStatusV2Enum('status').default('draft').notNull(),
+  status: milestoneStatusV2Enum('status').default('draft'),
   // NOTE: after payout is completed, we need to store the payout tx in the milestone table by relayer
   payout_tx: varchar('payout_tx', { length: 66 }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

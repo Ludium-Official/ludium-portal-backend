@@ -136,15 +136,10 @@ export class AuthHandler {
     const user = this.getUserV2(request);
     if (!user) return false;
 
-    const numericProgramId = Number.parseInt(programId, 10);
-    if (Number.isNaN(numericProgramId)) {
-      return false;
-    }
-
     const [program] = await this.server.db
       .select()
       .from(programsV2Table)
-      .where(eq(programsV2Table.id, numericProgramId));
+      .where(eq(programsV2Table.id, programId));
 
     if (!program) {
       return false;
