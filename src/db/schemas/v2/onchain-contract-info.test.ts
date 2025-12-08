@@ -10,7 +10,7 @@ import { type NewUserV2, usersV2Table } from './users';
 describe('Onchain Contract Info Table', () => {
   let testSponsorId: number;
   let testApplicantId: number;
-  let testProgramId: number;
+  let testProgramId: string;
   let testNetworkId: number;
   let testTokenId: number;
   let testSmartContractId: number;
@@ -189,7 +189,7 @@ describe('Onchain Contract Info Table', () => {
 
   it('should enforce foreign key constraint for programId', async () => {
     const newContractInfo: NewOnchainContractInfo = {
-      programId: 999999, // Non-existent program ID
+      programId: '999999', // Non-existent program ID
       sponsorId: testSponsorId,
       applicantId: testApplicantId,
       smartContractId: testSmartContractId,

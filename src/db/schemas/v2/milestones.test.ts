@@ -9,7 +9,7 @@ import { type NewUserV2, usersV2Table } from './users';
 
 describe('Milestones V2 Table', () => {
   let testUserId: number;
-  let testProgramId: number;
+  let testProgramId: string;
   let testNetworkId: number;
   let testTokenId: number;
   let testApplicationId: number;
@@ -185,7 +185,7 @@ describe('Milestones V2 Table', () => {
   it('should enforce foreign key constraint for programId', async () => {
     const milestoneDeadline = new Date('2025-12-31');
     const newMilestone: NewMilestoneV2 = {
-      programId: 999999, // Non-existent program ID
+      programId: '999999', // Non-existent program ID
       applicationId: testApplicationId,
       sponsorId: testUserId,
       title: 'Invalid Milestone',

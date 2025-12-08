@@ -1,5 +1,14 @@
 import { relations } from 'drizzle-orm';
-import { integer, pgEnum, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import {
+  integer,
+  pgEnum,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { applicationsV2Table } from './applications';
 import { programsV2Table } from './programs';
 import { usersV2Table } from './users';
@@ -17,7 +26,7 @@ export const milestoneStatusV2Enum = pgEnum('milestone_status_v2', milestoneStat
 
 export const milestonesV2Table = pgTable('milestones_v2', {
   id: serial('id').primaryKey(),
-  programId: integer('program_id')
+  programId: uuid('program_id')
     .notNull()
     .references(() => programsV2Table.id, { onDelete: 'cascade' }),
   // user_id

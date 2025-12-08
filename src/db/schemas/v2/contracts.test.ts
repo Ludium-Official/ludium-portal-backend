@@ -12,13 +12,13 @@ import { type NewUserV2, usersV2Table } from './users';
 describe('Contracts V2 Table', () => {
   let testSponsorId: number;
   let testApplicantId: number;
-  let testProgramId: number;
+  let testProgramId: string;
   let testSmartContractId: number;
   let testNetworkId: number;
   let testTokenId: number;
   let testApplicationId: number;
 
-  const createApplication = async (programId: number, applicantId: number) => {
+  const createApplication = async (programId: string, applicantId: number) => {
     const application: NewApplicationV2 = {
       programId,
       applicantId,
@@ -280,7 +280,7 @@ describe('Contracts V2 Table', () => {
 
   it('should enforce foreign key constraint for programId', async () => {
     const newContract: NewContracts = {
-      programId: 999999, // Non-existent program ID
+      programId: '999999', // Non-existent program ID
       sponsorId: testSponsorId,
       applicantId: testApplicantId,
       applicationId: testApplicationId,

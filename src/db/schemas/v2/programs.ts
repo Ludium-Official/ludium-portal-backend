@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { integer, pgEnum, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { integer, pgEnum, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { networksTable } from './networks';
 import { tokensTable } from './tokens';
 import { usersV2Table } from './users';
@@ -22,7 +22,7 @@ export type ProgramVisibilityV2Enum = (typeof programVisibilityV2Values)[number]
 // We model it as varchar for now to avoid coupling to previous enum semantics.
 
 export const programsV2Table = pgTable('programs_v2', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   title: varchar('title', { length: 256 }).notNull(),
   description: text('description').notNull(),
   skills: text('skills').array().notNull(),
