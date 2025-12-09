@@ -73,9 +73,7 @@ export class ApplicationV2Service {
       const whereConditions = [];
 
       if (query?.programId) {
-        whereConditions.push(
-          eq(applicationsV2Table.programId, query.programId),
-        );
+        whereConditions.push(eq(applicationsV2Table.programId, query.programId));
       }
       if (query?.applicantId) {
         whereConditions.push(

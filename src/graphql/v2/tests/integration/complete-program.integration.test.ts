@@ -34,7 +34,7 @@ describe('completeProgramV2 Mutation Tests', () => {
 
   // Program
   let testProgram: NewProgramV2;
-  let testProgramId: number;
+  let testProgramId: string;
 
   beforeAll(async () => {
     server = await createTestServer();

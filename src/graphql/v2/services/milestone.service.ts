@@ -193,9 +193,11 @@ export class MilestoneV2Service {
         applicationId: Number.parseInt(input.applicationId, 10),
         sponsorId: Number.parseInt(input.sponsorId, 10),
         ...(input.title !== null && input.title !== undefined && { title: input.title }),
-        ...(input.description !== null && input.description !== undefined && { description: input.description }),
+        ...(input.description !== null &&
+          input.description !== undefined && { description: input.description }),
         ...(input.payout !== null && input.payout !== undefined && { payout: input.payout }),
-        ...(input.deadline !== null && input.deadline !== undefined && { deadline: new Date(input.deadline) }),
+        ...(input.deadline !== null &&
+          input.deadline !== undefined && { deadline: new Date(input.deadline) }),
         status: input.status ?? 'draft', // Default to 'draft' if not provided
       };
 

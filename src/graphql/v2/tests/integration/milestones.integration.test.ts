@@ -10,7 +10,7 @@ import { createTestServer } from '../helper';
 describe('Milestones V2 GraphQL API - Integration Tests', () => {
   let server: FastifyInstance;
   let authToken: string;
-  let programId: number;
+  let programId: string;
   let applicantId: number;
 
   beforeAll(async () => {

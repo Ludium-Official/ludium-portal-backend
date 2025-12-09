@@ -22,7 +22,7 @@ export const OnchainContractInfoV2Ref = builder.objectRef<DBOnchain>('OnchainCon
 export const OnchainContractInfoV2Type = OnchainContractInfoV2Ref.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
-    programId: t.exposeInt('programId'),
+    programId: t.exposeString('programId'),
     sponsorId: t.exposeInt('sponsorId'),
     applicantId: t.exposeInt('applicantId'),
     smartContractId: t.exposeInt('smartContractId'),

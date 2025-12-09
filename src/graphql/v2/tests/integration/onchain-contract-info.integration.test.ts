@@ -11,7 +11,7 @@ import { createTestServer } from '../helper';
 describe('Onchain Contract Info V2 GraphQL API - Integration Tests', () => {
   let server: FastifyInstance;
   let authToken: string;
-  let programId: number;
+  let programId: string;
   let sponsorId: number;
   let applicantId: number;
   let smartContractId: number;
