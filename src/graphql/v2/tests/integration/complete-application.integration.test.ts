@@ -35,7 +35,7 @@ describe('completeApplicationV2 Mutation Tests', () => {
 
   // Program
   let testProgram: NewProgramV2;
-  let testProgramId: number;
+  let testProgramId: string;
 
   // Application
   let testApplicationId: number;

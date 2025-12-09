@@ -212,13 +212,13 @@ async function migrateMilestones() {
     }
 
     // program name -> V2 program id
-    const programNameToV2Id = new Map<string, number>();
+    const programNameToV2Id = new Map<string, string>();
     for (const program of v2Programs) {
       programNameToV2Id.set(program.title, program.id);
     }
 
     // V2 application id -> V2 program id
-    const v2ApplicationIdToProgramId = new Map<number, number>();
+    const v2ApplicationIdToProgramId = new Map<number, string>();
     for (const app of v2Applications) {
       v2ApplicationIdToProgramId.set(app.id, app.programId);
     }

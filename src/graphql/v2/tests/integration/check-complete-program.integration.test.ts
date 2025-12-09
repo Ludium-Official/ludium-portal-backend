@@ -14,7 +14,7 @@ describe('checkCompleteProgram Query', () => {
   let sponsor: NewUserV2 & { id: number };
   let applicant1: NewUserV2 & { id: number };
   let applicant2: NewUserV2 & { id: number };
-  let program: NewProgramV2 & { id: number };
+  let program: NewProgramV2 & { id: string };
   let network: NewNetworkType & { id: number };
   let token: NewTokenType & { id: number };
 
@@ -109,7 +109,7 @@ describe('checkCompleteProgram Query', () => {
   };
 
   const createApplication = async (
-    programId: number,
+    programId: string,
     applicantId: number,
     status: NewApplicationV2['status'] = 'in_progress',
   ) => {
