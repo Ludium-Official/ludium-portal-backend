@@ -99,7 +99,7 @@ async function migrateApplications() {
       v1ProgramIdToName.set(program.id, program.name);
     }
 
-    const programNameToV2Id = new Map<string, number>();
+    const programNameToV2Id = new Map<string, string>();
     for (const program of v2Programs) {
       programNameToV2Id.set(program.title, program.id);
     }

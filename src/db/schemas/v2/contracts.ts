@@ -1,5 +1,14 @@
 import { relations } from 'drizzle-orm';
-import { integer, jsonb, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import {
+  integer,
+  jsonb,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { applicationsV2Table } from './applications';
 import { programsV2Table } from './programs';
 import { smartContractsTable } from './smart-contracts';
@@ -7,7 +16,7 @@ import { usersV2Table } from './users';
 
 export const contractsTable = pgTable('contracts', {
   id: serial('id').primaryKey(),
-  programId: integer('program_id')
+  programId: uuid('program_id')
     .notNull()
     .references(() => programsV2Table.id, { onDelete: 'cascade' }),
   applicationId: integer('application_id').references(() => applicationsV2Table.id, {

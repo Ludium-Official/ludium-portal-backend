@@ -73,9 +73,7 @@ export class ApplicationV2Service {
       const whereConditions = [];
 
       if (query?.programId) {
-        whereConditions.push(
-          eq(applicationsV2Table.programId, Number.parseInt(query.programId, 10)),
-        );
+        whereConditions.push(eq(applicationsV2Table.programId, query.programId));
       }
       if (query?.applicantId) {
         whereConditions.push(
@@ -135,7 +133,7 @@ export class ApplicationV2Service {
     const startTime = Date.now();
     const page = query?.page ?? 1;
     const limit = query?.limit ?? 10;
-    const programId = Number.parseInt(query.programId, 10);
+    const programId = query.programId;
 
     this.server.log.info(
       `🚀 Starting ApplicationV2Service.getByProgram for programId: ${programId}, userId: ${userId}`,
@@ -276,7 +274,7 @@ export class ApplicationV2Service {
 
     try {
       const applicationData: NewApplicationV2 = {
-        programId: Number.parseInt(input.programId, 10),
+        programId: input.programId,
         applicantId,
         status: input.status ?? 'submitted',
         content: input.content ?? '',
@@ -571,7 +569,7 @@ export class ApplicationV2Service {
     }
   }
 
-  async checkAllCompletedByProgram(programId: number): Promise<{
+  async checkAllCompletedByProgram(programId: string): Promise<{
     allCompleted: boolean;
     completedCount: number;
     totalCount: number;

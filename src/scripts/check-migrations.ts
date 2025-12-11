@@ -57,7 +57,8 @@ async function checkMigrations() {
       const fileMig = journal.entries[i];
 
       if (dbMig && fileMig) {
-        const status = dbMig.hash.startsWith(calculateHash(fileMig.tag)) ? '✅' : '❌';
+        const fileHash = calculateHash(fileMig.tag);
+        const status = dbMig.hash === fileHash ? '✅' : '❌';
         console.log(
           `${(i + 1).toString().padStart(2)} | ${dbMig.hash.substring(0, 16)}... | ${fileMig.tag.padEnd(20)} | ${status}`,
         );
@@ -76,7 +77,8 @@ async function checkMigrations() {
     const missingInDb = journal.entries.filter((entry: JournalEntry, idx: number) => {
       const dbMig = dbMigrations[idx];
       if (!dbMig) return true;
-      return !dbMig.hash.startsWith(calculateHash(entry.tag));
+      const fileHash = calculateHash(entry.tag);
+      return dbMig.hash !== fileHash;
     });
 
     if (missingInDb.length > 0) {
@@ -105,9 +107,15 @@ async function checkMigrations() {
 }
 
 function calculateHash(tag: string): string {
-  // Drizzle uses a hash of the migration file content
-  // This is a simplified version - actual hash calculation is more complex
-  return createHash('sha256').update(tag).digest('hex').substring(0, 16);
+  const migrationFile = join(process.cwd(), 'src/db/migrations', `${tag}.sql`);
+
+  try {
+    const content = readFileSync(migrationFile, 'utf-8');
+    return createHash('sha256').update(content).digest('hex');
+  } catch (error) {
+    console.warn(`⚠️  Migration file not found: ${tag}.sql`, error);
+    return createHash('sha256').update(tag).digest('hex');
+  }
 }
 
 checkMigrations()

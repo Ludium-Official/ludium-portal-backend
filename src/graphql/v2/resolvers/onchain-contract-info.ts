@@ -49,7 +49,7 @@ export async function getOnchainContractInfoV2Resolver(
 
 export async function getOnchainContractInfosByProgramV2Resolver(
   _root: Root,
-  args: { programId: number; pagination?: typeof PaginationInput.$inferInput | null },
+  args: { programId: string; pagination?: typeof PaginationInput.$inferInput | null },
   ctx: Context,
 ) {
   try {

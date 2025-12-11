@@ -6,7 +6,7 @@ export const ContractV2Ref = builder.objectRef<DBContract>('ContractV2');
 export const ContractV2Type = ContractV2Ref.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
-    programId: t.exposeInt('programId'),
+    programId: t.exposeString('programId'),
     applicationId: t.exposeInt('applicationId'),
     sponsorId: t.exposeInt('sponsorId'),
     applicantId: t.exposeInt('applicantId'),

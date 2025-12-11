@@ -49,7 +49,7 @@ export async function getOnchainProgramInfoV2Resolver(
 
 export async function getOnchainProgramInfosByProgramV2Resolver(
   _root: Root,
-  args: { programId: number; pagination?: typeof PaginationInput.$inferInput | null },
+  args: { programId: string; pagination?: typeof PaginationInput.$inferInput | null },
   ctx: Context,
 ) {
   try {

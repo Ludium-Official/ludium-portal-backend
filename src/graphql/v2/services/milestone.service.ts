@@ -68,7 +68,7 @@ export class MilestoneV2Service {
       const whereConditions = [];
 
       if (query?.programId) {
-        whereConditions.push(eq(milestonesV2Table.programId, Number.parseInt(query.programId, 10)));
+        whereConditions.push(eq(milestonesV2Table.programId, query.programId));
       }
       if (query?.applicationId) {
         whereConditions.push(
@@ -133,7 +133,7 @@ export class MilestoneV2Service {
       const whereConditions = [eq(milestonesV2Table.status, 'in_progress')];
 
       if (query?.programId) {
-        whereConditions.push(eq(milestonesV2Table.programId, Number.parseInt(query.programId, 10)));
+        whereConditions.push(eq(milestonesV2Table.programId, query.programId));
       }
       if (query?.applicationId) {
         whereConditions.push(
@@ -189,13 +189,15 @@ export class MilestoneV2Service {
 
     try {
       const milestoneData: NewMilestoneV2 = {
-        programId: Number.parseInt(input.programId, 10),
+        programId: input.programId,
         applicationId: Number.parseInt(input.applicationId, 10),
         sponsorId: Number.parseInt(input.sponsorId, 10),
-        title: input.title,
-        description: input.description,
-        payout: input.payout,
-        deadline: new Date(input.deadline),
+        ...(input.title !== null && input.title !== undefined && { title: input.title }),
+        ...(input.description !== null &&
+          input.description !== undefined && { description: input.description }),
+        ...(input.payout !== null && input.payout !== undefined && { payout: input.payout }),
+        ...(input.deadline !== null &&
+          input.deadline !== undefined && { deadline: new Date(input.deadline) }),
         status: input.status ?? 'draft', // Default to 'draft' if not provided
       };
 

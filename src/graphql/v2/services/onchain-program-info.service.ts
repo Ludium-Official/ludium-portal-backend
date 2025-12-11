@@ -37,7 +37,7 @@ export class OnchainProgramInfoV2Service {
   }
 
   async getByProgramId(
-    programId: number,
+    programId: string,
     pagination?: { limit?: number; offset?: number },
   ): Promise<{ data: OnchainProgramInfo[]; count: number }> {
     const { limit = 10, offset = 0 } = pagination ?? {};

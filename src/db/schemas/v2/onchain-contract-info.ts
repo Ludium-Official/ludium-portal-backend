@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { integer, pgEnum, pgTable, serial, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { integer, pgEnum, pgTable, serial, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { programsV2Table } from './programs';
 import { smartContractsTable } from './smart-contracts';
 import { usersV2Table } from './users';
@@ -25,7 +25,7 @@ export const onchainContractStatusEnum = pgEnum(
 
 export const onchainContractInfoTable = pgTable('onchain_contract_info', {
   id: serial('id').primaryKey(),
-  programId: integer('program_id')
+  programId: uuid('program_id')
     .notNull()
     .references(() => programsV2Table.id, { onDelete: 'cascade' }),
   sponsorId: integer('sponsor_id')

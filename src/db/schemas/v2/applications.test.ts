@@ -8,7 +8,7 @@ import { type NewUserV2, usersV2Table } from './users';
 
 describe('Applications V2 Table', () => {
   let testUserId: number;
-  let testProgramId: number;
+  let testProgramId: string;
   let testNetworkId: number;
   let testTokenId: number;
 
@@ -150,7 +150,7 @@ describe('Applications V2 Table', () => {
 
   it('should enforce foreign key constraint for programId', async () => {
     const newApplication: NewApplicationV2 = {
-      programId: 999999, // Non-existent program ID
+      programId: '999999', // Non-existent program ID
       applicantId: testUserId,
       status: 'submitted',
     };

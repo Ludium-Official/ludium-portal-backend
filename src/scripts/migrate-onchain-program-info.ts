@@ -118,7 +118,7 @@ async function migratePrograms() {
           v2SmartContracts.find((s) => s.chainInfoId === networkId && s.name === 'LdRecruitment')
             ?.id ?? 999;
 
-        const v2ProgramId = v2Programs.find((p) => p.title === v1Program.name)?.id ?? 999;
+        const v2ProgramId = v2Programs.find((p) => p.title === v1Program.name)?.id ?? "999";
         const newOnchainProgramInfo: NewOnchainProgramInfo = {
           programId: v2ProgramId,
           networkId: networkId as number,
