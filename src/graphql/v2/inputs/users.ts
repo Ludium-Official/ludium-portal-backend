@@ -30,11 +30,11 @@ export const CreateUserV2Input = builder.inputType('CreateUserV2Input', {
       type: UserRoleEnum,
       description: 'User role (defaults to user)',
     }),
-    firstName: t.string({
-      description: 'User first name',
+    nickname: t.string({
+      description: 'User nickname',
     }),
-    lastName: t.string({
-      description: 'User last name',
+    location: t.string({
+      description: 'User location/timezone (e.g., "(GMT+09:00) Korea Standard Time - Seoul")',
     }),
     organizationName: t.string({
       description: 'User organization name',
@@ -73,11 +73,11 @@ export const UpdateUserV2Input = builder.inputType('UpdateUserV2Input', {
     walletAddress: t.string({
       description: 'User wallet address',
     }),
-    firstName: t.string({
-      description: 'User first name',
+    nickname: t.string({
+      description: 'User nickname',
     }),
-    lastName: t.string({
-      description: 'User last name',
+    location: t.string({
+      description: 'User location/timezone (e.g., "(GMT+09:00) Korea Standard Time - Seoul")',
     }),
     organizationName: t.string({
       description: 'User organization name',
@@ -112,11 +112,11 @@ export const UpdateProfileV2Input = builder.inputType('UpdateProfileV2Input', {
       description: 'User email address',
       validate: { email: true },
     }),
-    firstName: t.string({
-      description: 'User first name',
+    nickname: t.string({
+      description: 'User nickname',
     }),
-    lastName: t.string({
-      description: 'User last name',
+    location: t.string({
+      description: 'User location/timezone (e.g., "(GMT+09:00) Korea Standard Time - Seoul")',
     }),
     organizationName: t.string({
       description: 'User organization name',

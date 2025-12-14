@@ -55,13 +55,13 @@ export const UserV2Type = UserV2Ref.implement({
     }),
 
     // Profile fields
-    firstName: t.exposeString('firstName', {
+    nickname: t.exposeString('nickname', {
       nullable: true,
-      description: 'User first name',
+      description: 'User nickname',
     }),
-    lastName: t.exposeString('lastName', {
+    location: t.exposeString('location', {
       nullable: true,
-      description: 'User last name',
+      description: 'User location/timezone (e.g., "(GMT+09:00) Korea Standard Time - Seoul")',
     }),
     organizationName: t.exposeString('organizationName', {
       nullable: true,

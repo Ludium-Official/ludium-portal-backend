@@ -81,8 +81,7 @@ export class UserV2Service {
           or(
             ilike(usersV2Table.walletAddress, `%${search}%`),
             ilike(usersV2Table.email, `%${search}%`),
-            ilike(usersV2Table.firstName, `%${search}%`),
-            ilike(usersV2Table.lastName, `%${search}%`),
+            ilike(usersV2Table.nickname, `%${search}%`),
           ),
         );
       }
@@ -107,10 +106,8 @@ export class UserV2Service {
 
       const sortColumn = (() => {
         switch (sortBy) {
-          case 'firstName':
-            return usersV2Table.firstName;
-          case 'lastName':
-            return usersV2Table.lastName;
+          case 'nickname':
+            return usersV2Table.nickname;
           case 'updatedAt':
             return usersV2Table.updatedAt;
           default:
@@ -176,11 +173,8 @@ export class UserV2Service {
             case 'loginType':
               whereConditions.push(eq(usersV2Table.loginType, value as LoginType));
               break;
-            case 'firstName':
-              whereConditions.push(eq(usersV2Table.firstName, value));
-              break;
-            case 'lastName':
-              whereConditions.push(eq(usersV2Table.lastName, value));
+            case 'nickname':
+              whereConditions.push(eq(usersV2Table.nickname, value));
               break;
             case 'organizationName':
               whereConditions.push(eq(usersV2Table.organizationName, value));
@@ -317,8 +311,8 @@ export class UserV2Service {
       walletAddress: input.walletAddress,
       email: input.email ?? null,
       role: (input.role ?? 'user') as UserRole,
-      firstName: input.firstName ?? null,
-      lastName: input.lastName ?? null,
+      nickname: input.nickname ?? null,
+      location: input.location ?? null,
       organizationName: input.organizationName ?? null,
       profileImage: input.profileImage ?? null,
       bio: input.bio ?? null,
@@ -342,8 +336,8 @@ export class UserV2Service {
     if (input.walletAddress !== undefined && input.walletAddress !== null) {
       updateData.walletAddress = input.walletAddress;
     }
-    if (input.firstName !== undefined) updateData.firstName = input.firstName ?? null;
-    if (input.lastName !== undefined) updateData.lastName = input.lastName ?? null;
+    if (input.nickname !== undefined) updateData.nickname = input.nickname ?? null;
+    if (input.location !== undefined) updateData.location = input.location ?? null;
     if (input.organizationName !== undefined)
       updateData.organizationName = input.organizationName ?? null;
     if (input.profileImage !== undefined) updateData.profileImage = input.profileImage ?? null;
@@ -416,8 +410,8 @@ export class UserV2Service {
       }
 
       if (input.email !== undefined) updateData.email = input.email ?? null;
-      if (input.firstName !== undefined) updateData.firstName = input.firstName ?? null;
-      if (input.lastName !== undefined) updateData.lastName = input.lastName ?? null;
+      if (input.nickname !== undefined) updateData.nickname = input.nickname ?? null;
+      if (input.location !== undefined) updateData.location = input.location ?? null;
       if (input.organizationName !== undefined)
         updateData.organizationName = input.organizationName ?? null;
       if (input.bio !== undefined) updateData.bio = input.bio ?? null;
