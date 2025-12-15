@@ -1,7 +1,4 @@
-import { type NewUserV2, usersV2Table } from '@/db/schemas';
-import { applicationsV2Table } from '@/db/schemas/v2/applications';
-import { milestonesV2Table } from '@/db/schemas/v2/milestones';
-import { programsV2Table } from '@/db/schemas/v2/programs';
+import type { NewUserV2 } from '@/db/schemas';
 import { db } from '@/db/test-db';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
@@ -9,7 +6,6 @@ import { createTestServer } from '../helper';
 
 describe('Dashboard V2 GraphQL API - Integration Tests', () => {
   let server: FastifyInstance;
-  let testUserId: number;
   let authToken: string;
 
   beforeAll(async () => {
@@ -25,8 +21,6 @@ describe('Dashboard V2 GraphQL API - Integration Tests', () => {
       email: 'dashboard@example.com',
       nickname: 'Test User',
     };
-    const [insertedUser] = await db.insert(usersV2Table).values(testUser).returning();
-    testUserId = insertedUser.id;
 
     // Login to get auth token
     const loginMutation = `

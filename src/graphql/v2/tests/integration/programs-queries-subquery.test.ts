@@ -33,8 +33,7 @@ describe('Programs V2 - Subquery Tests (Joined Queries with application_count)',
       loginType: 'wallet',
       role: 'user',
       email: 'creator@example.com',
-      firstName: 'Test',
-      lastName: 'Creator',
+      nickname: 'Test User',
     };
     const [insertedUser] = await db.insert(usersV2Table).values(testUser).returning();
     testUserId = insertedUser.id;
