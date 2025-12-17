@@ -2,7 +2,11 @@ import { programsV2Table } from '@/db/schemas/v2/programs';
 import { DashboardV2Service } from '@/graphql/v2/services/dashboard.service';
 import type { Context, Root } from '@/types';
 import { eq, sql } from 'drizzle-orm';
-import type { HiringActivityV2Input, ProgramOverviewV2Input } from '@/graphql/v2/inputs/dashboard';
+import type {
+  HiringActivityV2Input,
+  JobActivityV2Input,
+  ProgramOverviewV2Input,
+} from '@/graphql/v2/inputs/dashboard';
 
 export async function getDashboardV2Resolver(
   _root: Root,
@@ -71,6 +75,43 @@ export async function getHiringActivityV2Resolver(
   const [cards, programs] = await Promise.all([
     service.getSponsorHiringActivityCards(userId),
     service.getSponsorHiringActivityPrograms(
+      userId,
+      statusFilter,
+      paginationOptions,
+      search ?? undefined,
+    ),
+  ]);
+
+  return {
+    cards,
+    programs,
+  };
+}
+
+export async function getJobActivityV2Resolver(
+  _root: Root,
+  args: { input: typeof JobActivityV2Input.$inferInput },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+
+  const service = new DashboardV2Service(ctx.db, ctx.server);
+  const userId = ctx.userV2.id;
+  const { status, search, pagination } = args.input;
+  const statusFilter: 'APPLIED' | 'ONGOING' | 'COMPLETED' = status ?? 'APPLIED';
+
+  const paginationOptions = pagination
+    ? {
+        limit: pagination.limit ?? undefined,
+        offset: pagination.offset ?? undefined,
+      }
+    : undefined;
+
+  const [cards, programs] = await Promise.all([
+    service.getBuilderJobActivityCards(userId),
+    service.getBuilderJobActivityPrograms(
       userId,
       statusFilter,
       paginationOptions,

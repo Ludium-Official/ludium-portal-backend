@@ -181,7 +181,7 @@ export const JobActivityV2Type = builder
   .objectRef<{
     cards: { applied: number; ongoing: number; completed: number };
     programs: {
-      data: (ProgramV2 & { applicationCount: number })[];
+      data: (ProgramV2 & { appliedAt: Date })[];
       count: number;
     };
   }>('JobActivityV2')
