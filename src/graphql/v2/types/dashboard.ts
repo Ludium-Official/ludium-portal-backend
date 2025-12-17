@@ -181,7 +181,7 @@ export const JobActivityV2Type = builder
   .objectRef<{
     cards: { applied: number; ongoing: number; completed: number };
     programs: {
-      data: (ProgramV2 & { applicationCount: number })[];
+      data: (ProgramV2 & { appliedAt: Date })[];
       count: number;
     };
   }>('JobActivityV2')
@@ -391,7 +391,7 @@ export const ProgramOverviewV2Type = builder
               tokenId: number;
             }>;
             count: number;
-          }>('PaginatedUsersV2')
+          }>('PaginatedHiredBuildersV2')
           .implement({
             fields: (t) => ({
               data: t.field({

@@ -40,17 +40,15 @@ export const MilestoneV2Type = builder.objectRef<DBMilestoneV2>('MilestoneV2').i
     sponsorId: t.exposeInt('sponsorId', {
       description: 'ID of the sponsor (user) who created this milestone',
     }),
-    title: t.exposeString('title', {
-      description: 'Milestone title',
-    }),
+    title: t.exposeString('title', { nullable: true, description: 'Milestone title' }),
     description: t.exposeString('description', {
+      nullable: true,
       description: 'Milestone description',
     }),
-    payout: t.exposeString('payout', {
-      description: 'Milestone payout amount',
-    }),
+    payout: t.exposeString('payout', { nullable: true, description: 'Milestone payout amount' }),
     deadline: t.field({
       type: 'DateTime',
+      nullable: true,
       resolve: (milestone) => milestone.deadline,
       description: 'Milestone deadline',
     }),
@@ -60,6 +58,7 @@ export const MilestoneV2Type = builder.objectRef<DBMilestoneV2>('MilestoneV2').i
     }),
     status: t.field({
       type: MilestoneStatusV2Enum,
+      nullable: true,
       resolve: (milestone) => milestone.status,
       description: 'Milestone status: draft, under_review, in_progress, or completed',
     }),

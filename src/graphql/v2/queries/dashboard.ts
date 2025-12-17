@@ -2,10 +2,20 @@ import builder from '@/graphql/builder';
 import {
   getDashboardV2Resolver,
   getHiringActivityV2Resolver,
+  getJobActivityV2Resolver,
   getProgramOverviewV2Resolver,
 } from '@/graphql/v2/resolvers/dashboard';
-import { HiringActivityV2Input, ProgramOverviewV2Input } from '../inputs/dashboard';
-import { DashboardV2Type, HiringActivityV2Type, ProgramOverviewV2Type } from '../types/dashboard';
+import {
+  HiringActivityV2Input,
+  JobActivityV2Input,
+  ProgramOverviewV2Input,
+} from '../inputs/dashboard';
+import {
+  DashboardV2Type,
+  HiringActivityV2Type,
+  JobActivityV2Type,
+  ProgramOverviewV2Type,
+} from '../types/dashboard';
 
 builder.queryFields((t) => ({
   dashboardV2: t.field({
@@ -21,26 +31,24 @@ builder.queryFields((t) => ({
       input: t.arg({
         type: HiringActivityV2Input,
         required: true,
-        description:
-          'Hiring activity query input (type: SPONSOR or BUILDER, status filter, pagination)',
+        description: 'Hiring activity query input (status filter, pagination)',
       }),
     },
     resolve: getHiringActivityV2Resolver,
-    description: 'Get hiring activity data (cards and programs list) for sponsor or builder',
+    description: 'Get hiring activity data (cards and programs list)',
   }),
   jobActivityV2: t.field({
-    type: HiringActivityV2Type,
+    type: JobActivityV2Type,
     authScopes: { userV2: true },
     args: {
       input: t.arg({
-        type: HiringActivityV2Input,
+        type: JobActivityV2Input,
         required: true,
-        description:
-          'Hiring activity query input (type: SPONSOR or BUILDER, status filter, pagination)',
+        description: 'Job activity query input (status filter, pagination)',
       }),
     },
-    resolve: getHiringActivityV2Resolver,
-    description: 'Get hiring activity data (cards and programs list) for sponsor or builder',
+    resolve: getJobActivityV2Resolver,
+    description: 'Get job activity data (cards and programs list)',
   }),
   programOverviewV2: t.field({
     type: ProgramOverviewV2Type,

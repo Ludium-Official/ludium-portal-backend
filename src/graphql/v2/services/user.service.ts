@@ -18,6 +18,7 @@ import type {
 } from '@/graphql/v2/inputs/users';
 import type { Context } from '@/types';
 import { and, asc, count, desc, eq, ilike, isNotNull, isNull, or } from 'drizzle-orm';
+import { randomInt } from 'node:crypto';
 
 type LoginType = 'google' | 'wallet' | 'farcaster';
 type UserRole = 'user' | 'admin';
@@ -367,7 +368,7 @@ export class UserV2Service {
   }
 
   private generateVerificationCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return randomInt(100000, 1000000).toString();
   }
 
   async requestEmailVerification(email: string, userId: number): Promise<boolean> {
