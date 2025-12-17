@@ -391,7 +391,7 @@ export const ProgramOverviewV2Type = builder
               tokenId: number;
             }>;
             count: number;
-          }>('PaginatedUsersV2')
+          }>('PaginatedHiredBuildersV2')
           .implement({
             fields: (t) => ({
               data: t.field({
