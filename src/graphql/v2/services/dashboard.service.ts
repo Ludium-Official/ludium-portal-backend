@@ -16,8 +16,30 @@ import {
   ne,
   sql,
   ilike,
+  isNotNull,
 } from 'drizzle-orm';
 
+/**
+ * NOTE: Drizzle ORM Type Inference Limitation in Joins
+ *
+ * This file contains multiple @ts-expect-error suppressions for Drizzle ORM join operations.
+ * This is due to a known limitation in Drizzle's type inference system when dealing with
+ * join conditions, particularly with UUID and integer foreign key relationships.
+ *
+ * The issue occurs because Drizzle cannot infer that:
+ * - programsV2Table.id (UUID) and applicationsV2Table.programId (UUID) are compatible
+ * - milestonesV2Table.applicationId (integer) and applicationsV2Table.id (integer) are compatible
+ *
+ * Safety: All joins are safe because:
+ * 1. Foreign key relationships are properly defined in the schema
+ * 2. The types match at runtime (both are UUID or both are integer)
+ * 3. The database enforces referential integrity
+ *
+ * Future improvements:
+ * - Monitor Drizzle ORM updates for improved type inference
+ * - Consider using type assertions if Drizzle adds support for explicit join types
+ * - Document any workarounds as they become available
+ */
 export class DashboardV2Service {
   constructor(
     private db: Context['db'],
@@ -960,6 +982,7 @@ export class DashboardV2Service {
             inArray(milestonesV2Table.applicationId, applicationIds),
             lte(milestonesV2Table.deadline, deadlineLimit),
             gte(milestonesV2Table.deadline, now),
+            isNotNull(milestonesV2Table.deadline),
           ),
         )
         .orderBy(milestonesV2Table.deadline);
@@ -999,6 +1022,7 @@ export class DashboardV2Service {
             eq(milestonesV2Table.applicationId, application.id),
             lte(milestonesV2Table.deadline, deadlineLimit),
             gte(milestonesV2Table.deadline, now),
+            isNotNull(milestonesV2Table.deadline),
           ),
         )
         .orderBy(milestonesV2Table.deadline);
