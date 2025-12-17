@@ -1,4 +1,3 @@
-import type { Context } from '@/types';
 import { languagesV2Table, type LanguageV2 } from '@/db/schemas/v2/user-language';
 import {
   workExperiencesV2Table,
@@ -7,12 +6,16 @@ import {
 import { educationsV2Table, type EducationV2 } from '@/db/schemas/v2/user-educations';
 import { and, inArray, isNull } from 'drizzle-orm';
 import DataLoader from 'dataloader';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+type LoaderContext = {
+  db: PostgresJsDatabase;
+};
 
 /**
  * Languages DataLoader
- * 배치로 사용자들의 언어 정보를 가져옵니다
  */
-export function createLanguagesLoader(ctx: Context) {
+export function createLanguagesLoader(ctx: LoaderContext) {
   return new DataLoader<number, LanguageV2[]>(
     async (userIds) => {
       if (userIds.length === 0) return [];
@@ -41,9 +44,8 @@ export function createLanguagesLoader(ctx: Context) {
 
 /**
  * Work Experiences DataLoader
- * 배치로 사용자들의 경력 정보를 가져옵니다
  */
-export function createWorkExperiencesLoader(ctx: Context) {
+export function createWorkExperiencesLoader(ctx: LoaderContext) {
   return new DataLoader<number, WorkExperienceV2[]>(
     async (userIds) => {
       if (userIds.length === 0) return [];
@@ -77,9 +79,8 @@ export function createWorkExperiencesLoader(ctx: Context) {
 
 /**
  * Educations DataLoader
- * 배치로 사용자들의 학력 정보를 가져옵니다
  */
-export function createEducationsLoader(ctx: Context) {
+export function createEducationsLoader(ctx: LoaderContext) {
   return new DataLoader<number, EducationV2[]>(
     async (userIds) => {
       if (userIds.length === 0) return [];
@@ -110,4 +111,3 @@ export function createEducationsLoader(ctx: Context) {
     },
   );
 }
-
