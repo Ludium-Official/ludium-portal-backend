@@ -26,3 +26,7 @@ export * from './v2/onchain-contract-info';
 export * from './v2/onchain-program-info';
 export * from './v2/smart-contracts';
 export * from './v2/contracts';
+export * from './v2/email-verifications';
+export * from './v2/user-language';
+export * from './v2/user-work-experiences';
+export * from './v2/user-educations';

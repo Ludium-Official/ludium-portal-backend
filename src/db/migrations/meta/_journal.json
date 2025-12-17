@@ -78,6 +78,13 @@
       "when": 1765995667722,
       "tag": "0010_cynical_sunfire",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1766002929376,
+      "tag": "0011_magical_hiroim",
+      "breakpoints": true
     }
   ]
 }
