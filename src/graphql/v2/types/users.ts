@@ -2,14 +2,11 @@ import { programsV2Table } from '@/db/schemas/v2/programs';
 import { type UserV2 as DBUser, loginTypesV2, userV2Roles } from '@/db/schemas/v2/users';
 import builder from '@/graphql/builder';
 import type { Context } from '@/types';
-import { and, eq, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { ProgramV2Type } from './programs';
-import { languagesV2Table, type LanguageV2 } from '@/db/schemas/v2/user-language';
-import {
-  workExperiencesV2Table,
-  type WorkExperienceV2,
-} from '@/db/schemas/v2/user-work-experiences';
-import { educationsV2Table, type EducationV2 } from '@/db/schemas/v2/user-educations';
+import type { LanguageV2 } from '@/db/schemas/v2/user-language';
+import type { WorkExperienceV2 } from '@/db/schemas/v2/user-work-experiences';
+import type { EducationV2 } from '@/db/schemas/v2/user-educations';
 
 // ============================================================================
 // Enums
@@ -88,43 +85,26 @@ export const UserV2Type = UserV2Ref.implement({
       description: 'User skills list',
     }),
 
-    // Relations
+    // Relations - DataLoader
     languages: t.field({
       type: [LanguageV2Type],
       description: 'User languages',
       resolve: async (user, _args, ctx: Context) => {
-        const languages = await ctx.db
-          .select()
-          .from(languagesV2Table)
-          .where(eq(languagesV2Table.userId, user.id));
-        return languages ?? [];
+        return await ctx.loaders.languages.load(user.id);
       },
     }),
     workExperiences: t.field({
       type: [WorkExperienceV2Type],
       description: 'User work experiences',
       resolve: async (user, _args, ctx: Context) => {
-        const experiences = await ctx.db
-          .select()
-          .from(workExperiencesV2Table)
-          .where(
-            and(
-              eq(workExperiencesV2Table.userId, user.id),
-              isNull(workExperiencesV2Table.deletedAt),
-            ),
-          );
-        return experiences ?? [];
+        return await ctx.loaders.workExperiences.load(user.id);
       },
     }),
     educations: t.field({
       type: [EducationV2Type],
       description: 'User education history',
       resolve: async (user, _args, ctx: Context) => {
-        const educations = await ctx.db
-          .select()
-          .from(educationsV2Table)
-          .where(and(eq(educationsV2Table.userId, user.id), isNull(educationsV2Table.deletedAt)));
-        return educations ?? [];
+        return await ctx.loaders.educations.load(user.id);
       },
     }),
 
