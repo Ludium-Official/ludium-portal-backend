@@ -26,8 +26,7 @@ describe('Onchain Program Info V2 GraphQL API - Integration Tests', () => {
       loginType: 'wallet',
       role: 'admin',
       email: 'sponsor@test.com',
-      firstName: 'Spo',
-      lastName: 'Nsor',
+      nickname: 'Test User',
     };
     const [insertedSponsor] = await db.insert(usersV2Table).values(sponsor).returning();
 

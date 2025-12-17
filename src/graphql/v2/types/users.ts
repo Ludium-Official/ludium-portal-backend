@@ -2,8 +2,14 @@ import { programsV2Table } from '@/db/schemas/v2/programs';
 import { type UserV2 as DBUser, loginTypesV2, userV2Roles } from '@/db/schemas/v2/users';
 import builder from '@/graphql/builder';
 import type { Context } from '@/types';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { ProgramV2Type } from './programs';
+import { languagesV2Table, type LanguageV2 } from '@/db/schemas/v2/user-language';
+import {
+  workExperiencesV2Table,
+  type WorkExperienceV2,
+} from '@/db/schemas/v2/user-work-experiences';
+import { educationsV2Table, type EducationV2 } from '@/db/schemas/v2/user-educations';
 
 // ============================================================================
 // Enums
@@ -46,42 +52,80 @@ export const UserV2Type = UserV2Ref.implement({
       type: LoginTypeEnum,
       description: 'Authentication method used by the user',
     }),
-    walletAddress: t.exposeString('walletAddress', {
-      description: 'User wallet address',
-    }),
     email: t.exposeString('email', {
       nullable: true,
       description: 'User email address',
     }),
+    walletAddress: t.exposeString('walletAddress', {
+      description: 'User wallet address',
+    }),
 
     // Profile fields
-    firstName: t.exposeString('firstName', {
-      nullable: true,
-      description: 'User first name',
-    }),
-    lastName: t.exposeString('lastName', {
-      nullable: true,
-      description: 'User last name',
-    }),
-    organizationName: t.exposeString('organizationName', {
-      nullable: true,
-      description: 'User organization name',
-    }),
     profileImage: t.exposeString('profileImage', {
       nullable: true,
       description: 'User profile image URL',
     }),
-    bio: t.exposeString('bio', {
+    nickname: t.exposeString('nickname', {
       nullable: true,
-      description: 'User biography',
+      description: 'User nickname',
+    }),
+    location: t.exposeString('location', {
+      nullable: true,
+      description: 'User location/timezone (e.g., "(GMT+09:00) Korea Standard Time - Seoul")',
+    }),
+
+    about: t.exposeString('about', {
+      nullable: true,
+      description: 'User about (max 1000)',
+    }),
+
+    userRole: t.exposeString('userRole', {
+      nullable: true,
+      description: 'User professional role (e.g., "Web Developer")',
     }),
     skills: t.exposeStringList('skills', {
       nullable: true,
       description: 'User skills list',
     }),
-    links: t.exposeStringList('links', {
-      nullable: true,
-      description: 'User external links',
+
+    // Relations
+    languages: t.field({
+      type: [LanguageV2Type],
+      description: 'User languages',
+      resolve: async (user, _args, ctx: Context) => {
+        const languages = await ctx.db
+          .select()
+          .from(languagesV2Table)
+          .where(eq(languagesV2Table.userId, user.id));
+        return languages ?? [];
+      },
+    }),
+    workExperiences: t.field({
+      type: [WorkExperienceV2Type],
+      description: 'User work experiences',
+      resolve: async (user, _args, ctx: Context) => {
+        const experiences = await ctx.db
+          .select()
+          .from(workExperiencesV2Table)
+          .where(
+            and(
+              eq(workExperiencesV2Table.userId, user.id),
+              isNull(workExperiencesV2Table.deletedAt),
+            ),
+          );
+        return experiences ?? [];
+      },
+    }),
+    educations: t.field({
+      type: [EducationV2Type],
+      description: 'User education history',
+      resolve: async (user, _args, ctx: Context) => {
+        const educations = await ctx.db
+          .select()
+          .from(educationsV2Table)
+          .where(and(eq(educationsV2Table.userId, user.id), isNull(educationsV2Table.deletedAt)));
+        return educations ?? [];
+      },
     }),
 
     // Timestamps
@@ -157,3 +201,42 @@ export const PaginatedUsersV2Type = builder
       }),
     }),
   });
+
+export const LanguageV2Ref = builder.objectRef<LanguageV2>('LanguageV2');
+export const LanguageV2Type = LanguageV2Ref.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    userId: t.exposeInt('userId'),
+    language: t.exposeString('language'),
+    proficiency: t.exposeString('proficiency'),
+  }),
+});
+
+export const WorkExperienceV2Ref = builder.objectRef<WorkExperienceV2>('WorkExperienceV2');
+export const WorkExperienceV2Type = WorkExperienceV2Ref.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    userId: t.exposeInt('userId'),
+    company: t.exposeString('company'),
+    role: t.exposeString('role'),
+    employmentType: t.exposeString('employmentType'),
+    currentWork: t.exposeBoolean('currentWork'),
+    startYear: t.exposeInt('startYear'),
+    startMonth: t.exposeString('startMonth', { nullable: true }),
+    endYear: t.exposeInt('endYear', { nullable: true }),
+    endMonth: t.exposeString('endMonth', { nullable: true }),
+  }),
+});
+
+export const EducationV2Ref = builder.objectRef<EducationV2>('EducationV2');
+export const EducationV2Type = EducationV2Ref.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    userId: t.exposeInt('userId'),
+    school: t.exposeString('school'),
+    degree: t.exposeString('degree', { nullable: true }),
+    study: t.exposeString('study', { nullable: true }),
+    attendedStartDate: t.exposeInt('attendedStartDate', { nullable: true }),
+    attendedEndDate: t.exposeInt('attendedEndDate', { nullable: true }),
+  }),
+});

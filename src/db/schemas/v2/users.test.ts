@@ -14,13 +14,10 @@ describe('Users V2 Table', () => {
       email: 'test@example.com',
       walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
       loginType: 'wallet',
-      firstName: 'John',
-      lastName: 'Doe',
-      organizationName: 'Test Org',
+      nickname: 'John',
       profileImage: 'https://example.com/profile.jpg',
-      bio: 'This is a test user bio',
+      about: 'This is a test user about',
       skills: ['TypeScript', 'React', 'Web3'],
-      links: ['https://github.com/johndoe', 'https://twitter.com/johndoe'],
     };
 
     const insertedUsers = await db.insert(usersV2Table).values(newUser).returning();
@@ -31,13 +28,10 @@ describe('Users V2 Table', () => {
     expect(user.walletAddress).toBe(newUser.walletAddress);
     expect(user.loginType).toBe(newUser.loginType);
     expect(user.role).toBe('user'); // default value
-    expect(user.firstName).toBe(newUser.firstName);
-    expect(user.lastName).toBe(newUser.lastName);
-    expect(user.organizationName).toBe(newUser.organizationName);
+    expect(user.nickname).toBe(newUser.nickname);
     expect(user.profileImage).toBe(newUser.profileImage);
-    expect(user.bio).toBe(newUser.bio);
+    expect(user.about).toBe(newUser.about);
     expect(user.skills).toEqual(newUser.skills);
-    expect(user.links).toEqual(newUser.links);
     expect(user.createdAt).toBeDefined();
     expect(user.updatedAt).toBeDefined();
 
@@ -74,8 +68,7 @@ describe('Users V2 Table', () => {
       email: 'google@example.com',
       walletAddress: '0x9876543210fedcba9876543210fedcba98765432',
       loginType: 'google',
-      firstName: 'Jane',
-      lastName: 'Smith',
+      nickname: 'Jane',
     };
 
     const insertedUsers = await db.insert(usersV2Table).values(newUser).returning();
@@ -85,8 +78,7 @@ describe('Users V2 Table', () => {
     expect(user.email).toBe(newUser.email);
     expect(user.walletAddress).toBe(newUser.walletAddress);
     expect(user.loginType).toBe('google');
-    expect(user.firstName).toBe(newUser.firstName);
-    expect(user.lastName).toBe(newUser.lastName);
+    expect(user.nickname).toBe(newUser.nickname);
   });
 
   it('should create a user with Farcaster login', async () => {
@@ -94,9 +86,8 @@ describe('Users V2 Table', () => {
       email: 'farcaster@example.com',
       walletAddress: '0xfedcba0987654321fedcba0987654321fedcba09',
       loginType: 'farcaster',
-      firstName: 'Alice',
-      lastName: 'Johnson',
-      bio: 'Farcaster user bio',
+      nickname: 'Alice',
+      about: 'Farcaster user about',
     };
 
     const insertedUsers = await db.insert(usersV2Table).values(newUser).returning();
@@ -104,7 +95,7 @@ describe('Users V2 Table', () => {
 
     expect(user).toBeDefined();
     expect(user.loginType).toBe('farcaster');
-    expect(user.bio).toBe(newUser.bio);
+    expect(user.about).toBe(newUser.about);
   });
 
   it('should create an admin user', async () => {
@@ -113,8 +104,7 @@ describe('Users V2 Table', () => {
       walletAddress: '0xadmin1234567890admin1234567890admin1234',
       loginType: 'wallet',
       role: 'admin',
-      firstName: 'Admin',
-      lastName: 'User',
+      nickname: 'Admin',
     };
 
     const insertedUsers = await db.insert(usersV2Table).values(newUser).returning();
@@ -197,7 +187,6 @@ describe('Users V2 Table', () => {
       walletAddress: '0xempty1234567890empty1234567890empty1234',
       loginType: 'wallet',
       skills: [],
-      links: [],
     };
 
     const insertedUsers = await db.insert(usersV2Table).values(newUser).returning();
@@ -205,7 +194,6 @@ describe('Users V2 Table', () => {
 
     expect(user).toBeDefined();
     expect(user.skills).toEqual([]);
-    expect(user.links).toEqual([]);
   });
 
   it('should handle null values for optional fields', async () => {
@@ -213,21 +201,17 @@ describe('Users V2 Table', () => {
       email: 'null@example.com',
       walletAddress: '0xnull1234567890null1234567890null123456',
       loginType: 'wallet',
-      firstName: null,
-      lastName: null,
-      organizationName: null,
+      nickname: null,
       profileImage: null,
-      bio: null,
+      about: null,
     };
 
     const insertedUsers = await db.insert(usersV2Table).values(newUser).returning();
     const user = insertedUsers[0];
 
     expect(user).toBeDefined();
-    expect(user.firstName).toBeNull();
-    expect(user.lastName).toBeNull();
-    expect(user.organizationName).toBeNull();
+    expect(user.nickname).toBeNull();
     expect(user.profileImage).toBeNull();
-    expect(user.bio).toBeNull();
+    expect(user.about).toBeNull();
   });
 });

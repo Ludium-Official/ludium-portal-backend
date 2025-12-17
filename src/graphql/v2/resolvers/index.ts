@@ -11,3 +11,4 @@ export * from './users';
 export * from './networks';
 export * from './tokens';
 export * from './smart-contracts';
+export * from './dashboard';

@@ -47,8 +47,7 @@ describe('OnchainProgramInfoTable', () => {
         loginType: 'wallet',
         role: 'user',
         email: 'sponsor@tests.dev',
-        firstName: 'Spo',
-        lastName: 'Nsor',
+        nickname: 'Sponsor',
       })
       .returning();
     sponsorId = user.id;

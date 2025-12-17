@@ -18,8 +18,7 @@ describe('Applications V2 Table', () => {
       walletAddress: '0xApplicant12345678901234567890123456789012',
       loginType: 'wallet',
       role: 'user',
-      firstName: 'Applicant',
-      lastName: 'User',
+      nickname: 'Applicant',
     };
     const [insertedUser] = await db.insert(usersV2Table).values(testUser).returning();
     testUserId = insertedUser.id;
@@ -304,8 +303,7 @@ describe('Applications V2 Table', () => {
       walletAddress: '0xSecondApplicant1234567890123456789012345678',
       loginType: 'google',
       role: 'user',
-      firstName: 'Second',
-      lastName: 'Applicant',
+      nickname: 'Second',
     };
     const [secondUserInserted] = await db.insert(usersV2Table).values(anotherUser).returning();
     const secondUserId = secondUserInserted.id;

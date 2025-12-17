@@ -30,26 +30,24 @@ export const CreateUserV2Input = builder.inputType('CreateUserV2Input', {
       type: UserRoleEnum,
       description: 'User role (defaults to user)',
     }),
-    firstName: t.string({
-      description: 'User first name',
+    nickname: t.string({
+      description: 'User nickname',
     }),
-    lastName: t.string({
-      description: 'User last name',
-    }),
-    organizationName: t.string({
-      description: 'User organization name',
+    location: t.string({
+      description: 'User location/timezone (e.g., "(GMT+09:00) Korea Standard Time - Seoul")',
     }),
     profileImage: t.string({
       description: 'User profile image URL',
     }),
-    bio: t.string({
-      description: 'User bio/description',
+    about: t.string({
+      description: 'User about section (max 1000 characters)',
+      validate: { maxLength: 1000 },
+    }),
+    userRole: t.string({
+      description: 'User professional role (e.g., "Web Developer")',
     }),
     skills: t.stringList({
       description: 'User skills array',
-    }),
-    links: t.stringList({
-      description: 'User links array',
     }),
   }),
 });
@@ -73,26 +71,24 @@ export const UpdateUserV2Input = builder.inputType('UpdateUserV2Input', {
     walletAddress: t.string({
       description: 'User wallet address',
     }),
-    firstName: t.string({
-      description: 'User first name',
+    nickname: t.string({
+      description: 'User nickname',
     }),
-    lastName: t.string({
-      description: 'User last name',
-    }),
-    organizationName: t.string({
-      description: 'User organization name',
+    location: t.string({
+      description: 'User location/timezone (e.g., "(GMT+09:00) Korea Standard Time - Seoul")',
     }),
     profileImage: t.string({
       description: 'User profile image URL',
     }),
-    bio: t.string({
-      description: 'User bio/description',
+    about: t.string({
+      description: 'User about section (max 1000 characters)',
+      validate: { maxLength: 1000 },
+    }),
+    userRole: t.string({
+      description: 'User professional role (e.g., "Web Developer")',
     }),
     skills: t.stringList({
       description: 'User skills array',
-    }),
-    links: t.stringList({
-      description: 'User links array',
     }),
     role: t.field({
       type: UserRoleEnum,
@@ -103,39 +99,129 @@ export const UpdateUserV2Input = builder.inputType('UpdateUserV2Input', {
 
 /**
  * Input type for updating current user's profile
- * Similar to UpdateUserV2Input but without the id field (uses authenticated user's ID)
  */
-export const UpdateProfileV2Input = builder.inputType('UpdateProfileV2Input', {
+export const UpdateProfileSectionV2Input = builder.inputType('UpdateProfileSectionV2Input', {
   fields: (t) => ({
-    // Optional fields that can be updated in profile
+    nickname: t.string({
+      required: true,
+      description: 'User nickname (required)',
+    }),
     email: t.string({
-      description: 'User email address',
+      required: true,
+      description: 'User email address (required)',
       validate: { email: true },
     }),
-    firstName: t.string({
-      description: 'User first name',
-    }),
-    lastName: t.string({
-      description: 'User last name',
-    }),
-    organizationName: t.string({
-      description: 'User organization name',
+    location: t.string({
+      required: true,
+      description: 'User location/timezone (required)',
     }),
     profileImage: t.field({
       type: 'Upload',
-      description: 'User profile image URL',
+      description: 'User profile image (optional)',
     }),
-    bio: t.string({
-      description: 'User bio/description',
+    verificationCode: t.string({
+      description: 'Email verification code (required if email is new or changed)',
+    }),
+  }),
+});
+
+export const UpdateAboutSectionV2Input = builder.inputType('UpdateAboutSectionV2Input', {
+  fields: (t) => ({
+    about: t.string({
+      required: true,
+      description: 'User about section (max 1000 characters, required)',
+      validate: { maxLength: 1000 },
+    }),
+  }),
+});
+
+export const LanguageV2Input = builder.inputType('LanguageV2Input', {
+  fields: (t) => ({
+    language: t.string({ required: true }),
+    proficiency: t.string({ required: true }),
+  }),
+});
+
+export const UpdateExpertiseSectionV2Input = builder.inputType('UpdateExpertiseSectionV2Input', {
+  fields: (t) => ({
+    role: t.string({
+      required: true,
+      description: 'User professional role (required)',
     }),
     skills: t.stringList({
       description: 'User skills array',
     }),
-    links: t.stringList({
-      description: 'User links array',
+    languages: t.field({
+      type: [LanguageV2Input],
+      description: 'User languages list',
     }),
   }),
 });
+
+export const WorkExperienceV2Input = builder.inputType('WorkExperienceV2Input', {
+  fields: (t) => ({
+    id: t.id({
+      description: 'Work experience ID (for update, omit for create)',
+    }),
+    company: t.string({ required: true }),
+    role: t.string({ required: true }),
+    employmentType: t.string({ required: true }),
+    currentWork: t.boolean({ required: true }),
+    startYear: t.int({ required: true }),
+    startMonth: t.string(),
+    endYear: t.int(),
+    endMonth: t.string(),
+  }),
+});
+
+export const UpdateWorkExperienceSectionV2Input = builder.inputType(
+  'UpdateWorkExperienceSectionV2Input',
+  {
+    fields: (t) => ({
+      workExperiences: t.field({
+        type: [WorkExperienceV2Input],
+        required: true,
+        description: 'List of work experiences (for delete, send empty array or omit the item)',
+      }),
+    }),
+  },
+);
+
+export const EducationV2Input = builder.inputType('EducationV2Input', {
+  fields: (t) => ({
+    id: t.id({
+      description: 'Education ID (for update, omit for create)',
+    }),
+    school: t.string({ required: true }),
+    degree: t.string(),
+    study: t.string(),
+    attendedStartDate: t.int(),
+    attendedEndDate: t.int(),
+  }),
+});
+
+export const UpdateEducationSectionV2Input = builder.inputType('UpdateEducationSectionV2Input', {
+  fields: (t) => ({
+    educations: t.field({
+      type: [EducationV2Input],
+      required: true,
+      description: 'List of educations (for delete, send empty array or omit the item)',
+    }),
+  }),
+});
+
+export const RequestEmailVerificationV2Input = builder.inputType(
+  'RequestEmailVerificationV2Input',
+  {
+    fields: (t) => ({
+      email: t.string({
+        required: true,
+        description: 'Email address to verify',
+        validate: { email: true },
+      }),
+    }),
+  },
+);
 
 // ============================================================================
 // Query Inputs
@@ -195,8 +281,7 @@ export const UserV2QueryFilterInput = builder.inputType('UserV2QueryFilterInput'
   fields: (t) => ({
     field: t.string({
       required: true,
-      description:
-        'Field name to filter by (walletAddress, email, role, loginType, firstName, lastName, organizationName)',
+      description: 'Field name to filter by (walletAddress, email, role, loginType, nickname)',
     }),
     value: t.string({
       description: 'Value to filter for',

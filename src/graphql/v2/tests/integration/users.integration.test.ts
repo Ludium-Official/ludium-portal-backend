@@ -20,8 +20,7 @@ describe('Users V2 GraphQL API - Integration Tests', () => {
       loginType: 'wallet',
       role: 'user',
       email: 'test@example.com',
-      firstName: 'Test',
-      lastName: 'User',
+      nickname: 'Test User',
     };
     const [insertedUser] = await db.insert(usersV2Table).values(testUser).returning();
     testUserId = insertedUser.id;

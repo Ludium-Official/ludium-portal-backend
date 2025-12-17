@@ -251,11 +251,10 @@ const requestDevHandler = (): RequestAuth => {
         devRole === 'relayer'
           ? '0xrelayer000000000000000000000000000000000'
           : '0xdev0000000000000000000000000000000000000',
-      firstName: devRole === 'relayer' ? 'Relayer' : 'Developer',
-      lastName: 'User',
-      organizationName: 'Ludium',
-      bio: `I am a ${devRole} user`,
-      links: ['https://github.com/developer', 'https://twitter.com/developer'],
+      location: '',
+      nickname: 'User',
+      about: `I am a ${devRole} user`,
+      userRole: 'Web Designer',
       createdAt: new Date(),
       updatedAt: new Date(),
       profileImage: '',

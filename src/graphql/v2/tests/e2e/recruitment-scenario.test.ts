@@ -66,8 +66,7 @@ describe('E2E Contract Scenario Test', () => {
       loginType: 'wallet',
       role: 'user',
       email: 'sponsor@test.com',
-      firstName: 'Sponsor',
-      lastName: 'Test',
+      nickname: 'Sponsor',
     };
 
     builder1 = {
@@ -75,8 +74,7 @@ describe('E2E Contract Scenario Test', () => {
       loginType: 'wallet',
       role: 'user',
       email: 'builder1@test.com',
-      firstName: 'Builder',
-      lastName: 'One',
+      nickname: 'Builder One',
     };
 
     builder2 = {
@@ -84,8 +82,7 @@ describe('E2E Contract Scenario Test', () => {
       loginType: 'wallet',
       role: 'user',
       email: 'builder2@test.com',
-      firstName: 'Builder',
-      lastName: 'Two',
+      nickname: 'Builder Two',
     };
 
     const [insertedSponsor] = await db.insert(usersV2Table).values(sponsor).returning();

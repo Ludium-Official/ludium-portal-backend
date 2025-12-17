@@ -10,3 +10,4 @@ export * from './onchain-contract-info';
 export * from './smart-contracts';
 export * from './onchain-program-info';
 export * from './contracts';
+export * from './dashboard';

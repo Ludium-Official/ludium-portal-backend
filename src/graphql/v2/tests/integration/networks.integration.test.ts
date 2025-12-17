@@ -19,8 +19,7 @@ describe('Networks V2 GraphQL API - Integration Tests', () => {
       loginType: 'wallet',
       role: 'admin',
       email: 'network@test.com',
-      firstName: 'Net',
-      lastName: 'Admin',
+      nickname: 'Test User',
     };
     await db.insert(usersV2Table).values(testUser).returning();
 

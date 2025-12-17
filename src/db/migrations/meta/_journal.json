@@ -64,6 +64,20 @@
       "when": 1765215543112,
       "tag": "0008_magical_the_executioner",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1765742526307,
+      "tag": "0009_ancient_pretty_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1765995667722,
+      "tag": "0010_cynical_sunfire",
+      "breakpoints": true
     }
   ]
 }

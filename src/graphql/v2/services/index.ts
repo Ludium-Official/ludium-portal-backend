@@ -11,3 +11,4 @@ export * from './user.service';
 export * from './network.service';
 export * from './token.service';
 export * from './smart-contracts.service';
+export * from './dashboard.service';

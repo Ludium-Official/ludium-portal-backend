@@ -24,8 +24,7 @@ describe('Milestones V2 GraphQL API - Integration Tests', () => {
       loginType: 'wallet',
       role: 'admin',
       email: 'sponsor@test.com',
-      firstName: 'Spo',
-      lastName: 'Nsor',
+      nickname: 'Test User',
     };
     const [insertedSponsor] = await db.insert(usersV2Table).values(sponsor).returning();
 
@@ -35,8 +34,7 @@ describe('Milestones V2 GraphQL API - Integration Tests', () => {
       loginType: 'wallet',
       role: 'user',
       email: 'applicant@test.com',
-      firstName: 'App',
-      lastName: 'Licant',
+      nickname: 'Test User 2',
     };
     const [insertedApplicant] = await db.insert(usersV2Table).values(applicant).returning();
     applicantId = insertedApplicant.id;
