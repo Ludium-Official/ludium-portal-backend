@@ -14,5 +14,11 @@ export const envSchema = {
     SWAPPED_STYLE_KEY: { type: 'string' },
     SWAPPED_PUBLIC_KEY: { type: 'string' },
     SWAPPED_SECRET_KEY: { type: 'string' },
+    EMAIL_HOST: { type: 'string' },
+    EMAIL_PORT: { type: 'string' },
+    EMAIL_SECURE: { type: 'string' },
+    EMAIL_USER: { type: 'string' },
+    EMAIL_PASS: { type: 'string' },
+    EMAIL_FROM: { type: 'string' },
   },
 };

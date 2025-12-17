@@ -21,8 +21,7 @@ describe('Onchain Contract Info Table', () => {
       walletAddress: '0xSponsor12345678901234567890123456789012',
       loginType: 'wallet',
       role: 'user',
-      firstName: 'Sponsor',
-      lastName: 'User',
+      nickname: 'Sponsor',
     };
     const [insertedSponsor] = await db.insert(usersV2Table).values(testSponsor).returning();
     testSponsorId = insertedSponsor.id;
@@ -32,8 +31,7 @@ describe('Onchain Contract Info Table', () => {
       walletAddress: '0xApplicant1234567890123456789012345678',
       loginType: 'wallet',
       role: 'user',
-      firstName: 'Applicant',
-      lastName: 'User',
+      nickname: 'Applicant',
     };
     const [insertedApplicant] = await db.insert(usersV2Table).values(testApplicant).returning();
     testApplicantId = insertedApplicant.id;
@@ -339,8 +337,7 @@ describe('Onchain Contract Info Table', () => {
       walletAddress: '0xAnotherApplicant123456789012345678901234567',
       loginType: 'google',
       role: 'user',
-      firstName: 'Another',
-      lastName: 'User',
+      nickname: 'Another',
     };
     const [anotherApplicantInserted] = await db
       .insert(usersV2Table)

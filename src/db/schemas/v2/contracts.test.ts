@@ -60,8 +60,7 @@ describe('Contracts V2 Table', () => {
       walletAddress: '0xSponsor12345678901234567890123456789012',
       loginType: 'wallet',
       role: 'user',
-      firstName: 'Sponsor',
-      lastName: 'User',
+      nickname: 'Sponsor',
     };
     const [insertedSponsor] = await db.insert(usersV2Table).values(testSponsor).returning();
     testSponsorId = insertedSponsor.id;
@@ -71,8 +70,7 @@ describe('Contracts V2 Table', () => {
       walletAddress: '0xApplicant1234567890123456789012345678',
       loginType: 'wallet',
       role: 'user',
-      firstName: 'Applicant',
-      lastName: 'User',
+      nickname: 'Applicant',
     };
     const [insertedApplicant] = await db.insert(usersV2Table).values(testApplicant).returning();
     testApplicantId = insertedApplicant.id;

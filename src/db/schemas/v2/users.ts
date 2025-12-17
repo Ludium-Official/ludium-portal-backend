@@ -17,13 +17,14 @@ export const usersV2Table = pgTable(
     walletAddress: varchar('wallet_address', { length: 256 }).notNull(),
 
     // Metadata
-    nickname: varchar('nickname', {length: 256}),
-    location: text('location'),
-    organizationName: varchar('organization_name', { length: 256 }),
     profileImage: text('profile_image'),
-    bio: text('bio'),
+    nickname: varchar('nickname', { length: 256 }),
+    location: text('location'),
+
+    about: varchar('about', { length: 1000 }),
+
+    userRole: varchar('user_role', { length: 256 }),
     skills: varchar('skills', { length: 256 }).array(),
-    links: varchar('links', { length: 256 }).array(),
 
     // TODO: Ban management
     // banned: boolean("banned").default(false).notNull(),
