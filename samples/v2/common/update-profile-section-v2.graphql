@@ -1,0 +1,14 @@
+# Update profile section (nickname, email, location, profileImage)
+
+mutation UpdateProfileSectionV2($input: UpdateProfileSectionV2Input!) {
+  updateProfileSectionV2(input: $input) {
+    about
+    createdPrograms
+    educations
+    email
+    languages
+    location
+    loginType
+    nickname
+  }
+}

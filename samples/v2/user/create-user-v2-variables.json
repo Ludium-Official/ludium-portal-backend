@@ -1,0 +1,14 @@
+{
+  "input": {
+    "about": "Example about",
+    "email": "example@example.com",
+    "location": "Example location",
+    "loginType": "farcaster",
+    "nickname": "Example nickname",
+    "profileImage": "Example profileImage",
+    "role": "admin",
+    "skills": "Example skills",
+    "userRole": "Example userRole",
+    "walletAddress": "Example walletAddress"
+  }
+}

@@ -1,0 +1,4 @@
+query ContractsV2($pagination: PaginationInput) {
+  contractsV2(pagination: $pagination) {
+  }
+}

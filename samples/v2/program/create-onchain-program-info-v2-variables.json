@@ -1,0 +1,10 @@
+{
+  "input": {
+    "networkId": 1,
+    "onchainProgramId": 1,
+    "programId": "Example programId",
+    "smartContractId": 1,
+    "status": "active",
+    "tx": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

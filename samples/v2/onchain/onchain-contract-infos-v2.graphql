@@ -1,0 +1,4 @@
+query OnchainContractInfosV2($pagination: PaginationInput) {
+  onchainContractInfosV2(pagination: $pagination) {
+  }
+}

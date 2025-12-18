@@ -1,0 +1,8 @@
+{
+  "id": "1",
+  "input": {
+    "builder_signature": "Example builder_signature",
+    "contract_snapshot_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "onchainContractId": 1
+  }
+}

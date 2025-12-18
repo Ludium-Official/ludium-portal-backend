@@ -1,0 +1,14 @@
+# Update work experience section
+
+mutation UpdateWorkExperienceSectionV2($input: UpdateWorkExperienceSectionV2Input!) {
+  updateWorkExperienceSectionV2(input: $input) {
+    about
+    createdPrograms
+    educations
+    email
+    languages
+    location
+    loginType
+    nickname
+  }
+}

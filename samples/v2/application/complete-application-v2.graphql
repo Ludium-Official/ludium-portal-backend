@@ -1,0 +1,14 @@
+# Complete an application after verifying all milestones are completed (only by applicant)
+
+mutation CompleteApplicationV2($id: ID!) {
+  completeApplicationV2(id: $id) {
+    applicant
+    applicantId
+    chatroomMessageId
+    content
+    picked
+    program
+    programId
+    rejectedReason
+  }
+}

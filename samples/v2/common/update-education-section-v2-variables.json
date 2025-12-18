@@ -1,0 +1,10 @@
+{
+  "input": {
+    "educations": {
+      "attendedEndDate": 1,
+      "attendedStartDate": 1,
+      "degree": "Example degree",
+      "school": "Example school"
+    }
+  }
+}

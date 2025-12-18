@@ -1,0 +1,14 @@
+# Update expertise section (role, skills, languages)
+
+mutation UpdateExpertiseSectionV2($input: UpdateExpertiseSectionV2Input!) {
+  updateExpertiseSectionV2(input: $input) {
+    about
+    createdPrograms
+    educations
+    email
+    languages
+    location
+    loginType
+    nickname
+  }
+}

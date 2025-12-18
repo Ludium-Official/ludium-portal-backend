@@ -1,0 +1,6 @@
+# Get all programs that the current builder has applied to, with pagination. Each program includes the builder's application with appliedAt. Default limit is 10, default offset is 0.
+
+query ProgramsByBuilderIdV2($builderId: ID!, $pagination: PaginationInput) {
+  programsByBuilderIdV2(builderId: $builderId, pagination: $pagination) {
+  }
+}

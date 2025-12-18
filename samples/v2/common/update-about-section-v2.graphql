@@ -1,0 +1,14 @@
+# Update about section (max 1000 characters)
+
+mutation UpdateAboutSectionV2($input: UpdateAboutSectionV2Input!) {
+  updateAboutSectionV2(input: $input) {
+    about
+    createdPrograms
+    educations
+    email
+    languages
+    location
+    loginType
+    nickname
+  }
+}

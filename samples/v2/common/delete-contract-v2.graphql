@@ -1,0 +1,12 @@
+mutation DeleteContractV2($id: ID!) {
+  deleteContractV2(id: $id) {
+    applicantId
+    applicationId
+    builder_signature
+    contract_snapshot_cotents
+    contract_snapshot_hash
+    onchainContractId
+    programId
+    smartContractId
+  }
+}

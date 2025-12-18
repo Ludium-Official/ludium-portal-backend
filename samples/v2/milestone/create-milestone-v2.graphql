@@ -1,0 +1,14 @@
+# Create a new milestone
+
+mutation CreateMilestoneV2($input: CreateMilestoneV2Input!) {
+  createMilestoneV2(input: $input) {
+    applicant
+    applicationId
+    deadline
+    description
+    files
+    onchainMetadata
+    payout
+    payout_tx
+  }
+}

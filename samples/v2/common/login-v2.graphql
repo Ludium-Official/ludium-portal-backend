@@ -1,0 +1,6 @@
+# Login or create user account and return JWT token
+
+mutation LoginV2($email: String, $loginType: LoginTypeEnum!, $walletAddress: String!) {
+  loginV2(email: $email, loginType: $loginType, walletAddress: $walletAddress) {
+  }
+}

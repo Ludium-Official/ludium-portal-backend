@@ -1,0 +1,14 @@
+# Update milestone payout_tx and status by relayer service
+
+mutation UpdateMilestoneByRelayerV2($id: ID!, $input: UpdateMilestoneByRelayerV2Input!) {
+  updateMilestoneByRelayerV2(id: $id, input: $input) {
+    applicant
+    applicationId
+    deadline
+    description
+    files
+    onchainMetadata
+    payout
+    payout_tx
+  }
+}

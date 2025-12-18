@@ -1,0 +1,4 @@
+query ContractsByProgramV2($pagination: PaginationInput, $programId: String!) {
+  contractsByProgramV2(pagination: $pagination, programId: $programId) {
+  }
+}

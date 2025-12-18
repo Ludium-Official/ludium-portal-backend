@@ -1,0 +1,14 @@
+# Delete an application by ID (only by the applicant)
+
+mutation DeleteApplicationV2($id: ID!) {
+  deleteApplicationV2(id: $id) {
+    applicant
+    applicantId
+    chatroomMessageId
+    content
+    picked
+    program
+    programId
+    rejectedReason
+  }
+}
