@@ -1,0 +1,12 @@
+{
+  "input": {
+    "company": "Example company",
+    "currentWork": true,
+    "employmentType": "Example employmentType",
+    "endMonth": "Example endMonth",
+    "endYear": 1,
+    "role": "Example role",
+    "startMonth": "Example startMonth",
+    "startYear": 1
+  }
+}

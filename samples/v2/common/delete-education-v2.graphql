@@ -1,0 +1,6 @@
+# Delete an education (hard delete)
+
+mutation DeleteEducationV2($id: ID!) {
+  deleteEducationV2(id: $id) {
+  }
+}

@@ -169,8 +169,8 @@ type BuilderMilestoneV2 {
   """Milestone unique identifier"""
   id: ID
 
-  """Milestone payout amount"""
-  payout: String
+  """Current paid amount (if status is completed and payout_tx exists)"""
+  paidAmount: String
 
   """Milestone status"""
   status: String
@@ -180,6 +180,9 @@ type BuilderMilestoneV2 {
 
   """Token ID for the milestone"""
   tokenId: Int
+
+  """Unpaid amount (amount not yet paid)"""
+  unpaidAmount: String
 }
 
 input BulkAssignTiersInput {
@@ -313,6 +316,14 @@ input CreateContractV2Input {
   programId: String!
   smartContractId: Int!
   sponsorId: Int!
+}
+
+input CreateEducationV2Input {
+  attendedEndDate: Int
+  attendedStartDate: Int
+  degree: String
+  school: String!
+  study: String
 }
 
 input CreateInvestmentInput {
@@ -497,6 +508,17 @@ input CreateUserV2Input {
   walletAddress: String!
 }
 
+input CreateWorkExperienceV2Input {
+  company: String!
+  currentWork: Boolean
+  employmentType: String
+  endMonth: String
+  endYear: Int
+  role: String!
+  startMonth: String
+  startYear: Int
+}
+
 type DashboardV2 {
   """Payment overview by week for builder (4 weeks)"""
   builderPaymentOverview: [PaymentWeek!]
@@ -529,17 +551,6 @@ type EducationV2 {
   school: String
   study: String
   userId: Int
-}
-
-input EducationV2Input {
-  attendedEndDate: Int
-  attendedStartDate: Int
-  degree: String
-
-  """Education ID (for update, omit for create)"""
-  id: ID
-  school: String!
-  study: String
 }
 
 type EnrichedCarouselItem {
@@ -905,6 +916,9 @@ type Mutation {
   createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
   createComment(input: CreateCommentInput!): Comment
   createContractV2(input: CreateContractV2Input!): ContractV2
+
+  """Create a new education"""
+  createEducationV2(input: CreateEducationV2Input!): EducationV2
   createInvestment(input: CreateInvestmentInput!): Investment
   createInvestmentTerm(applicationId: ID!, input: CreateInvestmentTermInput!): InvestmentTerm
 
@@ -930,6 +944,9 @@ type Mutation {
     input: CreateUserV2Input!
   ): UserV2
 
+  """Create a new work experience"""
+  createWorkExperienceV2(input: CreateWorkExperienceV2Input!): WorkExperienceV2
+
   """Delete an application by ID (only by the applicant)"""
   deleteApplicationV2(
     """Application ID"""
@@ -937,6 +954,12 @@ type Mutation {
   ): ApplicationV2
   deleteCarouselItem(id: ID!): CarouselItem
   deleteContractV2(id: ID!): ContractV2
+
+  """Delete an education (hard delete)"""
+  deleteEducationV2(
+    """Education ID to delete"""
+    id: ID!
+  ): Boolean
   deleteInvestmentTerm(id: ID!): Boolean
 
   """Delete a milestone by ID"""
@@ -956,6 +979,12 @@ type Mutation {
   """Delete a user by ID"""
   deleteUserV2(
     """User ID to delete"""
+    id: ID!
+  ): Boolean
+
+  """Delete a work experience (hard delete)"""
+  deleteWorkExperienceV2(
+    """Work experience ID to delete"""
     id: ID!
   ): Boolean
   demoteFromAdmin(userId: ID!): User
@@ -1050,8 +1079,8 @@ type Mutation {
   updateComment(input: UpdateCommentInput!): Comment
   updateContractV2(id: ID!, input: UpdateContractV2Input!): ContractV2
 
-  """Update education section"""
-  updateEducationSectionV2(input: UpdateEducationSectionV2Input!): UserV2
+  """Update an existing education"""
+  updateEducationV2(input: UpdateEducationV2Input!): EducationV2
 
   """Update expertise section (role, skills, languages)"""
   updateExpertiseSectionV2(input: UpdateExpertiseSectionV2Input!): UserV2
@@ -1104,8 +1133,8 @@ type Mutation {
     input: UpdateUserV2Input!
   ): UserV2
 
-  """Update work experience section"""
-  updateWorkExperienceSectionV2(input: UpdateWorkExperienceSectionV2Input!): UserV2
+  """Update an existing work experience"""
+  updateWorkExperienceV2(input: UpdateWorkExperienceV2Input!): WorkExperienceV2
 
   """Verify email with verification code"""
   verifyEmailV2(email: String!, verificationCode: String!): Boolean
@@ -2018,9 +2047,15 @@ input UpdateContractV2Input {
   onchainContractId: Int
 }
 
-input UpdateEducationSectionV2Input {
-  """List of educations (for delete, send empty array or omit the item)"""
-  educations: [EducationV2Input!]!
+input UpdateEducationV2Input {
+  attendedEndDate: Int
+  attendedStartDate: Int
+  degree: String
+
+  """Education ID to update"""
+  id: ID!
+  school: String!
+  study: String
 }
 
 input UpdateExpertiseSectionV2Input {
@@ -2217,11 +2252,18 @@ input UpdateUserV2Input {
   walletAddress: String
 }
 
-input UpdateWorkExperienceSectionV2Input {
-  """
-  List of work experiences (for delete, send empty array or omit the item)
-  """
-  workExperiences: [WorkExperienceV2Input!]!
+input UpdateWorkExperienceV2Input {
+  company: String!
+  currentWork: Boolean
+  employmentType: String
+  endMonth: String
+  endYear: Int
+
+  """Work experience ID to update"""
+  id: ID!
+  role: String!
+  startMonth: String
+  startYear: Int
 }
 
 scalar Upload
@@ -2417,18 +2459,4 @@ type WorkExperienceV2 {
   startMonth: String
   startYear: Int
   userId: Int
-}
-
-input WorkExperienceV2Input {
-  company: String!
-  currentWork: Boolean!
-  employmentType: String!
-  endMonth: String
-  endYear: Int
-
-  """Work experience ID (for update, omit for create)"""
-  id: ID
-  role: String!
-  startMonth: String
-  startYear: Int!
 }

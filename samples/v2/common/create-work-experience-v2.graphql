@@ -1,0 +1,14 @@
+# Create a new work experience
+
+mutation CreateWorkExperienceV2($input: CreateWorkExperienceV2Input!) {
+  createWorkExperienceV2(input: $input) {
+    company
+    currentWork
+    employmentType
+    endMonth
+    endYear
+    role
+    startMonth
+    startYear
+  }
+}

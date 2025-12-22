@@ -41,7 +41,7 @@ export class EmailService {
           <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
             ${verificationCode}
           </div>
-          <p>This code will expire in 10 minutes.</p>
+          <p>This code will expire in 2 minutes.</p>
           <p>For security reasons, please do not share this code with anyone.</p>
           <p>If you didn't request this code, please ignore this email.</p>
         </div>

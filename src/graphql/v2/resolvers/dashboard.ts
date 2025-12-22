@@ -1,7 +1,7 @@
 import { programsV2Table } from '@/db/schemas/v2/programs';
 import { DashboardV2Service } from '@/graphql/v2/services/dashboard.service';
 import type { Context, Root } from '@/types';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type {
   HiringActivityV2Input,
   JobActivityV2Input,
@@ -149,8 +149,7 @@ export async function getProgramOverviewV2Resolver(
   const [sponsorCheck] = await ctx.db
     .select({ count: sql<number>`count(*)` })
     .from(programsV2Table)
-    .where(eq(programsV2Table.id, programId));
-
+    .where(and(eq(programsV2Table.id, programId), eq(programsV2Table.sponsorId, userId)));
   const isSponsor = sponsorCheck && Number(sponsorCheck.count) > 0;
 
   if (isSponsor) {
