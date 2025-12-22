@@ -1,0 +1,13 @@
+{
+  "input": {
+    "about": "Example about",
+    "email": "example@example.com",
+    "location": "Example location",
+    "nickname": "Example nickname",
+    "profileImage": "Example profileImage",
+    "role": "admin",
+    "skills": "Example skills",
+    "userRole": "Example userRole",
+    "walletAddress": "Example walletAddress"
+  }
+}

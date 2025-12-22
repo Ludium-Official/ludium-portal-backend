@@ -301,7 +301,8 @@ export const BuilderMilestoneV2Type = builder
     title: string | null;
     status: 'draft' | 'under_review' | 'in_progress' | 'completed' | 'update' | null;
     deadline: Date | null;
-    payout: string | null;
+    paidAmount: string;
+    unpaidAmount: string;
     tokenId: number;
   }>('BuilderMilestoneV2')
   .implement({
@@ -324,9 +325,11 @@ export const BuilderMilestoneV2Type = builder
         resolve: (parent) => parent.deadline,
         description: 'Milestone deadline',
       }),
-      payout: t.exposeString('payout', {
-        nullable: true,
-        description: 'Milestone payout amount',
+      paidAmount: t.exposeString('paidAmount', {
+        description: 'Current paid amount (if status is completed and payout_tx exists)',
+      }),
+      unpaidAmount: t.exposeString('unpaidAmount', {
+        description: 'Unpaid amount (amount not yet paid)',
       }),
       tokenId: t.exposeInt('tokenId', {
         description: 'Token ID for the milestone',
@@ -356,7 +359,8 @@ export const ProgramOverviewV2Type = builder
         title: string | null;
         status: 'draft' | 'under_review' | 'in_progress' | 'completed' | 'update' | null;
         deadline: Date | null;
-        payout: string | null;
+        paidAmount: string;
+        unpaidAmount: string;
         tokenId: number;
       }>;
       count: number;
@@ -413,7 +417,8 @@ export const ProgramOverviewV2Type = builder
               title: string | null;
               status: 'draft' | 'under_review' | 'in_progress' | 'completed' | 'update' | null;
               deadline: Date | null;
-              payout: string | null;
+              paidAmount: string;
+              unpaidAmount: string;
               tokenId: number;
             }>;
             count: number;

@@ -8,8 +8,10 @@ import type {
   RequestEmailVerificationV2Input,
   UpdateAboutSectionV2Input,
   UpdateExpertiseSectionV2Input,
-  UpdateWorkExperienceSectionV2Input,
-  UpdateEducationSectionV2Input,
+  CreateEducationV2Input,
+  CreateWorkExperienceV2Input,
+  UpdateWorkExperienceV2Input,
+  UpdateEducationV2Input,
 } from '../inputs/users';
 import { UserV2Service } from '../services';
 
@@ -145,26 +147,71 @@ export async function updateExpertiseSectionV2Resolver(
   return userService.updateExpertiseSection(args.input, ctx.userV2.id);
 }
 
-export async function updateWorkExperienceSectionV2Resolver(
+export async function createWorkExperienceV2Resolver(
   _root: Root,
-  args: { input: typeof UpdateWorkExperienceSectionV2Input.$inferInput },
+  args: { input: typeof CreateWorkExperienceV2Input.$inferInput },
   ctx: Context,
 ) {
   if (!ctx.userV2) {
     throw new Error('Unauthorized');
   }
   const userService = new UserV2Service(ctx.db, ctx.server);
-  return userService.updateWorkExperienceSection(args.input, ctx.userV2.id);
+  return userService.createWorkExperience(args.input, ctx.userV2.id);
 }
 
-export async function updateEducationSectionV2Resolver(
+export async function updateWorkExperienceV2Resolver(
   _root: Root,
-  args: { input: typeof UpdateEducationSectionV2Input.$inferInput },
+  args: { input: typeof UpdateWorkExperienceV2Input.$inferInput },
   ctx: Context,
 ) {
   if (!ctx.userV2) {
     throw new Error('Unauthorized');
   }
   const userService = new UserV2Service(ctx.db, ctx.server);
-  return userService.updateEducationSection(args.input, ctx.userV2.id);
+  return userService.updateWorkExperience(args.input, ctx.userV2.id);
+}
+
+export async function deleteWorkExperienceV2Resolver(
+  _root: Root,
+  args: { id: string },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  const userService = new UserV2Service(ctx.db, ctx.server);
+  return userService.deleteWorkExperience(args.id, ctx.userV2.id);
+}
+
+// Education 개별 Resolvers
+export async function createEducationV2Resolver(
+  _root: Root,
+  args: { input: typeof CreateEducationV2Input.$inferInput },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  const userService = new UserV2Service(ctx.db, ctx.server);
+  return userService.createEducation(args.input, ctx.userV2.id);
+}
+
+export async function updateEducationV2Resolver(
+  _root: Root,
+  args: { input: typeof UpdateEducationV2Input.$inferInput },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  const userService = new UserV2Service(ctx.db, ctx.server);
+  return userService.updateEducation(args.input, ctx.userV2.id);
+}
+
+export async function deleteEducationV2Resolver(_root: Root, args: { id: string }, ctx: Context) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  const userService = new UserV2Service(ctx.db, ctx.server);
+  return userService.deleteEducation(args.id, ctx.userV2.id);
 }

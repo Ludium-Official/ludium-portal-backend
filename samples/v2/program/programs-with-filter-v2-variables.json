@@ -1,0 +1,7 @@
+{
+  "query": {
+    "limit": 1,
+    "page": 1,
+    "status": "closed"
+  }
+}

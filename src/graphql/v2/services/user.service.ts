@@ -1,8 +1,11 @@
 import { filesTable } from '@/db/schemas';
 import { emailVerificationsV2Table } from '@/db/schemas/v2/email-verifications';
-import { educationsV2Table } from '@/db/schemas/v2/user-educations';
+import { educationsV2Table, type EducationV2 } from '@/db/schemas/v2/user-educations';
 import { languagesV2Table, type NewLanguageV2 } from '@/db/schemas/v2/user-language';
-import { workExperiencesV2Table } from '@/db/schemas/v2/user-work-experiences';
+import {
+  workExperiencesV2Table,
+  type WorkExperienceV2,
+} from '@/db/schemas/v2/user-work-experiences';
 import { usersV2Table } from '@/db/schemas/v2/users';
 import type { NewUserV2, UserV2 } from '@/db/schemas/v2/users';
 import type {
@@ -13,8 +16,10 @@ import type {
   UpdateProfileSectionV2Input,
   UpdateAboutSectionV2Input,
   UpdateExpertiseSectionV2Input,
-  UpdateWorkExperienceSectionV2Input,
-  UpdateEducationSectionV2Input,
+  UpdateWorkExperienceV2Input,
+  CreateEducationV2Input,
+  UpdateEducationV2Input,
+  CreateWorkExperienceV2Input,
 } from '@/graphql/v2/inputs/users';
 import type { Context } from '@/types';
 import { and, asc, count, desc, eq, ilike, isNotNull, isNull, or } from 'drizzle-orm';
@@ -392,7 +397,7 @@ export class UserV2Service {
 
       // Generate verification code
       const verificationCode = this.generateVerificationCode();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 
       // Invalidate previous unverified codes for this email
       await this.db
@@ -666,84 +671,34 @@ export class UserV2Service {
     }
   }
 
-  async updateWorkExperienceSection(
-    input: typeof UpdateWorkExperienceSectionV2Input.$inferInput,
+  async createWorkExperience(
+    input: typeof CreateWorkExperienceV2Input.$inferInput,
     userId: number,
-  ): Promise<UserV2> {
+  ): Promise<WorkExperienceV2> {
     try {
-      // Get existing work experiences
-      const existingExperiences = await this.db
-        .select()
-        .from(workExperiencesV2Table)
-        .where(
-          and(eq(workExperiencesV2Table.userId, userId), isNull(workExperiencesV2Table.deletedAt)),
-        );
+      const [workExperience] = await this.db
+        .insert(workExperiencesV2Table)
+        .values({
+          userId,
+          company: input.company,
+          role: input.role,
+          employmentType: input.employmentType ?? null,
+          currentWork: input.currentWork ?? null,
+          startYear: input.startYear ?? null,
+          startMonth: input.startMonth ?? null,
+          endYear: input.currentWork ? null : (input.endYear ?? null),
+          endMonth: input.currentWork ? null : (input.endMonth ?? null),
+        })
+        .returning();
 
-      const inputIds = new Set(
-        input.workExperiences
-          .map((exp) => (exp.id ? Number.parseInt(exp.id as string) : null))
-          .filter((id): id is number => id !== null),
-      );
-
-      // Soft delete removed experiences
-      const toDelete = existingExperiences.filter((exp) => !inputIds.has(exp.id));
-      if (toDelete.length > 0) {
-        await this.db
-          .update(workExperiencesV2Table)
-          .set({ deletedAt: new Date() })
-          .where(
-            and(
-              eq(workExperiencesV2Table.userId, userId),
-              or(...toDelete.map((exp) => eq(workExperiencesV2Table.id, exp.id))),
-            ),
-          );
+      if (!workExperience) {
+        throw new Error('Failed to create work experience');
       }
 
-      // Update or insert experiences
-      for (const exp of input.workExperiences) {
-        if (exp.id) {
-          const expId = Number.parseInt(exp.id as string);
-          // Update existing
-          await this.db
-            .update(workExperiencesV2Table)
-            .set({
-              company: exp.company,
-              role: exp.role,
-              employmentType: exp.employmentType,
-              currentWork: exp.currentWork,
-              startYear: exp.startYear,
-              startMonth: exp.startMonth ?? null,
-              endYear: exp.currentWork ? null : (exp.endYear ?? null),
-              endMonth: exp.currentWork ? null : (exp.endMonth ?? null),
-              deletedAt: null, // Restore if was deleted
-            })
-            .where(eq(workExperiencesV2Table.id, expId));
-        } else {
-          // Insert new
-          await this.db.insert(workExperiencesV2Table).values({
-            userId,
-            company: exp.company,
-            role: exp.role,
-            employmentType: exp.employmentType,
-            currentWork: exp.currentWork,
-            startYear: exp.startYear,
-            startMonth: exp.startMonth ?? null,
-            endYear: exp.currentWork ? null : (exp.endYear ?? null),
-            endMonth: exp.currentWork ? null : (exp.endMonth ?? null),
-          });
-        }
-      }
-
-      const [user] = await this.db.select().from(usersV2Table).where(eq(usersV2Table.id, userId));
-
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      return user;
+      return workExperience;
     } catch (error) {
       this.server.log.error({
-        msg: 'Failed to update work experience section',
+        msg: 'Failed to create work experience',
         error: error instanceof Error ? error.message : String(error),
         userId,
       });
@@ -751,78 +706,179 @@ export class UserV2Service {
     }
   }
 
-  async updateEducationSection(
-    input: typeof UpdateEducationSectionV2Input.$inferInput,
+  async updateWorkExperience(
+    input: typeof UpdateWorkExperienceV2Input.$inferInput,
     userId: number,
-  ): Promise<UserV2> {
+  ): Promise<WorkExperienceV2> {
     try {
-      // Get existing educations
-      const existingEducations = await this.db
-        .select()
-        .from(educationsV2Table)
-        .where(and(eq(educationsV2Table.userId, userId), isNull(educationsV2Table.deletedAt)));
+      const workExperienceId = Number.parseInt(input.id as string);
 
-      const inputIds = new Set(
-        input.educations
-          .map((edu) => (edu.id ? Number.parseInt(edu.id as string) : null))
-          .filter((id): id is number => id !== null),
-      );
+      const [workExperience] = await this.db
+        .update(workExperiencesV2Table)
+        .set({
+          company: input.company,
+          role: input.role,
+          employmentType: input.employmentType ?? null,
+          currentWork: input.currentWork ?? null,
+          startYear: input.startYear ?? null,
+          startMonth: input.startMonth ?? null,
+          endYear: input.currentWork ? null : (input.endYear ?? null),
+          endMonth: input.currentWork ? null : (input.endMonth ?? null),
+        })
+        .where(
+          and(
+            eq(workExperiencesV2Table.id, workExperienceId),
+            eq(workExperiencesV2Table.userId, userId),
+          ),
+        )
+        .returning();
 
-      // Soft delete removed educations
-      const toDelete = existingEducations.filter((edu) => !inputIds.has(edu.id));
-      if (toDelete.length > 0) {
-        await this.db
-          .update(educationsV2Table)
-          .set({ deletedAt: new Date() })
-          .where(
-            and(
-              eq(educationsV2Table.userId, userId),
-              or(...toDelete.map((edu) => eq(educationsV2Table.id, edu.id))),
-            ),
-          );
+      if (!workExperience) {
+        throw new Error('Work experience not found or access denied');
       }
 
-      // Update or insert educations
-      for (const edu of input.educations) {
-        if (edu.id) {
-          const eduId = Number.parseInt(edu.id as string);
-          // Update existing
-          await this.db
-            .update(educationsV2Table)
-            .set({
-              school: edu.school,
-              degree: edu.degree ?? null,
-              study: edu.study ?? null,
-              attendedStartDate: edu.attendedStartDate ?? null,
-              attendedEndDate: edu.attendedEndDate ?? null,
-              deletedAt: null, // Restore if was deleted
-            })
-            .where(eq(educationsV2Table.id, eduId));
-        } else {
-          // Insert new
-          await this.db.insert(educationsV2Table).values({
-            userId,
-            school: edu.school,
-            degree: edu.degree ?? null,
-            study: edu.study ?? null,
-            attendedStartDate: edu.attendedStartDate ?? null,
-            attendedEndDate: edu.attendedEndDate ?? null,
-          });
-        }
-      }
-
-      const [user] = await this.db.select().from(usersV2Table).where(eq(usersV2Table.id, userId));
-
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      return user;
+      return workExperience;
     } catch (error) {
       this.server.log.error({
-        msg: 'Failed to update education section',
+        msg: 'Failed to update work experience',
         error: error instanceof Error ? error.message : String(error),
         userId,
+      });
+      throw error;
+    }
+  }
+
+  async deleteWorkExperience(id: string, userId: number): Promise<boolean> {
+    try {
+      const workExperienceId = Number.parseInt(id);
+
+      const [existing] = await this.db
+        .select()
+        .from(workExperiencesV2Table)
+        .where(
+          and(
+            eq(workExperiencesV2Table.id, workExperienceId),
+            eq(workExperiencesV2Table.userId, userId),
+          ),
+        )
+        .limit(1);
+
+      if (!existing) {
+        return false;
+      }
+
+      await this.db
+        .delete(workExperiencesV2Table)
+        .where(
+          and(
+            eq(workExperiencesV2Table.id, workExperienceId),
+            eq(workExperiencesV2Table.userId, userId),
+          ),
+        );
+
+      return true;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to delete work experience',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+        id,
+      });
+      throw error;
+    }
+  }
+
+  async createEducation(
+    input: typeof CreateEducationV2Input.$inferInput,
+    userId: number,
+  ): Promise<EducationV2> {
+    try {
+      const [education] = await this.db
+        .insert(educationsV2Table)
+        .values({
+          userId,
+          school: input.school,
+          degree: input.degree ?? null,
+          study: input.study ?? null,
+          attendedStartDate: input.attendedStartDate ?? null,
+          attendedEndDate: input.attendedEndDate ?? null,
+        })
+        .returning();
+
+      if (!education) {
+        throw new Error('Failed to create education');
+      }
+
+      return education;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to create education',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  async updateEducation(
+    input: typeof UpdateEducationV2Input.$inferInput,
+    userId: number,
+  ): Promise<EducationV2> {
+    try {
+      const educationId = Number.parseInt(input.id as string);
+
+      const [education] = await this.db
+        .update(educationsV2Table)
+        .set({
+          school: input.school,
+          degree: input.degree ?? null,
+          study: input.study ?? null,
+          attendedStartDate: input.attendedStartDate ?? null,
+          attendedEndDate: input.attendedEndDate ?? null,
+        })
+        .where(and(eq(educationsV2Table.id, educationId), eq(educationsV2Table.userId, userId)))
+        .returning();
+
+      if (!education) {
+        throw new Error('Education not found or access denied');
+      }
+
+      return education;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to update education',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  async deleteEducation(id: string, userId: number): Promise<boolean> {
+    try {
+      const educationId = Number.parseInt(id);
+
+      const [existing] = await this.db
+        .select()
+        .from(educationsV2Table)
+        .where(and(eq(educationsV2Table.id, educationId), eq(educationsV2Table.userId, userId)))
+        .limit(1);
+
+      if (!existing) {
+        return false;
+      }
+
+      await this.db
+        .delete(educationsV2Table)
+        .where(and(eq(educationsV2Table.id, educationId), eq(educationsV2Table.userId, userId)));
+
+      return true;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to delete education',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+        id,
       });
       throw error;
     }

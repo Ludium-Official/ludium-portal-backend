@@ -242,9 +242,11 @@ export class DashboardV2Service {
       .groupBy(programsV2Table.id);
 
     // Completed programs
-    const [completedResult] = await this.db
-      .select({ count: count() })
+    const completedPrograms = await this.db
+      .select({ programId: programsV2Table.id })
       .from(programsV2Table)
+      // @ts-expect-error - Drizzle type compatibility issue with innerJoin
+      .innerJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
       .where(
         and(
           eq(programsV2Table.sponsorId, sponsorId),
@@ -252,13 +254,14 @@ export class DashboardV2Service {
           ne(programsV2Table.status, 'deleted'),
           inArray(applicationsV2Table.status, ['completed']),
         ),
-      );
+      )
+      .groupBy(programsV2Table.id);
 
     return {
       all: allResult?.count ?? 0,
       open: openResult?.count ?? 0,
       ongoing: ongoingPrograms.length,
-      completed: completedResult?.count ?? 0,
+      completed: completedPrograms?.length,
     };
   }
 
@@ -271,7 +274,7 @@ export class DashboardV2Service {
     data: (ProgramV2 & { applicationCount: number })[];
     count: number;
   }> {
-    const limit = pagination?.limit || 5;
+    const limit = pagination?.limit || 10;
     const offset = pagination?.offset || 0;
 
     let whereCondition = and(
@@ -369,7 +372,10 @@ export class DashboardV2Service {
     const [totalCount] = await this.db
       .select({ count: count() })
       .from(programsV2Table)
-      .where(whereCondition);
+      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
+      .leftJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
+      .where(whereCondition)
+      .groupBy(programsV2Table.id);
 
     const programs = data.map((row) => {
       const { applicationCount, ...program } = row;
@@ -448,7 +454,7 @@ export class DashboardV2Service {
     data: (ProgramV2 & { appliedAt: Date })[];
     count: number;
   }> {
-    const limit = pagination?.limit || 5;
+    const limit = pagination?.limit || 10;
     const offset = pagination?.offset || 0;
 
     // Get application program IDs first
@@ -698,7 +704,8 @@ export class DashboardV2Service {
       title: string | null;
       status: 'draft' | 'under_review' | 'in_progress' | 'completed' | 'update' | null;
       deadline: Date | null;
-      payout: string | null;
+      paidAmount: string;
+      unpaidAmount: string;
       tokenId: number;
     }>;
     count: number;
@@ -718,7 +725,10 @@ export class DashboardV2Service {
       );
 
     if (!application) {
-      throw new Error('Application not found');
+      return {
+        data: [],
+        count: 0,
+      };
     }
 
     // Get program to access token_id
@@ -739,6 +749,7 @@ export class DashboardV2Service {
         status: milestonesV2Table.status,
         deadline: milestonesV2Table.deadline,
         payout: milestonesV2Table.payout,
+        payout_tx: milestonesV2Table.payout_tx,
       })
       .from(milestonesV2Table)
       .where(
@@ -785,7 +796,7 @@ export class DashboardV2Service {
           if (contractMilestone) {
             const milestoneIndex = milestones.indexOf(milestone);
             milestones[milestoneIndex] = {
-              id: milestone.id,
+              ...milestones[milestoneIndex],
               title: contractMilestone.title ?? milestone.title,
               status: contractMilestone.status ?? 'in_progress',
               deadline: contractMilestone.deadline ?? milestone.deadline,
@@ -796,14 +807,28 @@ export class DashboardV2Service {
       }
     }
 
-    const milestonesWithTokenId = milestones.map((milestone) => ({
-      id: milestone.id,
-      title: milestone.title,
-      status: milestone.status,
-      deadline: milestone.deadline,
-      payout: milestone.payout,
-      tokenId: program.token_id,
-    }));
+    const milestonesWithAmounts: Array<{
+      id: number;
+      title: string | null;
+      status: 'draft' | 'under_review' | 'in_progress' | 'completed' | 'update' | null;
+      deadline: Date | null;
+      paidAmount: string;
+      unpaidAmount: string;
+      tokenId: number;
+    }> = milestones.map((milestone) => {
+      const payout = milestone.payout || '0';
+      const isPaid = milestone.payout_tx !== null && milestone.payout_tx !== undefined;
+
+      return {
+        id: milestone.id,
+        title: milestone.title,
+        status: milestone.status,
+        deadline: milestone.deadline,
+        paidAmount: isPaid ? payout : '0',
+        unpaidAmount: isPaid ? '0' : payout,
+        tokenId: program.token_id,
+      };
+    });
 
     const [totalCount] = await this.db
       .select({ count: count() })
@@ -816,7 +841,7 @@ export class DashboardV2Service {
       );
 
     return {
-      data: milestonesWithTokenId,
+      data: milestonesWithAmounts,
       count: totalCount.count,
     };
   }

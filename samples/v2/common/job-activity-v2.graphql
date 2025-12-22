@@ -1,0 +1,6 @@
+# Get job activity data (cards and programs list)
+
+query JobActivityV2($input: JobActivityV2Input!) {
+  jobActivityV2(input: $input) {
+  }
+}

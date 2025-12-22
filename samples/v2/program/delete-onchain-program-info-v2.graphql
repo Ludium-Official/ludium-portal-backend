@@ -1,0 +1,11 @@
+mutation DeleteOnchainProgramInfoV2($id: ID!) {
+  deleteOnchainProgramInfoV2(id: $id) {
+    network
+    networkId
+    onchainProgramId
+    smartContract
+    smartContractId
+    status
+    tx
+  }
+}

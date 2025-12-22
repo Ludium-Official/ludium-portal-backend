@@ -1,0 +1,8 @@
+mutation UpdateNetworkV2($id: ID!, $input: UpdateNetworkV2Input!) {
+  updateNetworkV2(id: $id, input: $input) {
+    chainId
+    chainName
+    exploreUrl
+    mainnet
+  }
+}

@@ -1,0 +1,8 @@
+mutation UpdateSmartContractV2($id: ID!, $input: UpdateSmartContractV2Input!) {
+  updateSmartContractV2(id: $id, input: $input) {
+    address
+    chainInfoId
+    name
+    network
+  }
+}

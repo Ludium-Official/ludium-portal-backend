@@ -1,0 +1,14 @@
+# Complete a program by changing its status to closed. Requires all applications to be completed.
+
+mutation CompleteProgramV2($id: ID!) {
+  completeProgramV2(id: $id) {
+    applicationCount
+    deadline
+    description
+    hasApplied
+    hasInProgressApplication
+    invitedMembers
+    myApplication
+    network
+  }
+}

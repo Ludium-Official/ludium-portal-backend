@@ -1,0 +1,12 @@
+{
+  "query": {
+    "hasEmail": true,
+    "limit": 1,
+    "loginType": "farcaster",
+    "page": 1,
+    "role": "admin",
+    "search": "Example search",
+    "sortBy": "Example sortBy",
+    "sortOrder": "Example sortOrder"
+  }
+}

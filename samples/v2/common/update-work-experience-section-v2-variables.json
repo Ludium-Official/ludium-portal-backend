@@ -1,0 +1,10 @@
+{
+  "input": {
+    "workExperiences": {
+      "company": "Example company",
+      "employmentType": "Example employmentType",
+      "endMonth": "Example endMonth",
+      "endYear": 1
+    }
+  }
+}

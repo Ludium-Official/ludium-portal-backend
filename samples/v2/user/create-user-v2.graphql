@@ -1,0 +1,14 @@
+# Create a new user
+
+mutation CreateUserV2($input: CreateUserV2Input!) {
+  createUserV2(input: $input) {
+    about
+    createdPrograms
+    educations
+    email
+    languages
+    location
+    loginType
+    nickname
+  }
+}

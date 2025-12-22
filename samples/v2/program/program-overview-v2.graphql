@@ -1,0 +1,6 @@
+# Get program overview data (hired builders/milestones, milestone progress, upcoming payments)
+
+query ProgramOverviewV2($input: ProgramOverviewV2Input!) {
+  programOverviewV2(input: $input) {
+  }
+}

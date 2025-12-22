@@ -1,0 +1,14 @@
+# Update an existing work experience
+
+mutation UpdateWorkExperienceV2($input: UpdateWorkExperienceV2Input!) {
+  updateWorkExperienceV2(input: $input) {
+    company
+    currentWork
+    employmentType
+    endMonth
+    endYear
+    role
+    startMonth
+    startYear
+  }
+}

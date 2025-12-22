@@ -1,0 +1,4 @@
+query ContractV2($id: ID!) {
+  contractV2(id: $id) {
+  }
+}

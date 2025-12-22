@@ -1,0 +1,6 @@
+{
+  "filter": {
+    "field": "Example field",
+    "value": "Example value"
+  }
+}

@@ -1,0 +1,14 @@
+# Update application content (only by applicant)
+
+mutation UpdateApplicationV2($id: ID!, $input: UpdateApplicationV2Input!) {
+  updateApplicationV2(id: $id, input: $input) {
+    applicant
+    applicantId
+    chatroomMessageId
+    content
+    picked
+    program
+    programId
+    rejectedReason
+  }
+}

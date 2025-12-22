@@ -1,0 +1,14 @@
+# Update chatroom message ID for an application (only by program sponsor). Generates a random UUID.
+
+mutation UpdateApplicationChatroomV2($id: ID!, $input: UpdateApplicationChatroomV2Input!) {
+  updateApplicationChatroomV2(id: $id, input: $input) {
+    applicant
+    applicantId
+    chatroomMessageId
+    content
+    picked
+    program
+    programId
+    rejectedReason
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "input": {
+    "applicantId": 1,
+    "applicationId": 1,
+    "builder_signature": "Example builder_signature",
+    "contract_snapshot_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "onchainContractId": 1,
+    "programId": "Example programId",
+    "smartContractId": 1,
+    "sponsorId": 1
+  }
+}

@@ -1,0 +1,19 @@
+mutation CreateProgramWithOnchainV2($input: CreateProgramWithOnchainV2Input!) {
+  createProgramWithOnchainV2(input: $input) {
+   onchain {
+     networkId
+     onchainProgramId
+     smartContractId
+     status
+     tx
+   }
+   program {
+     applicationCount
+     deadline
+     description
+     hasApplied
+     hasInProgressApplication
+     invitedMembers
+   }
+  }
+}

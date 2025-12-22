@@ -1,0 +1,8 @@
+{
+  "input": {
+    "chainId": 1,
+    "chainName": "Example chainName",
+    "exploreUrl": "Example exploreUrl",
+    "mainnet": true
+  }
+}

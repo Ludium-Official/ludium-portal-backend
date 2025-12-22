@@ -1,0 +1,11 @@
+mutation UpdateOnchainProgramInfoV2($id: ID!, $input: UpdateOnchainProgramInfoV2Input!) {
+  updateOnchainProgramInfoV2(id: $id, input: $input) {
+    network
+    networkId
+    onchainProgramId
+    smartContract
+    smartContractId
+    status
+    tx
+  }
+}

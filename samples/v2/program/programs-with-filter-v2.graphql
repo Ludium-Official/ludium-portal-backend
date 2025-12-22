@@ -1,0 +1,6 @@
+# Get all programs with filtering options (status, pagination).
+
+query ProgramsWithFilterV2($query: ProgramsV2QueryInput) {
+  programsWithFilterV2(query: $query) {
+  }
+}

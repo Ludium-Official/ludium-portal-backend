@@ -1,0 +1,14 @@
+# Update an existing milestone
+
+mutation UpdateMilestoneV2($id: ID!, $input: UpdateMilestoneV2Input!) {
+  updateMilestoneV2(id: $id, input: $input) {
+    applicant
+    applicationId
+    deadline
+    description
+    files
+    onchainMetadata
+    payout
+    payout_tx
+  }
+}

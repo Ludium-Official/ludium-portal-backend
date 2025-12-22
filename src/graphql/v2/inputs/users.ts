@@ -158,40 +158,35 @@ export const UpdateExpertiseSectionV2Input = builder.inputType('UpdateExpertiseS
   }),
 });
 
-export const WorkExperienceV2Input = builder.inputType('WorkExperienceV2Input', {
+export const CreateWorkExperienceV2Input = builder.inputType('CreateWorkExperienceV2Input', {
   fields: (t) => ({
-    id: t.id({
-      description: 'Work experience ID (for update, omit for create)',
-    }),
     company: t.string({ required: true }),
     role: t.string({ required: true }),
-    employmentType: t.string({ required: true }),
-    currentWork: t.boolean({ required: true }),
-    startYear: t.int({ required: true }),
+    employmentType: t.string(),
+    currentWork: t.boolean(),
+    startYear: t.int(),
     startMonth: t.string(),
     endYear: t.int(),
     endMonth: t.string(),
   }),
 });
 
-export const UpdateWorkExperienceSectionV2Input = builder.inputType(
-  'UpdateWorkExperienceSectionV2Input',
-  {
-    fields: (t) => ({
-      workExperiences: t.field({
-        type: [WorkExperienceV2Input],
-        required: true,
-        description: 'List of work experiences (for delete, send empty array or omit the item)',
-      }),
-    }),
-  },
-);
-
-export const EducationV2Input = builder.inputType('EducationV2Input', {
+export const UpdateWorkExperienceV2Input = builder.inputType('UpdateWorkExperienceV2Input', {
   fields: (t) => ({
-    id: t.id({
-      description: 'Education ID (for update, omit for create)',
-    }),
+    id: t.id({ required: true, description: 'Work experience ID to update' }),
+    company: t.string({ required: true }),
+    role: t.string({ required: true }),
+    employmentType: t.string(),
+    currentWork: t.boolean(),
+    startYear: t.int(),
+    startMonth: t.string(),
+    endYear: t.int(),
+    endMonth: t.string(),
+  }),
+});
+
+export const CreateEducationV2Input = builder.inputType('CreateEducationV2Input', {
+  fields: (t) => ({
     school: t.string({ required: true }),
     degree: t.string(),
     study: t.string(),
@@ -200,13 +195,14 @@ export const EducationV2Input = builder.inputType('EducationV2Input', {
   }),
 });
 
-export const UpdateEducationSectionV2Input = builder.inputType('UpdateEducationSectionV2Input', {
+export const UpdateEducationV2Input = builder.inputType('UpdateEducationV2Input', {
   fields: (t) => ({
-    educations: t.field({
-      type: [EducationV2Input],
-      required: true,
-      description: 'List of educations (for delete, send empty array or omit the item)',
-    }),
+    id: t.id({ required: true, description: 'Education ID to update' }),
+    school: t.string({ required: true }),
+    degree: t.string(),
+    study: t.string(),
+    attendedStartDate: t.int(),
+    attendedEndDate: t.int(),
   }),
 });
 

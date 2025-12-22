@@ -14,6 +14,7 @@ import corsPlugin from '@fastify/cors';
 import jwtPlugin from '@fastify/jwt';
 import type { FastifyInstance } from 'fastify';
 import mercurius from 'mercurius';
+import emailPlugin from '@/plugins/email';
 
 const registerPlugins = (server: FastifyInstance) => {
   server
@@ -39,6 +40,11 @@ const registerPlugins = (server: FastifyInstance) => {
   void server.register(fileManagerPlugin);
 
   void server.register(pubsubPlugin);
+
+  void server.register(emailPlugin).ready((err) => {
+    if (err) server.log.error(err);
+    server.log.info('Email plugin is ready');
+  });
 
   void server
     .register(mercurius, {
