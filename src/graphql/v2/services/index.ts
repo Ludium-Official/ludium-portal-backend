@@ -7,8 +7,9 @@ export * from './contract.service';
 export * from './onchain-contract-info.service';
 // user
 export * from './user.service';
+export * from './dashboard.service';
+export * from './portfolio.service';
 // metadata
 export * from './network.service';
 export * from './token.service';
 export * from './smart-contracts.service';
-export * from './dashboard.service';
