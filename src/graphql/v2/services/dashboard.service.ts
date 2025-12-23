@@ -370,12 +370,9 @@ export class DashboardV2Service {
       .orderBy(desc(programsV2Table.createdAt));
 
     const [totalCount] = await this.db
-      .select({ count: count() })
+      .select({ count: count(programsV2Table.id) })
       .from(programsV2Table)
-      // @ts-expect-error - Drizzle type compatibility issue with leftJoin
-      .leftJoin(applicationsV2Table, eq(programsV2Table.id, applicationsV2Table.programId))
-      .where(whereCondition)
-      .groupBy(programsV2Table.id);
+      .where(whereCondition);
 
     const programs = data.map((row) => {
       const { applicationCount, ...program } = row;
@@ -387,7 +384,7 @@ export class DashboardV2Service {
 
     return {
       data: programs,
-      count: totalCount.count,
+      count: totalCount.count ?? 0,
     };
   }
 
@@ -583,7 +580,7 @@ export class DashboardV2Service {
 
     return {
       data: programs,
-      count: totalCount.count,
+      count: totalCount.count ?? 0,
     };
   }
 
@@ -616,7 +613,10 @@ export class DashboardV2Service {
       .where(and(eq(programsV2Table.id, programId), eq(programsV2Table.sponsorId, sponsorId)));
 
     if (!program) {
-      throw new Error('Program not found or access denied');
+      return {
+        data: [],
+        count: 0,
+      };
     }
 
     // Get distinct builders
@@ -738,7 +738,10 @@ export class DashboardV2Service {
       .where(eq(programsV2Table.id, programId));
 
     if (!program) {
-      throw new Error('Program not found');
+      return {
+        data: [],
+        count: 0,
+      };
     }
 
     // Get milestones for this application with status: in_progress, update, completed
@@ -1008,6 +1011,7 @@ export class DashboardV2Service {
             lte(milestonesV2Table.deadline, deadlineLimit),
             gte(milestonesV2Table.deadline, now),
             isNotNull(milestonesV2Table.deadline),
+            ne(milestonesV2Table.status, 'completed'),
           ),
         )
         .orderBy(milestonesV2Table.deadline);
@@ -1048,6 +1052,7 @@ export class DashboardV2Service {
             lte(milestonesV2Table.deadline, deadlineLimit),
             gte(milestonesV2Table.deadline, now),
             isNotNull(milestonesV2Table.deadline),
+            ne(milestonesV2Table.status, 'completed'),
           ),
         )
         .orderBy(milestonesV2Table.deadline);
