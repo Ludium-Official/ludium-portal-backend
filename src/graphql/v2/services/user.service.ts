@@ -378,28 +378,7 @@ export class UserV2Service {
 
   async requestEmailVerification(email: string, userId: number): Promise<boolean> {
     try {
-      // Check if email is already verified for this user
-      const [existingVerification] = await this.db
-        .select()
-        .from(emailVerificationsV2Table)
-        .where(
-          and(
-            eq(emailVerificationsV2Table.userId, userId),
-            eq(emailVerificationsV2Table.email, email),
-            eq(emailVerificationsV2Table.verified, true),
-          ),
-        )
-        .limit(1);
-
-      if (existingVerification) {
-        throw new Error('Email is already verified');
-      }
-
-      // Generate verification code
-      const verificationCode = this.generateVerificationCode();
-      const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
-
-      // Invalidate previous unverified codes for this email
+      // Invalidate previous verified status
       await this.db
         .update(emailVerificationsV2Table)
         .set({ verified: false })
@@ -407,9 +386,23 @@ export class UserV2Service {
           and(
             eq(emailVerificationsV2Table.userId, userId),
             eq(emailVerificationsV2Table.email, email),
+          ),
+        );
+
+      // Delete previous unverified status
+      await this.db
+        .delete(emailVerificationsV2Table)
+        .where(
+          and(
+            eq(emailVerificationsV2Table.userId, userId),
+            eq(emailVerificationsV2Table.email, email),
             eq(emailVerificationsV2Table.verified, false),
           ),
         );
+
+      // Generate verification code
+      const verificationCode = this.generateVerificationCode();
+      const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 
       // Create new verification record
       await this.db.insert(emailVerificationsV2Table).values({
