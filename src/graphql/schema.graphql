@@ -405,6 +405,23 @@ input CreateOnchainProgramInfoV2Input {
   tx: String!
 }
 
+input CreatePortfolioV2Input {
+  """Portfolio description (max 1000 characters)"""
+  description: String
+
+  """Array of image files to upload"""
+  images: [Upload!]
+
+  """Whether this is a Ludium project"""
+  isLudiumProject: Boolean
+
+  """Role in the project (e.g., "Frontend Developer")"""
+  role: String
+
+  """Portfolio title (required)"""
+  title: String!
+}
+
 input CreatePostInput {
   content: String!
   image: Upload
@@ -930,6 +947,12 @@ type Mutation {
   createNetworkV2(input: CreateNetworkV2Input!): NetworkV2
   createOnchainContractInfoV2(input: CreateOnchainContractInfoV2Input!): OnchainContractInfoV2
   createOnchainProgramInfoV2(input: CreateOnchainProgramInfoV2Input!): OnchainProgramInfoV2
+
+  """Create a new portfolio"""
+  createPortfolioV2(
+    """Portfolio creation input"""
+    input: CreatePortfolioV2Input!
+  ): PortfolioV2
   createPost(input: CreatePostInput!): Post
   createProgram(input: CreateProgramInput!): Program
   createProgramV2(input: CreateProgramV2Input!): ProgramV2
@@ -970,6 +993,12 @@ type Mutation {
   deleteNetworkV2(id: ID!): NetworkV2
   deleteOnchainContractInfoV2(id: ID!): OnchainContractInfoV2
   deleteOnchainProgramInfoV2(id: ID!): OnchainProgramInfoV2
+
+  """Delete a portfolio (hard delete)"""
+  deletePortfolioV2(
+    """Portfolio ID to delete"""
+    id: ID!
+  ): Boolean
   deleteProgram(id: ID!): Boolean
   deleteProgramV2(id: ID!): ID
   deleteSmartContractV2(id: ID!): SmartContractV2
@@ -1107,6 +1136,12 @@ type Mutation {
   updateNetworkV2(id: ID!, input: UpdateNetworkV2Input!): NetworkV2
   updateOnchainContractInfoV2(id: ID!, input: UpdateOnchainContractInfoV2Input!): OnchainContractInfoV2
   updateOnchainProgramInfoV2(id: ID!, input: UpdateOnchainProgramInfoV2Input!): OnchainProgramInfoV2
+
+  """Update an existing portfolio"""
+  updatePortfolioV2(
+    """Portfolio update input"""
+    input: UpdatePortfolioV2Input!
+  ): PortfolioV2
   updatePost(input: UpdatePostInput!): Post
   updateProfile(input: UserUpdateInput!): User
 
@@ -1450,6 +1485,32 @@ enum PayoutStatus {
 input PickApplicationV2Input {
   """Whether to mark this application as picked (bookmark)"""
   picked: Boolean!
+}
+
+type PortfolioV2 {
+  """Portfolio creation timestamp"""
+  createdAt: String
+
+  """Portfolio description (max 1000 characters)"""
+  description: String
+
+  """Portfolio unique identifier"""
+  id: ID
+
+  """Array of image URLs"""
+  images: [String!]
+
+  """Whether this is a Ludium project"""
+  isLudiumProject: Boolean
+
+  """Role in the project"""
+  role: String
+
+  """Portfolio title"""
+  title: String
+
+  """Portfolio last update timestamp"""
+  updatedAt: String
 }
 
 type Post {
@@ -2135,6 +2196,26 @@ input UpdateOnchainContractInfoV2Input {
 input UpdateOnchainProgramInfoV2Input {
   status: OnchainProgramStatusV2
   tx: String
+}
+
+input UpdatePortfolioV2Input {
+  """Portfolio description (max 1000 characters)"""
+  description: String
+
+  """Portfolio ID to update"""
+  id: ID!
+
+  """Array of image files to upload (replaces existing images)"""
+  images: [Upload!]
+
+  """Whether this is a Ludium project"""
+  isLudiumProject: Boolean
+
+  """Role in the project (e.g., "Frontend Developer")"""
+  role: String
+
+  """Portfolio title (required)"""
+  title: String!
 }
 
 input UpdatePostInput {

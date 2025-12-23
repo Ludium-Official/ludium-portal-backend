@@ -85,6 +85,20 @@
       "when": 1766002929376,
       "tag": "0011_magical_hiroim",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1766490201148,
+      "tag": "0012_fancy_arclight",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1766490464473,
+      "tag": "0013_even_machine_man",
+      "breakpoints": true
     }
   ]
 }

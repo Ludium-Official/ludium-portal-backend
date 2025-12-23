@@ -1,0 +1,6 @@
+# Delete a portfolio (hard delete)
+
+mutation DeletePortfolioV2($id: ID!) {
+  deletePortfolioV2(id: $id) {
+  }
+}
