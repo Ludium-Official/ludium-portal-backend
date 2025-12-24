@@ -1,15 +1,29 @@
 import { filesTable } from '@/db/schemas';
+import { emailVerificationsV2Table } from '@/db/schemas/v2/email-verifications';
+import { educationsV2Table, type EducationV2 } from '@/db/schemas/v2/user-educations';
+import { languagesV2Table, type NewLanguageV2 } from '@/db/schemas/v2/user-language';
+import {
+  workExperiencesV2Table,
+  type WorkExperienceV2,
+} from '@/db/schemas/v2/user-work-experiences';
 import { usersV2Table } from '@/db/schemas/v2/users';
 import type { NewUserV2, UserV2 } from '@/db/schemas/v2/users';
 import type {
   CreateUserV2Input,
-  UpdateProfileV2Input,
   UpdateUserV2Input,
   UserV2QueryFilterInput,
   UsersV2QueryInput,
+  UpdateProfileSectionV2Input,
+  UpdateAboutSectionV2Input,
+  UpdateExpertiseSectionV2Input,
+  UpdateWorkExperienceV2Input,
+  CreateEducationV2Input,
+  UpdateEducationV2Input,
+  CreateWorkExperienceV2Input,
 } from '@/graphql/v2/inputs/users';
 import type { Context } from '@/types';
 import { and, asc, count, desc, eq, ilike, isNotNull, isNull, or } from 'drizzle-orm';
+import { randomInt } from 'node:crypto';
 
 type LoginType = 'google' | 'wallet' | 'farcaster';
 type UserRole = 'user' | 'admin';
@@ -81,8 +95,7 @@ export class UserV2Service {
           or(
             ilike(usersV2Table.walletAddress, `%${search}%`),
             ilike(usersV2Table.email, `%${search}%`),
-            ilike(usersV2Table.firstName, `%${search}%`),
-            ilike(usersV2Table.lastName, `%${search}%`),
+            ilike(usersV2Table.nickname, `%${search}%`),
           ),
         );
       }
@@ -107,10 +120,8 @@ export class UserV2Service {
 
       const sortColumn = (() => {
         switch (sortBy) {
-          case 'firstName':
-            return usersV2Table.firstName;
-          case 'lastName':
-            return usersV2Table.lastName;
+          case 'nickname':
+            return usersV2Table.nickname;
           case 'updatedAt':
             return usersV2Table.updatedAt;
           default:
@@ -176,14 +187,8 @@ export class UserV2Service {
             case 'loginType':
               whereConditions.push(eq(usersV2Table.loginType, value as LoginType));
               break;
-            case 'firstName':
-              whereConditions.push(eq(usersV2Table.firstName, value));
-              break;
-            case 'lastName':
-              whereConditions.push(eq(usersV2Table.lastName, value));
-              break;
-            case 'organizationName':
-              whereConditions.push(eq(usersV2Table.organizationName, value));
+            case 'nickname':
+              whereConditions.push(eq(usersV2Table.nickname, value));
               break;
             default:
               this.server.log.warn(`Unknown filter field: ${field}`);
@@ -317,13 +322,11 @@ export class UserV2Service {
       walletAddress: input.walletAddress,
       email: input.email ?? null,
       role: (input.role ?? 'user') as UserRole,
-      firstName: input.firstName ?? null,
-      lastName: input.lastName ?? null,
-      organizationName: input.organizationName ?? null,
+      nickname: input.nickname ?? null,
+      location: input.location ?? null,
       profileImage: input.profileImage ?? null,
-      bio: input.bio ?? null,
+      userRole: input.userRole ?? null,
       skills: input.skills ?? null,
-      links: input.links ?? null,
     };
     const [newUser] = await this.db.insert(usersV2Table).values(userData).returning();
     return newUser;
@@ -342,14 +345,11 @@ export class UserV2Service {
     if (input.walletAddress !== undefined && input.walletAddress !== null) {
       updateData.walletAddress = input.walletAddress;
     }
-    if (input.firstName !== undefined) updateData.firstName = input.firstName ?? null;
-    if (input.lastName !== undefined) updateData.lastName = input.lastName ?? null;
-    if (input.organizationName !== undefined)
-      updateData.organizationName = input.organizationName ?? null;
+    if (input.nickname !== undefined) updateData.nickname = input.nickname ?? null;
+    if (input.location !== undefined) updateData.location = input.location ?? null;
     if (input.profileImage !== undefined) updateData.profileImage = input.profileImage ?? null;
-    if (input.bio !== undefined) updateData.bio = input.bio ?? null;
+    if (input.userRole !== undefined) updateData.userRole = input.userRole ?? null;
     if (input.skills !== undefined) updateData.skills = input.skills ?? null;
-    if (input.links !== undefined) updateData.links = input.links ?? null;
     if (input.role !== undefined) updateData.role = (input.role ?? 'user') as UserRole;
 
     const [updatedUser] = await this.db
@@ -372,8 +372,137 @@ export class UserV2Service {
     return true;
   }
 
-  async updateProfile(
-    input: typeof UpdateProfileV2Input.$inferInput,
+  private generateVerificationCode(): string {
+    return randomInt(100000, 1000000).toString();
+  }
+
+  async requestEmailVerification(email: string, userId: number): Promise<boolean> {
+    try {
+      // Invalidate previous verified status
+      await this.db
+        .update(emailVerificationsV2Table)
+        .set({ verified: false })
+        .where(
+          and(
+            eq(emailVerificationsV2Table.userId, userId),
+            eq(emailVerificationsV2Table.email, email),
+          ),
+        );
+
+      // Delete previous unverified status
+      await this.db
+        .delete(emailVerificationsV2Table)
+        .where(
+          and(
+            eq(emailVerificationsV2Table.userId, userId),
+            eq(emailVerificationsV2Table.email, email),
+            eq(emailVerificationsV2Table.verified, false),
+          ),
+        );
+
+      // Generate verification code
+      const verificationCode = this.generateVerificationCode();
+      const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+
+      // Create new verification record
+      await this.db.insert(emailVerificationsV2Table).values({
+        userId,
+        email,
+        verificationCode,
+        verified: false,
+        expiresAt,
+      });
+
+      // Send email
+      await this.server.emailService.sendVerificationEmail(email, verificationCode);
+
+      this.server.log.info({
+        msg: 'Email verification code sent',
+        userId,
+        email,
+      });
+
+      return true;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to request email verification',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+        email,
+      });
+      throw error;
+    }
+  }
+
+  async verifyEmail(email: string, verificationCode: string, userId: number): Promise<boolean> {
+    try {
+      const [verification] = await this.db
+        .select()
+        .from(emailVerificationsV2Table)
+        .where(
+          and(
+            eq(emailVerificationsV2Table.userId, userId),
+            eq(emailVerificationsV2Table.email, email),
+            eq(emailVerificationsV2Table.verificationCode, verificationCode),
+          ),
+        )
+        .orderBy(desc(emailVerificationsV2Table.createdAt))
+        .limit(1);
+
+      if (!verification) {
+        throw new Error('Invalid verification code');
+      }
+
+      if (verification.verified) {
+        throw new Error('Email is already verified');
+      }
+
+      if (verification.expiresAt < new Date()) {
+        throw new Error('Verification code has expired');
+      }
+
+      // Mark as verified
+      await this.db
+        .update(emailVerificationsV2Table)
+        .set({ verified: true })
+        .where(eq(emailVerificationsV2Table.id, verification.id));
+
+      this.server.log.info({
+        msg: 'Email verified successfully',
+        userId,
+        email,
+      });
+
+      return true;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to verify email',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+        email,
+      });
+      throw error;
+    }
+  }
+
+  private async isEmailVerified(email: string, userId: number): Promise<boolean> {
+    const [verification] = await this.db
+      .select()
+      .from(emailVerificationsV2Table)
+      .where(
+        and(
+          eq(emailVerificationsV2Table.userId, userId),
+          eq(emailVerificationsV2Table.email, email),
+          eq(emailVerificationsV2Table.verified, true),
+        ),
+      )
+      .limit(1);
+
+    return !!verification;
+  }
+
+  async updateProfileSection(
+    input: typeof UpdateProfileSectionV2Input.$inferInput,
     userId: number,
   ): Promise<UserV2> {
     try {
@@ -381,12 +510,34 @@ export class UserV2Service {
         .select()
         .from(usersV2Table)
         .where(eq(usersV2Table.id, userId));
+
       if (!existingUser) {
         throw new Error('User not found');
       }
 
-      const updateData: Partial<Omit<NewUserV2, 'id'>> = {};
+      // Check if email is changed
+      const emailChanged = existingUser.email !== input.email;
 
+      // If email is changed, require verification
+      if (emailChanged) {
+        if (!input.verificationCode) {
+          throw new Error('Email verification code is required when changing email');
+        }
+
+        const isVerified = await this.isEmailVerified(input.email, userId);
+        if (!isVerified) {
+          // Verify the code
+          await this.verifyEmail(input.email, input.verificationCode, userId);
+        }
+      }
+
+      const updateData: Partial<Omit<NewUserV2, 'id'>> = {
+        nickname: input.nickname,
+        email: input.email,
+        location: input.location,
+      };
+
+      // Handle profile image upload
       if (input.profileImage) {
         // Delete existing profile image if exists
         if (existingUser.profileImage) {
@@ -406,7 +557,6 @@ export class UserV2Service {
           }
         }
 
-        // Upload new profile image
         const fileUrl = await this.server.fileManager.uploadFile({
           file: input.profileImage,
           userId: String(userId),
@@ -415,25 +565,313 @@ export class UserV2Service {
         updateData.profileImage = fileUrl;
       }
 
-      if (input.email !== undefined) updateData.email = input.email ?? null;
-      if (input.firstName !== undefined) updateData.firstName = input.firstName ?? null;
-      if (input.lastName !== undefined) updateData.lastName = input.lastName ?? null;
-      if (input.organizationName !== undefined)
-        updateData.organizationName = input.organizationName ?? null;
-      if (input.bio !== undefined) updateData.bio = input.bio ?? null;
-      if (input.skills !== undefined) updateData.skills = input.skills ?? null;
-      if (input.links !== undefined) updateData.links = input.links ?? null;
+      const [updatedUser] = await this.db
+        .update(usersV2Table)
+        .set(updateData)
+        .where(eq(usersV2Table.id, userId))
+        .returning();
+
+      if (!updatedUser) {
+        throw new Error('Failed to update profile');
+      }
+
+      return updatedUser;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to update profile section',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  async updateAboutSection(
+    input: typeof UpdateAboutSectionV2Input.$inferInput,
+    userId: number,
+  ): Promise<UserV2> {
+    try {
+      if (input.about.length > 1000) {
+        throw new Error('About section must be 1000 characters or less');
+      }
+
+      const [updatedUser] = await this.db
+        .update(usersV2Table)
+        .set({ about: input.about })
+        .where(eq(usersV2Table.id, userId))
+        .returning();
+
+      if (!updatedUser) {
+        throw new Error('User not found');
+      }
+
+      return updatedUser;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to update about section',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  async updateExpertiseSection(
+    input: typeof UpdateExpertiseSectionV2Input.$inferInput,
+    userId: number,
+  ): Promise<UserV2> {
+    try {
+      // Update user table
+      const updateData: Partial<Omit<NewUserV2, 'id'>> = {
+        userRole: input.role,
+        skills: input.skills ?? null,
+      };
 
       const [updatedUser] = await this.db
         .update(usersV2Table)
         .set(updateData)
         .where(eq(usersV2Table.id, userId))
         .returning();
+
+      if (!updatedUser) {
+        throw new Error('User not found');
+      }
+
+      // Update languages
+      if (input.languages !== undefined) {
+        // Delete existing languages
+        await this.db.delete(languagesV2Table).where(eq(languagesV2Table.userId, userId));
+
+        // Insert new languages
+        if (input.languages != null && input.languages.length > 0) {
+          const newLanguages: NewLanguageV2[] = input.languages.map((lang) => ({
+            userId,
+            language: lang.language,
+            proficiency: lang.proficiency,
+          }));
+          await this.db.insert(languagesV2Table).values(newLanguages);
+        }
+      }
+
       return updatedUser;
     } catch (error) {
       this.server.log.error({
-        msg: '❌ UserV2Service.updateProfile failed',
+        msg: 'Failed to update expertise section',
         error: error instanceof Error ? error.message : String(error),
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  async createWorkExperience(
+    input: typeof CreateWorkExperienceV2Input.$inferInput,
+    userId: number,
+  ): Promise<WorkExperienceV2> {
+    try {
+      const [workExperience] = await this.db
+        .insert(workExperiencesV2Table)
+        .values({
+          userId,
+          company: input.company,
+          role: input.role,
+          employmentType: input.employmentType ?? null,
+          currentWork: input.currentWork ?? null,
+          startYear: input.startYear ?? null,
+          startMonth: input.startMonth ?? null,
+          endYear: input.currentWork ? null : (input.endYear ?? null),
+          endMonth: input.currentWork ? null : (input.endMonth ?? null),
+        })
+        .returning();
+
+      if (!workExperience) {
+        throw new Error('Failed to create work experience');
+      }
+
+      return workExperience;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to create work experience',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  async updateWorkExperience(
+    input: typeof UpdateWorkExperienceV2Input.$inferInput,
+    userId: number,
+  ): Promise<WorkExperienceV2> {
+    try {
+      const workExperienceId = Number.parseInt(input.id as string);
+
+      const [workExperience] = await this.db
+        .update(workExperiencesV2Table)
+        .set({
+          company: input.company,
+          role: input.role,
+          employmentType: input.employmentType ?? null,
+          currentWork: input.currentWork ?? null,
+          startYear: input.startYear ?? null,
+          startMonth: input.startMonth ?? null,
+          endYear: input.currentWork ? null : (input.endYear ?? null),
+          endMonth: input.currentWork ? null : (input.endMonth ?? null),
+        })
+        .where(
+          and(
+            eq(workExperiencesV2Table.id, workExperienceId),
+            eq(workExperiencesV2Table.userId, userId),
+          ),
+        )
+        .returning();
+
+      if (!workExperience) {
+        throw new Error('Work experience not found or access denied');
+      }
+
+      return workExperience;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to update work experience',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  async deleteWorkExperience(id: string, userId: number): Promise<boolean> {
+    try {
+      const workExperienceId = Number.parseInt(id);
+
+      const [existing] = await this.db
+        .select()
+        .from(workExperiencesV2Table)
+        .where(
+          and(
+            eq(workExperiencesV2Table.id, workExperienceId),
+            eq(workExperiencesV2Table.userId, userId),
+          ),
+        )
+        .limit(1);
+
+      if (!existing) {
+        return false;
+      }
+
+      await this.db
+        .delete(workExperiencesV2Table)
+        .where(
+          and(
+            eq(workExperiencesV2Table.id, workExperienceId),
+            eq(workExperiencesV2Table.userId, userId),
+          ),
+        );
+
+      return true;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to delete work experience',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+        id,
+      });
+      throw error;
+    }
+  }
+
+  async createEducation(
+    input: typeof CreateEducationV2Input.$inferInput,
+    userId: number,
+  ): Promise<EducationV2> {
+    try {
+      const [education] = await this.db
+        .insert(educationsV2Table)
+        .values({
+          userId,
+          school: input.school,
+          degree: input.degree ?? null,
+          study: input.study ?? null,
+          attendedStartDate: input.attendedStartDate ?? null,
+          attendedEndDate: input.attendedEndDate ?? null,
+        })
+        .returning();
+
+      if (!education) {
+        throw new Error('Failed to create education');
+      }
+
+      return education;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to create education',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  async updateEducation(
+    input: typeof UpdateEducationV2Input.$inferInput,
+    userId: number,
+  ): Promise<EducationV2> {
+    try {
+      const educationId = Number.parseInt(input.id as string);
+
+      const [education] = await this.db
+        .update(educationsV2Table)
+        .set({
+          school: input.school,
+          degree: input.degree ?? null,
+          study: input.study ?? null,
+          attendedStartDate: input.attendedStartDate ?? null,
+          attendedEndDate: input.attendedEndDate ?? null,
+        })
+        .where(and(eq(educationsV2Table.id, educationId), eq(educationsV2Table.userId, userId)))
+        .returning();
+
+      if (!education) {
+        throw new Error('Education not found or access denied');
+      }
+
+      return education;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to update education',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  async deleteEducation(id: string, userId: number): Promise<boolean> {
+    try {
+      const educationId = Number.parseInt(id);
+
+      const [existing] = await this.db
+        .select()
+        .from(educationsV2Table)
+        .where(and(eq(educationsV2Table.id, educationId), eq(educationsV2Table.userId, userId)))
+        .limit(1);
+
+      if (!existing) {
+        return false;
+      }
+
+      await this.db
+        .delete(educationsV2Table)
+        .where(and(eq(educationsV2Table.id, educationId), eq(educationsV2Table.userId, userId)));
+
+      return true;
+    } catch (error) {
+      this.server.log.error({
+        msg: 'Failed to delete education',
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+        id,
       });
       throw error;
     }

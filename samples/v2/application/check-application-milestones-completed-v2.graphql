@@ -1,0 +1,6 @@
+# Check if all milestones for a specific application are completed. Returns completion statistics.
+
+query CheckApplicationMilestonesCompletedV2($applicationId: ID!) {
+  checkApplicationMilestonesCompletedV2(applicationId: $applicationId) {
+  }
+}

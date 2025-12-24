@@ -1,0 +1,4 @@
+query ContractsBySponsorV2($pagination: PaginationInput, $sponsorId: Int!) {
+  contractsBySponsorV2(pagination: $pagination, sponsorId: $sponsorId) {
+  }
+}

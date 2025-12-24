@@ -1,0 +1,8 @@
+{
+  "input": {
+    "email": "example@example.com",
+    "location": "Example location",
+    "nickname": "Example nickname",
+    "verificationCode": "Example verificationCode"
+  }
+}

@@ -47,16 +47,14 @@ describe('Applications V2 GraphQL API - Integration Tests', () => {
       loginType: 'wallet',
       role: 'user',
       email: 'creator@test.com',
-      firstName: 'Program',
-      lastName: 'Creator',
+      nickname: 'Program Creator',
     };
     applicant = {
       walletAddress: '0xApplicantWalletAddress01234567890123456789',
       loginType: 'wallet',
       role: 'user',
       email: 'applicant@test.com',
-      firstName: 'Test',
-      lastName: 'Applicant',
+      nickname: 'Test Applicant',
     };
 
     const [creatorUser] = await db.insert(usersV2Table).values(programCreator).returning();

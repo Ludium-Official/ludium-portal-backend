@@ -1,0 +1,4 @@
+query ContractsByApplicantV2($applicantId: Int!, $pagination: PaginationInput) {
+  contractsByApplicantV2(applicantId: $applicantId, pagination: $pagination) {
+  }
+}

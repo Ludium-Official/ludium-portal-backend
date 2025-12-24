@@ -1,0 +1,4 @@
+query OnchainProgramInfosByProgramV2($pagination: PaginationInput, $programId: String!) {
+  onchainProgramInfosByProgramV2(pagination: $pagination, programId: $programId) {
+  }
+}

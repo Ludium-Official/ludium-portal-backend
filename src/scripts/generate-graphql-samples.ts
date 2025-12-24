@@ -478,6 +478,10 @@ async function generateSamples() {
         domain = 'onchain';
       } else if (name.includes('smartcontract')) {
         domain = 'smart-contract';
+      } else if (name.includes('dashboard')) {
+        domain = 'dashboard';
+      } else if (name.includes('portfolio')) {
+        domain = 'portfolio';
       }
 
       if (!groupedOperations.has(domain)) {

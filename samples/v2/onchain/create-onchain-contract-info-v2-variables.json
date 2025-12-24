@@ -1,0 +1,11 @@
+{
+  "input": {
+    "applicantId": 1,
+    "onchainContractId": 1,
+    "programId": "Example programId",
+    "smartContractId": 1,
+    "sponsorId": 1,
+    "status": "active",
+    "tx": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

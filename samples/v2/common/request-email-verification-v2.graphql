@@ -1,0 +1,6 @@
+# Request email verification code
+
+mutation RequestEmailVerificationV2($input: RequestEmailVerificationV2Input!) {
+  requestEmailVerificationV2(input: $input) {
+  }
+}

@@ -24,8 +24,7 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
       loginType: 'wallet',
       role: 'user',
       email: 'creator@example.com',
-      firstName: 'Test',
-      lastName: 'Creator',
+      nickname: 'Test User',
     };
     const [insertedUser] = await db.insert(usersV2Table).values(testUser).returning();
     testUserId = insertedUser.id;
@@ -1096,8 +1095,7 @@ describe('Programs V2 GraphQL API - Integration Tests', () => {
         loginType: 'wallet',
         role: 'user',
         email: 'othersponsor@example.com',
-        firstName: 'Other',
-        lastName: 'Sponsor',
+        nickname: 'Test User 2',
       };
       const [insertedOtherSponsor] = await db.insert(usersV2Table).values(otherSponsor).returning();
       const otherSponsorId = insertedOtherSponsor.id;

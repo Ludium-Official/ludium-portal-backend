@@ -13,6 +13,12 @@ export interface EnvConfig {
   SWAPPED_STYLE_KEY: string;
   SWAPPED_PUBLIC_KEY: string;
   SWAPPED_SECRET_KEY: string;
+  EMAIL_HOST?: string;
+  EMAIL_PORT?: string;
+  EMAIL_SECURE?: string;
+  EMAIL_USER?: string;
+  EMAIL_PASS?: string;
+  EMAIL_FROM?: string;
 }
 
 export type Root = NonNullable<unknown>;

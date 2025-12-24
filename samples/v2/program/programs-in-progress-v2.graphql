@@ -1,0 +1,6 @@
+# Get all programs that are currently in progress (status: open) with pagination. Default page is 1, default limit is 10.
+
+query ProgramsInProgressV2($query: ProgramsV2QueryInput) {
+  programsInProgressV2(query: $query) {
+  }
+}

@@ -1,0 +1,14 @@
+# Update program status from open to closed by relayer service
+
+mutation UpdateProgramByRelayerV2($id: ID!, $input: UpdateProgramByRelayerV2Input!) {
+  updateProgramByRelayerV2(id: $id, input: $input) {
+    applicationCount
+    deadline
+    description
+    hasApplied
+    hasInProgressApplication
+    invitedMembers
+    myApplication
+    network
+  }
+}

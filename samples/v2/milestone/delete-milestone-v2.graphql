@@ -1,0 +1,14 @@
+# Delete a milestone by ID
+
+mutation DeleteMilestoneV2($id: ID!) {
+  deleteMilestoneV2(id: $id) {
+    applicant
+    applicationId
+    deadline
+    description
+    files
+    onchainMetadata
+    payout
+    payout_tx
+  }
+}

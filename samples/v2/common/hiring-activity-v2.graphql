@@ -1,0 +1,6 @@
+# Get hiring activity data (cards and programs list)
+
+query HiringActivityV2($input: HiringActivityV2Input!) {
+  hiringActivityV2(input: $input) {
+  }
+}

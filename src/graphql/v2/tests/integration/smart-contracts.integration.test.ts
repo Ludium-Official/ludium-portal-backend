@@ -29,8 +29,7 @@ describe('Smart Contracts V2 GraphQL API - Integration Tests', () => {
       loginType: 'wallet',
       role: 'admin',
       email: 'smartcontract@test.com',
-      firstName: 'Smart',
-      lastName: 'Admin',
+      nickname: 'Test User',
     };
     await db.insert(usersV2Table).values(testUser).returning();
 

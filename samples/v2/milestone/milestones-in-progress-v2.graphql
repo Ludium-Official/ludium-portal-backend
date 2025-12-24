@@ -1,0 +1,6 @@
+# Get paginated list of milestones with status in_progress
+
+query MilestonesInProgressV2($query: MilestonesV2QueryInput) {
+  milestonesInProgressV2(query: $query) {
+  }
+}

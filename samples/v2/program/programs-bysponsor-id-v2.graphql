@@ -1,0 +1,6 @@
+# Get all programs by sponsor ID with pagination. Default limit is 10, default offset is 0. Returns all programs created by a specific sponsor.
+
+query ProgramsBysponsorIdV2($pagination: PaginationInput, $sponsorId: ID!) {
+  programsBysponsorIdV2(pagination: $pagination, sponsorId: $sponsorId) {
+  }
+}

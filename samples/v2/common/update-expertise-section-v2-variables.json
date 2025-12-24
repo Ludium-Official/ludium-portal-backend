@@ -1,0 +1,10 @@
+{
+  "input": {
+    "languages": {
+      "language": "Example language",
+      "proficiency": "Example proficiency"
+    },
+    "role": "Example role",
+    "skills": "Example skills"
+  }
+}

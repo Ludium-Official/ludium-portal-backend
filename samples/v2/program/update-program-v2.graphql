@@ -1,0 +1,12 @@
+mutation UpdateProgramV2($id: ID!, $input: UpdateProgramV2Input!) {
+  updateProgramV2(id: $id, input: $input) {
+    applicationCount
+    deadline
+    description
+    hasApplied
+    hasInProgressApplication
+    invitedMembers
+    myApplication
+    network
+  }
+}

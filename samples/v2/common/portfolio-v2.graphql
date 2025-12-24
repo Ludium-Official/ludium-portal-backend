@@ -1,0 +1,6 @@
+# Get a single portfolio by ID
+
+query PortfolioV2($id: ID!) {
+  portfolioV2(id: $id) {
+  }
+}

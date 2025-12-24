@@ -1,0 +1,12 @@
+# Update an existing education
+
+mutation UpdateEducationV2($input: UpdateEducationV2Input!) {
+  updateEducationV2(input: $input) {
+    attendedEndDate
+    attendedStartDate
+    degree
+    school
+    study
+    userId
+  }
+}

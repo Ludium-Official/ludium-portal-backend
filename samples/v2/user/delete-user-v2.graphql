@@ -1,0 +1,6 @@
+# Delete a user by ID
+
+mutation DeleteUserV2($id: ID!) {
+  deleteUserV2(id: $id) {
+  }
+}

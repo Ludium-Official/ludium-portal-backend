@@ -1,0 +1,14 @@
+# Update education section
+
+mutation UpdateEducationSectionV2($input: UpdateEducationSectionV2Input!) {
+  updateEducationSectionV2(input: $input) {
+    about
+    createdPrograms
+    educations
+    email
+    languages
+    location
+    loginType
+    nickname
+  }
+}

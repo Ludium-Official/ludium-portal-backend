@@ -1,0 +1,12 @@
+mutation UpdateContractV2($id: ID!, $input: UpdateContractV2Input!) {
+  updateContractV2(id: $id, input: $input) {
+    applicantId
+    applicationId
+    builder_signature
+    contract_snapshot_cotents
+    contract_snapshot_hash
+    onchainContractId
+    programId
+    smartContractId
+  }
+}

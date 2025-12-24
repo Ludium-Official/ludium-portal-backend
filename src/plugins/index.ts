@@ -1,4 +1,9 @@
 import { schema as graphqlSchema } from '@/graphql/types';
+import {
+  createLanguagesLoader,
+  createWorkExperiencesLoader,
+  createEducationsLoader,
+} from '@/graphql/v2/loaders/user-relations.loader';
 import argon2Plugin from '@/plugins/argon2';
 import authPlugin from '@/plugins/auth';
 import dbPlugin from '@/plugins/db';
@@ -9,6 +14,7 @@ import corsPlugin from '@fastify/cors';
 import jwtPlugin from '@fastify/jwt';
 import type { FastifyInstance } from 'fastify';
 import mercurius from 'mercurius';
+import emailPlugin from '@/plugins/email';
 
 const registerPlugins = (server: FastifyInstance) => {
   server
@@ -35,17 +41,32 @@ const registerPlugins = (server: FastifyInstance) => {
 
   void server.register(pubsubPlugin);
 
+  void server.register(emailPlugin).ready((err) => {
+    if (err) server.log.error(err);
+    server.log.info('Email plugin is ready');
+  });
+
   void server
     .register(mercurius, {
       schema: graphqlSchema,
       context: (request, reply) => {
-        return {
+        const baseContext = {
           request,
           reply,
           server,
           db: server.db,
           user: request.auth?.user,
           userV2: request.auth?.userV2,
+        };
+
+        // DataLoader 인스턴스 생성 (요청마다 새로 생성)
+        return {
+          ...baseContext,
+          loaders: {
+            languages: createLanguagesLoader(baseContext),
+            workExperiences: createWorkExperiencesLoader(baseContext),
+            educations: createEducationsLoader(baseContext),
+          },
         };
       },
       // GraphiQL은 production 환경에서 비활성화

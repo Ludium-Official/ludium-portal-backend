@@ -1,0 +1,6 @@
+# Get applications for a specific program. Sponsors see all applications, builders see only their own.
+
+query ApplicationsByProgramV2($query: ApplicationsByProgramV2QueryInput!) {
+  applicationsByProgramV2(query: $query) {
+  }
+}

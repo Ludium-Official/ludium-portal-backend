@@ -1,0 +1,12 @@
+mutation CreateOnchainContractInfoV2($input: CreateOnchainContractInfoV2Input!) {
+  createOnchainContractInfoV2(input: $input) {
+    applicantId
+    network
+    onchainContractId
+    programId
+    smartContract
+    smartContractId
+    sponsorId
+    status
+  }
+}

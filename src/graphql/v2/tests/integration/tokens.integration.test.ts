@@ -21,8 +21,7 @@ describe('Tokens V2 GraphQL API - Integration Tests', () => {
       loginType: 'wallet',
       role: 'admin',
       email: 'token@test.com',
-      firstName: 'Tok',
-      lastName: 'Admin',
+      nickname: 'Test User',
     };
     await db.insert(usersV2Table).values(testUser).returning();
 

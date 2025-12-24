@@ -1,0 +1,15 @@
+{
+  "id": "1",
+  "input": {
+    "deadline": "2026-01-24T04:23:00.569Z",
+    "description": "Example description",
+    "invitedMembers": "Example invitedMembers",
+    "networkId": 1,
+    "price": "Example price",
+    "skills": "Example skills",
+    "status": "closed",
+    "title": "Example title",
+    "token_id": 1,
+    "visibility": "private"
+  }
+}

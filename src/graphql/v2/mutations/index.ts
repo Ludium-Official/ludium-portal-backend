@@ -7,6 +7,7 @@ export * from './contracts';
 export * from './onchain-contract-info';
 // user
 export * from './users';
+export * from './portfolios';
 // metadata
 export * from './networks';
 export * from './tokens';

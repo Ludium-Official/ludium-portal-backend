@@ -3,11 +3,32 @@ import {
   createUserV2Resolver,
   deleteUserV2Resolver,
   loginV2Resolver,
-  updateProfileV2Resolver,
   updateUserV2Resolver,
+  updateProfileSectionV2Resolver,
+  requestEmailVerificationV2Resolver,
+  verifyEmailV2Resolver,
+  updateAboutSectionV2Resolver,
+  updateExpertiseSectionV2Resolver,
+  createWorkExperienceV2Resolver,
+  updateWorkExperienceV2Resolver,
+  deleteWorkExperienceV2Resolver,
+  createEducationV2Resolver,
+  updateEducationV2Resolver,
+  deleteEducationV2Resolver,
 } from '@/graphql/v2/resolvers/users';
-import { CreateUserV2Input, UpdateProfileV2Input, UpdateUserV2Input } from '../inputs/users';
-import { LoginTypeEnum } from '../types/users';
+import {
+  CreateUserV2Input,
+  UpdateProfileSectionV2Input,
+  UpdateUserV2Input,
+  RequestEmailVerificationV2Input,
+  UpdateAboutSectionV2Input,
+  UpdateExpertiseSectionV2Input,
+  CreateWorkExperienceV2Input,
+  UpdateWorkExperienceV2Input,
+  CreateEducationV2Input,
+  UpdateEducationV2Input,
+} from '../inputs/users';
+import { EducationV2Type, LoginTypeEnum, WorkExperienceV2Type } from '../types/users';
 import { UserV2Type } from '../types/users';
 
 // ============================================================================
@@ -83,18 +104,175 @@ builder.mutationFields((t) => ({
  * Update current authenticated user's profile
  */
 builder.mutationFields((t) => ({
-  updateProfileV2: t.field({
+  updateProfileSectionV2: t.field({
     type: UserV2Type,
     authScopes: { userV2: true },
     args: {
       input: t.arg({
-        type: UpdateProfileV2Input,
+        type: UpdateProfileSectionV2Input,
         required: true,
-        description: 'Profile update data',
       }),
     },
-    resolve: updateProfileV2Resolver,
-    description: 'Update current authenticated user profile',
+    resolve: updateProfileSectionV2Resolver,
+    description: 'Update profile section (nickname, email, location, profileImage)',
+  }),
+}));
+
+/**
+ * Request email verification code
+ */
+builder.mutationFields((t) => ({
+  requestEmailVerificationV2: t.field({
+    type: 'Boolean',
+    authScopes: { userV2: true },
+    args: {
+      input: t.arg({
+        type: RequestEmailVerificationV2Input,
+        required: true,
+      }),
+    },
+    resolve: requestEmailVerificationV2Resolver,
+    description: 'Request email verification code',
+  }),
+}));
+
+/**
+ * Verify email with code
+ */
+builder.mutationFields((t) => ({
+  verifyEmailV2: t.field({
+    type: 'Boolean',
+    authScopes: { userV2: true },
+    args: {
+      email: t.arg.string({ required: true }),
+      verificationCode: t.arg.string({ required: true }),
+    },
+    resolve: verifyEmailV2Resolver,
+    description: 'Verify email with verification code',
+  }),
+}));
+
+/**
+ * Update About Section
+ */
+builder.mutationFields((t) => ({
+  updateAboutSectionV2: t.field({
+    type: UserV2Type,
+    authScopes: { userV2: true },
+    args: {
+      input: t.arg({
+        type: UpdateAboutSectionV2Input,
+        required: true,
+      }),
+    },
+    resolve: updateAboutSectionV2Resolver,
+    description: 'Update about section (max 1000 characters)',
+  }),
+}));
+
+/**
+ * Update Expertise Section
+ */
+builder.mutationFields((t) => ({
+  updateExpertiseSectionV2: t.field({
+    type: UserV2Type,
+    authScopes: { userV2: true },
+    args: {
+      input: t.arg({
+        type: UpdateExpertiseSectionV2Input,
+        required: true,
+      }),
+    },
+    resolve: updateExpertiseSectionV2Resolver,
+    description: 'Update expertise section (role, skills, languages)',
+  }),
+}));
+
+/**
+ * Create / Update / Delete Work Experience
+ */
+builder.mutationFields((t) => ({
+  createWorkExperienceV2: t.field({
+    type: WorkExperienceV2Type,
+    authScopes: { userV2: true },
+    args: {
+      input: t.arg({
+        type: CreateWorkExperienceV2Input,
+        required: true,
+      }),
+    },
+    resolve: createWorkExperienceV2Resolver,
+    description: 'Create a new work experience',
+  }),
+
+  updateWorkExperienceV2: t.field({
+    type: WorkExperienceV2Type,
+    authScopes: { userV2: true },
+    args: {
+      input: t.arg({
+        type: UpdateWorkExperienceV2Input,
+        required: true,
+      }),
+    },
+    resolve: updateWorkExperienceV2Resolver,
+    description: 'Update an existing work experience',
+  }),
+
+  deleteWorkExperienceV2: t.field({
+    type: 'Boolean',
+    authScopes: { userV2: true },
+    args: {
+      id: t.arg.id({
+        required: true,
+        description: 'Work experience ID to delete',
+      }),
+    },
+    resolve: deleteWorkExperienceV2Resolver,
+    description: 'Delete a work experience (hard delete)',
+  }),
+}));
+
+/**
+ * Create / Update / Delete Education
+ */
+builder.mutationFields((t) => ({
+  createEducationV2: t.field({
+    type: EducationV2Type,
+    authScopes: { userV2: true },
+    args: {
+      input: t.arg({
+        type: CreateEducationV2Input,
+        required: true,
+      }),
+    },
+    resolve: createEducationV2Resolver,
+    description: 'Create a new education',
+  }),
+
+  updateEducationV2: t.field({
+    type: EducationV2Type,
+    authScopes: { userV2: true },
+    args: {
+      input: t.arg({
+        type: UpdateEducationV2Input,
+        required: true,
+      }),
+    },
+    resolve: updateEducationV2Resolver,
+    description: 'Update an existing education',
+  }),
+
+  deleteEducationV2: t.field({
+    type: 'Boolean',
+    authScopes: { userV2: true },
+    args: {
+      id: t.arg.id({
+        required: true,
+        description: 'Education ID to delete',
+      }),
+    },
+    resolve: deleteEducationV2Resolver,
+    description: 'Delete an education (hard delete)',
   }),
 }));
 

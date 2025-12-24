@@ -1,6 +1,7 @@
 import type { Context, UploadFile } from '@/types';
 import { isPromise } from '@/utils';
 import SchemaBuilder from '@pothos/core';
+import DataloaderPlugin from '@pothos/plugin-dataloader';
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth';
 import SmartSubscriptionsPlugin, {
   subscribeOptionsFromIterator,
@@ -80,7 +81,7 @@ const builder = new SchemaBuilder<{
     };
   };
 }>({
-  plugins: [ScopeAuthPlugin, ValidationPlugin, SmartSubscriptionsPlugin],
+  plugins: [ScopeAuthPlugin, ValidationPlugin, SmartSubscriptionsPlugin, DataloaderPlugin],
   scopeAuth: {
     authorizeOnSubscribe: true,
     authScopes: async (context) => ({

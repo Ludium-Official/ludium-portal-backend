@@ -51,16 +51,14 @@ describe('completeApplicationV2 Mutation Tests', () => {
       loginType: 'wallet',
       role: 'user',
       email: 'creator@test.com',
-      firstName: 'Program',
-      lastName: 'Creator',
+      nickname: 'Test User',
     };
     applicant = {
       walletAddress: '0xApplicantWalletAddress01234567890123456789',
       loginType: 'wallet',
       role: 'user',
       email: 'applicant@test.com',
-      firstName: 'Test',
-      lastName: 'Applicant',
+      nickname: 'Test User 2',
     };
 
     const [creatorUser] = await db.insert(usersV2Table).values(programCreator).returning();

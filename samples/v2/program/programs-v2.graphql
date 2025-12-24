@@ -1,0 +1,6 @@
+# Get all programs with pagination. Default limit is 10, default offset is 0.
+
+query ProgramsV2($pagination: PaginationInput) {
+  programsV2(pagination: $pagination) {
+  }
+}

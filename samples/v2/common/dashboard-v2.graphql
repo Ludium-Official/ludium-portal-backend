@@ -1,0 +1,6 @@
+# Get dashboard data for current authenticated user
+
+query DashboardV2 {
+  dashboardV2() {
+  }
+}

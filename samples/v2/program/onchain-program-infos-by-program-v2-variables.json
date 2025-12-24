@@ -1,0 +1,13 @@
+{
+  "pagination": {
+    "filter": {
+      "field": "Example field",
+      "value": "Example value",
+      "values": "Example values"
+    },
+    "limit": 1,
+    "offset": 1,
+    "sort": "asc"
+  },
+  "programId": "example"
+}

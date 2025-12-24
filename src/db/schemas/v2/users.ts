@@ -9,21 +9,22 @@ export const userV2RolesEnum = pgEnum('user_roles_v2', userV2Roles);
 export const usersV2Table = pgTable(
   'users_v2',
   {
-    // 필수 필드
+    // Required fields
     id: serial('id').primaryKey(),
     role: userV2RolesEnum('role').default('user').notNull(),
     loginType: loginTypesV2Enum('login_type').notNull(),
     email: varchar('email', { length: 256 }),
     walletAddress: varchar('wallet_address', { length: 256 }).notNull(),
 
-    // 유저 메타데이터
-    firstName: varchar('first_name', { length: 256 }),
-    lastName: varchar('last_name', { length: 256 }),
-    organizationName: varchar('organization_name', { length: 256 }),
+    // Metadata
     profileImage: text('profile_image'),
-    bio: text('bio'),
+    nickname: varchar('nickname', { length: 256 }),
+    location: text('location'),
+
+    about: varchar('about', { length: 1000 }),
+
+    userRole: varchar('user_role', { length: 256 }),
     skills: varchar('skills', { length: 256 }).array(),
-    links: varchar('links', { length: 256 }).array(),
 
     // TODO: Ban management
     // banned: boolean("banned").default(false).notNull(),

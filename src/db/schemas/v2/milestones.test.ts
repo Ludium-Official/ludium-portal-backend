@@ -20,8 +20,7 @@ describe('Milestones V2 Table', () => {
       walletAddress: '0xMilestoneUser123456789012345678901234567890',
       loginType: 'wallet',
       role: 'user',
-      firstName: 'Milestone',
-      lastName: 'User',
+      nickname: 'Milestone User',
     };
     const [insertedUser] = await db.insert(usersV2Table).values(testUser).returning();
     testUserId = insertedUser.id;
@@ -272,8 +271,7 @@ describe('Milestones V2 Table', () => {
       walletAddress: '0xAnotherMilestoneUser123456789012345678901234567',
       loginType: 'google',
       role: 'user',
-      firstName: 'Another',
-      lastName: 'User',
+      nickname: 'Another User',
     };
     const [anotherUserInserted] = await db.insert(usersV2Table).values(anotherUser).returning();
     const anotherUserId = anotherUserInserted.id;

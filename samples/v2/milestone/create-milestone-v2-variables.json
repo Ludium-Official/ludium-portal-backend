@@ -1,0 +1,10 @@
+{
+  "input": {
+    "deadline": "2026-01-24T04:23:00.579Z",
+    "description": "Example description",
+    "files": "Example files",
+    "payout": "Example payout",
+    "status": "completed",
+    "title": "Example title"
+  }
+}
