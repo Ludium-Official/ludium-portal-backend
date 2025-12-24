@@ -1,0 +1,6 @@
+# Get all portfolios for the current authenticated user
+
+query MyPortfoliosV2 {
+  myPortfoliosV2() {
+  }
+}

@@ -6,7 +6,7 @@ import {
 import type { CreatePortfolioV2Input, UpdatePortfolioV2Input } from '../inputs/portfolios';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { FastifyInstance } from 'fastify';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { filesTable } from '@/db/schemas';
 
 export class PortfolioV2Service {
@@ -14,6 +14,26 @@ export class PortfolioV2Service {
     private db: NodePgDatabase,
     private server: FastifyInstance,
   ) {}
+
+  async getById(id: string): Promise<PortfolioV2 | null> {
+    const portfolioId = Number.parseInt(id);
+    const [portfolio] = await this.db
+      .select()
+      .from(portfoliosV2Table)
+      .where(eq(portfoliosV2Table.id, portfolioId))
+      .limit(1);
+
+    return portfolio ?? null;
+  }
+
+  async getByUserId(userId: number): Promise<PortfolioV2[]> {
+    const data = await this.db
+      .select()
+      .from(portfoliosV2Table)
+      .where(and(eq(portfoliosV2Table.userId, userId), isNull(portfoliosV2Table.deletedAt)))
+      .orderBy(desc(portfoliosV2Table.createdAt));
+    return data;
+  }
 
   private async uploadImages(
     images: Promise<import('@/types').UploadFile>[] | null | undefined,
