@@ -1,0 +1,8 @@
+{
+  "input": {
+    "description": "Example description",
+    "isLudiumProject": true,
+    "role": "Example role",
+    "title": "Example title"
+  }
+}

@@ -1,0 +1,6 @@
+# Get all portfolios for a specific user
+
+query PortfoliosByUserIdV2($userId: ID!) {
+  portfoliosByUserIdV2(userId: $userId) {
+  }
+}

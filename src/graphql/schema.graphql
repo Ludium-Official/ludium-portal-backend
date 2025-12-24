@@ -1806,6 +1806,9 @@ type Query {
     """Pagination options"""
     query: MyApplicationsV2QueryInput
   ): PaginatedApplicationsV2
+
+  """Get all portfolios for the current authenticated user"""
+  myPortfoliosV2: [PortfolioV2!]
   networkV2(id: ID!): NetworkV2
   networksV2(pagination: PaginationInput): PaginatedNetworksV2
   notifications(pagination: PaginationInput): NotificationResult
@@ -1817,6 +1820,18 @@ type Query {
   onchainProgramInfosByProgramV2(pagination: PaginationInput, programId: String!): PaginatedOnchainProgramInfoV2
   onchainProgramInfosBySmartContractV2(pagination: PaginationInput, smartContractId: Int!): PaginatedOnchainProgramInfoV2
   onchainProgramInfosV2(pagination: PaginationInput): PaginatedOnchainProgramInfoV2
+
+  """Get a single portfolio by ID"""
+  portfolioV2(
+    """Portfolio ID"""
+    id: ID!
+  ): PortfolioV2
+
+  """Get all portfolios for a specific user"""
+  portfoliosByUserIdV2(
+    """User ID to get portfolios for"""
+    userId: ID!
+  ): [PortfolioV2!]
   post(id: ID!): Post
   posts(pagination: PaginationInput): PaginatedPosts
 
