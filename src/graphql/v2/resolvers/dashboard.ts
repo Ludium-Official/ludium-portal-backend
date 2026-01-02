@@ -3,12 +3,16 @@ import { DashboardV2Service } from '@/graphql/v2/services/dashboard.service';
 import type { Context, Root } from '@/types';
 import { and, eq, sql } from 'drizzle-orm';
 import type {
-  HiringActivityV2Input,
-  JobActivityV2Input,
-  ProgramOverviewV2Input,
+  HiringActivityProgramsInput,
+  JobActivityProgramsInput,
+  HiredBuildersInput,
+  BuilderMilestonesInput,
+  MilestoneProgressInput,
+  UpcomingPaymentsInput,
 } from '@/graphql/v2/inputs/dashboard';
 
-export async function getDashboardV2Resolver(
+// Dashboard Overview
+export async function getHiringActivityResolver(
   _root: Root,
   _args: Record<string, never>,
   ctx: Context,
@@ -16,35 +20,81 @@ export async function getDashboardV2Resolver(
   if (!ctx.userV2) {
     throw new Error('Unauthorized');
   }
-
   const service = new DashboardV2Service(ctx.db, ctx.server);
-  const userId = ctx.userV2.id;
-
-  const [hiringActivity, jobActivity, sponsorPaymentOverview, builderPaymentOverview] =
-    await Promise.all([
-      service.getSponsorHiringActivity(userId),
-      service.getBuilderHiringActivity(userId),
-      service.getSponsorPaymentOverview(userId),
-      service.getBuilderPaymentOverview(userId),
-    ]);
-
-  return {
-    hiringActivity,
-    jobActivity,
-    sponsorPaymentOverview,
-    builderPaymentOverview,
-  };
+  return await service.getSponsorHiringActivity(ctx.userV2.id);
 }
 
-export async function getHiringActivityV2Resolver(
+export async function getJobActivityResolver(
   _root: Root,
-  args: { input: typeof HiringActivityV2Input.$inferInput },
+  _args: Record<string, never>,
   ctx: Context,
 ) {
   if (!ctx.userV2) {
     throw new Error('Unauthorized');
   }
+  const service = new DashboardV2Service(ctx.db, ctx.server);
+  return await service.getBuilderHiringActivity(ctx.userV2.id);
+}
 
+export async function getSponsorPaymentOverviewResolver(
+  _root: Root,
+  _args: Record<string, never>,
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  const service = new DashboardV2Service(ctx.db, ctx.server);
+  return await service.getSponsorPaymentOverview(ctx.userV2.id);
+}
+
+export async function getBuilderPaymentOverviewResolver(
+  _root: Root,
+  _args: Record<string, never>,
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  const service = new DashboardV2Service(ctx.db, ctx.server);
+  return await service.getBuilderPaymentOverview(ctx.userV2.id);
+}
+
+// Hiring Activity
+export async function getHiringActivityCardsResolver(
+  _root: Root,
+  _args: Record<string, never>,
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  const service = new DashboardV2Service(ctx.db, ctx.server);
+  const userId = ctx.userV2.id;
+
+  // Check if user is sponsor
+  const [sponsorCheck] = await ctx.db
+    .select({ count: sql<number>`count(*)` })
+    .from(programsV2Table)
+    .where(eq(programsV2Table.sponsorId, userId));
+
+  const isSponsor = sponsorCheck && Number(sponsorCheck.count) > 0;
+
+  if (!isSponsor) {
+    return { all: 0, open: 0, ongoing: 0, completed: 0 };
+  }
+
+  return await service.getSponsorHiringActivityCards(userId);
+}
+
+export async function getHiringActivityProgramsResolver(
+  _root: Root,
+  args: { input: typeof HiringActivityProgramsInput.$inferInput },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
   const service = new DashboardV2Service(ctx.db, ctx.server);
   const userId = ctx.userV2.id;
   const { status, search, pagination } = args.input;
@@ -66,37 +116,38 @@ export async function getHiringActivityV2Resolver(
   const isSponsor = sponsorCheck && Number(sponsorCheck.count) > 0;
 
   if (!isSponsor) {
-    return {
-      cards: { all: 0, open: 0, ongoing: 0, completed: 0 },
-      programs: { data: [], count: 0 },
-    };
+    return { data: [], count: 0 };
   }
 
-  const [cards, programs] = await Promise.all([
-    service.getSponsorHiringActivityCards(userId),
-    service.getSponsorHiringActivityPrograms(
-      userId,
-      statusFilter,
-      paginationOptions,
-      search ?? undefined,
-    ),
-  ]);
-
-  return {
-    cards,
-    programs,
-  };
+  return await service.getSponsorHiringActivityPrograms(
+    userId,
+    statusFilter,
+    paginationOptions,
+    search ?? undefined,
+  );
 }
 
-export async function getJobActivityV2Resolver(
+// Job Activity
+export async function getJobActivityCardsResolver(
   _root: Root,
-  args: { input: typeof JobActivityV2Input.$inferInput },
+  _args: Record<string, never>,
   ctx: Context,
 ) {
   if (!ctx.userV2) {
     throw new Error('Unauthorized');
   }
+  const service = new DashboardV2Service(ctx.db, ctx.server);
+  return await service.getBuilderJobActivityCards(ctx.userV2.id);
+}
 
+export async function getJobActivityProgramsResolver(
+  _root: Root,
+  args: { input: typeof JobActivityProgramsInput.$inferInput },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
   const service = new DashboardV2Service(ctx.db, ctx.server);
   const userId = ctx.userV2.id;
   const { status, search, pagination } = args.input;
@@ -109,31 +160,23 @@ export async function getJobActivityV2Resolver(
       }
     : undefined;
 
-  const [cards, programs] = await Promise.all([
-    service.getBuilderJobActivityCards(userId),
-    service.getBuilderJobActivityPrograms(
-      userId,
-      statusFilter,
-      paginationOptions,
-      search ?? undefined,
-    ),
-  ]);
-
-  return {
-    cards,
-    programs,
-  };
+  return await service.getBuilderJobActivityPrograms(
+    userId,
+    statusFilter,
+    paginationOptions,
+    search ?? undefined,
+  );
 }
 
-export async function getProgramOverviewV2Resolver(
+// Program Overview
+export async function getHiredBuildersResolver(
   _root: Root,
-  args: { input: typeof ProgramOverviewV2Input.$inferInput },
+  args: { input: typeof HiredBuildersInput.$inferInput },
   ctx: Context,
 ) {
   if (!ctx.userV2) {
     throw new Error('Unauthorized');
   }
-
   const service = new DashboardV2Service(ctx.db, ctx.server);
   const userId = ctx.userV2.id;
   const { programId, pagination } = args.input;
@@ -145,40 +188,82 @@ export async function getProgramOverviewV2Resolver(
       }
     : undefined;
 
-  // Check if user is sponsor (has created this program)
+  // Check if user is sponsor
   const [sponsorCheck] = await ctx.db
     .select({ count: sql<number>`count(*)` })
     .from(programsV2Table)
     .where(and(eq(programsV2Table.id, programId), eq(programsV2Table.sponsorId, userId)));
   const isSponsor = sponsorCheck && Number(sponsorCheck.count) > 0;
 
-  if (isSponsor) {
-    // Sponsor view: hired builders, milestone progress, upcoming payments
-    const [hiredBuilders, milestoneProgress, upcomingPayments] = await Promise.all([
-      service.getHiredBuilders(programId, userId, paginationOptions),
-      service.getMilestoneProgress(programId, userId, true),
-      service.getUpcomingPayments(programId, userId, true),
-    ]);
-
-    return {
-      hiredBuilders,
-      milestones: undefined,
-      milestoneProgress,
-      upcomingPayments,
-    };
+  if (!isSponsor) {
+    return { data: [], count: 0 };
   }
 
-  // Builder view: milestones, milestone progress, upcoming payments
-  const [milestones, milestoneProgress, upcomingPayments] = await Promise.all([
-    service.getBuilderMilestones(programId, userId, paginationOptions),
-    service.getMilestoneProgress(programId, userId, false),
-    service.getUpcomingPayments(programId, userId, false),
-  ]);
+  return await service.getHiredBuilders(programId, userId, paginationOptions);
+}
 
-  return {
-    hiredBuilders: undefined,
-    milestones,
-    milestoneProgress,
-    upcomingPayments,
-  };
+export async function getBuilderMilestonesResolver(
+  _root: Root,
+  args: { input: typeof BuilderMilestonesInput.$inferInput },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  const service = new DashboardV2Service(ctx.db, ctx.server);
+  const userId = ctx.userV2.id;
+  const { programId, pagination } = args.input;
+
+  const paginationOptions = pagination
+    ? {
+        limit: pagination.limit ?? undefined,
+        offset: pagination.offset ?? undefined,
+      }
+    : undefined;
+
+  return await service.getBuilderMilestones(programId, userId, paginationOptions);
+}
+
+export async function getMilestoneProgressResolver(
+  _root: Root,
+  args: { input: typeof MilestoneProgressInput.$inferInput },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  const service = new DashboardV2Service(ctx.db, ctx.server);
+  const userId = ctx.userV2.id;
+  const { programId } = args.input;
+
+  // Check if user is sponsor
+  const [sponsorCheck] = await ctx.db
+    .select({ count: sql<number>`count(*)` })
+    .from(programsV2Table)
+    .where(and(eq(programsV2Table.id, programId), eq(programsV2Table.sponsorId, userId)));
+  const isSponsor = sponsorCheck && Number(sponsorCheck.count) > 0;
+
+  return await service.getMilestoneProgress(programId, userId, isSponsor);
+}
+
+export async function getUpcomingPaymentsResolver(
+  _root: Root,
+  args: { input: typeof UpcomingPaymentsInput.$inferInput },
+  ctx: Context,
+) {
+  if (!ctx.userV2) {
+    throw new Error('Unauthorized');
+  }
+  const service = new DashboardV2Service(ctx.db, ctx.server);
+  const userId = ctx.userV2.id;
+  const { programId } = args.input;
+
+  // Check if user is sponsor
+  const [sponsorCheck] = await ctx.db
+    .select({ count: sql<number>`count(*)` })
+    .from(programsV2Table)
+    .where(and(eq(programsV2Table.id, programId), eq(programsV2Table.sponsorId, userId)));
+  const isSponsor = sponsorCheck && Number(sponsorCheck.count) > 0;
+
+  return await service.getUpcomingPayments(programId, userId, isSponsor);
 }

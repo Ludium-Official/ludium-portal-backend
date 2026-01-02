@@ -5,7 +5,7 @@ import {
   JobActivityProgramStatusFilterEnum,
 } from '../types/dashboard';
 
-export const HiringActivityV2Input = builder.inputType('HiringActivityV2Input', {
+export const HiringActivityProgramsInput = builder.inputType('HiringActivityProgramsInput', {
   fields: (t) => ({
     status: t.field({
       type: HiringActivityProgramStatusFilterEnum,
@@ -24,7 +24,7 @@ export const HiringActivityV2Input = builder.inputType('HiringActivityV2Input', 
   }),
 });
 
-export const JobActivityV2Input = builder.inputType('JobActivityV2Input', {
+export const JobActivityProgramsInput = builder.inputType('JobActivityProgramsInput', {
   fields: (t) => ({
     status: t.field({
       type: JobActivityProgramStatusFilterEnum,
@@ -43,7 +43,7 @@ export const JobActivityV2Input = builder.inputType('JobActivityV2Input', {
   }),
 });
 
-export const ProgramOverviewV2Input = builder.inputType('ProgramOverviewV2Input', {
+export const HiredBuildersInput = builder.inputType('HiredBuildersInput', {
   fields: (t) => ({
     programId: t.id({
       required: true,
@@ -52,7 +52,39 @@ export const ProgramOverviewV2Input = builder.inputType('ProgramOverviewV2Input'
     pagination: t.field({
       type: PaginationInput,
       required: false,
-      description: 'Pagination options for hired builders or milestones',
+      description: 'Pagination options for hired builders',
+    }),
+  }),
+});
+
+export const BuilderMilestonesInput = builder.inputType('BuilderMilestonesInput', {
+  fields: (t) => ({
+    programId: t.id({
+      required: true,
+      description: 'Program ID',
+    }),
+    pagination: t.field({
+      type: PaginationInput,
+      required: false,
+      description: 'Pagination options for milestones',
+    }),
+  }),
+});
+
+export const MilestoneProgressInput = builder.inputType('MilestoneProgressInput', {
+  fields: (t) => ({
+    programId: t.id({
+      required: true,
+      description: 'Program ID',
+    }),
+  }),
+});
+
+export const UpcomingPaymentsInput = builder.inputType('UpcomingPaymentsInput', {
+  fields: (t) => ({
+    programId: t.id({
+      required: true,
+      description: 'Program ID',
     }),
   }),
 });
