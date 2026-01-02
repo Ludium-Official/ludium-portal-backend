@@ -185,6 +185,14 @@ type BuilderMilestoneV2 {
   unpaidAmount: String
 }
 
+input BuilderMilestonesInput {
+  """Pagination options for milestones"""
+  pagination: PaginationInput
+
+  """Program ID"""
+  programId: ID!
+}
+
 input BulkAssignTiersInput {
   assignments: [AssignUserTierInput!]!
   programId: ID!
@@ -613,6 +621,14 @@ type HiredBuilderV2 {
   totalAmount: String
 }
 
+input HiredBuildersInput {
+  """Pagination options for hired builders"""
+  pagination: PaginationInput
+
+  """Program ID"""
+  programId: ID!
+}
+
 """Filter for program status: ALL, OPEN, ONGOING, or COMPLETED"""
 enum HiringActivityProgramStatusFilter {
   ALL
@@ -621,15 +637,7 @@ enum HiringActivityProgramStatusFilter {
   OPEN
 }
 
-type HiringActivityV2 {
-  """Card data with counts (for sponsor)"""
-  cards: SponsorHiringActivityCards
-
-  """Paginated list of programs"""
-  programs: PaginatedProgramsV2
-}
-
-input HiringActivityV2Input {
+input HiringActivityProgramsInput {
   """Pagination options"""
   pagination: PaginationInput
 
@@ -638,6 +646,14 @@ input HiringActivityV2Input {
 
   """Filter by program status: ALL, OPEN, ONGOING, or COMPLETED"""
   status: HiringActivityProgramStatusFilter
+}
+
+type HiringActivityV2 {
+  """Card data with counts (for sponsor)"""
+  cards: SponsorHiringActivityCards
+
+  """Paginated list of programs"""
+  programs: PaginatedProgramsV2
 }
 
 type Investment {
@@ -714,15 +730,7 @@ enum JobActivityProgramStatusFilter {
   ONGOING
 }
 
-type JobActivityV2 {
-  """Card data with counts (for builder)"""
-  cards: BuilderJobActivityCards
-
-  """Paginated list of programs"""
-  programs: PaginatedProgramsV2
-}
-
-input JobActivityV2Input {
+input JobActivityProgramsInput {
   """Pagination options"""
   pagination: PaginationInput
 
@@ -731,6 +739,14 @@ input JobActivityV2Input {
 
   """Filter by program status: APPLIED, ONGOING, or COMPLETED"""
   status: JobActivityProgramStatusFilter
+}
+
+type JobActivityV2 {
+  """Card data with counts (for builder)"""
+  cards: BuilderJobActivityCards
+
+  """Paginated list of programs"""
+  programs: PaginatedProgramsV2
 }
 
 type Keyword {
@@ -811,6 +827,11 @@ type MilestoneProgress {
 
   """Total number of milestones"""
   total: Int
+}
+
+input MilestoneProgressInput {
+  """Program ID"""
+  programId: ID!
 }
 
 enum MilestoneStatus {
@@ -1312,6 +1333,11 @@ type PaginatedApplicationsV2 {
   totalPages: Int
 }
 
+type PaginatedBuilderMilestones {
+  count: Int
+  data: [BuilderMilestoneV2!]
+}
+
 type PaginatedBuilderMilestonesV2 {
   count: Int
   data: [BuilderMilestoneV2!]
@@ -1325,6 +1351,11 @@ type PaginatedComments {
 type PaginatedContractV2 {
   count: Int
   data: [ContractV2!]
+}
+
+type PaginatedHiredBuilders {
+  count: Int
+  data: [HiredBuilderV2!]
 }
 
 type PaginatedHiredBuildersV2 {
@@ -1596,14 +1627,6 @@ type ProgramOverviewV2 {
   upcomingPayments: [UpcomingPayment!]
 }
 
-input ProgramOverviewV2Input {
-  """Pagination options for hired builders or milestones"""
-  pagination: PaginationInput
-
-  """Program ID"""
-  programId: ID!
-}
-
 type ProgramStatsByStatus {
   completed: Int
   confirmed: Int
@@ -1729,6 +1752,15 @@ type Query {
     """Query options including pagination and filtering"""
     query: ApplicationsV2QueryInput
   ): PaginatedApplicationsV2
+
+  """Get list of milestones (for builder)"""
+  builderMilestones(
+    """Builder milestones query input (programId, pagination)"""
+    input: BuilderMilestonesInput!
+  ): PaginatedBuilderMilestones
+
+  """Get payment overview by week for builder (4 weeks)"""
+  builderPaymentOverview: [PaymentWeek!]
   carouselItems: [EnrichedCarouselItem!]
 
   """
@@ -1757,30 +1789,53 @@ type Query {
   contractsBySponsorV2(pagination: PaginationInput, sponsorId: Int!): PaginatedContractV2
   contractsV2(pagination: PaginationInput): PaginatedContractV2
   countNotifications: Int
-
-  """Get dashboard data for current authenticated user"""
-  dashboardV2: DashboardV2
   getSwappedStatus(userId: String!): SwappedStatusResponse
 
-  """Get hiring activity data (cards and programs list)"""
-  hiringActivityV2(
-    """Hiring activity query input (status filter, pagination)"""
-    input: HiringActivityV2Input!
-  ): HiringActivityV2
+  """Get list of hired builders (for sponsor)"""
+  hiredBuilders(
+    """Hired builders query input (programId, pagination)"""
+    input: HiredBuildersInput!
+  ): PaginatedHiredBuilders
+
+  """Get hiring activity statistics (as sponsor - programs created by user)"""
+  hiringActivity: SponsorHiringActivity
+
+  """Get hiring activity cards (counts for sponsor)"""
+  hiringActivityCards: SponsorHiringActivityCards
+
+  """Get hiring activity programs list"""
+  hiringActivityPrograms(
+    """Hiring activity programs query input (status filter, pagination)"""
+    input: HiringActivityProgramsInput!
+  ): PaginatedProgramsV2
   investment(id: ID!): Investment
   investmentTerm(id: ID!): InvestmentTerm
   investmentTermsByApplicationId(applicationId: ID!): [InvestmentTerm!]
   investments(pagination: PaginationInput, projectId: ID, supporterId: ID): PaginatedInvestments
 
-  """Get job activity data (cards and programs list)"""
-  jobActivityV2(
-    """Job activity query input (status filter, pagination)"""
-    input: JobActivityV2Input!
-  ): JobActivityV2
+  """
+  Get job activity statistics (as builder - programs user has applied to)
+  """
+  jobActivity: BuilderJobActivity
+
+  """Get job activity cards (counts for builder)"""
+  jobActivityCards: BuilderJobActivityCards
+
+  """Get job activity programs list"""
+  jobActivityPrograms(
+    """Job activity programs query input (status filter, pagination)"""
+    input: JobActivityProgramsInput!
+  ): PaginatedProgramsV2
   keywords: [Keyword!]
   milestone(id: ID!): Milestone
   milestonePayout(id: ID!): MilestonePayout
   milestonePayouts(investmentId: ID, milestoneId: ID, pagination: PaginationInput, status: PayoutStatus): PaginatedMilestonePayouts
+
+  """Get milestone progress (completed/total)"""
+  milestoneProgress(
+    """Milestone progress query input (programId)"""
+    input: MilestoneProgressInput!
+  ): MilestoneProgress
 
   """Get a single milestone by ID"""
   milestoneV2(
@@ -1841,14 +1896,6 @@ type Query {
   """Get current authenticated user profile"""
   profileV2: UserV2
   program(id: ID!): Program
-
-  """
-  Get program overview data (hired builders/milestones, milestone progress, upcoming payments)
-  """
-  programOverviewV2(
-    """Program overview query input (programId, pagination)"""
-    input: ProgramOverviewV2Input!
-  ): ProgramOverviewV2
 
   """Get a single program by ID."""
   programV2(
@@ -1918,9 +1965,20 @@ type Query {
   ): [UserV2!]
   smartContractV2(id: ID!): SmartContractV2
   smartContractsV2(chainInfoId: Int, pagination: PaginationInput): PaginatedSmartContractsV2
+
+  """Get payment overview by week for sponsor (4 weeks)"""
+  sponsorPaymentOverview: [PaymentWeek!]
   tokenV2(id: ID!): TokenV2
   tokensByNetworkV2(networkId: Int!, pagination: PaginationInput): PaginatedTokensV2
   tokensV2(pagination: PaginationInput): PaginatedTokensV2
+
+  """
+  Get list of upcoming payments (within 7 days based on deadline + 2 days)
+  """
+  upcomingPayments(
+    """Upcoming payments query input (programId)"""
+    input: UpcomingPaymentsInput!
+  ): [UpcomingPayment!]
   user(id: ID!): User
 
   """Get a single user by ID"""
@@ -2071,6 +2129,11 @@ type TokenV2 {
 type UpcomingPayment {
   builder: BuilderInfo
   payment: [PaymentInfo!]
+}
+
+input UpcomingPaymentsInput {
+  """Program ID"""
+  programId: ID!
 }
 
 input UpdateAboutSectionV2Input {
