@@ -125,6 +125,101 @@ input ApplicationsV2QueryInput {
   status: ApplicationStatusV2
 }
 
+type Article {
+  author: UserV2
+
+  """Number of comments"""
+  commentCount: Int
+
+  """Cover image URL or path"""
+  coverImage: String
+  createdAt: DateTime
+
+  """Article description in markdown format"""
+  description: String
+  id: ID
+
+  """Whether the currently authenticated user has liked this article"""
+  isLiked: Boolean
+
+  """Whether this article is pinned"""
+  isPin: Boolean
+
+  """Number of likes"""
+  likeCount: Int
+  status: ArticleStatus
+  title: String
+
+  """Article category (article, newsletter, campaign)"""
+  type: ArticleType
+  updatedAt: DateTime
+
+  """Number of views"""
+  view: Int
+}
+
+type ArticleComment {
+  articleId: ID
+  authorId: Int
+  content: String
+  createdAt: DateTime
+  deletedAt: DateTime
+  dislikeCount: Int
+  id: ID
+  isDisliked: Boolean
+  isLiked: Boolean
+  likeCount: Int
+  parentId: ID
+  replies: [ArticleComment!]
+  updatedAt: DateTime
+}
+
+enum ArticleCommentReaction {
+  dislike
+  like
+}
+
+"""
+Filter type for articles: LATEST (latest articles), TRENDING (trending articles in last week), NEWSLETTER (newsletter type), CAMPAIGN (campaign type)
+"""
+enum ArticleFilter {
+  CAMPAIGN
+  LATEST
+  NEWSLETTER
+  TRENDING
+}
+
+enum ArticleStatus {
+  pending
+  published
+}
+
+enum ArticleType {
+  article
+  campaign
+  newsletter
+}
+
+input ArticlesQueryInput {
+  """Filter by author ID"""
+  authorId: ID
+
+  """Filter type: LATEST, TRENDING, NEWSLETTER, or CAMPAIGN"""
+  filter: ArticleFilter
+
+  """Pagination options"""
+  pagination: PaginationInput
+
+  """Search by title"""
+  search: String
+
+  """Filter by status"""
+  status: ArticleStatus
+
+  """Filter by type (category)"""
+  type: ArticleType
+}
+
 input AssignUserTierInput {
   maxInvestmentAmount: String!
   programId: ID!
@@ -250,6 +345,13 @@ type Comment {
   replies: [Comment!]
 }
 
+type CommentReactionResult {
+  dislikeCount: Int
+  isDisliked: Boolean
+  isLiked: Boolean
+  likeCount: Int
+}
+
 enum CommentableTypeEnum {
   application
   milestone
@@ -295,6 +397,39 @@ input CreateApplicationV2Input {
 
   """Application status (defaults to submitted)"""
   status: ApplicationStatusV2
+}
+
+input CreateArticleCommentInput {
+  """Article ID"""
+  articleId: ID!
+
+  """Comment content"""
+  content: String!
+
+  """Parent comment ID for nested comments"""
+  parentId: ID
+}
+
+input CreateArticleInput {
+  """Article category (default: article)"""
+  category: ArticleType
+
+  """Cover image file"""
+  coverImage: Upload!
+
+  """Article description in markdown format"""
+  description: String!
+
+  """Whether to pin this article (default: false, admin only)"""
+  isPin: Boolean
+
+  """Article title (max 130 characters)"""
+  title: String!
+
+  """
+  Article ID to unpin when pinning would exceed 2 pinned articles (admin only)
+  """
+  unpinArticleId: ID
 }
 
 input CreateCarouselItemInput {
@@ -567,6 +702,11 @@ scalar Date
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
 scalar DateTime
+
+input DeleteArticleCommentInput {
+  """Comment ID to delete"""
+  commentId: ID!
+}
 
 type EducationV2 {
   attendedEndDate: Int
@@ -951,6 +1091,12 @@ type Mutation {
     """Application creation data"""
     input: CreateApplicationV2Input!
   ): ApplicationV2
+
+  """Create a new article"""
+  createArticle(input: CreateArticleInput!): Article
+
+  """Create a comment on an article"""
+  createArticleComment(input: CreateArticleCommentInput!): ArticleComment
   createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
   createComment(input: CreateCommentInput!): Comment
   createContractV2(input: CreateContractV2Input!): ContractV2
@@ -996,6 +1142,15 @@ type Mutation {
     """Application ID"""
     id: ID!
   ): ApplicationV2
+
+  """Delete an article"""
+  deleteArticle(
+    """Article ID"""
+    id: ID!
+  ): Boolean
+
+  """Delete a comment"""
+  deleteArticleComment(input: DeleteArticleCommentInput!): Boolean
   deleteCarouselItem(id: ID!): CarouselItem
   deleteContractV2(id: ID!): ContractV2
 
@@ -1100,6 +1255,15 @@ type Mutation {
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   syncApplicationTiers(applicationId: ID!): TierSyncResult
+
+  """Toggle like/dislike on a comment"""
+  toggleArticleCommentReaction(input: ToggleArticleCommentReactionInput!): CommentReactionResult
+
+  """Toggle like on an article (like if not liked, unlike if liked)"""
+  toggleArticleLike(
+    """Article ID"""
+    articleId: ID!
+  ): Boolean
   unbanUser(userId: ID!): User
 
   """Update about section (max 1000 characters)"""
@@ -1125,6 +1289,16 @@ type Mutation {
     """Application update data (only by applicant)"""
     input: UpdateApplicationV2Input!
   ): ApplicationV2
+
+  """Update an article"""
+  updateArticle(
+    """Article ID"""
+    id: ID!
+    input: UpdateArticleInput!
+  ): Article
+
+  """Update a comment"""
+  updateArticleComment(input: UpdateArticleCommentInput!): ArticleComment
   updateCarouselItem(input: UpdateCarouselItemInput!): CarouselItem
   updateComment(input: UpdateCommentInput!): Comment
   updateContractV2(id: ID!, input: UpdateContractV2Input!): ContractV2
@@ -1331,6 +1505,11 @@ type PaginatedApplicationsV2 {
 
   """Total number of pages"""
   totalPages: Int
+}
+
+type PaginatedArticle {
+  count: Int
+  data: [Article!]
 }
 
 type PaginatedBuilderMilestones {
@@ -2118,6 +2297,14 @@ type TierSyncResult {
   tierAssignments: [TierAssignmentData!]
 }
 
+input ToggleArticleCommentReactionInput {
+  """Comment ID"""
+  commentId: ID!
+
+  """Reaction type (like or dislike)"""
+  reaction: ArticleCommentReaction!
+}
+
 type TokenV2 {
   chainInfoId: Int
   decimals: Int
@@ -2162,6 +2349,39 @@ input UpdateApplicationV2Input {
 
   """Updated application status (builder-driven lifecycle updates)"""
   status: ApplicationStatusV2
+}
+
+input UpdateArticleCommentInput {
+  """Comment ID to update"""
+  commentId: ID!
+
+  """Updated comment content"""
+  content: String!
+}
+
+input UpdateArticleInput {
+  """Article category (admin only)"""
+  category: ArticleType
+
+  """Cover image file"""
+  coverImage: Upload
+
+  """Article description in markdown format"""
+  description: String
+
+  """Whether to pin this article (admin only)"""
+  isPin: Boolean
+
+  """Article status (published or pending)"""
+  status: ArticleStatus
+
+  """Article title (max 130 characters)"""
+  title: String
+
+  """
+  Article ID to unpin when pinning would exceed 2 pinned articles (admin only)
+  """
+  unpinArticleId: ID
 }
 
 input UpdateCarouselItemInput {

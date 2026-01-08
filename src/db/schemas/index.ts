@@ -30,4 +30,5 @@ export * from './v2/email-verifications';
 export * from './v2/user-language';
 export * from './v2/user-work-experiences';
 export * from './v2/user-educations';
-export * from './v2/portfolios'
+export * from './v2/portfolios';
+export * from './v2/articles';
