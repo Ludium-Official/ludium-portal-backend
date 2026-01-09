@@ -161,6 +161,12 @@ type Article {
 type ArticleComment {
   articleId: ID
   authorId: Int
+
+  """Author nickname"""
+  authorNickname: String
+
+  """Author profile image URL"""
+  authorProfileImage: String
   content: String
   createdAt: DateTime
   deletedAt: DateTime
@@ -171,6 +177,9 @@ type ArticleComment {
   likeCount: Int
   parentId: ID
   replies: [ArticleComment!]
+
+  """Number of child comments"""
+  replyCount: Int
   updatedAt: DateTime
 }
 
@@ -190,7 +199,7 @@ enum ArticleFilter {
 }
 
 enum ArticleStatus {
-  pending
+  draft
   published
 }
 
@@ -415,16 +424,19 @@ input CreateArticleInput {
   category: ArticleType
 
   """Cover image file"""
-  coverImage: Upload!
+  coverImage: Upload
 
   """Article description in markdown format"""
-  description: String!
+  description: String
 
   """Whether to pin this article (default: false, admin only)"""
   isPin: Boolean
 
+  """Article status (published or draft)"""
+  status: ArticleStatus
+
   """Article title (max 130 characters)"""
-  title: String!
+  title: String
 
   """
   Article ID to unpin when pinning would exceed 2 pinned articles (admin only)
@@ -1932,6 +1944,30 @@ type Query {
     query: ApplicationsV2QueryInput
   ): PaginatedApplicationsV2
 
+  """Get a single article by ID"""
+  article(
+    """Article ID"""
+    id: ID!
+  ): Article
+
+  """Get child comments for a parent comment"""
+  articleChildComments(
+    """Parent comment ID"""
+    parentId: ID!
+  ): [ArticleComment!]
+
+  """Get all comments for an article (hierarchical structure)"""
+  articleComments(
+    """Article ID"""
+    articleId: ID!
+  ): [ArticleComment!]
+
+  """Get a paginated list of articles"""
+  articles(
+    """Query filters and pagination"""
+    input: ArticlesQueryInput
+  ): PaginatedArticle
+
   """Get list of milestones (for builder)"""
   builderMilestones(
     """Builder milestones query input (programId, pagination)"""
@@ -2055,6 +2091,9 @@ type Query {
   onchainProgramInfosBySmartContractV2(pagination: PaginationInput, smartContractId: Int!): PaginatedOnchainProgramInfoV2
   onchainProgramInfosV2(pagination: PaginationInput): PaginatedOnchainProgramInfoV2
 
+  """Get all pinned articles"""
+  pinnedArticles: [Article!]
+
   """Get a single portfolio by ID"""
   portfolioV2(
     """Portfolio ID"""
@@ -2142,6 +2181,12 @@ type Query {
     """Dynamic filter criteria (field=value pairs combined with AND logic)"""
     filter: [UserV2QueryFilterInput!]
   ): [UserV2!]
+
+  """Get recommended articles by type"""
+  recommendedArticles(
+    """Article type (article, newsletter, campaign)"""
+    type: ArticleType!
+  ): [Article!]
   smartContractV2(id: ID!): SmartContractV2
   smartContractsV2(chainInfoId: Int, pagination: PaginationInput): PaginatedSmartContractsV2
 
@@ -2372,7 +2417,7 @@ input UpdateArticleInput {
   """Whether to pin this article (admin only)"""
   isPin: Boolean
 
-  """Article status (published or pending)"""
+  """Article status (published or draft)"""
   status: ArticleStatus
 
   """Article title (max 130 characters)"""

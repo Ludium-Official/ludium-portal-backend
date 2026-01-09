@@ -1,0 +1,6 @@
+# Get a single article by ID
+
+query ArticleV2($id: ID!) {
+  article(id: $id) {
+  }
+}

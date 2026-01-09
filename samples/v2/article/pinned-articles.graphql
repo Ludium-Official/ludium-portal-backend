@@ -1,0 +1,6 @@
+# Get all pinned articles
+
+query PinnedArticlesV2 {
+  pinnedArticles() {
+  }
+}

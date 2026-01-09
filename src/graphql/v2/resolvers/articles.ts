@@ -50,6 +50,15 @@ export async function getRecommendedArticlesResolver(
   return await service.getRecommendedArticles(args.type);
 }
 
+export async function getPinnedArticlesResolver(
+  _root: Root,
+  _args: Record<string, never>,
+  ctx: Context,
+) {
+  const service = new ArticleService(ctx.db, ctx.server);
+  return await service.getPinnedArticles();
+}
+
 export async function createArticleResolver(
   _root: Root,
   args: { input: typeof CreateArticleInput.$inferInput },

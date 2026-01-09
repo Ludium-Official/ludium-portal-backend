@@ -1,0 +1,12 @@
+{
+  "input": {
+    "filter": "CAMPAIGN",
+    "pagination": {
+      "limit": 1,
+      "offset": 1
+    },
+    "search": "Example search",
+    "status": "draft",
+    "type": "article"
+  }
+}

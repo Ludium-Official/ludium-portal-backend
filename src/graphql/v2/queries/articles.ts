@@ -5,6 +5,7 @@ import {
   getAllCommentsResolver,
   getChildCommentsResolver,
   getRecommendedArticlesResolver,
+  getPinnedArticlesResolver,
 } from '@/graphql/v2/resolvers/articles';
 import { ArticlesQueryInput } from '../inputs/articles';
 import {
@@ -50,6 +51,11 @@ builder.queryFields((t) => ({
     },
     resolve: getRecommendedArticlesResolver,
     description: 'Get recommended articles by type',
+  }),
+  pinnedArticles: t.field({
+    type: [ArticleType],
+    resolve: getPinnedArticlesResolver,
+    description: 'Get all pinned articles',
   }),
   // comment
   articleComments: t.field({

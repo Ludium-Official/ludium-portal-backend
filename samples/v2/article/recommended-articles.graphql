@@ -1,0 +1,6 @@
+# Get recommended articles by type
+
+query RecommendedArticlesV2($type: ArticleType!) {
+  recommendedArticles(type: $type) {
+  }
+}

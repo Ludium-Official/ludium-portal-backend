@@ -11,17 +11,18 @@ export const ArticleFilterEnum = builder.enumType('ArticleFilter', {
 export const CreateArticleInput = builder.inputType('CreateArticleInput', {
   fields: (t) => ({
     title: t.string({
-      required: true,
       description: 'Article title (max 130 characters)',
     }),
     description: t.string({
-      required: true,
       description: 'Article description in markdown format',
     }),
     coverImage: t.field({
       type: 'Upload',
-      required: true,
       description: 'Cover image file',
+    }),
+    status: t.field({
+      type: ArticleStatusEnum,
+      description: 'Article status (published or draft)',
     }),
     category: t.field({
       type: ArticleTypeEnum,
@@ -50,7 +51,7 @@ export const UpdateArticleInput = builder.inputType('UpdateArticleInput', {
     }),
     status: t.field({
       type: ArticleStatusEnum,
-      description: 'Article status (published or pending)',
+      description: 'Article status (published or draft)',
     }),
     category: t.field({
       type: ArticleTypeEnum,
