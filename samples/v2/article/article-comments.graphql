@@ -1,0 +1,6 @@
+# Get all comments for an article (hierarchical structure)
+
+query ArticleCommentsV2($articleId: ID!) {
+  articleComments(articleId: $articleId) {
+  }
+}

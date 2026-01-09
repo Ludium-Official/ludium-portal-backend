@@ -10,7 +10,7 @@ import {
 import type { Context } from '@/types';
 import { and, count, desc, eq, gte, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { CreateArticleInput, UpdateArticleInput } from '../inputs/articles';
-import { filesTable } from '@/db/schemas';
+import { filesTable, usersV2Table } from '@/db/schemas';
 
 export class ArticleService {
   constructor(
@@ -136,6 +136,7 @@ export class ArticleService {
     count: number;
   }> {
     const conditions = [];
+    conditions.push(eq(articlesTable.status, 'published'));
 
     let articleType: 'article' | 'newsletter' | 'campaign' | undefined;
     let orderBy: typeof articlesTable.createdAt | typeof articlesTable.view | undefined;
@@ -150,9 +151,8 @@ export class ArticleService {
         case 'TRENDING':
           articleType = 'article';
           orderBy = articlesTable.view;
-          // 일주일 기준 필터링
           dateFilter = new Date();
-          dateFilter.setDate(dateFilter.getDate() - 7);
+          dateFilter.setDate(dateFilter.getDate() - 7); // 7 days
           break;
         case 'NEWSLETTER':
           articleType = 'newsletter';
@@ -230,16 +230,25 @@ export class ArticleService {
     }));
   }
 
+  async getPinnedArticles(): Promise<Array<Article>> {
+    const articles = await this.db
+      .select()
+      .from(articlesTable)
+      .where(and(eq(articlesTable.isPin, true), eq(articlesTable.status, 'published')))
+      .orderBy(desc(articlesTable.createdAt));
+
+    return articles;
+  }
+
   async createArticle(
     input: typeof CreateArticleInput.$inferInput,
     authorId: number,
     isAdmin: boolean,
   ): Promise<Article> {
-    if (input.title.length > 130) {
+    if (input.title && input.title.length > 130) {
       throw new Error('Title must be 130 characters or less');
     }
 
-    const category = input.category ? input.category : 'article';
     let isPin = false;
 
     if (isAdmin && input.isPin === true) {
@@ -276,11 +285,11 @@ export class ArticleService {
     }
 
     const values = {
-      title: input.title,
-      description: input.description,
+      title: input.title ?? '',
+      description: input.description ?? '',
       coverImage: coverImageUrl,
-      status: 'pending' as const,
-      type: category,
+      status: input.status ?? 'draft',
+      type: input.category ?? 'article',
       isPin,
       authorId,
       view: 0,
@@ -449,22 +458,68 @@ export class ArticleService {
         dislikeCount: number;
         isLiked?: boolean;
         isDisliked?: boolean;
-        replies: Array<ArticleComment & { likeCount: number; dislikeCount: number }>;
+        replyCount: number;
+        authorNickname?: string;
+        authorProfileImage?: string | null;
       }
     >
   > {
-    // 1. get all comments
-    const allComments = await this.db
+    // 1. get root comments (which parentId is not null)
+    const rootComments = await this.db
       .select()
       .from(articleCommentsTable)
-      .where(eq(articleCommentsTable.articleId, articleId))
+      .where(
+        and(eq(articleCommentsTable.articleId, articleId), isNull(articleCommentsTable.parentId)),
+      )
       .orderBy(desc(articleCommentsTable.createdAt));
 
-    const commentIds = allComments.map((c) => c.id);
+    const rootCommentIds = rootComments.map((c) => c.id);
+    const authorIds = [...new Set(rootComments.map((c) => c.authorId))];
 
-    // 2. get all like/dislike count
+    // 2. get author info
+    const authors =
+      authorIds.length > 0
+        ? await this.db
+            .select({
+              id: usersV2Table.id,
+              nickname: usersV2Table.nickname,
+              profileImage: usersV2Table.profileImage,
+            })
+            .from(usersV2Table)
+            .where(inArray(usersV2Table.id, authorIds))
+        : [];
+
+    const authorMap = new Map(
+      authors.map((a) => [a.id, { nickname: a.nickname, profileImage: a.profileImage }]),
+    );
+
+    // 3. get child comments counts
+    const childCountMap = new Map<string, number>();
+    if (rootCommentIds.length > 0) {
+      const childComments = await this.db
+        .select({
+          parentId: articleCommentsTable.parentId,
+        })
+        .from(articleCommentsTable)
+        .where(
+          and(
+            eq(articleCommentsTable.articleId, articleId),
+            inArray(articleCommentsTable.parentId, rootCommentIds),
+          ),
+        );
+
+      for (const child of childComments) {
+        if (child.parentId) {
+          const currentCount = childCountMap.get(child.parentId) ?? 0;
+          childCountMap.set(child.parentId, currentCount + 1);
+        }
+      }
+    }
+
+    // 4. get all like/dislike
+    const allCommentIds = rootComments.map((c) => c.id);
     const reactions =
-      commentIds.length > 0
+      allCommentIds.length > 0
         ? await this.db
             .select({
               commentId: articleCommentReactionsTable.commentId,
@@ -472,53 +527,8 @@ export class ArticleService {
               userId: articleCommentReactionsTable.userId,
             })
             .from(articleCommentReactionsTable)
-            .where(inArray(articleCommentReactionsTable.commentId, commentIds))
+            .where(inArray(articleCommentReactionsTable.commentId, allCommentIds))
         : [];
-
-    // 3. 메모리에서 계층 구조 구성
-    type CommentWithReplies = ArticleComment & {
-      likeCount: number;
-      dislikeCount: number;
-      isLiked?: boolean;
-      isDisliked?: boolean;
-      replies: Array<ArticleComment & { likeCount: number; dislikeCount: number }>;
-    };
-    const commentMap = new Map<string, CommentWithReplies>();
-    const rootComments: Array<
-      ArticleComment & {
-        likeCount: number;
-        dislikeCount: number;
-        isLiked?: boolean;
-        isDisliked?: boolean;
-        replies: Array<ArticleComment & { likeCount: number; dislikeCount: number }>;
-      }
-    > = [];
-
-    // 모든 댓글을 맵에 추가
-    for (const comment of allComments) {
-      commentMap.set(comment.id, {
-        ...comment,
-        likeCount: 0,
-        dislikeCount: 0,
-        isLiked: false,
-        isDisliked: false,
-        replies: [],
-      });
-    }
-
-    // 4. 각 댓글의 모든 하위 자식 댓글 확인 (재귀적으로)
-    const commentHasDescendants = new Map<string, boolean>();
-    for (const comment of allComments) {
-      if (comment.deletedAt === null) {
-        // 삭제되지 않은 댓글만 확인
-        const descendants = this.getAllDescendantIds(comment.id, allComments);
-        commentHasDescendants.set(comment.id, descendants.length > 0);
-      } else {
-        // 삭제된 댓글도 하위 자식이 있는지 확인
-        const descendants = this.getAllDescendantIds(comment.id, allComments);
-        commentHasDescendants.set(comment.id, descendants.length > 0);
-      }
-    }
 
     // 5. check user's like/dislike status
     const userReactions = userId ? reactions.filter((r) => r.userId === userId) : [];
@@ -536,92 +546,30 @@ export class ArticleService {
       reactionCountMap.set(r.commentId, existing);
     }
 
-    // 7. 계층 구조 구성 및 삭제된 댓글 처리
-    for (const comment of allComments) {
-      const hasDescendants = commentHasDescendants.get(comment.id) ?? false;
+    // 7. set deleted comments
+    const result = [];
+    for (const comment of rootComments) {
       const isDeleted = comment.deletedAt !== null;
 
-      // 삭제된 댓글 처리 로직
       if (isDeleted) {
-        // 모든 하위 자식 댓글이 없으면 반환하지 않음
-        if (!hasDescendants) {
-          continue; // 이 댓글은 결과에 포함하지 않음
-        }
+        continue;
       }
 
-      // 하위 자식이 있으면 content를 빈 문자열로 (삭제된 경우)
-      const processedComment = isDeleted && hasDescendants ? { ...comment, content: '' } : comment;
+      const author = authorMap.get(comment.authorId);
 
-      const commentWithReactions = {
-        ...processedComment,
+      result.push({
+        ...comment,
         likeCount: reactionCountMap.get(comment.id)?.likes ?? 0,
         dislikeCount: reactionCountMap.get(comment.id)?.dislikes ?? 0,
         isLiked: userReactionMap.get(comment.id) === 'like',
         isDisliked: userReactionMap.get(comment.id) === 'dislike',
-        replies: [],
-      };
-
-      // commentMap 업데이트
-      const commentInMap = commentMap.get(comment.id);
-      if (commentInMap) {
-        commentInMap.likeCount = commentWithReactions.likeCount;
-        commentInMap.dislikeCount = commentWithReactions.dislikeCount;
-        commentInMap.isLiked = commentWithReactions.isLiked;
-        commentInMap.isDisliked = commentWithReactions.isDisliked;
-        // content 업데이트 (삭제된 경우)
-        if (isDeleted && hasDescendants) {
-          commentInMap.content = '';
-        }
-      }
-
-      if (processedComment.parentId) {
-        // 대댓글인 경우 부모의 replies에 추가
-        const parent = commentMap.get(processedComment.parentId);
-        console.log(parent);
-        if (parent) {
-          // 부모가 삭제되었지만 하위 자식이 있는 경우도 처리
-          const parentHasDescendants =
-            commentHasDescendants.get(processedComment.parentId) ?? false;
-          const parentIsDeleted = parent.deletedAt !== null;
-
-          if (parentIsDeleted && !parentHasDescendants) {
-            // 부모가 삭제되었고 하위 자식이 없으면 부모를 건너뛰고 최상위로
-            rootComments.push(commentWithReactions);
-          } else {
-            // 부모의 replies에 추가 - commentMap에서 가져온 객체 사용
-            const childComment = commentMap.get(comment.id);
-            if (childComment) {
-              parent.replies.push(childComment);
-            }
-          }
-        } else {
-          // 부모가 필터링된 경우 최상위로
-          rootComments.push(commentWithReactions);
-        }
-      }
-      // 최상위 댓글은 여기서 추가하지 않음 (나중에 처리)
+        replyCount: childCountMap.get(comment.id) ?? 0,
+        authorNickname: author?.nickname ?? undefined,
+        authorProfileImage: author?.profileImage ?? undefined,
+      });
     }
 
-    // 8. 최상위 댓글만 rootComments에 추가 (replies가 이미 채워진 상태)
-    for (const comment of allComments) {
-      const hasDescendants = commentHasDescendants.get(comment.id) ?? false;
-      const isDeleted = comment.deletedAt !== null;
-
-      // 삭제된 댓글 처리
-      if (isDeleted && !hasDescendants) {
-        continue;
-      }
-
-      // 최상위 댓글만 추가
-      if (!comment.parentId) {
-        const rootComment = commentMap.get(comment.id);
-        if (rootComment) {
-          rootComments.push(rootComment);
-        }
-      }
-    }
-
-    return rootComments;
+    return result;
   }
 
   async getChildComments(

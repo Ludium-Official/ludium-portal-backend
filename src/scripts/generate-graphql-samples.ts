@@ -411,7 +411,7 @@ async function generateSamples() {
     // Extract queries
     if (queryType && isObjectType(queryType) && queryType.fields) {
       for (const field of queryType.fields) {
-        if (field.name.includes('V2')) {
+        if (field.name.includes('V2') || field.name.toLowerCase().includes('article')) {
           const args: Array<{ name: string; type: string; required: boolean }> = field.args.map(
             (arg: IntrospectionInputValue) => ({
               name: arg.name,
@@ -434,7 +434,7 @@ async function generateSamples() {
     // Extract mutations
     if (mutationType && isObjectType(mutationType) && mutationType.fields) {
       for (const field of mutationType.fields) {
-        if (field.name.includes('V2')) {
+        if (field.name.includes('V2') || field.name.toLowerCase().includes('article')) {
           const args: Array<{ name: string; type: string; required: boolean }> = field.args.map(
             (arg: IntrospectionInputValue) => ({
               name: arg.name,
@@ -482,6 +482,8 @@ async function generateSamples() {
         domain = 'dashboard';
       } else if (name.includes('portfolio')) {
         domain = 'portfolio';
+      } else if (name.includes('article')) {
+        domain = 'article';
       }
 
       if (!groupedOperations.has(domain)) {

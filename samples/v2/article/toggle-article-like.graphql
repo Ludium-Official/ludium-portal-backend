@@ -1,0 +1,6 @@
+# Toggle like on an article (like if not liked, unlike if liked)
+
+mutation ToggleArticleLikeV2($articleId: ID!) {
+  toggleArticleLike(articleId: $articleId) {
+  }
+}

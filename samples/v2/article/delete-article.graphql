@@ -1,0 +1,6 @@
+# Delete an article
+
+mutation DeleteArticleV2($id: ID!) {
+  deleteArticle(id: $id) {
+  }
+}

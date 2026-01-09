@@ -134,6 +134,9 @@ export const ArticleCommentRef = builder.objectRef<
         isDisliked?: boolean;
       }
     >;
+    replyCount?: number;
+    authorNickname?: string;
+    authorProfileImage?: string | null;
   }
 >('ArticleComment');
 
@@ -173,6 +176,32 @@ export const ArticleCommentType = ArticleCommentRef.implement({
       type: [ArticleCommentRef],
       nullable: true,
       resolve: (comment) => comment.replies ?? [],
+    }),
+    replyCount: t.field({
+      type: 'Int',
+      description: 'Number of child comments',
+      resolve: (comment) => {
+        return (comment as DBArticleComment & { replyCount?: number }).replyCount ?? 0;
+      },
+    }),
+    authorNickname: t.field({
+      type: 'String',
+      nullable: true,
+      description: 'Author nickname',
+      resolve: (comment) => {
+        return (comment as DBArticleComment & { authorNickname?: string }).authorNickname ?? null;
+      },
+    }),
+    authorProfileImage: t.field({
+      type: 'String',
+      nullable: true,
+      description: 'Author profile image URL',
+      resolve: (comment) => {
+        return (
+          (comment as DBArticleComment & { authorProfileImage?: string | null })
+            .authorProfileImage ?? null
+        );
+      },
     }),
   }),
 });

@@ -1,0 +1,9 @@
+{
+  "input": {
+    "category": "article",
+    "description": "Example description",
+    "isPin": true,
+    "status": "draft",
+    "title": "Example title"
+  }
+}

@@ -11,7 +11,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { usersV2Table } from './users';
 
-export const articleStatusValues = ['published', 'pending'] as const;
+export const articleStatusValues = ['published', 'draft'] as const;
 export const articleStatusEnum = pgEnum('article_status', articleStatusValues);
 
 export const articleTypeValues = ['article', 'newsletter', 'campaign'] as const;
@@ -23,7 +23,7 @@ export const articlesTable = pgTable('articles', {
   title: varchar('title', { length: 130 }).notNull(),
   description: text('description').notNull(),
   coverImage: text('cover_image').notNull(),
-  status: articleStatusEnum('status').default('pending').notNull(),
+  status: articleStatusEnum('status').default('draft').notNull(),
   authorId: integer('author_id')
     .notNull()
     .references(() => usersV2Table.id, { onDelete: 'cascade' }),

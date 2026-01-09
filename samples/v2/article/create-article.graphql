@@ -1,0 +1,14 @@
+# Create a new article
+
+mutation CreateArticleV2($input: CreateArticleInput!) {
+  createArticle(input: $input) {
+    author
+    commentCount
+    coverImage
+    description
+    isLiked
+    isPin
+    likeCount
+    status
+  }
+}
