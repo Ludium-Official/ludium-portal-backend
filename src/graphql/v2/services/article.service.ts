@@ -582,6 +582,9 @@ export class ArticleService {
         dislikeCount: number;
         isLiked?: boolean;
         isDisliked?: boolean;
+        replyCount: number;
+        authorNickname?: string;
+        authorProfileImage?: string | null;
       }
     >
   > {
@@ -592,6 +595,41 @@ export class ArticleService {
       .orderBy(desc(articleCommentsTable.createdAt));
 
     const commentIds = replies.map((r) => r.id);
+    const authorIds = [...new Set(replies.map((r) => r.authorId))];
+
+    const authors =
+      authorIds.length > 0
+        ? await this.db
+            .select({
+              id: usersV2Table.id,
+              nickname: usersV2Table.nickname,
+              profileImage: usersV2Table.profileImage,
+            })
+            .from(usersV2Table)
+            .where(inArray(usersV2Table.id, authorIds))
+        : [];
+
+    const authorMap = new Map(
+      authors.map((a) => [a.id, { nickname: a.nickname, profileImage: a.profileImage }]),
+    );
+
+    const childCountMap = new Map<string, number>();
+    if (commentIds.length > 0) {
+      const childComments = await this.db
+        .select({
+          parentId: articleCommentsTable.parentId,
+        })
+        .from(articleCommentsTable)
+        .where(inArray(articleCommentsTable.parentId, commentIds));
+
+      for (const child of childComments) {
+        if (child.parentId) {
+          const currentCount = childCountMap.get(child.parentId) ?? 0;
+          childCountMap.set(child.parentId, currentCount + 1);
+        }
+      }
+    }
+
     const reactions =
       commentIds.length > 0
         ? await this.db
@@ -618,13 +656,19 @@ export class ArticleService {
       reactionCountMap.set(r.commentId, existing);
     }
 
-    return replies.map((reply) => ({
-      ...reply,
-      likeCount: reactionCountMap.get(reply.id)?.likes ?? 0,
-      dislikeCount: reactionCountMap.get(reply.id)?.dislikes ?? 0,
-      isLiked: userReactionMap.get(reply.id) === 'like',
-      isDisliked: userReactionMap.get(reply.id) === 'dislike',
-    }));
+    return replies.map((reply) => {
+      const author = authorMap.get(reply.authorId);
+      return {
+        ...reply,
+        likeCount: reactionCountMap.get(reply.id)?.likes ?? 0,
+        dislikeCount: reactionCountMap.get(reply.id)?.dislikes ?? 0,
+        isLiked: userReactionMap.get(reply.id) === 'like',
+        isDisliked: userReactionMap.get(reply.id) === 'dislike',
+        replyCount: childCountMap.get(reply.id) ?? 0,
+        authorNickname: author?.nickname ?? undefined,
+        authorProfileImage: author?.profileImage ?? undefined,
+      };
+    });
   }
 
   async createComment(
