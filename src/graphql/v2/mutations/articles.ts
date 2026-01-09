@@ -1,23 +1,23 @@
 import builder from '@/graphql/builder';
 import {
   createArticleResolver,
-  updateArticleResolver,
-  deleteArticleResolver,
-  toggleArticleLikeResolver,
   createCommentResolver,
+  deleteArticleResolver,
   deleteCommentResolver,
-  updateCommentResolver,
+  toggleArticleLikeResolver,
   toggleCommentReactionResolver,
+  updateArticleResolver,
+  updateCommentResolver,
 } from '@/graphql/v2/resolvers/articles';
 import {
-  CreateArticleInput,
-  UpdateArticleInput,
   CreateArticleCommentInput,
-  UpdateArticleCommentInput,
+  CreateArticleInput,
   DeleteArticleCommentInput,
   ToggleArticleCommentReactionInput,
+  UpdateArticleCommentInput,
+  UpdateArticleInput,
 } from '../inputs/articles';
-import { ArticleType, ArticleCommentType } from '../types/articles';
+import { ArticleCommentType, ArticleType } from '../types/articles';
 
 builder.mutationField('createArticle', (t) =>
   t.field({

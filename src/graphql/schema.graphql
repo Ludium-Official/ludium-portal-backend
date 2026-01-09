@@ -639,6 +639,22 @@ input CreateSmartContractV2Input {
   name: String!
 }
 
+input CreateThreadCommentInput {
+  """Comment content"""
+  content: String!
+
+  """Parent comment ID for nested comments"""
+  parentId: ID
+
+  """Thread ID"""
+  threadId: ID!
+}
+
+input CreateThreadInput {
+  """Thread content"""
+  content: String!
+}
+
 input CreateTokenV2Input {
   chainInfoId: Int!
   decimals: Int!
@@ -716,6 +732,11 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 scalar DateTime
 
 input DeleteArticleCommentInput {
+  """Comment ID to delete"""
+  commentId: ID!
+}
+
+input DeleteThreadCommentInput {
   """Comment ID to delete"""
   commentId: ID!
 }
@@ -1137,6 +1158,12 @@ type Mutation {
   createProgramV2(input: CreateProgramV2Input!): ProgramV2
   createProgramWithOnchainV2(input: CreateProgramWithOnchainV2Input!): CreateProgramWithOnchainV2Payload
   createSmartContractV2(input: CreateSmartContractV2Input!): SmartContractV2
+
+  """Create a new thread"""
+  createThread(input: CreateThreadInput!): Thread
+
+  """Create a comment on a thread"""
+  createThreadComment(input: CreateThreadCommentInput!): ThreadComment
   createTokenV2(input: CreateTokenV2Input!): TokenV2
   createUser(input: UserInput!): User
 
@@ -1190,6 +1217,15 @@ type Mutation {
   deleteProgram(id: ID!): Boolean
   deleteProgramV2(id: ID!): ID
   deleteSmartContractV2(id: ID!): SmartContractV2
+
+  """Delete a thread"""
+  deleteThread(
+    """Thread ID"""
+    id: ID!
+  ): Boolean
+
+  """Delete a comment"""
+  deleteThreadComment(input: DeleteThreadCommentInput!): Boolean
   deleteTokenV2(id: ID!): TokenV2
   deleteUser(id: ID!): User
 
@@ -1276,6 +1312,12 @@ type Mutation {
     """Article ID"""
     articleId: ID!
   ): Boolean
+
+  """Toggle like/dislike on a comment"""
+  toggleThreadCommentReaction(input: ToggleThreadCommentReactionInput!): ThreadCommentReactionResult
+
+  """Toggle like/dislike on a thread"""
+  toggleThreadReaction(input: ToggleThreadReactionInput!): ThreadReactionResult
   unbanUser(userId: ID!): User
 
   """Update about section (max 1000 characters)"""
@@ -1366,6 +1408,16 @@ type Mutation {
   ): ProgramV2
   updateProgramV2(id: ID!, input: UpdateProgramV2Input!): ProgramV2
   updateSmartContractV2(id: ID!, input: UpdateSmartContractV2Input!): SmartContractV2
+
+  """Update a thread (content only)"""
+  updateThread(
+    """Thread ID"""
+    id: ID!
+    input: UpdateThreadInput!
+  ): Thread
+
+  """Update a comment"""
+  updateThreadComment(input: UpdateThreadCommentInput!): ThreadComment
   updateTokenV2(id: ID!, input: UpdateTokenV2Input!): TokenV2
   updateUser(input: UserUpdateInput!): User
 
@@ -1637,6 +1689,11 @@ type PaginatedProgramsV2 {
 type PaginatedSmartContractsV2 {
   count: Int
   data: [SmartContractV2!]
+}
+
+type PaginatedThread {
+  count: Int
+  data: [Thread!]
 }
 
 type PaginatedTokensV2 {
@@ -2079,6 +2136,12 @@ type Query {
 
   """Get all portfolios for the current authenticated user"""
   myPortfoliosV2: [PortfolioV2!]
+
+  """Get threads created by the authenticated user"""
+  myThreads(
+    """Query filters and pagination"""
+    input: ThreadsQueryInput
+  ): PaginatedThread
   networkV2(id: ID!): NetworkV2
   networksV2(pagination: PaginationInput): PaginatedNetworksV2
   notifications(pagination: PaginationInput): NotificationResult
@@ -2192,9 +2255,39 @@ type Query {
 
   """Get payment overview by week for sponsor (4 weeks)"""
   sponsorPaymentOverview: [PaymentWeek!]
+
+  """Get a single thread by ID"""
+  thread(
+    """Thread ID"""
+    id: ID!
+  ): Thread
+
+  """Get child comments for a parent comment"""
+  threadChildComments(
+    """Parent comment ID"""
+    parentId: ID!
+  ): [ThreadComment!]
+
+  """Get all comments for a thread (hierarchical structure)"""
+  threadComments(
+    """Thread ID"""
+    threadId: ID!
+  ): [ThreadComment!]
+
+  """Get a paginated list of threads"""
+  threads(
+    """Query filters and pagination"""
+    input: ThreadsQueryInput
+  ): PaginatedThread
   tokenV2(id: ID!): TokenV2
   tokensByNetworkV2(networkId: Int!, pagination: PaginationInput): PaginatedTokensV2
   tokensV2(pagination: PaginationInput): PaginatedTokensV2
+
+  """Get top 5 articles by view count in the last 30 days"""
+  topViewedArticles(
+    """Number of articles to return (default: 5)"""
+    limit: Int
+  ): [Article!]
 
   """
   Get list of upcoming payments (within 7 days based on deadline + 2 days)
@@ -2322,6 +2415,87 @@ type SwappedUrlResponse {
   signedUrl: String
 }
 
+type Thread {
+  """Author nickname"""
+  authorNickname: String
+
+  """Author profile image URL"""
+  authorProfileImage: String
+  content: String
+  createdAt: DateTime
+
+  """Number of dislikes"""
+  dislikeCount: Int
+  id: ID
+
+  """Whether the currently authenticated user has disliked this thread"""
+  isDisliked: Boolean
+
+  """Whether the currently authenticated user has liked this thread"""
+  isLiked: Boolean
+
+  """Number of likes"""
+  likeCount: Int
+
+  """Number of comments"""
+  replyCount: Int
+  updatedAt: DateTime
+}
+
+type ThreadComment {
+  authorId: Int
+
+  """Author nickname"""
+  authorNickname: String
+
+  """Author profile image URL"""
+  authorProfileImage: String
+  content: String
+  createdAt: DateTime
+  deletedAt: DateTime
+  dislikeCount: Int
+  id: ID
+  isDisliked: Boolean
+  isLiked: Boolean
+  likeCount: Int
+  parentId: ID
+  replies: [ThreadComment!]
+
+  """Number of child comments"""
+  replyCount: Int
+  threadId: ID
+  updatedAt: DateTime
+}
+
+enum ThreadCommentReaction {
+  dislike
+  like
+}
+
+type ThreadCommentReactionResult {
+  dislikeCount: Int
+  isDisliked: Boolean
+  isLiked: Boolean
+  likeCount: Int
+}
+
+enum ThreadReaction {
+  dislike
+  like
+}
+
+type ThreadReactionResult {
+  dislikeCount: Int
+  isDisliked: Boolean
+  isLiked: Boolean
+  likeCount: Int
+}
+
+input ThreadsQueryInput {
+  """Pagination options"""
+  pagination: PaginationInput
+}
+
 type TierAssignmentData {
   maxInvestmentAmount: String
   tier: String
@@ -2348,6 +2522,22 @@ input ToggleArticleCommentReactionInput {
 
   """Reaction type (like or dislike)"""
   reaction: ArticleCommentReaction!
+}
+
+input ToggleThreadCommentReactionInput {
+  """Comment ID"""
+  commentId: ID!
+
+  """Reaction type (like or dislike)"""
+  reaction: ThreadCommentReaction!
+}
+
+input ToggleThreadReactionInput {
+  """Reaction type (like or dislike)"""
+  reaction: ThreadReaction!
+
+  """Thread ID"""
+  threadId: ID!
 }
 
 type TokenV2 {
@@ -2633,6 +2823,19 @@ input UpdateProgramV2Input {
 input UpdateSmartContractV2Input {
   address: String
   name: String
+}
+
+input UpdateThreadCommentInput {
+  """Comment ID to update"""
+  commentId: ID!
+
+  """Updated comment content"""
+  content: String!
+}
+
+input UpdateThreadInput {
+  """Updated thread content"""
+  content: String!
 }
 
 input UpdateTokenV2Input {

@@ -1,0 +1,6 @@
+# Get a paginated list of threads
+
+query ThreadsV2($input: ThreadsQueryInput) {
+  threads(input: $input) {
+  }
+}

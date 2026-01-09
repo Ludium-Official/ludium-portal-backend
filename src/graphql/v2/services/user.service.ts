@@ -1,29 +1,29 @@
+import { randomInt } from 'node:crypto';
 import { filesTable } from '@/db/schemas';
 import { emailVerificationsV2Table } from '@/db/schemas/v2/email-verifications';
-import { educationsV2Table, type EducationV2 } from '@/db/schemas/v2/user-educations';
-import { languagesV2Table, type NewLanguageV2 } from '@/db/schemas/v2/user-language';
+import { type EducationV2, educationsV2Table } from '@/db/schemas/v2/user-educations';
+import { type NewLanguageV2, languagesV2Table } from '@/db/schemas/v2/user-language';
 import {
-  workExperiencesV2Table,
   type WorkExperienceV2,
+  workExperiencesV2Table,
 } from '@/db/schemas/v2/user-work-experiences';
 import { usersV2Table } from '@/db/schemas/v2/users';
 import type { NewUserV2, UserV2 } from '@/db/schemas/v2/users';
 import type {
+  CreateEducationV2Input,
   CreateUserV2Input,
+  CreateWorkExperienceV2Input,
+  UpdateAboutSectionV2Input,
+  UpdateEducationV2Input,
+  UpdateExpertiseSectionV2Input,
+  UpdateProfileSectionV2Input,
   UpdateUserV2Input,
+  UpdateWorkExperienceV2Input,
   UserV2QueryFilterInput,
   UsersV2QueryInput,
-  UpdateProfileSectionV2Input,
-  UpdateAboutSectionV2Input,
-  UpdateExpertiseSectionV2Input,
-  UpdateWorkExperienceV2Input,
-  CreateEducationV2Input,
-  UpdateEducationV2Input,
-  CreateWorkExperienceV2Input,
 } from '@/graphql/v2/inputs/users';
 import type { Context } from '@/types';
 import { and, asc, count, desc, eq, ilike, isNotNull, isNull, or } from 'drizzle-orm';
-import { randomInt } from 'node:crypto';
 
 type LoginType = 'google' | 'wallet' | 'farcaster';
 type UserRole = 'user' | 'admin';

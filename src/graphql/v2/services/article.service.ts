@@ -1,16 +1,16 @@
+import { filesTable, usersV2Table } from '@/db/schemas';
 import {
-  articlesTable,
-  articleLikesTable,
   type Article,
-  articleCommentsTable,
   type ArticleComment,
   articleCommentReactionsTable,
+  articleCommentsTable,
+  articleLikesTable,
   articleViewsTable,
+  articlesTable,
 } from '@/db/schemas/v2/articles';
 import type { Context } from '@/types';
 import { and, count, desc, eq, gte, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { CreateArticleInput, UpdateArticleInput } from '../inputs/articles';
-import { filesTable, usersV2Table } from '@/db/schemas';
 
 export class ArticleService {
   constructor(
@@ -550,8 +550,9 @@ export class ArticleService {
     const result = [];
     for (const comment of rootComments) {
       const isDeleted = comment.deletedAt !== null;
+      const replyCount = childCountMap.get(comment.id) ?? 0;
 
-      if (isDeleted) {
+      if (isDeleted && replyCount === 0) {
         continue;
       }
 
@@ -559,11 +560,12 @@ export class ArticleService {
 
       result.push({
         ...comment,
+        content: isDeleted ? '' : comment.content,
         likeCount: reactionCountMap.get(comment.id)?.likes ?? 0,
         dislikeCount: reactionCountMap.get(comment.id)?.dislikes ?? 0,
         isLiked: userReactionMap.get(comment.id) === 'like',
         isDisliked: userReactionMap.get(comment.id) === 'dislike',
-        replyCount: childCountMap.get(comment.id) ?? 0,
+        replyCount,
         authorNickname: author?.nickname ?? undefined,
         authorProfileImage: author?.profileImage ?? undefined,
       });
@@ -582,6 +584,9 @@ export class ArticleService {
         dislikeCount: number;
         isLiked?: boolean;
         isDisliked?: boolean;
+        replyCount: number;
+        authorNickname?: string;
+        authorProfileImage?: string | null;
       }
     >
   > {
@@ -592,6 +597,41 @@ export class ArticleService {
       .orderBy(desc(articleCommentsTable.createdAt));
 
     const commentIds = replies.map((r) => r.id);
+    const authorIds = [...new Set(replies.map((r) => r.authorId))];
+
+    const authors =
+      authorIds.length > 0
+        ? await this.db
+            .select({
+              id: usersV2Table.id,
+              nickname: usersV2Table.nickname,
+              profileImage: usersV2Table.profileImage,
+            })
+            .from(usersV2Table)
+            .where(inArray(usersV2Table.id, authorIds))
+        : [];
+
+    const authorMap = new Map(
+      authors.map((a) => [a.id, { nickname: a.nickname, profileImage: a.profileImage }]),
+    );
+
+    const childCountMap = new Map<string, number>();
+    if (commentIds.length > 0) {
+      const childComments = await this.db
+        .select({
+          parentId: articleCommentsTable.parentId,
+        })
+        .from(articleCommentsTable)
+        .where(inArray(articleCommentsTable.parentId, commentIds));
+
+      for (const child of childComments) {
+        if (child.parentId) {
+          const currentCount = childCountMap.get(child.parentId) ?? 0;
+          childCountMap.set(child.parentId, currentCount + 1);
+        }
+      }
+    }
+
     const reactions =
       commentIds.length > 0
         ? await this.db
@@ -618,13 +658,29 @@ export class ArticleService {
       reactionCountMap.set(r.commentId, existing);
     }
 
-    return replies.map((reply) => ({
-      ...reply,
-      likeCount: reactionCountMap.get(reply.id)?.likes ?? 0,
-      dislikeCount: reactionCountMap.get(reply.id)?.dislikes ?? 0,
-      isLiked: userReactionMap.get(reply.id) === 'like',
-      isDisliked: userReactionMap.get(reply.id) === 'dislike',
-    }));
+    return replies
+      .map((reply) => {
+        const author = authorMap.get(reply.authorId);
+        const isDeleted = reply.deletedAt !== null;
+        const replyCount = childCountMap.get(reply.id) ?? 0;
+
+        return {
+          ...reply,
+          content: isDeleted ? '' : reply.content,
+          likeCount: reactionCountMap.get(reply.id)?.likes ?? 0,
+          dislikeCount: reactionCountMap.get(reply.id)?.dislikes ?? 0,
+          isLiked: userReactionMap.get(reply.id) === 'like',
+          isDisliked: userReactionMap.get(reply.id) === 'dislike',
+          replyCount,
+          authorNickname: author?.nickname ?? undefined,
+          authorProfileImage: author?.profileImage ?? undefined,
+        };
+      })
+      .filter((reply) => {
+        const isDeleted = reply.deletedAt !== null;
+        const replyCount = reply.replyCount ?? 0;
+        return !(isDeleted && replyCount === 0);
+      });
   }
 
   async createComment(

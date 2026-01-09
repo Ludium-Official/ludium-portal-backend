@@ -1,11 +1,11 @@
 import type { User } from '@/db/schemas/users';
-import type { UserV2 } from '@/db/schemas/v2/users';
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import type DataLoader from 'dataloader';
+import type { EducationV2 } from '@/db/schemas/v2/user-educations';
 import type { LanguageV2 } from '@/db/schemas/v2/user-language';
 import type { WorkExperienceV2 } from '@/db/schemas/v2/user-work-experiences';
-import type { EducationV2 } from '@/db/schemas/v2/user-educations';
+import type { UserV2 } from '@/db/schemas/v2/users';
+import type DataLoader from 'dataloader';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 export interface Context {
   db: PostgresJsDatabase;

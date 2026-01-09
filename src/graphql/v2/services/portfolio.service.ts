@@ -1,13 +1,13 @@
+import { filesTable } from '@/db/schemas';
 import {
-  portfoliosV2Table,
   type NewPortfolioV2,
   type PortfolioV2,
+  portfoliosV2Table,
 } from '@/db/schemas/v2/portfolios';
-import type { CreatePortfolioV2Input, UpdatePortfolioV2Input } from '../inputs/portfolios';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { FastifyInstance } from 'fastify';
-import { and, desc, eq, isNull } from 'drizzle-orm';
-import { filesTable } from '@/db/schemas';
+import type { CreatePortfolioV2Input, UpdatePortfolioV2Input } from '../inputs/portfolios';
 
 export class PortfolioV2Service {
   constructor(

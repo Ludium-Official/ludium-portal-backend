@@ -15,3 +15,4 @@ export * from './tokens';
 export * from './smart-contracts';
 // community
 export * from './articles';
+export * from './threads';

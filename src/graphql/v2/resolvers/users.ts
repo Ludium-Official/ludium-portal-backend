@@ -1,17 +1,17 @@
 import type { Args, Context, Root } from '@/types';
 import type {
+  CreateEducationV2Input,
   CreateUserV2Input,
-  UpdateProfileSectionV2Input,
-  UpdateUserV2Input,
-  UserV2QueryFilterInput,
-  UsersV2QueryInput,
+  CreateWorkExperienceV2Input,
   RequestEmailVerificationV2Input,
   UpdateAboutSectionV2Input,
-  UpdateExpertiseSectionV2Input,
-  CreateEducationV2Input,
-  CreateWorkExperienceV2Input,
-  UpdateWorkExperienceV2Input,
   UpdateEducationV2Input,
+  UpdateExpertiseSectionV2Input,
+  UpdateProfileSectionV2Input,
+  UpdateUserV2Input,
+  UpdateWorkExperienceV2Input,
+  UserV2QueryFilterInput,
+  UsersV2QueryInput,
 } from '../inputs/users';
 import { UserV2Service } from '../services';
 

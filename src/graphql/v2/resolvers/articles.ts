@@ -1,14 +1,14 @@
-import { ArticleService } from '@/graphql/v2/services/article.service';
-import type { Context, Root } from '@/types';
 import type {
-  CreateArticleInput,
-  UpdateArticleInput,
   ArticlesQueryInput,
   CreateArticleCommentInput,
-  UpdateArticleCommentInput,
+  CreateArticleInput,
   DeleteArticleCommentInput,
   ToggleArticleCommentReactionInput,
+  UpdateArticleCommentInput,
+  UpdateArticleInput,
 } from '@/graphql/v2/inputs/articles';
+import { ArticleService } from '@/graphql/v2/services/article.service';
+import type { Context, Root } from '@/types';
 
 // articles
 export async function getArticleResolver(_root: Root, args: { id: string }, ctx: Context) {

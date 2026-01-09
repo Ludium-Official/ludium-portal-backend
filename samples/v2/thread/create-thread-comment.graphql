@@ -1,0 +1,14 @@
+# Create a comment on a thread
+
+mutation CreateThreadCommentV2($input: CreateThreadCommentInput!) {
+  createThreadComment(input: $input) {
+    authorId
+    authorNickname
+    authorProfileImage
+    content
+    deletedAt
+    dislikeCount
+    isDisliked
+    isLiked
+  }
+}

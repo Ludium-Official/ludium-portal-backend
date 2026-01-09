@@ -1,18 +1,18 @@
 import builder from '@/graphql/builder';
 import {
+  getAllCommentsResolver,
   getArticleResolver,
   getArticlesResolver,
-  getAllCommentsResolver,
   getChildCommentsResolver,
-  getRecommendedArticlesResolver,
   getPinnedArticlesResolver,
+  getRecommendedArticlesResolver,
 } from '@/graphql/v2/resolvers/articles';
 import { ArticlesQueryInput } from '../inputs/articles';
 import {
-  ArticleType,
-  PaginatedArticleType,
   ArticleCommentType,
+  ArticleType,
   ArticleTypeEnum,
+  PaginatedArticleType,
 } from '../types/articles';
 
 builder.queryFields((t) => ({

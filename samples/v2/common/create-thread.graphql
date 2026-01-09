@@ -1,0 +1,14 @@
+# Create a new thread
+
+mutation CreateThreadV2($input: CreateThreadInput!) {
+  createThread(input: $input) {
+    authorNickname
+    authorProfileImage
+    content
+    dislikeCount
+    isDisliked
+    isLiked
+    likeCount
+    replyCount
+  }
+}

@@ -1,0 +1,14 @@
+# Update a thread (content only)
+
+mutation UpdateThreadV2($id: ID!, $input: UpdateThreadInput!) {
+  updateThread(id: $id, input: $input) {
+    authorNickname
+    authorProfileImage
+    content
+    dislikeCount
+    isDisliked
+    isLiked
+    likeCount
+    replyCount
+  }
+}

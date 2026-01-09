@@ -1,0 +1,6 @@
+# Get all comments for a thread (hierarchical structure)
+
+query ThreadCommentsV2($threadId: ID!) {
+  threadComments(threadId: $threadId) {
+  }
+}
