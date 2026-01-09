@@ -32,3 +32,4 @@ export * from './v2/user-work-experiences';
 export * from './v2/user-educations';
 export * from './v2/portfolios';
 export * from './v2/articles';
+export * from './v2/threads';

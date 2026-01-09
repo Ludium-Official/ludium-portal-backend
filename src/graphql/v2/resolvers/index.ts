@@ -14,3 +14,4 @@ export * from './smart-contracts';
 export * from './dashboard';
 // community
 export * from './articles';
+export * from './threads';

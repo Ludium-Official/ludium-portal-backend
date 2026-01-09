@@ -1,8 +1,8 @@
 import { schema } from '@/graphql/types';
 import {
+  createEducationsLoader,
   createLanguagesLoader,
   createWorkExperiencesLoader,
-  createEducationsLoader,
 } from '@/graphql/v2/loaders/user-relations.loader';
 import argon2Plugin from '@/plugins/argon2';
 import authPlugin from '@/plugins/auth';

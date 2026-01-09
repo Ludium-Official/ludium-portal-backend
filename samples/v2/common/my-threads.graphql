@@ -1,0 +1,6 @@
+# Get threads created by the authenticated user
+
+query MyThreadsV2($input: ThreadsQueryInput) {
+  myThreads(input: $input) {
+  }
+}

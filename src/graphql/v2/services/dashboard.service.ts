@@ -1,7 +1,7 @@
 import { contractsTable, usersV2Table } from '@/db/schemas';
 import { applicationsV2Table } from '@/db/schemas/v2/applications';
 import { milestonesV2Table } from '@/db/schemas/v2/milestones';
-import { programsV2Table, type ProgramV2 } from '@/db/schemas/v2/programs';
+import { type ProgramV2, programsV2Table } from '@/db/schemas/v2/programs';
 import type { Context } from '@/types';
 import {
   and,
@@ -10,13 +10,13 @@ import {
   eq,
   getTableColumns,
   gte,
+  ilike,
   inArray,
-  lte,
+  isNotNull,
   lt,
+  lte,
   ne,
   sql,
-  ilike,
-  isNotNull,
 } from 'drizzle-orm';
 
 /**

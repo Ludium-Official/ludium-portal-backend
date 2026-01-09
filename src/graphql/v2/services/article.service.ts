@@ -1,16 +1,16 @@
+import { filesTable, usersV2Table } from '@/db/schemas';
 import {
-  articlesTable,
-  articleLikesTable,
   type Article,
-  articleCommentsTable,
   type ArticleComment,
   articleCommentReactionsTable,
+  articleCommentsTable,
+  articleLikesTable,
   articleViewsTable,
+  articlesTable,
 } from '@/db/schemas/v2/articles';
 import type { Context } from '@/types';
 import { and, count, desc, eq, gte, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { CreateArticleInput, UpdateArticleInput } from '../inputs/articles';
-import { filesTable, usersV2Table } from '@/db/schemas';
 
 export class ArticleService {
   constructor(

@@ -1,11 +1,11 @@
-import { languagesV2Table, type LanguageV2 } from '@/db/schemas/v2/user-language';
+import { type EducationV2, educationsV2Table } from '@/db/schemas/v2/user-educations';
+import { type LanguageV2, languagesV2Table } from '@/db/schemas/v2/user-language';
 import {
-  workExperiencesV2Table,
   type WorkExperienceV2,
+  workExperiencesV2Table,
 } from '@/db/schemas/v2/user-work-experiences';
-import { educationsV2Table, type EducationV2 } from '@/db/schemas/v2/user-educations';
-import { and, inArray, isNull } from 'drizzle-orm';
 import DataLoader from 'dataloader';
+import { and, inArray, isNull } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 type LoaderContext = {

@@ -1,15 +1,15 @@
 import { programsV2Table } from '@/db/schemas/v2/programs';
-import { DashboardV2Service } from '@/graphql/v2/services/dashboard.service';
-import type { Context, Root } from '@/types';
-import { and, eq, sql } from 'drizzle-orm';
 import type {
+  BuilderMilestonesInput,
+  HiredBuildersInput,
   HiringActivityProgramsInput,
   JobActivityProgramsInput,
-  HiredBuildersInput,
-  BuilderMilestonesInput,
   MilestoneProgressInput,
   UpcomingPaymentsInput,
 } from '@/graphql/v2/inputs/dashboard';
+import { DashboardV2Service } from '@/graphql/v2/services/dashboard.service';
+import type { Context, Root } from '@/types';
+import { and, eq, sql } from 'drizzle-orm';
 
 // Dashboard Overview
 export async function getHiringActivityResolver(

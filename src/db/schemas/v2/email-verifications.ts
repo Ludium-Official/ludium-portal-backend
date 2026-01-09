@@ -1,4 +1,4 @@
-import { integer, pgTable, serial, timestamp, varchar, boolean } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgTable, serial, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { usersV2Table } from './users';
 
 export const emailVerificationsV2Table = pgTable('email_verifications_v2', {

@@ -1,12 +1,12 @@
 import { programsV2Table } from '@/db/schemas/v2/programs';
+import type { EducationV2 } from '@/db/schemas/v2/user-educations';
+import type { LanguageV2 } from '@/db/schemas/v2/user-language';
+import type { WorkExperienceV2 } from '@/db/schemas/v2/user-work-experiences';
 import { type UserV2 as DBUser, loginTypesV2, userV2Roles } from '@/db/schemas/v2/users';
 import builder from '@/graphql/builder';
 import type { Context } from '@/types';
 import { eq } from 'drizzle-orm';
 import { ProgramV2Type } from './programs';
-import type { LanguageV2 } from '@/db/schemas/v2/user-language';
-import type { WorkExperienceV2 } from '@/db/schemas/v2/user-work-experiences';
-import type { EducationV2 } from '@/db/schemas/v2/user-educations';
 
 // ============================================================================
 // Enums

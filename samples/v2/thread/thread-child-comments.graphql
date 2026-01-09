@@ -1,0 +1,6 @@
+# Get child comments for a parent comment
+
+query ThreadChildCommentsV2($parentId: ID!) {
+  threadChildComments(parentId: $parentId) {
+  }
+}

@@ -1,0 +1,6 @@
+# Get a single thread by ID
+
+query ThreadV2($id: ID!) {
+  thread(id: $id) {
+  }
+}

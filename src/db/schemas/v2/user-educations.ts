@@ -1,4 +1,4 @@
-import { integer, pgTable, serial, varchar, timestamp } from 'drizzle-orm/pg-core';
+import { integer, pgTable, serial, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { usersV2Table } from './users';
 
 export const educationsV2Table = pgTable('educations_v2', {
