@@ -550,8 +550,9 @@ export class ArticleService {
     const result = [];
     for (const comment of rootComments) {
       const isDeleted = comment.deletedAt !== null;
+      const replyCount = childCountMap.get(comment.id) ?? 0;
 
-      if (isDeleted) {
+      if (isDeleted && replyCount === 0) {
         continue;
       }
 
@@ -559,11 +560,12 @@ export class ArticleService {
 
       result.push({
         ...comment,
+        content: isDeleted ? '' : comment.content,
         likeCount: reactionCountMap.get(comment.id)?.likes ?? 0,
         dislikeCount: reactionCountMap.get(comment.id)?.dislikes ?? 0,
         isLiked: userReactionMap.get(comment.id) === 'like',
         isDisliked: userReactionMap.get(comment.id) === 'dislike',
-        replyCount: childCountMap.get(comment.id) ?? 0,
+        replyCount,
         authorNickname: author?.nickname ?? undefined,
         authorProfileImage: author?.profileImage ?? undefined,
       });
@@ -656,19 +658,29 @@ export class ArticleService {
       reactionCountMap.set(r.commentId, existing);
     }
 
-    return replies.map((reply) => {
-      const author = authorMap.get(reply.authorId);
-      return {
-        ...reply,
-        likeCount: reactionCountMap.get(reply.id)?.likes ?? 0,
-        dislikeCount: reactionCountMap.get(reply.id)?.dislikes ?? 0,
-        isLiked: userReactionMap.get(reply.id) === 'like',
-        isDisliked: userReactionMap.get(reply.id) === 'dislike',
-        replyCount: childCountMap.get(reply.id) ?? 0,
-        authorNickname: author?.nickname ?? undefined,
-        authorProfileImage: author?.profileImage ?? undefined,
-      };
-    });
+    return replies
+      .map((reply) => {
+        const author = authorMap.get(reply.authorId);
+        const isDeleted = reply.deletedAt !== null;
+        const replyCount = childCountMap.get(reply.id) ?? 0;
+
+        return {
+          ...reply,
+          content: isDeleted ? '' : reply.content,
+          likeCount: reactionCountMap.get(reply.id)?.likes ?? 0,
+          dislikeCount: reactionCountMap.get(reply.id)?.dislikes ?? 0,
+          isLiked: userReactionMap.get(reply.id) === 'like',
+          isDisliked: userReactionMap.get(reply.id) === 'dislike',
+          replyCount,
+          authorNickname: author?.nickname ?? undefined,
+          authorProfileImage: author?.profileImage ?? undefined,
+        };
+      })
+      .filter((reply) => {
+        const isDeleted = reply.deletedAt !== null;
+        const replyCount = reply.replyCount ?? 0;
+        return !(isDeleted && replyCount === 0);
+      });
   }
 
   async createComment(
