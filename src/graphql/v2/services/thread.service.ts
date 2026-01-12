@@ -278,15 +278,19 @@ export class ThreadService {
     };
   }
 
-  async getTopViewedArticles(limit = 5): Promise<Array<typeof articlesTable.$inferSelect>> {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  async getTopViewedArticles(limit: number): Promise<Array<typeof articlesTable.$inferSelect>> {
+    const dateFilter = new Date();
+    dateFilter.setDate(dateFilter.getDate() - 7); // 7 days
 
     const articles = await this.db
       .select()
       .from(articlesTable)
       .where(
-        and(eq(articlesTable.status, 'published'), gte(articlesTable.createdAt, thirtyDaysAgo)),
+        and(
+          eq(articlesTable.status, 'published'),
+          eq(articlesTable.type, 'article'),
+          gte(articlesTable.createdAt, dateFilter),
+        ),
       )
       .orderBy(desc(articlesTable.view))
       .limit(limit);
