@@ -6,6 +6,7 @@ import { usersV2Table } from './users';
 export const threadsTable = pgTable('threads', {
   id: uuid('id').primaryKey().defaultRandom(),
   content: text('content').notNull(),
+  images: text('images').array(),
   authorId: integer('author_id')
     .notNull()
     .references(() => usersV2Table.id, { onDelete: 'cascade' }),

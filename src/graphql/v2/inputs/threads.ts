@@ -7,6 +7,10 @@ export const CreateThreadInput = builder.inputType('CreateThreadInput', {
       required: true,
       description: 'Thread content',
     }),
+    images: t.field({
+      type: ['Upload'],
+      description: 'Array of image files to upload',
+    }),
   }),
 });
 
@@ -15,6 +19,10 @@ export const UpdateThreadInput = builder.inputType('UpdateThreadInput', {
     content: t.string({
       required: true,
       description: 'Updated thread content',
+    }),
+    images: t.field({
+      type: ['Upload'],
+      description: 'Array of image files to upload (replaces existing images)',
     }),
   }),
 });

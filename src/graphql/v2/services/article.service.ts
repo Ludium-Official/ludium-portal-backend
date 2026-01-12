@@ -230,13 +230,17 @@ export class ArticleService {
     }));
   }
 
-  async getPinnedArticles(
-    type: 'article' | 'newsletter' | 'campaign',
-  ): Promise<Array<Article>> {
+  async getPinnedArticles(type: 'article' | 'newsletter' | 'campaign'): Promise<Array<Article>> {
     const articles = await this.db
       .select()
       .from(articlesTable)
-      .where(and(eq(articlesTable.isPin, true), eq(articlesTable.type, type), eq(articlesTable.status, 'published')))
+      .where(
+        and(
+          eq(articlesTable.isPin, true),
+          eq(articlesTable.type, type),
+          eq(articlesTable.status, 'published'),
+        ),
+      )
       .orderBy(desc(articlesTable.createdAt));
 
     return articles;
@@ -427,10 +431,7 @@ export class ArticleService {
         .where(eq(articlesTable.id, unpinArticleId));
     }
 
-    const conditions = [
-      eq(articlesTable.isPin, true),
-      eq(articlesTable.type, articleType)
-    ];
+    const conditions = [eq(articlesTable.isPin, true), eq(articlesTable.type, articleType)];
 
     if (currentArticleId) {
       conditions.push(sql`${articlesTable.id} != ${currentArticleId}`);
