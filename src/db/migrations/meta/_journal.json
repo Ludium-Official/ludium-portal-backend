@@ -120,6 +120,13 @@
       "when": 1767985162700,
       "tag": "0016_serious_wraith",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1768236730345,
+      "tag": "0017_nostalgic_energizer",
+      "breakpoints": true
     }
   ]
 }

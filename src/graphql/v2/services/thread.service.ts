@@ -1,4 +1,4 @@
-import { usersV2Table } from '@/db/schemas';
+import { filesTable, usersV2Table } from '@/db/schemas';
 import { articlesTable } from '@/db/schemas/v2/articles';
 import {
   type Thread,
@@ -278,15 +278,19 @@ export class ThreadService {
     };
   }
 
-  async getTopViewedArticles(limit = 5): Promise<Array<typeof articlesTable.$inferSelect>> {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  async getTopViewedArticles(limit: number): Promise<Array<typeof articlesTable.$inferSelect>> {
+    const dateFilter = new Date();
+    dateFilter.setDate(dateFilter.getDate() - 7); // 7 days
 
     const articles = await this.db
       .select()
       .from(articlesTable)
       .where(
-        and(eq(articlesTable.status, 'published'), gte(articlesTable.createdAt, thirtyDaysAgo)),
+        and(
+          eq(articlesTable.status, 'published'),
+          eq(articlesTable.type, 'article'),
+          gte(articlesTable.createdAt, dateFilter),
+        ),
       )
       .orderBy(desc(articlesTable.view))
       .limit(limit);
@@ -294,14 +298,70 @@ export class ThreadService {
     return articles;
   }
 
+  private async uploadImages(
+    images: Promise<import('@/types').UploadFile>[] | null | undefined,
+    userId: number,
+  ): Promise<string[] | null> {
+    if (!images || images.length === 0) {
+      return null;
+    }
+
+    const uploadPromises = images.map((imagePromise) =>
+      this.server.fileManager.uploadFile({
+        file: imagePromise,
+        userId: String(userId),
+        directory: 'threads',
+      }),
+    );
+
+    const imageUrls = await Promise.all(uploadPromises);
+    return imageUrls;
+  }
+
+  private async deleteExistingImages(imageUrls: string[] | null): Promise<void> {
+    if (!imageUrls || imageUrls.length === 0) {
+      return;
+    }
+
+    const urlPattern = /https:\/\/storage\.googleapis\.com\/[^/]+\/(.+)/;
+
+    for (const imageUrl of imageUrls) {
+      const match = imageUrl.match(urlPattern);
+      if (match) {
+        const filePath = match[1];
+        const [existingFile] = await this.db
+          .select()
+          .from(filesTable)
+          .where(eq(filesTable.path, filePath))
+          .limit(1);
+
+        if (existingFile) {
+          try {
+            await this.server.fileManager.deleteFile(existingFile.id);
+          } catch (error) {
+            // Log error but don't fail the operation
+            this.server.log.warn({
+              msg: 'Failed to delete existing portfolio image',
+              fileId: existingFile.id,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+      }
+    }
+  }
+
   async createThread(
     input: typeof CreateThreadInput.$inferInput,
     authorId: number,
   ): Promise<Thread> {
+    const imageUrls = await this.uploadImages(input.images, authorId);
+
     const [thread] = await this.db
       .insert(threadsTable)
       .values({
         content: input.content,
+        images: imageUrls,
         authorId,
       })
       .returning();
@@ -323,9 +383,19 @@ export class ThreadService {
       throw new Error('You are not authorized to update this thread');
     }
 
+    let imageUrls: string[] | null;
+    if (input.images !== undefined) {
+      // Delete existing images if any
+      if (existing.images && existing.images.length > 0) {
+        await this.deleteExistingImages(existing.images);
+      }
+      // Upload new images
+      imageUrls = await this.uploadImages(input.images, authorId);
+    }
+
     const [updated] = await this.db
       .update(threadsTable)
-      .set({ content: input.content })
+      .set({ content: input.content, images: imageUrls })
       .where(eq(threadsTable.id, id))
       .returning();
 
@@ -340,6 +410,10 @@ export class ThreadService {
 
     if (!existing) {
       throw new Error('Thread not found or you are not the author');
+    }
+
+    if (existing.images && existing.images.length > 0) {
+      await this.deleteExistingImages(existing.images);
     }
 
     await this.db.delete(threadsTable).where(eq(threadsTable.id, id));

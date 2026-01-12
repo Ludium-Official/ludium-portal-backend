@@ -63,7 +63,7 @@ export async function getTopViewedArticlesResolver(
   ctx: Context,
 ) {
   const service = new ThreadService(ctx.db, ctx.server);
-  return await service.getTopViewedArticles(args.limit ?? 5);
+  return await service.getTopViewedArticles(args.limit ?? 6);
 }
 
 export async function createThreadResolver(

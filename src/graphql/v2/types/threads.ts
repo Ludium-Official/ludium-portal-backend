@@ -18,6 +18,10 @@ export const ThreadType = ThreadRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     content: t.exposeString('content'),
+    images: t.exposeStringList('images', {
+      nullable: true,
+      description: 'Array of image URLs',
+    }),
     createdAt: t.field({
       type: 'DateTime',
       resolve: (thread) => thread.createdAt,

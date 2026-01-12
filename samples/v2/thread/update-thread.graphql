@@ -6,9 +6,9 @@ mutation UpdateThreadV2($id: ID!, $input: UpdateThreadInput!) {
     authorProfileImage
     content
     dislikeCount
+    images
     isDisliked
     isLiked
     likeCount
-    replyCount
   }
 }

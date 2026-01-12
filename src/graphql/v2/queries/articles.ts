@@ -54,6 +54,13 @@ builder.queryFields((t) => ({
   }),
   pinnedArticles: t.field({
     type: [ArticleType],
+    args: {
+      type: t.arg({
+        type: ArticleTypeEnum,
+        required: true,
+        description: 'Article type (article, newsletter, campaign)',
+      }),
+    },
     resolve: getPinnedArticlesResolver,
     description: 'Get all pinned articles',
   }),

@@ -52,11 +52,11 @@ export async function getRecommendedArticlesResolver(
 
 export async function getPinnedArticlesResolver(
   _root: Root,
-  _args: Record<string, never>,
+  args: { type: 'article' | 'newsletter' | 'campaign' },
   ctx: Context,
 ) {
   const service = new ArticleService(ctx.db, ctx.server);
-  return await service.getPinnedArticles();
+  return await service.getPinnedArticles(args.type);
 }
 
 export async function createArticleResolver(

@@ -653,6 +653,9 @@ input CreateThreadCommentInput {
 input CreateThreadInput {
   """Thread content"""
   content: String!
+
+  """Array of image files to upload"""
+  images: [Upload!]
 }
 
 input CreateTokenV2Input {
@@ -2155,7 +2158,10 @@ type Query {
   onchainProgramInfosV2(pagination: PaginationInput): PaginatedOnchainProgramInfoV2
 
   """Get all pinned articles"""
-  pinnedArticles: [Article!]
+  pinnedArticles(
+    """Article type (article, newsletter, campaign)"""
+    type: ArticleType!
+  ): [Article!]
 
   """Get a single portfolio by ID"""
   portfolioV2(
@@ -2427,6 +2433,9 @@ type Thread {
   """Number of dislikes"""
   dislikeCount: Int
   id: ID
+
+  """Array of image URLs"""
+  images: [String!]
 
   """Whether the currently authenticated user has disliked this thread"""
   isDisliked: Boolean
@@ -2836,6 +2845,9 @@ input UpdateThreadCommentInput {
 input UpdateThreadInput {
   """Updated thread content"""
   content: String!
+
+  """Array of image files to upload (replaces existing images)"""
+  images: [Upload!]
 }
 
 input UpdateTokenV2Input {

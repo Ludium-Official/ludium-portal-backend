@@ -230,11 +230,17 @@ export class ArticleService {
     }));
   }
 
-  async getPinnedArticles(): Promise<Array<Article>> {
+  async getPinnedArticles(type: 'article' | 'newsletter' | 'campaign'): Promise<Array<Article>> {
     const articles = await this.db
       .select()
       .from(articlesTable)
-      .where(and(eq(articlesTable.isPin, true), eq(articlesTable.status, 'published')))
+      .where(
+        and(
+          eq(articlesTable.isPin, true),
+          eq(articlesTable.type, type),
+          eq(articlesTable.status, 'published'),
+        ),
+      )
       .orderBy(desc(articlesTable.createdAt));
 
     return articles;
@@ -252,27 +258,11 @@ export class ArticleService {
     let isPin = false;
 
     if (isAdmin && input.isPin === true) {
-      const [pinnedCountResult] = await this.db
-        .select({ count: count() })
-        .from(articlesTable)
-        .where(eq(articlesTable.isPin, true));
-
-      const pinnedCount = pinnedCountResult?.count ?? 0;
-
-      if (pinnedCount >= 2) {
-        if (!input.unpinArticleId) {
-          throw new Error(
-            'Cannot pin: 2 articles are already pinned. Please provide unpinArticleId to unpin an existing pinned article.',
-          );
-        }
-
-        await this.db
-          .update(articlesTable)
-          .set({ isPin: false })
-          .where(eq(articlesTable.id, input.unpinArticleId));
-      }
-
-      isPin = true;
+      isPin = await this.setIsPin(
+        input.category ?? 'article',
+        input.unpinArticleId ?? undefined,
+        null,
+      );
     }
 
     let coverImageUrl = '';
@@ -358,32 +348,14 @@ export class ArticleService {
         updateValues.type = input.category;
       }
 
-      if (input.isPin !== undefined) {
-        if (input.isPin === true) {
-          const [pinnedCountResult] = await this.db
-            .select({ count: count() })
-            .from(articlesTable)
-            .where(and(eq(articlesTable.isPin, true), sql`${articlesTable.id} != ${id}`));
-
-          const pinnedCount = pinnedCountResult?.count ?? 0;
-
-          if (pinnedCount >= 2) {
-            if (!input.unpinArticleId) {
-              throw new Error(
-                'Cannot pin: 2 articles are already pinned. Please provide unpinArticleId to unpin an existing pinned article.',
-              );
-            }
-
-            await this.db
-              .update(articlesTable)
-              .set({ isPin: false })
-              .where(eq(articlesTable.id, input.unpinArticleId));
-          }
-
-          updateValues.isPin = true;
-        } else {
-          updateValues.isPin = false;
-        }
+      if (input.isPin !== undefined && input.isPin !== existing.isPin) {
+        const articleType = input.category ?? existing.type;
+        const newIsPin = await this.setIsPin(
+          articleType,
+          input.unpinArticleId ?? undefined,
+          input.isPin ? id : null,
+        );
+        updateValues.isPin = newIsPin;
       }
     }
 
@@ -444,6 +416,39 @@ export class ArticleService {
       articleId,
       userId,
     });
+    return true;
+  }
+
+  private async setIsPin(
+    articleType: 'article' | 'newsletter' | 'campaign',
+    unpinArticleId?: string,
+    currentArticleId?: string | null,
+  ): Promise<boolean> {
+    if (unpinArticleId) {
+      await this.db
+        .update(articlesTable)
+        .set({ isPin: false })
+        .where(eq(articlesTable.id, unpinArticleId));
+    }
+
+    const conditions = [eq(articlesTable.isPin, true), eq(articlesTable.type, articleType)];
+
+    if (currentArticleId) {
+      conditions.push(sql`${articlesTable.id} != ${currentArticleId}`);
+    }
+
+    const [pinnedCountResult] = await this.db
+      .select({ count: count() })
+      .from(articlesTable)
+      .where(and(...conditions));
+
+    const pinnedCount = pinnedCountResult?.count ?? 0;
+
+    if (pinnedCount >= 2 && !unpinArticleId) {
+      throw new Error(
+        'Cannot pin: 2 articles are already pinned. Please provide unpinArticleId to unpin an existing pinned article.',
+      );
+    }
     return true;
   }
 
@@ -847,29 +852,5 @@ export class ArticleService {
       likeCount,
       dislikeCount,
     };
-  }
-
-  private getAllDescendantIds(
-    commentId: string,
-    allComments: ArticleComment[],
-    visited: Set<string> = new Set(),
-  ): string[] {
-    if (visited.has(commentId)) {
-      return [];
-    }
-    visited.add(commentId);
-
-    const descendants: string[] = [];
-    const directChildren = allComments.filter(
-      (c) => c.parentId === commentId && c.deletedAt === null,
-    );
-
-    for (const child of directChildren) {
-      descendants.push(child.id);
-      const grandChildren = this.getAllDescendantIds(child.id, allComments, visited);
-      descendants.push(...grandChildren);
-    }
-
-    return descendants;
   }
 }
