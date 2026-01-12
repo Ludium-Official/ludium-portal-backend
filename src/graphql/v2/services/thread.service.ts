@@ -383,7 +383,7 @@ export class ThreadService {
       throw new Error('You are not authorized to update this thread');
     }
 
-    let imageUrls: string[] | null;
+    let imageUrls: string[] | null = existing.images;
     if (input.images !== undefined) {
       // Delete existing images if any
       if (existing.images && existing.images.length > 0) {
