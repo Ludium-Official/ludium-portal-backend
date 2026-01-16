@@ -2744,20 +2744,23 @@ input UpdatePortfolioV2Input {
   """Portfolio description (max 1000 characters)"""
   description: String
 
+  """List of existing image URLs to retain (in order)"""
+  existingImageUrls: [String!]
+
   """Portfolio ID to update"""
   id: ID!
 
-  """Array of image files to upload (replaces existing images)"""
-  images: [Upload!]
-
   """Whether this is a Ludium project"""
   isLudiumProject: Boolean
+
+  """New image files to upload"""
+  newImages: [Upload!]
 
   """Role in the project (e.g., "Frontend Developer")"""
   role: String
 
   """Portfolio title (required)"""
-  title: String!
+  title: String
 }
 
 input UpdatePostInput {
@@ -2844,10 +2847,13 @@ input UpdateThreadCommentInput {
 
 input UpdateThreadInput {
   """Updated thread content"""
-  content: String!
+  content: String
 
-  """Array of image files to upload (replaces existing images)"""
-  images: [Upload!]
+  """List of existing image URLs to retain (in order)"""
+  existingImageUrls: [String!]
+
+  """New image files to upload"""
+  newImages: [Upload!]
 }
 
 input UpdateTokenV2Input {

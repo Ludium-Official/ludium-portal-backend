@@ -1,6 +1,7 @@
 {
   "id": "1",
   "input": {
-    "content": "Example content"
+    "content": "Example content",
+    "existingImageUrls": "Example existingImageUrls"
   }
 }

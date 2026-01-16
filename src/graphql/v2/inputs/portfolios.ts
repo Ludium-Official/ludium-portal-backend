@@ -30,7 +30,6 @@ export const UpdatePortfolioV2Input = builder.inputType('UpdatePortfolioV2Input'
       description: 'Portfolio ID to update',
     }),
     title: t.string({
-      required: true,
       description: 'Portfolio title (required)',
     }),
     isLudiumProject: t.boolean({
@@ -43,9 +42,12 @@ export const UpdatePortfolioV2Input = builder.inputType('UpdatePortfolioV2Input'
       description: 'Portfolio description (max 1000 characters)',
       validate: { maxLength: 1000 },
     }),
-    images: t.field({
+    existingImageUrls: t.stringList({
+      description: 'List of existing image URLs to retain (in order)',
+    }),
+    newImages: t.field({
       type: ['Upload'],
-      description: 'Array of image files to upload (replaces existing images)',
+      description: 'New image files to upload',
     }),
   }),
 });

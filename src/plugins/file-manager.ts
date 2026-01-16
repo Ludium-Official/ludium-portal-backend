@@ -8,6 +8,7 @@ import { eq } from 'drizzle-orm';
 import type { FastifyInstance, FastifyPluginAsync, FastifyPluginOptions } from 'fastify';
 import fp from 'fastify-plugin';
 
+const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
 const allowedFileExtensions = [
   '.jpg',
   '.jpeg',
@@ -19,6 +20,7 @@ const allowedFileExtensions = [
   '.docx',
   '.ppt',
   '.zip',
+  ...videoExtensions,
 ];
 
 export class FileManager {
@@ -26,12 +28,19 @@ export class FileManager {
   storage: Storage;
   bucket: Bucket;
   maxFileSize: number;
+  maxVideoSize: number;
 
   constructor(server: FastifyInstance) {
     this.server = server;
     this.storage = new Storage();
     this.bucket = this.storage.bucket(server.config.STORAGE_BUCKET);
     this.maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
+    this.maxVideoSize = 100 * 1024 * 1024; // 100MB in bytes
+  }
+
+  private isVideoFile(filename: string): boolean {
+    const ext = extname(filename).toLowerCase();
+    return videoExtensions.includes(ext);
   }
 
   private uploadFileToStorage = (file: UploadFile, directory?: string): Promise<string> => {
@@ -46,6 +55,10 @@ export class FileManager {
         reject(new Error('File extension not allowed'));
         return;
       }
+
+      const isVideo = this.isVideoFile(file.filename);
+      const maxSize = isVideo ? this.maxVideoSize : this.maxFileSize;
+      const maxSizeMB = (maxSize / 1024 / 1024).toFixed(0);
 
       const bucketFile = this.bucket.file(fullPath);
 
@@ -66,10 +79,11 @@ export class FileManager {
         }
       };
 
+      const timeout = isVideo ? 120000 : 30000;
       const uploadTimeout = setTimeout(() => {
         cleanup();
         reject(new Error('Upload timeout'));
-      }, 30000);
+      }, timeout);
 
       try {
         fileStream = file.createReadStream();
@@ -84,12 +98,12 @@ export class FileManager {
         fileStream.on('data', (chunk: Buffer) => {
           uploadedSize += chunk.length;
 
-          if (uploadedSize > this.maxFileSize) {
+          if (uploadedSize > maxSize) {
             clearTimeout(uploadTimeout);
             cleanup();
             reject(
               new Error(
-                `File size exceeds ${(this.maxFileSize / 1024 / 1024).toFixed(0)}MB limit. File size: ${(uploadedSize / 1024 / 1024).toFixed(2)}MB`,
+                `${isVideo ? 'Video' : 'File'} size exceeds ${maxSizeMB}MB limit. File size: ${(uploadedSize / 1024 / 1024).toFixed(2)}MB`,
               ),
             );
           }
