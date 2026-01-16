@@ -1,0 +1,10 @@
+# Toggle like/dislike on a comment
+
+mutation ToggleThreadCommentReactionV2($input: ToggleThreadCommentReactionInput!) {
+  toggleThreadCommentReaction(input: $input) {
+    dislikeCount
+    isDisliked
+    isLiked
+    likeCount
+  }
+}

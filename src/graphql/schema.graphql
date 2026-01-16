@@ -125,6 +125,110 @@ input ApplicationsV2QueryInput {
   status: ApplicationStatusV2
 }
 
+type Article {
+  author: UserV2
+
+  """Number of comments"""
+  commentCount: Int
+
+  """Cover image URL or path"""
+  coverImage: String
+  createdAt: DateTime
+
+  """Article description in markdown format"""
+  description: String
+  id: ID
+
+  """Whether the currently authenticated user has liked this article"""
+  isLiked: Boolean
+
+  """Whether this article is pinned"""
+  isPin: Boolean
+
+  """Number of likes"""
+  likeCount: Int
+  status: ArticleStatus
+  title: String
+
+  """Article category (article, newsletter, campaign)"""
+  type: ArticleType
+  updatedAt: DateTime
+
+  """Number of views"""
+  view: Int
+}
+
+type ArticleComment {
+  articleId: ID
+  authorId: Int
+
+  """Author nickname"""
+  authorNickname: String
+
+  """Author profile image URL"""
+  authorProfileImage: String
+  content: String
+  createdAt: DateTime
+  deletedAt: DateTime
+  dislikeCount: Int
+  id: ID
+  isDisliked: Boolean
+  isLiked: Boolean
+  likeCount: Int
+  parentId: ID
+  replies: [ArticleComment!]
+
+  """Number of child comments"""
+  replyCount: Int
+  updatedAt: DateTime
+}
+
+enum ArticleCommentReaction {
+  dislike
+  like
+}
+
+"""
+Filter type for articles: LATEST (latest articles), TRENDING (trending articles in last week), NEWSLETTER (newsletter type), CAMPAIGN (campaign type)
+"""
+enum ArticleFilter {
+  CAMPAIGN
+  LATEST
+  NEWSLETTER
+  TRENDING
+}
+
+enum ArticleStatus {
+  draft
+  published
+}
+
+enum ArticleType {
+  article
+  campaign
+  newsletter
+}
+
+input ArticlesQueryInput {
+  """Filter by author ID"""
+  authorId: ID
+
+  """Filter type: LATEST, TRENDING, NEWSLETTER, or CAMPAIGN"""
+  filter: ArticleFilter
+
+  """Pagination options"""
+  pagination: PaginationInput
+
+  """Search by title"""
+  search: String
+
+  """Filter by status"""
+  status: ArticleStatus
+
+  """Filter by type (category)"""
+  type: ArticleType
+}
+
 input AssignUserTierInput {
   maxInvestmentAmount: String!
   programId: ID!
@@ -250,6 +354,13 @@ type Comment {
   replies: [Comment!]
 }
 
+type CommentReactionResult {
+  dislikeCount: Int
+  isDisliked: Boolean
+  isLiked: Boolean
+  likeCount: Int
+}
+
 enum CommentableTypeEnum {
   application
   milestone
@@ -295,6 +406,42 @@ input CreateApplicationV2Input {
 
   """Application status (defaults to submitted)"""
   status: ApplicationStatusV2
+}
+
+input CreateArticleCommentInput {
+  """Article ID"""
+  articleId: ID!
+
+  """Comment content"""
+  content: String!
+
+  """Parent comment ID for nested comments"""
+  parentId: ID
+}
+
+input CreateArticleInput {
+  """Article category (default: article)"""
+  category: ArticleType
+
+  """Cover image file"""
+  coverImage: Upload
+
+  """Article description in markdown format"""
+  description: String
+
+  """Whether to pin this article (default: false, admin only)"""
+  isPin: Boolean
+
+  """Article status (published or draft)"""
+  status: ArticleStatus
+
+  """Article title (max 130 characters)"""
+  title: String
+
+  """
+  Article ID to unpin when pinning would exceed 2 pinned articles (admin only)
+  """
+  unpinArticleId: ID
 }
 
 input CreateCarouselItemInput {
@@ -492,6 +639,25 @@ input CreateSmartContractV2Input {
   name: String!
 }
 
+input CreateThreadCommentInput {
+  """Comment content"""
+  content: String!
+
+  """Parent comment ID for nested comments"""
+  parentId: ID
+
+  """Thread ID"""
+  threadId: ID!
+}
+
+input CreateThreadInput {
+  """Thread content"""
+  content: String!
+
+  """Array of image files to upload"""
+  images: [Upload!]
+}
+
 input CreateTokenV2Input {
   chainInfoId: Int!
   decimals: Int!
@@ -567,6 +733,16 @@ scalar Date
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
 scalar DateTime
+
+input DeleteArticleCommentInput {
+  """Comment ID to delete"""
+  commentId: ID!
+}
+
+input DeleteThreadCommentInput {
+  """Comment ID to delete"""
+  commentId: ID!
+}
 
 type EducationV2 {
   attendedEndDate: Int
@@ -951,6 +1127,12 @@ type Mutation {
     """Application creation data"""
     input: CreateApplicationV2Input!
   ): ApplicationV2
+
+  """Create a new article"""
+  createArticle(input: CreateArticleInput!): Article
+
+  """Create a comment on an article"""
+  createArticleComment(input: CreateArticleCommentInput!): ArticleComment
   createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
   createComment(input: CreateCommentInput!): Comment
   createContractV2(input: CreateContractV2Input!): ContractV2
@@ -979,6 +1161,12 @@ type Mutation {
   createProgramV2(input: CreateProgramV2Input!): ProgramV2
   createProgramWithOnchainV2(input: CreateProgramWithOnchainV2Input!): CreateProgramWithOnchainV2Payload
   createSmartContractV2(input: CreateSmartContractV2Input!): SmartContractV2
+
+  """Create a new thread"""
+  createThread(input: CreateThreadInput!): Thread
+
+  """Create a comment on a thread"""
+  createThreadComment(input: CreateThreadCommentInput!): ThreadComment
   createTokenV2(input: CreateTokenV2Input!): TokenV2
   createUser(input: UserInput!): User
 
@@ -996,6 +1184,15 @@ type Mutation {
     """Application ID"""
     id: ID!
   ): ApplicationV2
+
+  """Delete an article"""
+  deleteArticle(
+    """Article ID"""
+    id: ID!
+  ): Boolean
+
+  """Delete a comment"""
+  deleteArticleComment(input: DeleteArticleCommentInput!): Boolean
   deleteCarouselItem(id: ID!): CarouselItem
   deleteContractV2(id: ID!): ContractV2
 
@@ -1023,6 +1220,15 @@ type Mutation {
   deleteProgram(id: ID!): Boolean
   deleteProgramV2(id: ID!): ID
   deleteSmartContractV2(id: ID!): SmartContractV2
+
+  """Delete a thread"""
+  deleteThread(
+    """Thread ID"""
+    id: ID!
+  ): Boolean
+
+  """Delete a comment"""
+  deleteThreadComment(input: DeleteThreadCommentInput!): Boolean
   deleteTokenV2(id: ID!): TokenV2
   deleteUser(id: ID!): User
 
@@ -1100,6 +1306,21 @@ type Mutation {
   submitMilestone(input: SubmitMilestoneInput!): Milestone
   submitProgram(educhainProgramId: Int!, id: ID!, txHash: String!): Program
   syncApplicationTiers(applicationId: ID!): TierSyncResult
+
+  """Toggle like/dislike on a comment"""
+  toggleArticleCommentReaction(input: ToggleArticleCommentReactionInput!): CommentReactionResult
+
+  """Toggle like on an article (like if not liked, unlike if liked)"""
+  toggleArticleLike(
+    """Article ID"""
+    articleId: ID!
+  ): Boolean
+
+  """Toggle like/dislike on a comment"""
+  toggleThreadCommentReaction(input: ToggleThreadCommentReactionInput!): ThreadCommentReactionResult
+
+  """Toggle like/dislike on a thread"""
+  toggleThreadReaction(input: ToggleThreadReactionInput!): ThreadReactionResult
   unbanUser(userId: ID!): User
 
   """Update about section (max 1000 characters)"""
@@ -1125,6 +1346,16 @@ type Mutation {
     """Application update data (only by applicant)"""
     input: UpdateApplicationV2Input!
   ): ApplicationV2
+
+  """Update an article"""
+  updateArticle(
+    """Article ID"""
+    id: ID!
+    input: UpdateArticleInput!
+  ): Article
+
+  """Update a comment"""
+  updateArticleComment(input: UpdateArticleCommentInput!): ArticleComment
   updateCarouselItem(input: UpdateCarouselItemInput!): CarouselItem
   updateComment(input: UpdateCommentInput!): Comment
   updateContractV2(id: ID!, input: UpdateContractV2Input!): ContractV2
@@ -1180,6 +1411,16 @@ type Mutation {
   ): ProgramV2
   updateProgramV2(id: ID!, input: UpdateProgramV2Input!): ProgramV2
   updateSmartContractV2(id: ID!, input: UpdateSmartContractV2Input!): SmartContractV2
+
+  """Update a thread (content only)"""
+  updateThread(
+    """Thread ID"""
+    id: ID!
+    input: UpdateThreadInput!
+  ): Thread
+
+  """Update a comment"""
+  updateThreadComment(input: UpdateThreadCommentInput!): ThreadComment
   updateTokenV2(id: ID!, input: UpdateTokenV2Input!): TokenV2
   updateUser(input: UserUpdateInput!): User
 
@@ -1333,6 +1574,11 @@ type PaginatedApplicationsV2 {
   totalPages: Int
 }
 
+type PaginatedArticle {
+  count: Int
+  data: [Article!]
+}
+
 type PaginatedBuilderMilestones {
   count: Int
   data: [BuilderMilestoneV2!]
@@ -1446,6 +1692,11 @@ type PaginatedProgramsV2 {
 type PaginatedSmartContractsV2 {
   count: Int
   data: [SmartContractV2!]
+}
+
+type PaginatedThread {
+  count: Int
+  data: [Thread!]
 }
 
 type PaginatedTokensV2 {
@@ -1753,6 +2004,30 @@ type Query {
     query: ApplicationsV2QueryInput
   ): PaginatedApplicationsV2
 
+  """Get a single article by ID"""
+  article(
+    """Article ID"""
+    id: ID!
+  ): Article
+
+  """Get child comments for a parent comment"""
+  articleChildComments(
+    """Parent comment ID"""
+    parentId: ID!
+  ): [ArticleComment!]
+
+  """Get all comments for an article (hierarchical structure)"""
+  articleComments(
+    """Article ID"""
+    articleId: ID!
+  ): [ArticleComment!]
+
+  """Get a paginated list of articles"""
+  articles(
+    """Query filters and pagination"""
+    input: ArticlesQueryInput
+  ): PaginatedArticle
+
   """Get list of milestones (for builder)"""
   builderMilestones(
     """Builder milestones query input (programId, pagination)"""
@@ -1864,6 +2139,12 @@ type Query {
 
   """Get all portfolios for the current authenticated user"""
   myPortfoliosV2: [PortfolioV2!]
+
+  """Get threads created by the authenticated user"""
+  myThreads(
+    """Query filters and pagination"""
+    input: ThreadsQueryInput
+  ): PaginatedThread
   networkV2(id: ID!): NetworkV2
   networksV2(pagination: PaginationInput): PaginatedNetworksV2
   notifications(pagination: PaginationInput): NotificationResult
@@ -1875,6 +2156,12 @@ type Query {
   onchainProgramInfosByProgramV2(pagination: PaginationInput, programId: String!): PaginatedOnchainProgramInfoV2
   onchainProgramInfosBySmartContractV2(pagination: PaginationInput, smartContractId: Int!): PaginatedOnchainProgramInfoV2
   onchainProgramInfosV2(pagination: PaginationInput): PaginatedOnchainProgramInfoV2
+
+  """Get all pinned articles"""
+  pinnedArticles(
+    """Article type (article, newsletter, campaign)"""
+    type: ArticleType!
+  ): [Article!]
 
   """Get a single portfolio by ID"""
   portfolioV2(
@@ -1963,14 +2250,50 @@ type Query {
     """Dynamic filter criteria (field=value pairs combined with AND logic)"""
     filter: [UserV2QueryFilterInput!]
   ): [UserV2!]
+
+  """Get recommended articles by type"""
+  recommendedArticles(
+    """Article type (article, newsletter, campaign)"""
+    type: ArticleType!
+  ): [Article!]
   smartContractV2(id: ID!): SmartContractV2
   smartContractsV2(chainInfoId: Int, pagination: PaginationInput): PaginatedSmartContractsV2
 
   """Get payment overview by week for sponsor (4 weeks)"""
   sponsorPaymentOverview: [PaymentWeek!]
+
+  """Get a single thread by ID"""
+  thread(
+    """Thread ID"""
+    id: ID!
+  ): Thread
+
+  """Get child comments for a parent comment"""
+  threadChildComments(
+    """Parent comment ID"""
+    parentId: ID!
+  ): [ThreadComment!]
+
+  """Get all comments for a thread (hierarchical structure)"""
+  threadComments(
+    """Thread ID"""
+    threadId: ID!
+  ): [ThreadComment!]
+
+  """Get a paginated list of threads"""
+  threads(
+    """Query filters and pagination"""
+    input: ThreadsQueryInput
+  ): PaginatedThread
   tokenV2(id: ID!): TokenV2
   tokensByNetworkV2(networkId: Int!, pagination: PaginationInput): PaginatedTokensV2
   tokensV2(pagination: PaginationInput): PaginatedTokensV2
+
+  """Get top 5 articles by view count in the last 30 days"""
+  topViewedArticles(
+    """Number of articles to return (default: 5)"""
+    limit: Int
+  ): [Article!]
 
   """
   Get list of upcoming payments (within 7 days based on deadline + 2 days)
@@ -2098,6 +2421,90 @@ type SwappedUrlResponse {
   signedUrl: String
 }
 
+type Thread {
+  """Author nickname"""
+  authorNickname: String
+
+  """Author profile image URL"""
+  authorProfileImage: String
+  content: String
+  createdAt: DateTime
+
+  """Number of dislikes"""
+  dislikeCount: Int
+  id: ID
+
+  """Array of image URLs"""
+  images: [String!]
+
+  """Whether the currently authenticated user has disliked this thread"""
+  isDisliked: Boolean
+
+  """Whether the currently authenticated user has liked this thread"""
+  isLiked: Boolean
+
+  """Number of likes"""
+  likeCount: Int
+
+  """Number of comments"""
+  replyCount: Int
+  updatedAt: DateTime
+}
+
+type ThreadComment {
+  authorId: Int
+
+  """Author nickname"""
+  authorNickname: String
+
+  """Author profile image URL"""
+  authorProfileImage: String
+  content: String
+  createdAt: DateTime
+  deletedAt: DateTime
+  dislikeCount: Int
+  id: ID
+  isDisliked: Boolean
+  isLiked: Boolean
+  likeCount: Int
+  parentId: ID
+  replies: [ThreadComment!]
+
+  """Number of child comments"""
+  replyCount: Int
+  threadId: ID
+  updatedAt: DateTime
+}
+
+enum ThreadCommentReaction {
+  dislike
+  like
+}
+
+type ThreadCommentReactionResult {
+  dislikeCount: Int
+  isDisliked: Boolean
+  isLiked: Boolean
+  likeCount: Int
+}
+
+enum ThreadReaction {
+  dislike
+  like
+}
+
+type ThreadReactionResult {
+  dislikeCount: Int
+  isDisliked: Boolean
+  isLiked: Boolean
+  likeCount: Int
+}
+
+input ThreadsQueryInput {
+  """Pagination options"""
+  pagination: PaginationInput
+}
+
 type TierAssignmentData {
   maxInvestmentAmount: String
   tier: String
@@ -2116,6 +2523,30 @@ type TierSyncResult {
   projectId: Int
   success: Boolean
   tierAssignments: [TierAssignmentData!]
+}
+
+input ToggleArticleCommentReactionInput {
+  """Comment ID"""
+  commentId: ID!
+
+  """Reaction type (like or dislike)"""
+  reaction: ArticleCommentReaction!
+}
+
+input ToggleThreadCommentReactionInput {
+  """Comment ID"""
+  commentId: ID!
+
+  """Reaction type (like or dislike)"""
+  reaction: ThreadCommentReaction!
+}
+
+input ToggleThreadReactionInput {
+  """Reaction type (like or dislike)"""
+  reaction: ThreadReaction!
+
+  """Thread ID"""
+  threadId: ID!
 }
 
 type TokenV2 {
@@ -2162,6 +2593,39 @@ input UpdateApplicationV2Input {
 
   """Updated application status (builder-driven lifecycle updates)"""
   status: ApplicationStatusV2
+}
+
+input UpdateArticleCommentInput {
+  """Comment ID to update"""
+  commentId: ID!
+
+  """Updated comment content"""
+  content: String!
+}
+
+input UpdateArticleInput {
+  """Article category (admin only)"""
+  category: ArticleType
+
+  """Cover image file"""
+  coverImage: Upload
+
+  """Article description in markdown format"""
+  description: String
+
+  """Whether to pin this article (admin only)"""
+  isPin: Boolean
+
+  """Article status (published or draft)"""
+  status: ArticleStatus
+
+  """Article title (max 130 characters)"""
+  title: String
+
+  """
+  Article ID to unpin when pinning would exceed 2 pinned articles (admin only)
+  """
+  unpinArticleId: ID
 }
 
 input UpdateCarouselItemInput {
@@ -2280,20 +2744,23 @@ input UpdatePortfolioV2Input {
   """Portfolio description (max 1000 characters)"""
   description: String
 
+  """List of existing image URLs to retain (in order)"""
+  existingImageUrls: [String!]
+
   """Portfolio ID to update"""
   id: ID!
 
-  """Array of image files to upload (replaces existing images)"""
-  images: [Upload!]
-
   """Whether this is a Ludium project"""
   isLudiumProject: Boolean
+
+  """New image files to upload"""
+  newImages: [Upload!]
 
   """Role in the project (e.g., "Frontend Developer")"""
   role: String
 
   """Portfolio title (required)"""
-  title: String!
+  title: String
 }
 
 input UpdatePostInput {
@@ -2368,6 +2835,25 @@ input UpdateProgramV2Input {
 input UpdateSmartContractV2Input {
   address: String
   name: String
+}
+
+input UpdateThreadCommentInput {
+  """Comment ID to update"""
+  commentId: ID!
+
+  """Updated comment content"""
+  content: String!
+}
+
+input UpdateThreadInput {
+  """Updated thread content"""
+  content: String
+
+  """List of existing image URLs to retain (in order)"""
+  existingImageUrls: [String!]
+
+  """New image files to upload"""
+  newImages: [Upload!]
 }
 
 input UpdateTokenV2Input {

@@ -1,0 +1,14 @@
+# Update a comment
+
+mutation UpdateArticleCommentV2($input: UpdateArticleCommentInput!) {
+  updateArticleComment(input: $input) {
+    articleId
+    authorId
+    authorNickname
+    authorProfileImage
+    content
+    deletedAt
+    dislikeCount
+    isDisliked
+  }
+}

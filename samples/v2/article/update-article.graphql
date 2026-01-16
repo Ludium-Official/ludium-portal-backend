@@ -1,0 +1,14 @@
+# Update an article
+
+mutation UpdateArticleV2($id: ID!, $input: UpdateArticleInput!) {
+  updateArticle(id: $id, input: $input) {
+    author
+    commentCount
+    coverImage
+    description
+    isLiked
+    isPin
+    likeCount
+    status
+  }
+}

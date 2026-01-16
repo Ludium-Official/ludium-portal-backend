@@ -1,0 +1,10 @@
+# Toggle like/dislike on a thread
+
+mutation ToggleThreadReactionV2($input: ToggleThreadReactionInput!) {
+  toggleThreadReaction(input: $input) {
+    dislikeCount
+    isDisliked
+    isLiked
+    likeCount
+  }
+}

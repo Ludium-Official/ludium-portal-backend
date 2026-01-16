@@ -1,0 +1,6 @@
+# Get a paginated list of articles
+
+query ArticlesV2($input: ArticlesQueryInput) {
+  articles(input: $input) {
+  }
+}

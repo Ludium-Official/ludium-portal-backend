@@ -1,0 +1,6 @@
+# Delete a comment
+
+mutation DeleteThreadCommentV2($input: DeleteThreadCommentInput!) {
+  deleteThreadComment(input: $input) {
+  }
+}

@@ -1,6 +1,7 @@
 {
   "input": {
     "description": "Example description",
+    "existingImageUrls": "Example existingImageUrls",
     "isLudiumProject": true,
     "role": "Example role",
     "title": "Example title"

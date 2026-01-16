@@ -1,5 +1,5 @@
-import builder from '@/graphql/builder';
 import type { ProgramV2 } from '@/db/schemas';
+import builder from '@/graphql/builder';
 import { PaginatedProgramV2Type } from './programs';
 
 // Dashboard Overview

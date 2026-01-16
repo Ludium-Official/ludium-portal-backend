@@ -1,0 +1,14 @@
+# Create a comment on an article
+
+mutation CreateArticleCommentV2($input: CreateArticleCommentInput!) {
+  createArticleComment(input: $input) {
+    articleId
+    authorId
+    authorNickname
+    authorProfileImage
+    content
+    deletedAt
+    dislikeCount
+    isDisliked
+  }
+}

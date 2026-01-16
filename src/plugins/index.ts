@@ -1,12 +1,13 @@
 import { schema as graphqlSchema } from '@/graphql/types';
 import {
+  createEducationsLoader,
   createLanguagesLoader,
   createWorkExperiencesLoader,
-  createEducationsLoader,
 } from '@/graphql/v2/loaders/user-relations.loader';
 import argon2Plugin from '@/plugins/argon2';
 import authPlugin from '@/plugins/auth';
 import dbPlugin from '@/plugins/db';
+import emailPlugin from '@/plugins/email';
 import fileManagerPlugin from '@/plugins/file-manager';
 import mercuriusUploadPlugin from '@/plugins/gql-upload';
 import pubsubPlugin from '@/plugins/pubsub';
@@ -14,7 +15,6 @@ import corsPlugin from '@fastify/cors';
 import jwtPlugin from '@fastify/jwt';
 import type { FastifyInstance } from 'fastify';
 import mercurius from 'mercurius';
-import emailPlugin from '@/plugins/email';
 
 const registerPlugins = (server: FastifyInstance) => {
   server

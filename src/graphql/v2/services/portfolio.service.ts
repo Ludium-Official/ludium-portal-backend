@@ -1,13 +1,13 @@
+import { filesTable } from '@/db/schemas';
 import {
-  portfoliosV2Table,
   type NewPortfolioV2,
   type PortfolioV2,
+  portfoliosV2Table,
 } from '@/db/schemas/v2/portfolios';
-import type { CreatePortfolioV2Input, UpdatePortfolioV2Input } from '../inputs/portfolios';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { FastifyInstance } from 'fastify';
-import { and, desc, eq, isNull } from 'drizzle-orm';
-import { filesTable } from '@/db/schemas';
+import type { CreatePortfolioV2Input, UpdatePortfolioV2Input } from '../inputs/portfolios';
 
 export class PortfolioV2Service {
   constructor(
@@ -161,20 +161,44 @@ export class PortfolioV2Service {
       }
 
       const updateData: Partial<Omit<NewPortfolioV2, 'id' | 'userId'>> = {};
-      if (input.title !== undefined) updateData.title = input.title;
+      if (input.title !== undefined && input.title !== null) {
+        updateData.title = input.title;
+      }
       if (input.isLudiumProject !== undefined)
         updateData.isLudiumProject = input.isLudiumProject ?? false;
       if (input.role !== undefined) updateData.role = input.role ?? null;
       if (input.description !== undefined) updateData.description = input.description ?? null;
 
-      if (input.images !== undefined) {
-        // Delete existing images if any
-        if (existing.images && existing.images.length > 0) {
-          await this.deleteExistingImages(existing.images);
+      // Handle image updates
+      if (input.existingImageUrls !== undefined || input.newImages !== undefined) {
+        // 1. Find images to delete (existing - keep)
+        const imagesToDelete =
+          input.existingImageUrls !== undefined
+            ? (existing.images ?? []).filter((url) => !input.existingImageUrls?.includes(url))
+            : [];
+
+        // 2. Delete unwanted images
+        if (imagesToDelete.length > 0) {
+          try {
+            await this.deleteExistingImages(imagesToDelete);
+          } catch (error) {
+            this.server.log.warn({
+              msg: 'Failed to delete some images, continuing with update',
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
         }
-        // Upload new images
-        const imageUrls = await this.uploadImages(input.images, userId);
-        updateData.images = imageUrls;
+
+        // 3. Upload new images
+        const newImageUrls = await this.uploadImages(input.newImages, userId);
+
+        // 4. Combine: keep + new
+        const finalImages = [
+          ...(input.existingImageUrls ?? existing.images ?? []),
+          ...(newImageUrls ?? []),
+        ];
+
+        updateData.images = finalImages.length > 0 ? finalImages : null;
       }
 
       const [updated] = await this.db

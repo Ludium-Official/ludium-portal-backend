@@ -1,0 +1,6 @@
+# Delete a thread
+
+mutation DeleteThreadV2($id: ID!) {
+  deleteThread(id: $id) {
+  }
+}

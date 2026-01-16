@@ -1,0 +1,10 @@
+# Toggle like/dislike on a comment
+
+mutation ToggleArticleCommentReactionV2($input: ToggleArticleCommentReactionInput!) {
+  toggleArticleCommentReaction(input: $input) {
+    dislikeCount
+    isDisliked
+    isLiked
+    likeCount
+  }
+}

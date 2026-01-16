@@ -13,3 +13,6 @@ export * from './portfolio.service';
 export * from './network.service';
 export * from './token.service';
 export * from './smart-contracts.service';
+// community
+export * from './article.service';
+export * from './thread.service';

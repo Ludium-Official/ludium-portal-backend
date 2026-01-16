@@ -1,0 +1,6 @@
+# Delete a comment
+
+mutation DeleteArticleCommentV2($input: DeleteArticleCommentInput!) {
+  deleteArticleComment(input: $input) {
+  }
+}

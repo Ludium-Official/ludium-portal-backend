@@ -1,35 +1,35 @@
 import builder from '@/graphql/builder';
 import {
-  getHiringActivityResolver,
-  getJobActivityResolver,
-  getSponsorPaymentOverviewResolver,
+  getBuilderMilestonesResolver,
   getBuilderPaymentOverviewResolver,
+  getHiredBuildersResolver,
   getHiringActivityCardsResolver,
   getHiringActivityProgramsResolver,
+  getHiringActivityResolver,
   getJobActivityCardsResolver,
   getJobActivityProgramsResolver,
-  getHiredBuildersResolver,
-  getBuilderMilestonesResolver,
+  getJobActivityResolver,
   getMilestoneProgressResolver,
+  getSponsorPaymentOverviewResolver,
   getUpcomingPaymentsResolver,
 } from '@/graphql/v2/resolvers/dashboard';
 import {
+  BuilderMilestonesInput,
+  HiredBuildersInput,
   HiringActivityProgramsInput,
   JobActivityProgramsInput,
-  HiredBuildersInput,
-  BuilderMilestonesInput,
   MilestoneProgressInput,
   UpcomingPaymentsInput,
 } from '../inputs/dashboard';
 import {
-  SponsorHiringActivityType,
+  BuilderJobActivityCardsType,
   BuilderJobActivityType,
+  BuilderMilestoneV2Type,
+  HiredBuilderV2Type,
+  MilestoneProgressType,
   PaymentWeekType,
   SponsorHiringActivityCardsType,
-  BuilderJobActivityCardsType,
-  HiredBuilderV2Type,
-  BuilderMilestoneV2Type,
-  MilestoneProgressType,
+  SponsorHiringActivityType,
   UpcomingPaymentType,
 } from '../types/dashboard';
 import { PaginatedProgramV2Type } from '../types/programs';
