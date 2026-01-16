@@ -383,19 +383,45 @@ export class ThreadService {
       throw new Error('You are not authorized to update this thread');
     }
 
-    let imageUrls: string[] | null = existing.images;
-    if (input.images !== undefined) {
-      // Delete existing images if any
-      if (existing.images && existing.images.length > 0) {
-        await this.deleteExistingImages(existing.images);
+    const updateData: Partial<{ content: string; images: string[] | null }> = {};
+
+    if (input.content !== undefined && input.content !== null) {
+      updateData.content = input.content;
+    }
+
+    // Handle image updates
+    if (input.existingImageUrls !== undefined || input.newImages !== undefined) {
+      // images to delete (existing - to keep)
+      const imagesToDelete =
+        input.existingImageUrls !== undefined
+          ? (existing.images ?? []).filter((url) => !input.existingImageUrls?.includes(url))
+          : [];
+
+      if (imagesToDelete.length > 0) {
+        try {
+          await this.deleteExistingImages(imagesToDelete);
+        } catch (error) {
+          this.server.log.warn({
+            msg: 'Failed to delete some thread images, continuing with update',
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
-      // Upload new images
-      imageUrls = await this.uploadImages(input.images, authorId);
+
+      // images to add (new)
+      const newImageUrls = await this.uploadImages(input.newImages, authorId);
+
+      const finalImages = [
+        ...(input.existingImageUrls ?? existing.images ?? []),
+        ...(newImageUrls ?? []),
+      ];
+
+      updateData.images = finalImages.length > 0 ? finalImages : null;
     }
 
     const [updated] = await this.db
       .update(threadsTable)
-      .set({ content: input.content, images: imageUrls })
+      .set(updateData)
       .where(eq(threadsTable.id, id))
       .returning();
 
