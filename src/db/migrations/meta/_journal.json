@@ -134,6 +134,13 @@
       "when": 1769519168482,
       "tag": "0018_funny_bloodstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1769525405861,
+      "tag": "0019_narrow_molecule_man",
+      "breakpoints": true
     }
   ]
 }

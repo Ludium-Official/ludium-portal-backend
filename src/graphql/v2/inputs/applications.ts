@@ -21,6 +21,9 @@ export const CreateApplicationV2Input = builder.inputType('CreateApplicationV2In
       type: ApplicationStatusV2Enum,
       description: 'Application status (defaults to submitted)',
     }),
+    portfolioIds: t.intList({
+      description: 'Array of portfolio IDs to attach to this application',
+    }),
   }),
 });
 
@@ -36,6 +39,9 @@ export const UpdateApplicationV2Input = builder.inputType('UpdateApplicationV2In
     status: t.field({
       type: ApplicationStatusV2Enum,
       description: 'Updated application status (builder-driven lifecycle updates)',
+    }),
+    portfolioIds: t.intList({
+      description: 'Updated portfolio IDs',
     }),
   }),
 });

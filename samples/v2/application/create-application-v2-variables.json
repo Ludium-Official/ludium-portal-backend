@@ -1,6 +1,7 @@
 {
   "input": {
     "content": "Example content",
+    "portfolioIds": 1,
     "status": "completed"
   }
 }

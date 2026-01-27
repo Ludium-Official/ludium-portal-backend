@@ -37,6 +37,8 @@ export const applicationsV2Table = pgTable('applications_v2', {
   status: applicationStatusV2Enum('status').default('submitted').notNull(),
   title: text('title').default(''),
   content: text('content').default(''),
+  portfolioIds: integer('portfolio_ids').array(),
+
   rejectedReason: text('rejected_reason').default(''),
   picked: boolean('picked').default(false).notNull(),
   // chatroom message id

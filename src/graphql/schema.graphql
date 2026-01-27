@@ -74,6 +74,12 @@ type ApplicationV2 {
   """Whether this application has been picked"""
   picked: Boolean
 
+  """Array of portfolio IDs attached to this application"""
+  portfolioIds: [Int!]
+
+  """Portfolios attached to this application"""
+  portfolios: [PortfolioV2!]
+
   """Program this application is for"""
   program: ProgramV2
 
@@ -400,6 +406,9 @@ input CreateApplicationInput {
 input CreateApplicationV2Input {
   """Content of the application submitted by the applicant"""
   content: String
+
+  """Array of portfolio IDs to attach to this application"""
+  portfolioIds: [Int!]
 
   """ID of the program to apply for"""
   programId: ID!
@@ -2645,6 +2654,9 @@ input UpdateApplicationInput {
 input UpdateApplicationV2Input {
   """Updated application content"""
   content: String
+
+  """Updated portfolio IDs"""
+  portfolioIds: [Int!]
 
   """Updated application status (builder-driven lifecycle updates)"""
   status: ApplicationStatusV2
