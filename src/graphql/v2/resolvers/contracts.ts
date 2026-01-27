@@ -9,7 +9,7 @@ export async function getContractsV2Resolver(
   ctx: Context,
 ) {
   try {
-    const service = new ContractV2Service(ctx.db);
+    const service = new ContractV2Service(ctx.db, ctx.server);
     const pagination = args.pagination
       ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
       : undefined;
@@ -27,7 +27,7 @@ export async function getContractsV2Resolver(
 
 export async function getContractV2Resolver(_root: Root, args: { id: string }, ctx: Context) {
   try {
-    const service = new ContractV2Service(ctx.db);
+    const service = new ContractV2Service(ctx.db, ctx.server);
     return await service.getById(args.id);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
@@ -46,7 +46,7 @@ export async function getContractsByProgramV2Resolver(
   ctx: Context,
 ) {
   try {
-    const service = new ContractV2Service(ctx.db);
+    const service = new ContractV2Service(ctx.db, ctx.server);
     const pagination = args.pagination
       ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
       : undefined;
@@ -68,7 +68,7 @@ export async function getContractsByApplicantV2Resolver(
   ctx: Context,
 ) {
   try {
-    const service = new ContractV2Service(ctx.db);
+    const service = new ContractV2Service(ctx.db, ctx.server);
     const pagination = args.pagination
       ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
       : undefined;
@@ -90,7 +90,7 @@ export async function getContractsBySponsorV2Resolver(
   ctx: Context,
 ) {
   try {
-    const service = new ContractV2Service(ctx.db);
+    const service = new ContractV2Service(ctx.db, ctx.server);
     const pagination = args.pagination
       ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
       : undefined;
@@ -112,7 +112,7 @@ export async function getContractsByApplicationV2Resolver(
   ctx: Context,
 ) {
   try {
-    const service = new ContractV2Service(ctx.db);
+    const service = new ContractV2Service(ctx.db, ctx.server);
     const pagination = args.pagination
       ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
       : undefined;
@@ -135,7 +135,7 @@ export async function createContractV2Resolver(
 ) {
   if (!ctx.userV2) throw new Error('User not authenticated');
   try {
-    const service = new ContractV2Service(ctx.db);
+    const service = new ContractV2Service(ctx.db, ctx.server);
     return await service.create(args.input);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
@@ -155,7 +155,7 @@ export async function updateContractV2Resolver(
 ) {
   if (!ctx.userV2) throw new Error('User not authenticated');
   try {
-    const service = new ContractV2Service(ctx.db);
+    const service = new ContractV2Service(ctx.db, ctx.server);
     return await service.update(args.id, args.input);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
@@ -171,7 +171,7 @@ export async function updateContractV2Resolver(
 export async function deleteContractV2Resolver(_root: Root, args: { id: string }, ctx: Context) {
   if (!ctx.userV2) throw new Error('User not authenticated');
   try {
-    const service = new ContractV2Service(ctx.db);
+    const service = new ContractV2Service(ctx.db, ctx.server);
     return await service.delete(args.id);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);

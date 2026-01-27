@@ -1,0 +1,4 @@
+query UnreadNotificationsCountV2 {
+  unreadNotificationsCountV2() {
+  }
+}

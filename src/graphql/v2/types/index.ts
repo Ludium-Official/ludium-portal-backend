@@ -13,3 +13,4 @@ export * from './contracts';
 export * from './dashboard';
 export * from './articles';
 export * from './threads';
+export * from './notifications';

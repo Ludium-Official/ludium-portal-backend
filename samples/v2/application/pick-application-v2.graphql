@@ -7,8 +7,8 @@ mutation PickApplicationV2($id: ID!, $input: PickApplicationV2Input!) {
     chatroomMessageId
     content
     picked
+    portfolioIds
+    portfolios
     program
-    programId
-    rejectedReason
   }
 }

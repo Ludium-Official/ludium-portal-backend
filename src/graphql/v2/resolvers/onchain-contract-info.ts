@@ -12,7 +12,7 @@ export async function getOnchainContractInfosV2Resolver(
   ctx: Context,
 ) {
   try {
-    const service = new OnchainContractInfoV2Service(ctx.db);
+    const service = new OnchainContractInfoV2Service(ctx.db, ctx.server);
     const pagination = args.pagination
       ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
       : undefined;
@@ -34,7 +34,7 @@ export async function getOnchainContractInfoV2Resolver(
   ctx: Context,
 ) {
   try {
-    const service = new OnchainContractInfoV2Service(ctx.db);
+    const service = new OnchainContractInfoV2Service(ctx.db, ctx.server);
     return await service.getById(args.id);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
@@ -53,7 +53,7 @@ export async function getOnchainContractInfosByProgramV2Resolver(
   ctx: Context,
 ) {
   try {
-    const service = new OnchainContractInfoV2Service(ctx.db);
+    const service = new OnchainContractInfoV2Service(ctx.db, ctx.server);
     const pagination = args.pagination
       ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
       : undefined;
@@ -75,7 +75,7 @@ export async function getOnchainContractInfosByApplicantV2Resolver(
   ctx: Context,
 ) {
   try {
-    const service = new OnchainContractInfoV2Service(ctx.db);
+    const service = new OnchainContractInfoV2Service(ctx.db, ctx.server);
     const pagination = args.pagination
       ? { limit: args.pagination.limit ?? undefined, offset: args.pagination.offset ?? undefined }
       : undefined;
@@ -98,7 +98,7 @@ export async function createOnchainContractInfoV2Resolver(
 ) {
   if (!ctx.userV2) throw new Error('User not authenticated');
   try {
-    const service = new OnchainContractInfoV2Service(ctx.db);
+    const service = new OnchainContractInfoV2Service(ctx.db, ctx.server);
     return await service.create(args.input);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
@@ -118,7 +118,7 @@ export async function updateOnchainContractInfoV2Resolver(
 ) {
   if (!ctx.userV2) throw new Error('User not authenticated');
   try {
-    const service = new OnchainContractInfoV2Service(ctx.db);
+    const service = new OnchainContractInfoV2Service(ctx.db, ctx.server);
     return await service.update(args.id, args.input);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
@@ -138,7 +138,7 @@ export async function deleteOnchainContractInfoV2Resolver(
 ) {
   if (!ctx.userV2) throw new Error('User not authenticated');
   try {
-    const service = new OnchainContractInfoV2Service(ctx.db);
+    const service = new OnchainContractInfoV2Service(ctx.db, ctx.server);
     return await service.delete(args.id);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);

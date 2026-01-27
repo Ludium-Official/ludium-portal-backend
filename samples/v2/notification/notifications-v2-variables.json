@@ -1,0 +1,8 @@
+{
+  "input": {
+    "limit": 1,
+    "offset": 1,
+    "type": "Example type",
+    "unreadOnly": true
+  }
+}

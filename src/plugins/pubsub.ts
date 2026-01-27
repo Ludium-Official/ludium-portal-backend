@@ -1,4 +1,9 @@
-import { type NotificationInsert, notificationsTable } from '@/db/schemas';
+import {
+  type NotificationInsert,
+  notificationsTable,
+  notificationsV2Table,
+  type NotificationV2Insert,
+} from '@/db/schemas';
 import type { Context, DB } from '@/types';
 import type { FastifyError, FastifyInstance, FastifyPluginOptions } from 'fastify';
 import fp from 'fastify-plugin';
@@ -14,9 +19,20 @@ export class PubSubWrapper {
     return this.pubsub.asyncIterableIterator(name);
   }
 
-  async publish(triggerName: string, db?: DB, data?: NotificationInsert) {
+  // V1 notifications
+  async publish(triggerName: string, db?: DB, data?: NotificationInsert): Promise<void>;
+  // V2 notifications
+  async publish(triggerName: string, db?: DB, data?: NotificationV2Insert): Promise<void>;
+  // Implementation
+  async publish(triggerName: string, db?: DB, data?: NotificationInsert | NotificationV2Insert) {
     if (data && db) {
-      await db.insert(notificationsTable).values(data);
+      // V2 notifications (check for notificationsV2 trigger)
+      if (triggerName.includes('V2') || triggerName.includes('v2')) {
+        await db.insert(notificationsV2Table).values(data as NotificationV2Insert);
+      } else {
+        // V1 notifications
+        await db.insert(notificationsTable).values(data as NotificationInsert);
+      }
     }
     return this.pubsub.publish(triggerName, data ?? {});
   }

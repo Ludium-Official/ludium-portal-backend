@@ -1,3 +1,4 @@
+import { applicationsV2Table } from '@/db/schemas';
 import type { MilestoneV2, NewMilestoneV2 } from '@/db/schemas/v2/milestones';
 import { milestonesV2Table } from '@/db/schemas/v2/milestones';
 import type {
@@ -260,6 +261,25 @@ export class MilestoneV2Service {
         .where(eq(milestonesV2Table.id, Number.parseInt(id, 10)))
         .returning();
 
+      // notify
+      if (input.payout_tx !== undefined) {
+        const [application] = await this.db
+          .select()
+          .from(applicationsV2Table)
+          .where(eq(applicationsV2Table.id, existingMilestone.applicationId));
+
+        if (application) {
+          await this.notify({
+            recipientId: application.applicantId,
+            milestoneId: updatedMilestone.id,
+            programId: application.programId,
+            action: 'completed',
+            title: 'Milestone Payment Received',
+            content: 'Payment for milestone has been processed',
+          });
+        }
+      }
+
       const duration = Date.now() - startTime;
       this.server.log.info(`✅ MilestoneV2Service.update completed in ${duration}ms`);
 
@@ -344,5 +364,26 @@ export class MilestoneV2Service {
       );
       throw error;
     }
+  }
+
+  // helper
+  private async notify(params: {
+    recipientId: number;
+    milestoneId: number;
+    programId: string;
+    action: 'completed';
+    title: string;
+    content: string;
+  }) {
+    await this.server.pubsub.publish('notificationsV2', this.db, {
+      type: 'milestone' as const,
+      action: params.action,
+      recipientId: params.recipientId,
+      entityId: String(params.milestoneId),
+      title: params.title,
+      content: params.content,
+      metadata: { programId: params.programId },
+    });
+    await this.server.pubsub.publish('notificationsV2Count');
   }
 }

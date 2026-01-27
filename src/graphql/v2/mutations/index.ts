@@ -15,3 +15,5 @@ export * from './smart-contracts';
 // community
 export * from './articles';
 export * from './threads';
+// notification
+export * from './notifications';
