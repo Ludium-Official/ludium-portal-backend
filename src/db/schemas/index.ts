@@ -33,3 +33,4 @@ export * from './v2/user-educations';
 export * from './v2/portfolios';
 export * from './v2/articles';
 export * from './v2/threads';
+export * from './v2/notifications';

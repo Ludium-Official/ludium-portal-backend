@@ -285,6 +285,23 @@ export class ApplicationV2Service {
         .values(applicationData)
         .returning();
 
+      // notify
+      const [program] = await this.db
+        .select()
+        .from(programsV2Table)
+        .where(eq(programsV2Table.id, input.programId));
+
+      if (program) {
+        await this.notify({
+          recipientId: program.sponsorId,
+          applicationId: newApplication.id,
+          programId: program.id,
+          action: 'submitted',
+          title: 'New Application Received',
+          content: `New Application for ${program.title}`,
+        });
+      }
+
       const duration = Date.now() - startTime;
       this.server.log.info(`✅ ApplicationV2Service.create completed in ${duration}ms`);
 
@@ -599,5 +616,26 @@ export class ApplicationV2Service {
       completedCount,
       totalCount,
     };
+  }
+
+  // helper
+  private async notify(params: {
+    recipientId: number;
+    applicationId: number;
+    programId: string;
+    action: 'submitted' | 'accepted' | 'rejected';
+    title: string;
+    content: string;
+  }) {
+    await this.server.pubsub.publish('notificationsV2', this.db, {
+      type: 'application' as const,
+      action: params.action,
+      recipientId: params.recipientId,
+      entityId: String(params.applicationId),
+      title: params.title,
+      content: params.content,
+      metadata: { programId: params.programId },
+    });
+    await this.server.pubsub.publish('notificationsV2Count');
   }
 }

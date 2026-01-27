@@ -1,0 +1,4 @@
+mutation MarkNotificationAsReadV2($notificationId: ID!) {
+  markNotificationAsReadV2(notificationId: $notificationId) {
+  }
+}

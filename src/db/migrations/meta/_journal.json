@@ -127,6 +127,13 @@
       "when": 1768236730345,
       "tag": "0017_nostalgic_energizer",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1769519168482,
+      "tag": "0018_funny_bloodstrike",
+      "breakpoints": true
     }
   ]
 }

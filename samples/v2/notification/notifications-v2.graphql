@@ -1,0 +1,4 @@
+query NotificationsV2($input: GetNotificationsV2Input) {
+  notificationsV2(input: $input) {
+  }
+}

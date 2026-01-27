@@ -1,0 +1,4 @@
+mutation MarkAllNotificationsAsReadV2 {
+  markAllNotificationsAsReadV2() {
+  }
+}
