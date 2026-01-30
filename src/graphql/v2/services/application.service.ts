@@ -399,6 +399,17 @@ export class ApplicationV2Service {
       const duration = Date.now() - startTime;
       this.server.log.info(`✅ ApplicationV2Service.update completed in ${duration}ms`);
 
+      if (input.status === 'pending_signature') {
+        await this.notify({
+          recipientId: updatedApplication.applicantId,
+          applicationId: updatedApplication.id,
+          programId: updatedApplication.programId,
+          action: 'created',
+          title: 'New Contract Received',
+          content: 'A sponsor has sent you a contract to sign.',
+        });
+      }
+
       return updatedApplication;
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -662,7 +673,7 @@ export class ApplicationV2Service {
     recipientId: number;
     applicationId: number;
     programId: string;
-    action: 'submitted' | 'accepted' | 'rejected';
+    action: 'created' | 'submitted' | 'accepted' | 'rejected';
     title: string;
     content: string;
   }) {
