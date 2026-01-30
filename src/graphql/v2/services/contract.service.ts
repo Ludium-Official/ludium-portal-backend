@@ -136,29 +136,28 @@ export class ContractV2Service {
     };
     const [row] = await this.db.insert(contractsTable).values(createData).returning();
 
-    await this.notify({
-      recipientId: row.applicantId,
-      contractId: row.id,
-      programId: row.programId,
-      action: 'created',
-      title: 'New Contract Received',
-      content: 'A sponsor has sent you a contract to sign.',
-    });
+    // notify
+    if (input.builder_signature !== null && input.builder_signature !== undefined) {
+      await this.notify({
+        recipientId: row.sponsorId,
+        contractId: row.id,
+        programId: row.programId,
+        action: 'completed',
+        title: 'Contract Signed by Builder',
+        content: 'The builder has signed the contract.',
+      });
+    }
 
     return row;
   }
 
   async update(id: string, input: typeof UpdateContractV2Input.$inferInput): Promise<Contracts> {
-    const existingContract = await this.getById(id);
-
     const updateData: Partial<{
       onchainContractId: number;
       contract_snapshot_cotents: unknown;
       contract_snapshot_hash: string;
       builder_signature: string;
     }> = {};
-
-    let builderSigned = false;
 
     if (input.onchainContractId !== null && input.onchainContractId !== undefined) {
       updateData.onchainContractId = input.onchainContractId;
@@ -171,9 +170,6 @@ export class ContractV2Service {
     }
     if (input.builder_signature !== null && input.builder_signature !== undefined) {
       updateData.builder_signature = input.builder_signature;
-      if (!existingContract.builder_signature) {
-        builderSigned = true;
-      }
     }
     const [row] = await this.db
       .update(contractsTable)
@@ -181,18 +177,6 @@ export class ContractV2Service {
       .where(eq(contractsTable.id, Number.parseInt(id, 10)))
       .returning();
     if (!row) throw new Error('Contract not found');
-
-    // notify
-    if (builderSigned) {
-      await this.notify({
-        recipientId: row.sponsorId,
-        contractId: row.id,
-        programId: row.programId,
-        action: 'completed',
-        title: 'Contract Signed by Builder',
-        content: 'The builder has signed the contract.',
-      });
-    }
 
     return row;
   }
