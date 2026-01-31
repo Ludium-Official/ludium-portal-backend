@@ -1,3 +1,4 @@
+import { portfoliosV2Table } from '@/db/schemas';
 import {
   type ApplicationV2 as DBApplicationV2,
   applicationStatusV2Values,
@@ -7,10 +8,9 @@ import { usersV2Table } from '@/db/schemas/v2/users';
 import builder from '@/graphql/builder';
 import type { Context } from '@/types';
 import { eq, inArray } from 'drizzle-orm';
+import { PortfolioV2Type } from './portfolios';
 import { ProgramV2Type } from './programs';
 import { UserV2Type } from './users';
-import { PortfolioV2Type } from './portfolios';
-import { portfoliosV2Table } from '@/db/schemas';
 
 /* -------------------------------------------------------------------------- */
 /*                                  Enums                                     */

@@ -1,3 +1,4 @@
+import { applicationsV2Table } from '@/db/schemas';
 import { type Contracts, contractsTable } from '@/db/schemas/v2/contracts';
 import type { CreateContractV2Input, UpdateContractV2Input } from '@/graphql/v2/inputs/contracts';
 import type { Context } from '@/types';
@@ -137,11 +138,17 @@ export class ContractV2Service {
     const [row] = await this.db.insert(contractsTable).values(createData).returning();
 
     // notify
+    const [application] = await this.db
+      .select()
+      .from(applicationsV2Table)
+      .where(eq(applicationsV2Table.id, input.applicationId));
+
     if (input.builder_signature !== null && input.builder_signature !== undefined) {
       await this.notify({
         recipientId: row.sponsorId,
         contractId: row.id,
         programId: row.programId,
+        chatroomId: application.chatroomMessageId ?? undefined,
         action: 'completed',
         title: 'Contract Signed by Builder',
         content: 'The builder has signed the contract.',
@@ -195,6 +202,7 @@ export class ContractV2Service {
     recipientId: number;
     contractId: number;
     programId: string;
+    chatroomId?: string;
     action: 'created' | 'completed';
     title: string;
     content: string;
@@ -206,7 +214,10 @@ export class ContractV2Service {
       entityId: String(params.contractId),
       title: params.title,
       content: params.content,
-      metadata: { programId: params.programId },
+      metadata: {
+        programId: params.programId,
+        chatroomId: params.chatroomId,
+      },
     });
     await this.server.pubsub.publish('notificationsV2Count');
   }

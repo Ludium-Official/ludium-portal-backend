@@ -1,8 +1,8 @@
 import {
   type NotificationInsert,
+  type NotificationV2Insert,
   notificationsTable,
   notificationsV2Table,
-  type NotificationV2Insert,
 } from '@/db/schemas';
 import type { Context, DB } from '@/types';
 import type { FastifyError, FastifyInstance, FastifyPluginOptions } from 'fastify';
