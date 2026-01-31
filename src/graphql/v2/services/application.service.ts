@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { portfoliosV2Table } from '@/db/schemas';
 import type { ApplicationV2, NewApplicationV2 } from '@/db/schemas/v2/applications';
 import { applicationsV2Table } from '@/db/schemas/v2/applications';
 import { programsV2Table } from '@/db/schemas/v2/programs';
@@ -12,7 +13,6 @@ import type {
 } from '@/graphql/v2/inputs/applications';
 import type { Context } from '@/types';
 import { and, count, desc, eq, inArray } from 'drizzle-orm';
-import { portfoliosV2Table } from '@/db/schemas';
 
 interface PaginatedApplicationsV2Result {
   data: ApplicationV2[];
