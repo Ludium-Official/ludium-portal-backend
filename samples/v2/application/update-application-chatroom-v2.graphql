@@ -7,8 +7,8 @@ mutation UpdateApplicationChatroomV2($id: ID!, $input: UpdateApplicationChatroom
     chatroomMessageId
     content
     picked
+    portfolioIds
+    portfolios
     program
-    programId
-    rejectedReason
   }
 }

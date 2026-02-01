@@ -1,3 +1,4 @@
+import { portfoliosV2Table } from '@/db/schemas';
 import {
   type ApplicationV2 as DBApplicationV2,
   applicationStatusV2Values,
@@ -6,7 +7,8 @@ import { programsV2Table } from '@/db/schemas/v2/programs';
 import { usersV2Table } from '@/db/schemas/v2/users';
 import builder from '@/graphql/builder';
 import type { Context } from '@/types';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
+import { PortfolioV2Type } from './portfolios';
 import { ProgramV2Type } from './programs';
 import { UserV2Type } from './users';
 
@@ -50,6 +52,10 @@ export const ApplicationV2Type = builder.objectRef<DBApplicationV2>('Application
     }),
     content: t.exposeString('content', {
       description: 'Content of the application submitted by the applicant',
+    }),
+    portfolioIds: t.exposeIntList('portfolioIds', {
+      nullable: true,
+      description: 'Array of portfolio IDs attached to this application',
     }),
     rejectedReason: t.exposeString('rejectedReason', {
       description:
@@ -99,6 +105,22 @@ export const ApplicationV2Type = builder.objectRef<DBApplicationV2>('Application
           throw new Error('Applicant not found');
         }
         return applicant;
+      },
+    }),
+    portfolios: t.field({
+      type: [PortfolioV2Type],
+      description: 'Portfolios attached to this application',
+      resolve: async (application, _args, ctx: Context) => {
+        if (!application.portfolioIds || application.portfolioIds.length === 0) {
+          return [];
+        }
+
+        const portfolios = await ctx.db
+          .select()
+          .from(portfoliosV2Table)
+          .where(inArray(portfoliosV2Table.id, application.portfolioIds));
+
+        return portfolios;
       },
     }),
   }),

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { portfoliosV2Table } from '@/db/schemas';
 import type { ApplicationV2, NewApplicationV2 } from '@/db/schemas/v2/applications';
 import { applicationsV2Table } from '@/db/schemas/v2/applications';
 import { programsV2Table } from '@/db/schemas/v2/programs';
@@ -11,7 +12,7 @@ import type {
   UpdateApplicationV2Input,
 } from '@/graphql/v2/inputs/applications';
 import type { Context } from '@/types';
-import { and, count, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, inArray } from 'drizzle-orm';
 
 interface PaginatedApplicationsV2Result {
   data: ApplicationV2[];
@@ -273,17 +274,51 @@ export class ApplicationV2Service {
     this.server.log.info('🚀 Starting ApplicationV2Service.create');
 
     try {
+      if (input.portfolioIds && input.portfolioIds.length > 0) {
+        const portfolios = await this.db
+          .select()
+          .from(portfoliosV2Table)
+          .where(inArray(portfoliosV2Table.id, input.portfolioIds));
+
+        if (portfolios.length !== input.portfolioIds.length) {
+          throw new Error('One or more portfolios not found');
+        }
+
+        const notOwnedPortfolios = portfolios.filter((p) => p.userId !== applicantId);
+        if (notOwnedPortfolios.length > 0) {
+          throw new Error('You can only attach your own portfolios');
+        }
+      }
+
       const applicationData: NewApplicationV2 = {
         programId: input.programId,
         applicantId,
         status: input.status ?? 'submitted',
         content: input.content ?? '',
+        portfolioIds: input.portfolioIds ?? null,
       };
 
       const [newApplication] = await this.db
         .insert(applicationsV2Table)
         .values(applicationData)
         .returning();
+
+      // notify
+      const [program] = await this.db
+        .select()
+        .from(programsV2Table)
+        .where(eq(programsV2Table.id, input.programId));
+
+      if (program) {
+        await this.notify({
+          recipientId: program.sponsorId,
+          applicationId: newApplication.id,
+          programId: program.id,
+          action: 'submitted',
+          title: 'New Application Received',
+          content: `New Application for ${program.title}`,
+        });
+      }
 
       const duration = Date.now() - startTime;
       this.server.log.info(`✅ ApplicationV2Service.create completed in ${duration}ms`);
@@ -325,13 +360,34 @@ export class ApplicationV2Service {
       type UpdateApplicationV2InputType = typeof UpdateApplicationV2Input.$inferInput;
 
       const typedInput: UpdateApplicationV2InputType = input;
-      const updateData: Partial<Pick<ApplicationV2, 'content' | 'status'>> = {};
+      const updateData: Partial<Pick<ApplicationV2, 'content' | 'status' | 'portfolioIds'>> = {};
 
       if (typedInput.content !== undefined) {
         updateData.content = typedInput.content ?? '';
       }
       if (typedInput.status !== undefined) {
         updateData.status = typedInput.status as ApplicationV2['status'];
+      }
+      if (typedInput.portfolioIds !== undefined) {
+        if (typedInput.portfolioIds && typedInput.portfolioIds.length > 0) {
+          const portfolios = await this.db
+            .select()
+            .from(portfoliosV2Table)
+            .where(inArray(portfoliosV2Table.id, typedInput.portfolioIds));
+
+          if (portfolios.length !== typedInput.portfolioIds.length) {
+            throw new Error('One or more portfolios not found');
+          }
+
+          const notOwnedPortfolios = portfolios.filter(
+            (p) => p.userId !== existingApplication.applicantId,
+          );
+          if (notOwnedPortfolios.length > 0) {
+            throw new Error('You can only attach your own portfolios');
+          }
+        }
+
+        updateData.portfolioIds = typedInput.portfolioIds ?? null;
       }
 
       const [updatedApplication] = await this.db
@@ -342,6 +398,17 @@ export class ApplicationV2Service {
 
       const duration = Date.now() - startTime;
       this.server.log.info(`✅ ApplicationV2Service.update completed in ${duration}ms`);
+
+      if (input.status === 'pending_signature') {
+        await this.notify({
+          recipientId: updatedApplication.applicantId,
+          applicationId: updatedApplication.id,
+          programId: updatedApplication.programId,
+          action: 'created',
+          title: 'New Contract Received',
+          content: 'A sponsor has sent you a contract to sign.',
+        });
+      }
 
       return updatedApplication;
     } catch (error) {
@@ -599,5 +666,26 @@ export class ApplicationV2Service {
       completedCount,
       totalCount,
     };
+  }
+
+  // helper
+  private async notify(params: {
+    recipientId: number;
+    applicationId: number;
+    programId: string;
+    action: 'created' | 'submitted' | 'accepted' | 'rejected';
+    title: string;
+    content: string;
+  }) {
+    await this.server.pubsub.publish('notificationsV2', this.db, {
+      type: 'application' as const,
+      action: params.action,
+      recipientId: params.recipientId,
+      entityId: String(params.applicationId),
+      title: params.title,
+      content: params.content,
+      metadata: { programId: params.programId },
+    });
+    await this.server.pubsub.publish('notificationsV2Count');
   }
 }

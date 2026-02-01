@@ -726,6 +726,18 @@ export class ArticleService {
       })
       .returning();
 
+    // notify
+    if (!parentId && article.authorId !== authorId) {
+      await this.notify({
+        recipientId: article.authorId,
+        commentId: comment.id,
+        articleId: article.id,
+        action: 'created',
+        title: 'New Comment on Your Article',
+        content: `Someone commented on "${article.title}"`,
+      });
+    }
+
     return comment;
   }
 
@@ -852,5 +864,26 @@ export class ArticleService {
       likeCount,
       dislikeCount,
     };
+  }
+
+  // helper
+  private async notify(params: {
+    recipientId: number;
+    commentId: string;
+    articleId: string;
+    action: 'created';
+    title: string;
+    content: string;
+  }) {
+    await this.server.pubsub.publish('notificationsV2', this.db, {
+      type: 'article' as const,
+      action: params.action,
+      recipientId: params.recipientId,
+      entityId: String(params.commentId),
+      title: params.title,
+      content: params.content,
+      metadata: { articleId: params.articleId },
+    });
+    await this.server.pubsub.publish('notificationsV2Count');
   }
 }

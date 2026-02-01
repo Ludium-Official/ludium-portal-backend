@@ -74,6 +74,12 @@ type ApplicationV2 {
   """Whether this application has been picked"""
   picked: Boolean
 
+  """Array of portfolio IDs attached to this application"""
+  portfolioIds: [Int!]
+
+  """Portfolios attached to this application"""
+  portfolios: [PortfolioV2!]
+
   """Program this application is for"""
   program: ProgramV2
 
@@ -400,6 +406,9 @@ input CreateApplicationInput {
 input CreateApplicationV2Input {
   """Content of the application submitted by the applicant"""
   content: String
+
+  """Array of portfolio IDs to attach to this application"""
+  portfolioIds: [Int!]
 
   """ID of the program to apply for"""
   programId: ID!
@@ -785,6 +794,13 @@ enum FundingCondition {
   tier
 }
 
+input GetNotificationsV2Input {
+  limit: Int = 10
+  offset: Int = 0
+  type: String
+  unreadOnly: Boolean = false
+}
+
 type HiredBuilderV2 {
   id: Int
   milestoneCount: Int
@@ -1134,6 +1150,7 @@ type Mutation {
   """Create a comment on an article"""
   createArticleComment(input: CreateArticleCommentInput!): ArticleComment
   createCarouselItem(input: CreateCarouselItemInput!): CarouselItem
+  createChatNotificationV2(entityId: String!, metadata: JSON, recipientId: Int!): Boolean
   createComment(input: CreateCommentInput!): Comment
   createContractV2(input: CreateContractV2Input!): ContractV2
 
@@ -1209,6 +1226,7 @@ type Mutation {
     id: ID!
   ): MilestoneV2
   deleteNetworkV2(id: ID!): NetworkV2
+  deleteNotificationV2(notificationId: ID!): Boolean
   deleteOnchainContractInfoV2(id: ID!): OnchainContractInfoV2
   deleteOnchainProgramInfoV2(id: ID!): OnchainProgramInfoV2
 
@@ -1263,7 +1281,9 @@ type Mutation {
     walletAddress: String!
   ): String
   markAllNotificationsAsRead: Boolean
+  markAllNotificationsAsReadV2: Boolean
   markNotificationAsRead(id: ID!): Boolean
+  markNotificationAsReadV2(notificationId: ID!): Boolean
 
   """
   Pick or unpick application (bookmark favorite, only by program creator)
@@ -1486,6 +1506,46 @@ enum NotificationType {
   milestone
   program
   system
+}
+
+type NotificationV2 {
+  action: NotificationV2Action
+  content: String
+  createdAt: Date
+  entityId: String
+  id: ID
+  metadata: JSON
+  readAt: Date
+  recipientId: Int
+  title: String
+  type: NotificationV2Type
+}
+
+enum NotificationV2Action {
+  accepted
+  broadcast
+  completed
+  created
+  deleted
+  invited
+  rejected
+  submitted
+  updated
+}
+
+type NotificationV2Result {
+  data: [NotificationV2!]
+  total: Int
+}
+
+enum NotificationV2Type {
+  application
+  article
+  contract
+  milestone
+  program
+  system
+  thread
 }
 
 type OnchainContractInfoV2 {
@@ -2148,6 +2208,7 @@ type Query {
   networkV2(id: ID!): NetworkV2
   networksV2(pagination: PaginationInput): PaginatedNetworksV2
   notifications(pagination: PaginationInput): NotificationResult
+  notificationsV2(input: GetNotificationsV2Input): NotificationV2Result
   onchainContractInfoV2(id: ID!): OnchainContractInfoV2
   onchainContractInfosByApplicantV2(applicantId: Int!, pagination: PaginationInput): PaginatedOnchainContractInfoV2
   onchainContractInfosByProgramV2(pagination: PaginationInput, programId: String!): PaginatedOnchainContractInfoV2
@@ -2294,6 +2355,7 @@ type Query {
     """Number of articles to return (default: 5)"""
     limit: Int
   ): [Article!]
+  unreadNotificationsCountV2: Int
 
   """
   Get list of upcoming payments (within 7 days based on deadline + 2 days)
@@ -2396,6 +2458,8 @@ enum SubmitMilestoneStatus {
 type Subscription {
   countNotifications: Int
   notifications(pagination: PaginationInput): NotificationResult
+  notificationsV2(input: GetNotificationsV2Input): NotificationV2Result
+  unreadNotificationsCountV2: Int
 }
 
 type Supporter {
@@ -2590,6 +2654,9 @@ input UpdateApplicationInput {
 input UpdateApplicationV2Input {
   """Updated application content"""
   content: String
+
+  """Updated portfolio IDs"""
+  portfolioIds: [Int!]
 
   """Updated application status (builder-driven lifecycle updates)"""
   status: ApplicationStatusV2

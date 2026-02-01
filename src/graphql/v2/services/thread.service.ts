@@ -782,6 +782,18 @@ export class ThreadService {
       })
       .returning();
 
+    // notify
+    if (!parentId && thread.authorId !== authorId) {
+      await this.notify({
+        recipientId: thread.authorId,
+        commentId: comment.id,
+        threadId: thread.id,
+        action: 'created',
+        title: 'New Comment on Your Thread',
+        content: 'Someone commented on your thread',
+      });
+    }
+
     return comment;
   }
 
@@ -908,5 +920,26 @@ export class ThreadService {
       likeCount,
       dislikeCount,
     };
+  }
+
+  // helper
+  private async notify(params: {
+    recipientId: number;
+    commentId: string;
+    threadId: string;
+    action: 'created';
+    title: string;
+    content: string;
+  }) {
+    await this.server.pubsub.publish('notificationsV2', this.db, {
+      type: 'thread' as const,
+      action: params.action,
+      recipientId: params.recipientId,
+      entityId: String(params.commentId),
+      title: params.title,
+      content: params.content,
+      metadata: { threadId: params.threadId },
+    });
+    await this.server.pubsub.publish('notificationsV2Count');
   }
 }

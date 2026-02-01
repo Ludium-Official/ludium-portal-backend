@@ -10,7 +10,10 @@ import type { Context } from '@/types';
 import { count, desc, eq } from 'drizzle-orm';
 
 export class OnchainContractInfoV2Service {
-  constructor(private db: Context['db']) {}
+  constructor(
+    private db: Context['db'],
+    private server: Context['server'],
+  ) {}
 
   async getMany(pagination?: { limit?: number; offset?: number }): Promise<{
     data: OnchainContractInfo[];
@@ -90,6 +93,17 @@ export class OnchainContractInfoV2Service {
       ...(input.status !== null && input.status !== undefined ? { status: input.status } : {}),
     };
     const [row] = await this.db.insert(onchainContractInfoTable).values(createData).returning();
+
+    // notify
+    await this.notify({
+      recipientId: row.applicantId,
+      onchainContractId: row.id,
+      programId: row.programId,
+      action: 'completed',
+      title: 'Contract Signed by Sponsor',
+      content: 'The sponsor has signed the contract.',
+    });
+
     return row;
   }
 
@@ -123,5 +137,26 @@ export class OnchainContractInfoV2Service {
       .returning();
     if (!row) throw new Error('Onchain contract info not found');
     return row;
+  }
+
+  // helper
+  private async notify(params: {
+    recipientId: number;
+    onchainContractId: number;
+    programId: string;
+    action: 'completed';
+    title: string;
+    content: string;
+  }) {
+    await this.server.pubsub.publish('notificationsV2', this.db, {
+      type: 'contract' as const,
+      action: params.action,
+      recipientId: params.recipientId,
+      entityId: String(params.onchainContractId),
+      title: params.title,
+      content: params.content,
+      metadata: { programId: params.programId },
+    });
+    await this.server.pubsub.publish('notificationsV2Count');
   }
 }

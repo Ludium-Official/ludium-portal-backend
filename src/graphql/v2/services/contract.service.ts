@@ -1,10 +1,14 @@
+import { applicationsV2Table } from '@/db/schemas';
 import { type Contracts, contractsTable } from '@/db/schemas/v2/contracts';
 import type { CreateContractV2Input, UpdateContractV2Input } from '@/graphql/v2/inputs/contracts';
 import type { Context } from '@/types';
 import { count, desc, eq } from 'drizzle-orm';
 
 export class ContractV2Service {
-  constructor(private db: Context['db']) {}
+  constructor(
+    private db: Context['db'],
+    private server: Context['server'],
+  ) {}
 
   async getMany(pagination?: { limit?: number; offset?: number }): Promise<{
     data: Contracts[];
@@ -132,6 +136,25 @@ export class ContractV2Service {
         : {}),
     };
     const [row] = await this.db.insert(contractsTable).values(createData).returning();
+
+    // notify
+    const [application] = await this.db
+      .select()
+      .from(applicationsV2Table)
+      .where(eq(applicationsV2Table.id, input.applicationId));
+
+    if (input.builder_signature !== null && input.builder_signature !== undefined) {
+      await this.notify({
+        recipientId: row.sponsorId,
+        contractId: row.id,
+        programId: row.programId,
+        chatroomId: application.chatroomMessageId ?? undefined,
+        action: 'completed',
+        title: 'Contract Signed by Builder',
+        content: 'The builder has signed the contract.',
+      });
+    }
+
     return row;
   }
 
@@ -142,6 +165,7 @@ export class ContractV2Service {
       contract_snapshot_hash: string;
       builder_signature: string;
     }> = {};
+
     if (input.onchainContractId !== null && input.onchainContractId !== undefined) {
       updateData.onchainContractId = input.onchainContractId;
     }
@@ -160,6 +184,7 @@ export class ContractV2Service {
       .where(eq(contractsTable.id, Number.parseInt(id, 10)))
       .returning();
     if (!row) throw new Error('Contract not found');
+
     return row;
   }
 
@@ -170,5 +195,30 @@ export class ContractV2Service {
       .returning();
     if (!row) throw new Error('Contract not found');
     return row;
+  }
+
+  // helper
+  private async notify(params: {
+    recipientId: number;
+    contractId: number;
+    programId: string;
+    chatroomId?: string;
+    action: 'created' | 'completed';
+    title: string;
+    content: string;
+  }) {
+    await this.server.pubsub.publish('notificationsV2', this.db, {
+      type: 'contract' as const,
+      action: params.action,
+      recipientId: params.recipientId,
+      entityId: String(params.contractId),
+      title: params.title,
+      content: params.content,
+      metadata: {
+        programId: params.programId,
+        chatroomId: params.chatroomId,
+      },
+    });
+    await this.server.pubsub.publish('notificationsV2Count');
   }
 }

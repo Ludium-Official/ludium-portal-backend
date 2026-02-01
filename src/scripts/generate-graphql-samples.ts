@@ -486,6 +486,8 @@ async function generateSamples() {
         domain = 'article';
       } else if (name.includes('thread')) {
         domain = 'thread';
+      } else if (name.includes('notification')) {
+        domain = 'notification';
       }
 
       if (!groupedOperations.has(domain)) {
